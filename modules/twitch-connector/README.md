@@ -8,16 +8,14 @@ Le Connecteur s'installe tout seul avec *Ma Chaîne Twitch*. Ouvrez sa page et s
 1. Ouvrez **dev.twitch.tv/console** et connectez-vous avec votre compte Twitch. Cliquez sur « Register Your Application ».
 2. Donnez-lui un nom. Dans la case **« Redirect URLs »**, collez l'adresse affichée par le Connecteur (bouton **« Copier »**), puis « Add ».
 3. Catégorie « Website Integration », type de client « Confidential », puis « Create ».
-4. Ouvrez votre application (« Manage »), copiez le **Client ID**, cliquez sur « New Secret » et copiez le **secret**. Collez-les dans les réglages du Connecteur et enregistrez.
+4. Ouvrez votre application (« Manage »), copiez le **Client ID**, cliquez sur « New Secret » et copiez le **secret**. Cliquez sur **« Enregistrer l'application »** dans le Connecteur et collez-les.
 
 Ensuite, le bouton **« Connecter ma chaîne Twitch »** se trouve dans *Ma Chaîne Twitch* (et, pour le compte qui répond dans le chat, dans le *Bot Twitch*).
 
-**Vous utilisiez déjà « Chaîne Twitch » ?** Rien à faire : à la mise à jour, votre application et vos connexions arrivent ici toutes seules, sans les ressaisir. Les adresses déjà enregistrées chez Twitch restent valables ; la page du Connecteur les liste pour que vous les laissiez dans la console Twitch.
+**Vous utilisiez déjà « Chaîne Twitch » ?** Rien à faire : à la mise à jour, votre application et vos connexions arrivent ici toutes seules, sans les ressaisir. Les adresses déjà enregistrées chez Twitch restent valables.
 
-## Ce que montre la page
-- **Votre application Twitch** : prête ou non, et l'adresse à coller chez Twitch, avec un bouton « Copier ». Jamais l'identifiant ni le secret.
-- **Les comptes connectés** : la chaîne, le compte, l'état (« Connecté », « À reconnecter », « Une autorisation de plus est demandée »), et un bouton **Déconnecter** (qui retire aussi l'accès chez Twitch).
-- **La santé de Twitch**, en mots simples : « Twitch répond normalement », « trop de demandes, pause jusqu'à 11 h 00 »… Pendant une panne, vos pages affichent les dernières données connues.
+## What the page shows (1.8.0)
+One card, **Twitch application**, in one of three states written by the core: **Configured**, **Degraded** (an account must be authorized again, Twitch refuses the application, Twitch does not answer: one line with the reason and since when, and the button that fixes it) or **Not configured** (the step-by-step guide and the address to copy, shown only until the application is registered). Once configured, the card is one line (the end of the Client ID, never the secret) and one **Edit** button that opens a window with the two fields: a value that is set shows as set (“Leave empty to keep the current one”), a value carried over from another module says where it comes from, and **Forget the carried-over application** lives in that window. Below, the connected accounts with **Disconnect**. Nothing says that Twitch answers normally, and the addresses of the old channels are not listed.
 
 ## Plusieurs chaînes
 Le Connecteur est **une seule application Twitch**, avec autant de comptes connectés que de chaînes (une *Ma Chaîne Twitch* par chaîne). Chaque chaîne se connecte avec son propre compte Twitch.
@@ -29,7 +27,7 @@ Le Connecteur est **une seule application Twitch**, avec autant de comptes conne
 
 ## Pour qui développe
 
-Identifiant `twitch-connector`, `instances: "single"`, `minCore` 0.2.2. La clé d'instance par défaut est celle que le cœur 0.2.0 dérive de l'identifiant du module (`twitch-connector`) : l'adresse de retour des **nouvelles** configurations est donc `<site>/m/twitch-connector/oauth/callback` (le cœur 0.2.0 n'a pas de réglage de clé par défaut ; voir le CHANGELOG). Réglages : `appClientId` (texte, `refersTo: "external"`) et `appSecret` (secret). Les valeurs reprises vivent dans le stockage (`twitchApp`) ; un réglage saisi a toujours le dessus, champ par champ.
+Identifiant `twitch-connector`, `instances: "single"`, `minCore` 0.2.2. La clé d'instance par défaut est celle que le cœur 0.2.0 dérive de l'identifiant du module (`twitch-connector`) : l'adresse de retour des **nouvelles** configurations est donc `<site>/m/twitch-connector/oauth/callback` (le cœur 0.2.0 n'a pas de réglage de clé par défaut ; voir le CHANGELOG). Since 1.8.0 (`minCore` 0.36.0, data version 2) the Client ID and the secret are no longer settings (`legacySettings`, moved once by `migrations[2]`): they live in one document of the private storage (`twitchApp`: `clientId`, `clientSecret`, `carried` = the fields carried over by `adopt`), typed in the “Edit” window (`saveApp`); `forgetApp` only removes the carried fields. The only setting left is `healthMail`.
 
 ### Service `twitch.api`, version 3 (non `each`)
 Sur-ensemble de la version 2 offerte par « Chaîne Twitch » 1.7 : les appels de *Bot Twitch*, *Raid Twitch* et *Statut live* passent sans changement.
@@ -54,14 +52,14 @@ Sur-ensemble de la version 2 offerte par « Chaîne Twitch » 1.7 : les appels d
 - Tout passe par `ctx.api.net` : 8 s par appel, pause après 429 (`Retry-After`, `Ratelimit-Reset`) et disjoncteur fournis par le cœur, journal sans corps ni requête (les secrets voyagent dans le corps ou les en-têtes). Seau `bucket` = l'application (`twitch-app:<empreinte du Client ID>`) : un 429 met en pause **tous** les modules consommateurs, sans réseau, jusqu'à l'heure donnée.
 - Un appel complet du service (jeton, renouvellement, nouvel essai compris) est borné à 15 s (`oauth.timing.sharedMs`). Jeton d'application en mémoire (un par application) ; jetons des comptes renouvelés avec le secret 2 minutes avant leur fin, ou après un 401 (une fois, fusionné entre appels simultanés), sinon « À reconnecter ». `GET users`, `GET games` et `GET search/categories` gardés 10 minutes (300 réponses au plus).
 - Bornes du stockage : 50 connexions, 50 chaînes connues, 50 demandes d'autorisations, 20 liens en attente (un par chaîne et emplacement), 40 résultats.
-- Bloc d'administration `netHealth` (`api.twitch.tv`, `id.twitch.tv`) avec la date de la dernière bonne réponse.
+- The state of `api.twitch.tv` and `id.twitch.tv` is folded into the card (`connection.net`): nothing is shown while they answer.
 
 ### Sécurité
 `state` : 256 bits, usage unique (consommé avant tout appel à Twitch), 10 minutes, lié à l'adresse de retour exacte et à la chaîne ; le compte autorisé doit être celui de la chaîne (emplacement `main`), sinon refus et jetons révoqués. Au-delà de 20 retours invalides en 10 minutes : 429. Après le retour, la redirection va vers une page `/admin/instances/…` vérifiée, jamais vers une adresse de la requête. Les jetons ne quittent jamais le stockage de l'instance (ni réglage, ni bloc, ni réponse de service, ni journal).
 
 ## Health of the connections (1.5.0)
 
-"Connected" means that Twitch accepts the authorization **now**: the connector asks Twitch (validate, then refresh when needed) when its page opens, every 10 minutes from a task, and at once when a module is refused. A connection is `ok`, `renew` (revoked, expired, password changed, other application), `scopes` (a permission a module needs is missing; listed in plain words) or `app` (Twitch refuses the application ID or secret). The page shows one banner and one button "Authorize again with Twitch"; the menu shows a red dot; the site log gets one line per change; the owner gets one e-mail per problem after 10 minutes and one when all is back (setting "E-mail me when Twitch needs a new authorization"). The service `twitch.api` offers `health` (read only) and `report` for modules; the MCP tool `connector_twitch_status` tells an assistant the same.
+"Connected" means that Twitch accepts the authorization **now**: the connector asks Twitch (validate, then refresh when needed) when its page opens, every 10 minutes from a task, and at once when a module is refused. A connection is `ok`, `renew` (revoked, expired, password changed, other application), `scopes` (a permission a module needs is missing; listed in plain words) or `app` (Twitch refuses the application ID or secret). The card turns to Degraded with one line and one button "Authorize again with Twitch"; the menu shows a red dot; the site log gets one line per change; the owner gets one e-mail per problem after 10 minutes and one when all is back (setting "E-mail me when Twitch needs a new authorization"). The service `twitch.api` offers `health` (read only) and `report` for modules; the MCP tool `connector_twitch_status` tells an assistant the same.
 
 ## Reading the rewards (version 1.6.0)
 

@@ -93,30 +93,32 @@ function errorText(ctx, e, now) {
   return ctx.t(`err_${code}`, { when: retry });
 }
 
-/** Un lien vers l'écran du Connecteur YouTube (là où l'on connecte le compte). */
-const connectLink = (ctx, o) => (o.connectorPath ? [{ type: "links", items: [{ label: ctx.t("connect_link"), href: o.connectorPath }] }] : []);
+const SETTINGS = "?tab=settings";
 
-function statusBlocks(ctx, o) {
+/** The chat reading: ONE block of the core (`connection`), in the state that tells what the person can do now. */
+function chatBlock(ctx, o) {
   const t = ctx.t;
   const st = o.state;
-  const out = [];
   const title = st.title ? `« ${st.title.replace(/[«»]/g, "")} »` : "";
+  const head = { type: "connection", id: "chat", title: t("chat_title"), summary: "", edit: { href: SETTINGS } };
+  const settings = { label: t("open_settings"), href: SETTINGS };
+  const connect = o.connectorPath ? { primary: { label: t("connect_link"), href: o.connectorPath } } : {};
+  const limit = t("chat_limit", { used: percent(ctx, o.units), max: o.s.budgetPercent });
   switch (st.status) {
-    case "off": out.push({ type: "banner", tone: "warning", text: t("st_off") }); break;
-    case "no_bridge": out.push({ type: "banner", tone: "info", text: t("st_no_bridge") }, { type: "suggestInstall", service: SUGGEST_BRIDGE, reason: t("suggest_bridge") }); break;
-    case "no_api": out.push({ type: "banner", tone: "warning", text: t("st_no_api") }, { type: "suggestInstall", service: B.API, reason: t("suggest_api") }); break;
-    case "no_channel": out.push({ type: "banner", tone: "info", text: t("st_no_channel") }, { type: "suggestInstall", service: B.LIVE, reason: t("suggest_channel") }); break;
-    case "ambiguous": out.push({ type: "banner", tone: "warning", text: t("st_ambiguous") }); break;
-    case "unverified": out.push({ type: "banner", tone: "warning", text: t("st_unverified") }); break;
-    case "budget": out.push({ type: "banner", tone: "warning", text: t("st_budget", { percent: o.s.budgetPercent, when: whenText(ctx, nextReset(o.now), o.now) }) }); break;
-    case "connect": out.push({ type: "banner", tone: "warning", text: t("st_connect") }, ...connectLink(ctx, o)); break;
-    case "backoff": out.push({ type: "banner", tone: "warning", text: errorText(ctx, st.error, o.now) }, ...(st.error?.code === "chat_denied" ? connectLink(ctx, o) : [])); break;
-    case "no_chat": out.push({ type: "banner", tone: "info", text: t("st_no_chat", { title }) }); break;
-    case "idle": out.push({ type: "banner", tone: "info", text: t("st_idle") }); break;
-    case "reading": out.push({ type: "banner", tone: "success", text: t("st_reading", { title, when: st.lastPollAt ? ago(ctx, st.lastPollAt, o.now) : t("st_just_now") }) }); break;
-    default: out.push({ type: "banner", tone: "info", text: t("st_starting") });
+    case "off": return { ...head, state: "notConfigured", reason: t("st_off"), primary: settings };
+    case "no_bridge": return { ...head, state: "notConfigured", reason: t("st_no_bridge"), primary: settings };
+    case "no_api": return { ...head, state: "notConfigured", reason: t("st_no_api"), setup: [{ type: "suggestInstall", service: B.API, reason: t("suggest_api") }] };
+    case "no_channel": return { ...head, state: "notConfigured", reason: t("st_no_channel"), setup: [{ type: "suggestInstall", service: B.LIVE, reason: t("suggest_channel") }] };
+    case "ambiguous": return { ...head, state: "notConfigured", reason: t("st_ambiguous"), primary: settings };
+    case "unverified": return { ...head, state: "degraded", reason: t("st_unverified"), primary: settings };
+    case "budget": return { ...head, state: "degraded", reason: t("st_budget", { percent: o.s.budgetPercent, when: whenText(ctx, nextReset(o.now), o.now) }), primary: { label: t("set_limit"), href: SETTINGS } };
+    case "connect": return { ...head, state: "degraded", reason: t("st_connect"), ...connect };
+    case "backoff": return { ...head, state: "degraded", reason: errorText(ctx, st.error, o.now), ...(st.error?.code === "chat_denied" ? connect : {}) };
+    case "no_chat": return { ...head, state: "degraded", reason: t("st_no_chat", { title }) };
+    case "idle": return { ...head, state: "configured", summary: `${t("st_idle")} · ${limit}` };
+    case "reading": return { ...head, state: "configured", summary: `${t("st_reading", { title, when: st.lastPollAt ? ago(ctx, st.lastPollAt, o.now) : t("st_just_now") })} · ${limit}` };
+    default: return { ...head, state: "configured", summary: t("st_starting") };
   }
-  return out;
 }
 /** Prochaine remise à zéro de la limite YouTube (minuit à Los Angeles) : 9 h du matin en France (hiver : 9 h aussi à Bruxelles, à une heure près selon l'heure d'été). */
 function nextReset(now) {
@@ -139,38 +141,31 @@ form:has(input[name="yt_big"][value="start"]) button{background:#15803d!importan
 form:has(input[name="yt_big"]) button:focus-visible{outline:3px solid currentColor;outline-offset:3px}
 </style>`;
 
+/** Home Assistant (the house): ONE block, plus the big « Cut everything » button while something can be cut (the emergency stop is visible without scrolling, R24). */
 function houseBlocks(ctx, o) {
   const t = ctx.t;
   const h = o.house;
-  if (!h.installed) return [{ type: "markdown", text: t("house_none") }, { type: "suggestInstall", service: SUGGEST_BRIDGE, reason: t("suggest_bridge") }];
-  const out = [];
+  const head = { type: "connection", id: "house", title: t("house_title"), summary: "", ...(o.housePath ? { edit: { href: o.housePath, label: t("house_open") } } : {}) };
+  const open = o.housePath ? { primary: { label: t("house_open"), href: o.housePath } } : {};
+  if (!h.installed) return [{ ...head, state: "notConfigured", reason: t("house_none"), setup: [{ type: "suggestInstall", service: SUGGEST_BRIDGE, reason: t("suggest_bridge") }] }];
   const hidden = (value) => ({ name: "yt_big", kind: "hidden", value });
-  if (!h.known) out.push({ type: "markdown", text: t("house_unknown") });
-  else if (!h.paired) out.push({ type: "banner", tone: "info", text: t("house_unpaired") });
-  else if (!h.enabled) out.push({ type: "banner", tone: "warning", text: t("house_cut") });
-  else {
-    const seen = h.lastSeenAt ? Date.parse(h.lastSeenAt) : 0;
-    if (!seen || o.now - seen > 60_000) out.push({ type: "banner", tone: "warning", text: t("house_offline") });
-    else if (!h.live) out.push({ type: "banner", tone: "warning", text: t("house_not_live") });
-    else out.push({ type: "banner", tone: "success", text: t("house_ok") });
+  if (!h.known) return [{ ...head, state: "degraded", reason: t("house_unknown"), ...open }];
+  if (!h.paired) return [{ ...head, state: "notConfigured", reason: t("house_unpaired"), ...open }];
+  if (!h.enabled) {
+    const manage = can(ctx, "yt.manage");
+    return [{ ...head, state: "degraded", reason: t(manage ? "house_cut" : "big_resume_no_right"), ...(manage ? { primary: { label: t("big_start"), action: "start" } } : open) }];
   }
-  if (h.known && h.enabled !== false) {
-    out.push(can(ctx, "yt.stop") ? { type: "html", html: BIG_CSS } : { type: "markdown", text: t("big_no_right") });
-    if (can(ctx, "yt.stop")) out.push({ type: "adminForm", action: "stop", submitLabel: t("big_stop"), fields: [hidden("stop")] });
-  } else if (h.known) {
-    if (can(ctx, "yt.manage")) out.push({ type: "html", html: BIG_CSS }, { type: "adminForm", action: "start", submitLabel: t("big_start"), fields: [hidden("start")] });
-    else out.push({ type: "markdown", text: t("big_resume_no_right") });
-  }
-  return out;
+  const seen = h.lastSeenAt ? Date.parse(h.lastSeenAt) : 0;
+  const stop = can(ctx, "yt.stop")
+    ? [{ type: "html", html: BIG_CSS }, { type: "adminForm", action: "stop", submitLabel: t("big_stop"), fields: [hidden("stop")] }]
+    : [{ type: "markdown", text: t("big_no_right") }];
+  if (!seen || o.now - seen > 60_000) return [{ ...head, state: "degraded", reason: t("house_offline"), ...open }, ...stop];
+  if (!h.live) return [{ ...head, state: "degraded", reason: t("house_not_live"), ...open }, ...stop];
+  return [{ ...head, state: "configured", summary: t("house_summary") }, ...stop];
 }
 
-function infoBlocks(ctx) {
-  const t = ctx.t;
-  return [
-    { type: "markdown", text: t("info_open") },
-    { type: "html", html: `<details><summary>${esc(t("info_more_title"))}</summary><div style="line-height:1.6;margin-top:.5rem"><p>${esc(t("info_stop"))}</p><p>${esc(t("info_gift"))}</p><p>${esc(t("info_currency"))}</p><p>${esc(t("info_nochat"))}</p></div></details>` },
-  ];
-}
+/** The one warning of the page: the chat is only read while the page is open (reading stops, « !stop » included, when it is closed). */
+const infoBlocks = (ctx) => [{ type: "markdown", text: ctx.t("info_open") }];
 
 function ruleForm(ctx, o, editing) {
   const t = ctx.t;
@@ -218,9 +213,12 @@ function simBlocks(ctx, o) {
   if (!can(ctx, "yt.test")) return [];
   const house = o.house;
   const currencies = R.currenciesOf(o.s.extraCurrencies);
+  // the one case where a simulation has a real effect: Home Assistant is paired, not cut, and sees the live
+  const plays = house.installed && house.known && house.paired && house.enabled && house.live;
   return [
     { type: "heading", text: t("sim_title") },
-    { type: "markdown", text: house.installed ? t("sim_help") : t("sim_no_bridge") },
+    ...(house.installed ? [] : [{ type: "markdown", text: t("sim_no_bridge") }]),
+    ...(plays ? [{ type: "banner", tone: "warning", text: t("sim_plays") }] : []),
     ...(house.installed ? [{
       type: "adminForm", action: "simulate", submitLabel: t("sim_btn"), fields: [
         { name: "type", kind: "select", label: t("f_type"), value: "superchat", options: R.TYPES.map((x) => ({ value: x, label: t(`type_${x}`) })) },
@@ -268,18 +266,8 @@ function journalBlocks(ctx, o) {
   const out = [{ type: "heading", text: t("jr_title") }];
   if (!o.journal.length) { out.push({ type: "markdown", text: t("jr_empty") }); return out; }
   out.push({ type: "html", html: journalHtml(ctx, o) });
-  out.push({ type: "markdown", text: t("jr_note") });
   if (can(ctx, "yt.manage")) out.push({ type: "table", columns: [t("jr_col")], pageSize: 0, rows: [[String(o.journal.length)]], rowIds: ["journal"], rowActions: [{ label: t("jr_clear"), action: "clearJournal", confirm: t("jr_clear_confirm", { n: o.journal.length }), danger: true }] });
   return out;
-}
-
-function limitBlocks(ctx, o) {
-  const t = ctx.t;
-  const perHour = Math.max(1, Math.round(((3_600_000 / Math.max(o.s.intervalMs, o.state.pollingMs || 0)) * 5) / 100));
-  return [
-    { type: "heading", text: t("limit_title") },
-    { type: "markdown", text: t("limit_text", { used: percent(ctx, o.units), max: o.s.budgetPercent, hour: perHour }) },
-  ];
 }
 
 /** Le petit mot qui recharge la page tant qu'elle est ouverte : c'est son « battement de cœur » (voir engine.mjs). Pas d'objet qui tourne côté serveur. */
@@ -298,7 +286,7 @@ function reloadBlock(ctx, ms) {
   if (!ms) return [];
   // Ne recharge pas si l'onglet n'est pas affiché ou si quelqu'un est en train d'écrire dans un champ (on réessaie 2 s plus tard).
   const js = `var T=this.closest('[role=tabpanel]');setTimeout(function r(){var a=document.activeElement,n=a&&a.tagName;if((T&&!T.getClientRects().length)||(n&&/^(INPUT|TEXTAREA|SELECT)$/.test(n))){setTimeout(r,2000);return}location.reload()},${ms})`;
-  return [{ type: "html", html: `<p style="margin:0;font-size:.85em;opacity:.75">${esc(ctx.t("reload_note"))}</p><img alt="" width="1" height="1" src="data:," onerror="${js}">` }];
+  return [{ type: "html", html: `<img alt="" width="1" height="1" src="data:," onerror="${js}">` }];
 }
 
 /** Le panneau de l'onglet « En direct ». Chaque affichage est un battement de cœur : il lance un tour de lecture (borné) avant de dessiner. */
@@ -309,14 +297,16 @@ export async function panel(ctx, { query } = {}) {
   if (o.state.status === "connect" || o.state.error?.code === "chat_denied") {
     try { o.connectorPath = (await B.within(ctx.api.instances.list({ module: "youtube-connector" }), 2000, []))[0]?.adminPath ?? null; } catch { o.connectorPath = null; }
   }
+  if (o.house.installed) {
+    try { o.housePath = (await B.within(ctx.api.instances.list({ module: "home-assistant" }), 2000, []))[0]?.adminPath ?? null; } catch { o.housePath = null; }
+  }
   return [
-    ...statusBlocks(ctx, o),
+    chatBlock(ctx, o),
     ...houseBlocks(ctx, o),
     ...infoBlocks(ctx),
     ...ruleBlocks(ctx, o, query),
     ...simBlocks(ctx, o),
     ...journalBlocks(ctx, o),
-    ...limitBlocks(ctx, o),
     ...reloadBlock(ctx, reloadMs(o)),
   ];
 }

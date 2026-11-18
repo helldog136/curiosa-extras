@@ -30,11 +30,11 @@ const ctx = (settings = {}, o = {}) => fakeCtx({ key: "tw", locale: "fr", messag
 const bare = (settings = {}) => fakeCtx({ key: "tw", locale: "fr", messages: fr, settings: { channel: "MaChaine", ...settings } });   // sans Connecteur
 const helix = (path) => tw.log.filter((c) => c.path === `/helix/${path}`).length;
 
-test("manifeste : valide ; « Ma Chaîne Twitch », identifiant conservé ; 2.0.0, minCore 0.2.0, données en version 2 ; n'offre plus twitch.api, exige le Connecteur (v3) ; anciens réglages masqués", () => {
+test("manifeste : valide ; « Ma Chaîne Twitch », identifiant conservé ; 2.6.0, minCore 0.36.0, données en version 2 ; n'offre plus twitch.api, exige le Connecteur (v3) ; anciens réglages masqués", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifestJson.id, "twitch-channel");
   assert.deepEqual(manifestJson.name, { en: "My Twitch channel", fr: "Ma Chaîne Twitch" });
-  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.5.1", "0.11.0", 2]);
+  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.6.0", "0.36.0", 2]);
   assert.deepEqual(manifestJson.offers.map((o) => [o.service, o.each]), [["twitch.live", true], ["event.source", true]]);
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional ?? false]), [["twitch.api", 3, false]]);
   assert.deepEqual(manifestJson.legacySettings, [{ key: "clientId" }, { key: "clientSecret", secret: true }, { key: "useCredentialsOf" }]);
@@ -77,7 +77,9 @@ test("sans Connecteur : bouton et lien seulement, aucun appel ; l'administration
   const st = await svc.status(c);
   assert.deepEqual([st.known, st.live, st.error], [false, false, "config"]);
   const panel = await def.adminPanel(c);
-  const s = panel.find((b) => b.type === "suggestInstall");
+  const block = panel.find((b) => b.type === "connection");
+  assert.equal(block.state, "notConfigured");
+  const s = block.setup.find((b) => b.type === "suggestInstall");
   assert.deepEqual([s.service, s.min], ["twitch.api", 3]);
   assert.ok(s.reason && !/connect(eur|or)|twitch-connector/i.test(s.reason), "la raison dit ce qu'il faut, pas quel module");
   assert.equal(tw.log.length, 0);
@@ -174,15 +176,18 @@ test("status({ legacy }) : la chaîne d'un consommateur pas encore repris sert s
   // le Connecteur a déjà son application : les identifiants du consommateur ne remplacent rien
   C = connector();
   await svc.status(ctx(), { legacy: { channel: "x_y_z", clientId: "autre", clientSecret: "autre" } });
-  assert.equal(await C.ctx.api.store.count("twitchApp"), 0);
+  assert.deepEqual((await C.ctx.api.store.list("twitchApp")).map((d) => d.data.clientId), ["cid"], "the application of the connector is not replaced");
 });
 
-test("admin : une chaîne reprise est signalée ; « oublier » rend la main au réglage", async () => {
+test("admin : une chaîne reprise se dit par son nom (jamais « Reprise ») ; « oublier » est dans le menu de la carte et rend la main au réglage", async () => {
   const c = ctx({ channel: "" });
   await svc.adopt(c, { channel: "ma_chaine" });
   const blocks = await def.adminPanel(c);
-  const row = blocks.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "forgetAdopted"));
-  assert.ok(row && row.rowActions[0].danger && row.rowActions[0].confirm && !blocks.some((b) => b.type === "banner" && b.tone === "info"), "one word + discreet confirmed action, no banner, no big button");
+  const card = blocks.find((b) => b.type === "connection");
+  assert.deepEqual([card.state, card.summary], ["configured", "Chaîne ma_chaine"]);
+  const forget = card.menu.find((a) => a.action === "forgetAdopted");
+  assert.ok(forget && forget.danger && forget.confirm, "a discreet, confirmed menu entry that says what is lost");
+  assert.ok(!/Reprise|Carried/.test(JSON.stringify(blocks)) && !blocks.some((b) => b.type === "table" || b.type === "banner"), "no state word, no table, no banner");
   assert.equal((await def.adminActions.forgetAdopted(c)).redirect, "?");
   assert.equal((await svc.channel(c)).channel, null);
 });

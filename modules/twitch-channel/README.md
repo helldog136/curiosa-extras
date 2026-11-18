@@ -15,18 +15,18 @@ Sans Connecteur Twitch, le bouton de votre chaîne et son lien restent affichés
 Ajoutez une « Ma Chaîne Twitch » par chaîne. Toutes passent par **la même application Twitch**, celle du Connecteur : chaque chaîne se connecte avec son propre compte Twitch. La bannière « en direct » les annonce toutes.
 
 ## Vos statistiques
-**Suivre mes statistiques** (désactivé par défaut) compte vos **followers** et, si votre chaîne est dans le programme Affilié ou Partenaire de Twitch, vos **abonnements payants**. Twitch doit d'abord vous demander votre accord : une fois l'interrupteur activé et enregistré, le bouton **Connecter ma chaîne Twitch** apparaît en haut de la page. Cliquez, puis « Autoriser » chez Twitch. C'est tout. Il faut se connecter avec le compte de la chaîne : un autre compte est refusé, avec un message qui dit lequel.
+**Suivre mes statistiques** (désactivé par défaut) compte vos **followers** et, si votre chaîne est dans le programme Affilié ou Partenaire de Twitch, vos **abonnements payants**. Twitch doit d'abord vous demander votre accord : une fois l'interrupteur activé et enregistré, le bouton **Connecter ma chaîne Twitch** apparaît dans la carte « Connexion à Twitch ». Cliquez, puis « Autoriser » chez Twitch. C'est tout. Il faut se connecter avec le compte de la chaîne : un autre compte est refusé, avec un message qui dit lequel.
 
 - *Compter mes followers* / *Compter mes abonnements payants* : Twitch n'autorise que le **minimum** nécessaire. Cocher une case après coup demande de reconnecter la chaîne (la page le dit).
 - Les **abonnements ne sont disponibles que pour les chaînes du programme Affilié ou Partenaire** de Twitch. Twitch peut compter votre propre chaîne parmi les personnes abonnées : un écart de 1 est possible.
 - Aucun chiffre n'est jamais inventé ni périmé : sans connexion ou si Twitch ne répond pas, le chiffre manque, avec la raison.
-- Si Twitch ne reconnaît plus votre accord (mot de passe changé, accès retiré), la page affiche « Twitch demande de nouveau votre autorisation » avec le bouton. **Déconnecter** retire l'accord chez Twitch.
+- If Twitch no longer accepts your authorization (password changed, access removed), the card turns to **Degraded** with one line and the button “Authorize again with Twitch”. **Disconnect**, in the card's menu, removes the authorization at Twitch.
 
 ## Mes directs : ce que le site mesure lui-même
 
 Twitch ne donne que le nombre de followers : ni audience moyenne, ni pic, ni heures de live, ni followers par jeu, ni vues par vidéo. Avec **Suivre mes statistiques** coché (rien d'autre à régler), **votre site mesure lui-même** pendant vos directs, **à partir du jour où ce suivi est activé** : Twitch ne fournit pas l'historique, rien n'existe donc avant. Si vous aviez déjà coché l'interrupteur, la mesure démarre à la mise à jour. Décoché : aucune mesure, aucune requête.
 
-Ce que dit le panneau **Mes directs** (page d'administration de la chaîne) : « Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ce suivi a été activé : Twitch ne fournit pas l'historique. », « Suivi actif depuis le … », vos derniers directs, le jeu qui vous fait gagner le plus de followers par heure, vos vidéos et clips les plus vus, et le bouton **Effacer les mesures** (avec confirmation).
+The **My lives** card (administration page of the channel) says in one line since when the site measures (and turns Degraded when Twitch does not answer); its menu holds **Erase the measurements** (confirmed, with the number of lives lost). Below: your latest lives, the game that wins you the most followers per hour (once the channel is connected), and your most viewed videos and clips. A section with nothing to show is not shown.
 
 ### Limites, dites honnêtement
 - Précision de **2 minutes** (réglable de 1 à 5 en mode avancé) : un direct de moins de 2 minutes peut être manqué ; un direct très court n'a qu'une ou deux mesures.

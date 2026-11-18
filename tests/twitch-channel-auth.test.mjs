@@ -6,6 +6,7 @@ import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { fakeTwitch } from "./helpers/fakeTwitch.mjs";
 import { connector, connectorModule, connectorCallback } from "./helpers/twitchConnector.mjs";
+import { assertConnectionStates } from "./helpers/ergonomics.mjs";
 
 const DIR = new URL("../modules/twitch-channel", import.meta.url).pathname;
 const fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8")), en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8"));
@@ -24,8 +25,8 @@ beforeEach(() => {
 afterEach(() => { globalThis.fetch = realFetch; });
 
 const mk = (extra = {}) => fakeCtx({ key: "tw", locale: "en", messages: en, settings: { channel: "etoile_nord", trackStats: true, statsFollowers: true, statsPaying: true, ...extra }, services: { "twitch.api": C.methods } });
-const unesc = (v) => v.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-const button = (blocks) => { const b = blocks.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")); return b ? { href: unesc(/href="([^"]+)"/.exec(b.html)[1]), label: unesc(/>([^<]+)<\/a>/.exec(b.html)[1]) } : null; };
+const connection = (blocks) => blocks.find((x) => x.type === "connection" && x.id === "twitch");
+const button = (blocks) => { const p = connection(blocks)?.primary; return p?.href ? { href: p.href, label: p.label } : null; };
 const stat = (ctx) => def.exports["social.stat"](ctx, { limit: 50 });
 const byMetric = (items, m) => items.find((i) => i.metric === m);
 async function authorize(ctx) { const b = button(await def.adminPanel(ctx)); assert.ok(b, "button expected"); await C.callback(new Request(tw.approve(b.href))); }
@@ -40,7 +41,9 @@ test("the figures flow, then the authorization is revoked at Twitch: the page sa
   const items = await stat(ctx);
   assert.equal(byMetric(items, "followers").error, "auth"); assert.equal(byMetric(items, "followers").value, undefined);
   const panel = await def.adminPanel(ctx);
-  assert.ok(panel.some((b) => b.type === "banner" && /no longer accepts your authorization/.test(b.text)));
+  assert.equal(connection(panel).state, "degraded");
+  assert.match(connection(panel).reason, /no longer accepts your authorization/);
+  assert.ok(!panel.some((b) => b.type === "banner"), "one state, said once");
   assert.equal(button(panel).label, "Authorize again with Twitch");
 });
 
@@ -53,7 +56,8 @@ test("the permission was never granted and nobody declared it: found by the firs
   const h = await C.methods.health({ channel: "etoile_nord" });
   assert.equal(h.state, "scopes"); assert.deepEqual(h.missing, ["moderator:read:followers"]);
   const panel = await def.adminPanel(ctx);
-  assert.ok(panel.some((b) => b.type === "banner" && /permission is missing/.test(b.text)));
+  assert.equal(connection(panel).state, "degraded");
+  assert.match(connection(panel).reason, /permission is missing/);
   await authorize(ctx);
   mod.resetCache();
   assert.equal(byMetric(await stat(ctx), "followers").value, 1234);
@@ -68,7 +72,8 @@ test("a stat that fails with auth while the connector still says ok shows the fr
     const items = await stat(ctx);
     assert.equal(byMetric(items, "followers").error, "auth");
     const panel = await def.adminPanel(ctx);
-    assert.ok(panel.some((b) => b.type === "banner" && /frozen/.test(b.text)));
+    assert.equal(connection(panel).state, "degraded");
+    assert.match(connection(panel).reason, /frozen/);
     assert.equal(button(panel).label, "Authorize again with Twitch");
   } finally { globalThis.fetch = realFetch2; }
 });
@@ -83,5 +88,21 @@ test("the assistant tool says why followers gained is missing", async () => {
 
 test("texts: FR and EN have the same keys and variables", () => {
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  for (const k of ["err_auth_renew", "err_auth_scope", "err_auth_denied", "frozen", "authorizeAgain"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["frozen", "authorizeAgain", "connected", "channel_summary"]) assert.ok(fr[k] && en[k], k);
+});
+
+test("the three states (R33): not configured, configured, degraded: one state word written by the core, the right content in each", async () => {
+  C = connector({ messages: en, locale: "en" });
+  const notConfigured = await def.adminPanel(mk());
+  C = connector({ messages: en, locale: "en" }); mod.resetCache();
+  const ok = mk(); await authorize(ok); mod.resetCache();
+  const configured = await def.adminPanel(ok);
+  C = connector({ messages: en, locale: "en" }); mod.resetCache();
+  const bad = mk(); await authorize(bad);
+  const [e] = await C.ctx.api.store.list("twitchConnections");
+  for (const t of [e.data.access, e.data.refresh]) for (const m of [tw.access, tw.refresh]) if (m.has(t)) m.get(t).valid = false;
+  await C.methods.health({ channel: "etoile_nord", check: true }); mod.resetCache();
+  const degraded = await def.adminPanel(bad);
+  assert.deepEqual([notConfigured, configured, degraded].map((p) => connection(p).state), ["notConfigured", "configured", "degraded"]);
+  assertConnectionStates({ notConfigured, configured, degraded });
 });
