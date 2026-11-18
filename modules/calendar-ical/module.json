@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.36.0",
+  "minCore": "0.2.5",
   "id": "calendar-ical",
   "name": {
     "en": "Online calendar",
     "fr": "Agenda en ligne"
   },
-  "version": "1.3.0",
+  "version": "1.2.1",
   "description": {
     "en": "Reads your Google Calendar (or any online calendar) so your site can show your streams: schedule, chat bot… Nothing to retype.",
     "fr": "Lit votre Google Agenda (ou tout agenda en ligne) pour que votre site montre vos streams : planning, bot du chat… Rien à recopier."

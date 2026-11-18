@@ -333,61 +333,43 @@ test("sujet : rien sans adresse, rien si l'agenda est illisible (jamais d'except
   assert.deepEqual(await def.exports["planning.slot"](ctxOf(), WIDE), []);
 });
 
-test("admin : adresse absente / refusée / illisible / lue ; « Relire l'agenda » ; l'adresse n'est jamais montrée ; consignes seulement tant que l'adresse manque", async () => {
+test("admin : adresse absente / refusée / illisible / lue ; « Relire l'agenda » ; l'adresse n'est jamais montrée ; consignes seulement tant que l'adresse manque ; pas de bloc « connection » (le Planning l'installe avec son cœur)", async () => {
   const none = await def.adminPanel(ctxFr({ url: "" }));
-  const one = (blocks) => blocks.filter((b) => b.type === "connection");
-  assert.equal(one(none).length, 1);
-  assert.match(one(none)[0].reason, /Aucune adresse/);
-  assert.match(one(none)[0].setup[0].html, /Intégrer l&#39;agenda/, "les étapes pour trouver l'adresse sont là dès le départ");
-  assert.doesNotMatch(one(none)[0].setup[0].html, /<details>/, "ce sont les étapes elles-mêmes, pas un guide replié");
-  assert.match(one(await def.adminPanel(ctxFr({ url: "http://x.test/a.ics" })))[0].reason, /n'est pas autorisée/);
+  assert.ok(!JSON.stringify(none).includes('"connection"'));
+  assert.match(none.find((b) => b.type === "markdown").text, /^Aucune adresse n'est enregistrée\.$/);
+  assert.match(none.find((b) => b.type === "html").html, /Intégrer l&#39;agenda/, "les étapes pour trouver l'adresse sont là dès le départ");
+  assert.doesNotMatch(none.find((b) => b.type === "html").html, /<details>/, "ce sont les étapes elles-mêmes, pas un guide replié");
+  assert.match((await def.adminPanel(ctxFr({ url: "http://x.test/a.ics" }))).find((b) => b.type === "markdown").text, /n'est pas autorisée/);
   assert.match((await def.adminActions.test(ctxFr({ url: "" }))).error, /Aucune adresse/);
-  // Sans adresse (ou adresse refusée), tout le panneau passe dans l'onglet Réglages (cœur 0.2.5), au-dessus du champ à remplir ; une fois l'adresse bonne, il reste dans Utiliser.
   assert.ok(none.every((b) => b.tab === "settings"), "adresse absente : état et étapes dans Réglages");
   assert.ok((await def.adminPanel(ctxFr({ url: "http://x.test/a.ics" }))).every((b) => b.tab === "settings"), "adresse refusée : idem");
   serve("nope", { status: 403 });
   const bad = await def.adminPanel(ctxFr());
-  assert.equal(one(bad)[0].state, "degraded"); assert.match(one(bad)[0].reason, /code 403/);
-  assert.deepEqual(one(bad)[0].primary, { label: "Relire l'agenda", action: "test" });
-  assert.equal(bad.length, 1, "illisible : l'état seulement, ni tableau ni guide");
+  assert.ok(bad.some((b) => b.type === "banner" && b.tone === "warning" && /code 403/.test(b.text)));
+  assert.ok(bad.some((b) => b.type === "adminForm" && b.action === "test" && b.submitLabel === "Relire l'agenda"));
+  assert.ok(!bad.some((b) => b.type === "table" || b.type === "html"), "illisible : l'état seulement, ni tableau ni guide");
   assert.match((await def.adminActions.test(ctxFr())).error, /code 403/);
   clearCache();
   const soon = new Date(Date.now() + 2 * 3_600_000), later = new Date(soon.getTime() + 3_600_000), d = (x) => x.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   serve(cal(ev(["UID:a", `DTSTART:${d(soon)}`, `DTEND:${d(later)}`, "SUMMARY:A"]), ev(["UID:c", "STATUS:CANCELLED", `DTSTART:${d(soon)}`, `DTEND:${d(later)}`, "SUMMARY:X"])));
   const ok = await def.adminPanel(ctxFr({ url: SECRET }));
-  const conn = one(ok)[0];
-  assert.equal(conn.state, "configured");
-  assert.equal(conn.summary, "calendar.example.com · 1 stream(s) à venir dans les 30 prochains jours", "un stream annulé n'est pas compté ; l'hôte seulement, jamais l'adresse");
-  assert.deepEqual(conn.menu.map((m) => m.action), ["test"]);
-  assert.equal(conn.setup, undefined, "adresse bonne : plus aucune étape de mise en place");
+  assert.ok(ok.some((b) => b.type === "markdown" && b.text === "calendar.example.com · 1 stream(s) à venir dans les 30 prochains jours"), "un stream annulé n'est pas compté ; l'hôte seulement, jamais l'adresse");
   assert.ok(ok.every((b) => b.tab === undefined), "adresse enregistrée : le panneau reste dans Utiliser");
-  assert.equal(ok.some((b) => b.type === "adminForm"), false, "plus de bouton « Tester » en plus de la carte");
   const table = ok.find((b) => b.type === "table");
   assert.equal(table.rows.length, 1, "un stream annulé n'est pas compté");
   assert.deepEqual([table.rows[0][1], table.rows[0][2]], ["A", ""]);
   assert.ok(!JSON.stringify(ok).includes("TOP-SECRET-TOKEN"));
+  assert.doesNotMatch(ok.at(-1).html, /Intégrer l&#39;agenda/, "adresse bonne : plus aucune étape pour l'obtenir");
   assert.match((await def.adminActions.test(ctxFr())).ok, /1 stream/);
-});
-
-test("connexion en trois états (R33) : à régler, lue, dégradée (agenda illisible, ou ancienne copie utilisée)", async () => {
-  const { assertConnectionStates } = await import((await import("node:url")).pathToFileURL((await import("node:path")).join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/ergonomics.mjs")).href);
-  const notConfigured = await def.adminPanel(ctxFr({ url: "" }));
-  serve(cal(ev(["UID:a", "DTSTART:20991014T190000Z", "DTEND:20991014T200000Z", "SUMMARY:A"])));
-  const configured = await def.adminPanel(ctxFr({ url: SECRET }));
-  clearCache(); serve("nope", { status: 403 });
-  const degraded = await def.adminPanel(ctxFr({ url: SECRET }));
-  assertConnectionStates({ notConfigured, configured, degraded });
-  // Un agenda lu une fois, puis qui ne répond plus : la dernière copie sert, et l'état le dit (dégradé, avec le tableau gardé).
-  const soon = new Date(Date.now() + 2 * 3_600_000), later = new Date(soon.getTime() + 3_600_000), d = (x) => x.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  clearCache(); serve(cal(ev(["UID:a", `DTSTART:${d(soon)}`, `DTEND:${d(later)}`, "SUMMARY:A"])));
+  // Un agenda lu une fois, puis qui ne répond plus : la dernière copie sert, et l'avertissement le dit.
   const ctx = ctxFr({ url: SECRET, cacheMinutes: 1 });
+  clearCache(); serve(cal(ev(["UID:a", `DTSTART:${d(soon)}`, `DTEND:${d(later)}`, "SUMMARY:A"])));
   await def.adminPanel(ctx);
   const origNow = Date.now; Date.now = () => origNow() + 3 * 60_000;
   try {
     serve("x", { status: 500 });
     const stale = await def.adminPanel(ctx);
-    const conn = stale.find((b) => b.type === "connection");
-    assert.equal(conn.state, "degraded"); assert.match(conn.reason, /dernière copie reçue est utilisée/);
+    assert.ok(stale.some((b) => b.type === "banner" && /dernière copie reçue est utilisée/.test(b.text)));
     assert.ok(stale.some((b) => b.type === "table"), "la dernière copie reste montrée");
   } finally { Date.now = origNow; }
 });
@@ -467,7 +449,7 @@ test("retrait de l'instance (« tout effacer ») : plus aucune copie de l'agenda
   assert.equal(typeof def.hooks.onInstanceDelete, "function");
 });
 
-test("manifeste : valide, 1.3.0, minCore 0.36.0 (bloc connection), aucun service ni dépendance, sujet fourni, adresse secrète, réglages avancés facultatifs ; fr/en alignés ; toutes les clés existent", async () => {
+test("manifeste : valide, 1.2.1, minCore 0.2.5 (le Planning installe ce module : pas de cœur plus récent que le sien), aucun service ni dépendance, sujet fourni, adresse secrète, réglages avancés facultatifs ; fr/en alignés ; toutes les clés existent", async () => {
   assert.deepEqual(Object.keys(frMsgs).sort(), Object.keys(enMsgs).sort());
   const code = ["index.mjs", "tutorial.mjs"].map((f) => fsMod.readFileSync(new URL(f, dirOf), "utf8")).join("\n");
   for (const m of code.matchAll(/\bt\(\s*"([A-Za-z_]+)"/g)) assert.ok(m[1] in frMsgs, m[1]);
@@ -475,7 +457,7 @@ test("manifeste : valide, 1.3.0, minCore 0.36.0 (bloc connection), aucun service
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fsMod.readFileSync(new URL("module.json", dirOf), "utf8"));
   const parsed = parseManifest(raw); assert.ok(parsed.ok, parsed.error);
-  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.3.0", "0.36.0", "multiple"]);
+  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.2.1", "0.2.5", "multiple"]);
   assert.deepEqual([raw.offers, raw.requires, raw.seeds], [undefined, undefined, undefined], "ni service ni dépendance : un agenda seul est utile (le bot lit planning.slot)");
   assert.deepEqual(raw.provides.map((p) => p.topic), ["planning.slot"]);
   assert.equal(raw.settings.find((s) => s.key === "url").type, "secret");

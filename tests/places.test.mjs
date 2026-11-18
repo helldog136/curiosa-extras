@@ -39,7 +39,7 @@ const ROLLOUT = {
   "audience": ["1.12.1", { rooms: "live.participation.rooms", nicknames: "live.participation.rooms", draw: "live.participation.draw" }],
   "bandcamp": ["1.2.1", { main: "networks.accounts" }],
   "bluesky": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
-  "calendar-ical": ["1.3.0", { sources: "calendar.schedule.sources" }],
+  "calendar-ical": ["1.2.1", { sources: "calendar.schedule.sources" }],
   "calendar-manual": ["1.3.1", { streams: "calendar.schedule.streams" }],
   "commissions": ["1.1.1", { main: "community.commissions", packages: "community.commissions.packages" }],
   "community-stats": ["1.4.1", { main: "networks.stats" }],

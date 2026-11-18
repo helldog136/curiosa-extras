@@ -86,24 +86,28 @@ export default {
   },
 
   async adminPanel(ctx) {
-    const t = ctx.t, s = settingsOf(ctx), title = t("adminStatus"), edit = { href: "?tab=settings" };
+    const t = ctx.t, s = settingsOf(ctx), title = { type: "heading", text: t("adminStatus") };
+    // This module serves the Planning's migration: it must not ask for a newer core than the Planning does, so it keeps plain blocks (no « connection » card).
     // Pas d'adresse (ou adresse refusée) : c'est le champ « Adresse de votre agenda » (onglet Réglages, ouvert d'office) qu'il faut remplir. Les étapes pour la trouver
     // s'affichent donc DANS cet onglet, au-dessus du champ (`tab: "settings"`, cœur 0.2.5) ; Utiliser, resté vide, n'est pas affiché. Une fois l'adresse bonne : retour dans Utiliser.
-    if (!s.url || !isPublicHttpsUrl(s.url)) return [{ type: "connection", id: "calendar", tab: "settings", title, state: "notConfigured", reason: t(s.url ? "err_url" : "adminNotSet"), setup: [{ type: "html", html: tutorialHtml(ctx, s.zone || "UTC", { setup: true }) }] }];
+    if (!s.url || !isPublicHttpsUrl(s.url)) return [title, { type: "markdown", text: s.url ? `⚠️ ${t("err_url")}` : t("adminNotSet") }, { type: "html", html: tutorialHtml(ctx, s.zone || "UTC", { setup: true }) }].map((b) => ({ ...b, tab: "settings" }));
     let host = "";
     try { host = new URL(s.url).hostname; } catch { host = ""; }
     const now = new Date(), r = await loadEvents(ctx, { from: now, to: new Date(now.getTime() + 30 * DAY) });
-    const reread = t("testBtn");
-    if (!r.ok) return [{ type: "connection", id: "calendar", title, state: "degraded", reason: t(`err_${r.error}`, { status: r.status ?? "" }), primary: { label: reread, action: "test" }, edit }];
+    const blocks = [title];
+    if (!r.ok) {
+      blocks.push({ type: "banner", tone: "warning", text: t(`err_${r.error}`, { status: r.status ?? "" }) }, { type: "adminForm", action: "test", submitLabel: t("testBtn"), fields: [] });
+      return blocks;
+    }
     const upcoming = r.events.filter((e) => !e.cancelled);
-    const blocks = [r.stale
-      ? { type: "connection", id: "calendar", title, state: "degraded", reason: `${t(`err_${r.error}`, { status: r.status ?? "" })} ${t("adminStale")}`, primary: { label: reread, action: "test" }, edit }
-      : { type: "connection", id: "calendar", title, state: "configured", summary: t("adminSummary", { host, n: upcoming.length }), edit, menu: [{ label: reread, action: "test" }] }];
+    if (r.stale) blocks.push({ type: "banner", tone: "warning", text: `${t(`err_${r.error}`, { status: r.status ?? "" })} ${t("adminStale")}` });
+    else blocks.push({ type: "markdown", text: t("adminSummary", { host, n: upcoming.length }) });
     if (upcoming.length) {
       const fmt = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: r.zone });
       const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: r.zone });
       blocks.push({ type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith")], rows: upcoming.slice(0, 10).map((e) => [e.allDay ? `${day.format(e.start)} · ${t("allDay")}` : fmt.format(e.start), e.title || t("untitled"), extractGameNames(e.description).join(", "), extractPartners(e.description).join(", ")]) });
     }
+    blocks.push({ type: "adminForm", action: "test", submitLabel: t("testBtn"), fields: [] });
     blocks.push({ type: "html", html: tutorialHtml(ctx, r.zone) });
     return blocks;
   },
