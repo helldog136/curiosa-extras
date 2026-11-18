@@ -15,8 +15,8 @@
 const V = new URL(import.meta.url).search; // le cœur recharge index.mjs avec ?v=<version> : les fichiers voisins suivent, sinon une mise à jour à chaud mélangerait anciens et nouveaux fichiers
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`./dates.mjs${V}`);
 export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
-const { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone } = await import(`./slots.mjs${V}`);
-export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone };
+const { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone, nextSlot } = await import(`./slots.mjs${V}`);
+export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone, nextSlot };
 const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS, stateOf, resetPartners } = await import(`./partners.mjs${V}`);
 const Photos = await import(`./photos.mjs${V}`);
 const Played = await import(`./played.mjs${V}`);
@@ -587,14 +587,14 @@ export default {
     async next(ctx) {
       const { slots, timeZone } = await loadSlots(ctx, 30);
       const heading = { type: "heading", text: ctx.t("nextUp") };
-      if (slots.length === 0) return [heading, { type: "html", html: emptyCardHtml(ctx) }];
-      const tz = timeZone ?? "UTC";
-      const s = slots[0];
+      const tz = timeZone ?? "UTC", now = new Date();
+      const s = nextSlot(slots, now, tz);   // a stream that has already started is never the next one
+      if (!s) return [heading, { type: "html", html: emptyCardHtml(ctx) }];
       const sameDay = (o) => { const a = wallDateNow(tz, s.start), b = wallDateNow(tz, o.start); return a.y === b.y && a.m === b.m && a.d === b.d; };
-      const others = slots.slice(1).filter(sameDay).slice(0, 4);
+      const others = slots.filter((o) => o !== s && o.start.getTime() >= s.start.getTime()).filter(sameDay).slice(0, 4);
       const { covers } = await coversForSlots(ctx, [s]);
       const vis = gameCovers(s, covers).length ? null : await brandVisual(ctx);
-      return [heading, { type: "html", html: densify(ctx, nextCardHtml(s, others, ctx, tz, covers, new Date(), vis, await channelLink(ctx))) }];
+      return [heading, { type: "html", html: densify(ctx, nextCardHtml(s, others, ctx, tz, covers, now, vis, await channelLink(ctx))) }];
     },
 
     // Miniature des X prochains jours : un jour par ligne, les créneaux à la suite.
