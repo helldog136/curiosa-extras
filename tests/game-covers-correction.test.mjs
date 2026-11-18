@@ -294,7 +294,8 @@ for (const [why, reply] of FAILS) {
     assert.ok(out.ok, JSON.stringify(out));
     assert.ok(imageCalls.length > before, "the retry ignores the waiting time");
     assert.equal(await shows(gc, await user.planning()), TWITCH_IMG);
-    assert.ok((await panelText(gc, { query: { titre: TITLE } })).includes(en.copy_copied));
+    const done = await panelText(gc, { query: { titre: TITLE } });
+    assert.ok(!done.includes(en.copy_copied) && !done.includes(en.copy_pending) && !done.includes(en.copy_retry), "copied: the page says nothing more about it (R33)");
   });
 }
 
@@ -308,10 +309,11 @@ test("a corrected cover that was never asked for shows 'not copied yet' (pending
   assert.ok(bad.error.includes(en.copy_why_redirect), bad.error);
   customReply = null;
   assert.ok((await mod.adminActions.retryCopy(gc, { id: TITLE })).ok);
-  assert.ok((await panelText(gc, { query: { titre: TITLE } })).includes(en.copy_copied));
+  const done = await panelText(gc, { query: { titre: TITLE } });
+  assert.ok(!done.includes(en.copy_copied) && !done.includes(en.copy_pending), "copied: nothing more to say (R33)");
 });
 
 test("manifest 1.3.2: a corrective version, nothing else added (no permission, no host)", () => {
-  assert.equal(manifest.version, "1.4.0");
+  assert.equal(manifest.version, "1.5.0");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
 });

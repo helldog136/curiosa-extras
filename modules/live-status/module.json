@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.36.0",
   "id": "live-status",
   "name": {
     "en": "Live status",
     "fr": "Statut du live"
   },
-  "version": "1.5.0",
+  "version": "1.6.0",
   "adminMenu": "Réseaux",
   "menuGroup": "tools",
   "platform": "twitch",
@@ -67,8 +67,8 @@
         "fr": "Quand afficher le lecteur Twitch"
       },
       "help": {
-        "en": "“Only when live” needs your site to be connected to Twitch (Twitch connector): without it the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
-        "fr": "« Seulement en direct » demande que votre site soit relié à Twitch (Connecteur Twitch) : sans cela, le lecteur n'est pas affiché (hors ligne, celui de Twitch est un grand panneau blanc). « Toujours » l'affiche quoi qu'il arrive."
+        "en": "“Only when live” needs the site to be connected to Twitch (Twitch connector). “Always” shows the player in every case.",
+        "fr": "« Seulement en direct » demande que le site soit relié à Twitch (Connecteur Twitch). « Toujours » affiche le lecteur dans tous les cas."
       },
       "options": [
         {

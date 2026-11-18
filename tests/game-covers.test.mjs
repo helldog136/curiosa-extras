@@ -69,7 +69,7 @@ test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["rawg_covers_to_check", "rawg_covers_list", "rawg_cover_set"]);
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_covers_list").readOnly, true, "la liste est une lecture : même niveau que rawg_covers_to_check");
   assert.deepEqual(manifest.tabs.map((t) => t.id), ["use", "saved"]);
-  assert.equal(manifest.minCore, "0.6.0", "le tableau enrichi (recherche en direct, pastilles) demande le cœur 0.6.0");
+  assert.equal(manifest.minCore, "0.36.0", "le bloc « connection » (états Configuré / Dégradé / Non configuré) demande le cœur 0.36.0");
   assert.ok(manifest.permissions.every((p) => ["storage", "routes", "admin", "mcp"].includes(p)), "un seul droit de plus : la route qui sert les copies");
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_cover_set").default, false, "l'écriture n'est jamais accordée d'office");
   assert.deepEqual(Object.keys(read("en")).sort(), Object.keys(fr).sort(), "mêmes clés en français et en anglais");
@@ -261,24 +261,48 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
   assert.equal((await svc.adopt(makeCtx({ settings: { useSteam: false } }), { fixes: "texte", todo: 5, key: 5 })).ok, true);
 });
 
-test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; clé reprise (avec « Oublier »)", async () => {
+test("l'administration : jamais la clé ; une seule carte d'état des sources ; guide seulement sans source ; ancien code avec « Oublier » dans le menu", async () => {
+  const conn = (blocks) => blocks.filter((b) => b.type === "connection");
   const none = makeCtx({ settings: { useSteam: false } });
   const blocks = await mod.adminPanel(none, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "banner" && /Aucune source n'est disponible/.test(b.text)));
-  assert.ok(blocks.some((b) => b.type === "markdown" && /rawg\.io\/apidocs/.test(b.text)));
+  assert.equal(conn(blocks).length, 1);
+  assert.equal(conn(blocks)[0].state, "notConfigured");
+  assert.match(conn(blocks)[0].reason, /Aucune source n'est disponible/);
+  assert.match(conn(blocks)[0].setup[0].text, /rawg\.io\/apidocs/, "le guide n'existe que tant qu'aucune source ne sert");
+  assert.ok(!blocks.some((b) => b.type === "netHealth" || b.type === "banner"), "plus de netHealth ni de bandeau à côté de la carte");
   const c = makeCtx();
   const withKey = await mod.adminPanel(c, { query: {} });
   assert.ok(!JSON.stringify(withKey).includes(KEY));
-  assert.ok(withKey.some((b) => b.type === "adminForm" && b.action === "testKey"));
-  assert.ok(withKey.some((b) => b.type === "netHealth"));
+  const card = conn(withKey)[0];
+  assert.equal(card.state, "configured"); assert.equal(card.setup, undefined);
+  assert.match(card.summary, /^RAWG( · \w+)*$/, "les sources qui servent, sur une ligne");
+  assert.deepEqual(card.menu.map((m) => m.action), ["testKey"]);
+  assert.deepEqual(card.net.map((n) => n.host), ["api.rawg.io", "store.steampowered.com"], "la santé du service est dans la carte, pas une ligne de plus");
+  assert.equal(card.edit.href, "?tab=settings");
   const adopted = makeCtx({ settings: { useSteam: false } });
   await svc.adopt(adopted, { key: KEY });
   const shown = await mod.adminPanel(adopted, { query: {} });
   assert.ok(!JSON.stringify(shown).includes(KEY));
-  const keyRow = shown.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "forgetKey"));
-  assert.ok(keyRow && keyRow.rowActions[0].danger && keyRow.rowActions[0].confirm && !shown.some((b) => b.type === "adminForm" && b.action === "forgetKey"), "discreet confirmed action, no big button");
+  const forget = conn(shown)[0].menu.find((m) => m.action === "forgetKey");
+  assert.ok(forget && forget.danger && forget.confirm, "action discrète et confirmée, jamais un gros bouton");
+  assert.ok(!shown.some((b) => b.type === "adminForm" && b.action === "forgetKey"));
+  assert.ok(!JSON.stringify(shown).includes("Repris"), "aucun mot interne");
   assert.match((await mod.adminActions.forgetKey(adopted)).ok, /oublié/);
   assert.equal((await svc.status(adopted)).configured, false);
+});
+
+test("connexion en trois états (R33) : aucune source, sources qui servent, code refusé ou source en panne", async () => {
+  const { assertConnectionStates } = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/ergonomics.mjs")).href);
+  const notConfigured = await mod.adminPanel(makeCtx({ settings: { useSteam: false } }), { query: {} });
+  const configured = await mod.adminPanel(makeCtx(), { query: {} });
+  const refusedCtx = makeCtx();
+  serve(() => ({ status: 403, json: {} }));
+  await mod.adminActions.testKey(refusedCtx);
+  const degraded = await mod.adminPanel(refusedCtx, { query: {} });
+  assertConnectionStates({ notConfigured: tabOf(notConfigured, "use"), configured: tabOf(configured, "use"), degraded: tabOf(degraded, "use") });
+  const card = degraded.find((b) => b.type === "connection");
+  assert.match(card.reason, /Rawg refuse le code/); assert.deepEqual(card.primary, { label: "Corriger le code", href: "?tab=settings" });
+  assert.ok(!degraded.some((b) => b.type === "netHealth"));
 });
 
 test("« Tester la clé » : ok, refusée, injoignable, absente, mal formée ; le résultat est mémorisé", async () => {
@@ -338,7 +362,7 @@ test("onglet « Jaquettes à vérifier » : clé, titres douteux avec « Corrige
   assert.deepEqual(tables[0].rowActions.map((a) => a.href ?? a.action), ["?titre={id}", "confirm"]);
   assert.deepEqual(tables[0].rowIds, ["Playrooms"]);
   assert.equal(tables[0].searchable, true, "R15 : recherche en direct dès le départ");
-  assert.ok(use.some((b) => b.type === "adminForm" && b.action === "testKey"));
+  assert.deepEqual(use.find((b) => b.type === "connection").menu.map((m) => m.action), ["testKey"], "« Tester le code » est dans le menu de la carte");
   assert.ok(!use.some((b) => b.type === "adminForm" && b.action === "forgetAll"), "le oubli groupé est dans l'autre onglet");
 });
 
@@ -405,7 +429,7 @@ test("état vide : une phrase qui dit quoi faire, le champ « Chercher un jeu »
   assert.deepEqual(t.rows, []);
   assert.match(t.empty, /Cherchez une jaquette/);
   assert.ok(!saved.some((b) => b.type === "adminForm" && b.action === "forgetAll"), "rien à oublier : pas de bouton");
-  assert.ok(saved.some((b) => b.type === "banner" && /onglet « Réglages »/.test(b.text)));
+  assert.ok(!saved.some((b) => b.type === "banner" || b.type === "netHealth"), "l'état des sources n'est dit qu'une fois, dans l'autre onglet");
 });
 
 test("« Voir » montre la jaquette retenue (image de media.rawg.io seulement) ; « Oublier » annonce ce qui sera perdu, avec le titre", async () => {

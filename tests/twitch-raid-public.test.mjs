@@ -270,7 +270,7 @@ test("onglet « Sélection du moment » : explication, adresse du dock (copiable
   assert.equal(copy.text.split("?k=")[1], (await secretUrl(w, "featured")).split("?k=")[1], "la même clé secrète que le dock ordinaire : « Nouvelle adresse » les change toutes les deux");
   assert.deepEqual(mine.filter((b) => b.type === "adminForm").map((b) => b.action), ["momentCheck", "momentReroll"]);
   assert.ok(mine.some((b) => b.type === "markdown" && /éteinte/.test(b.text)));
-  assert.ok(mine.some((b) => b.type === "markdown" && /5 chaîne\(s\)/.test(b.text) && /10 minutes/.test(b.text)));
+  assert.ok(mine.some((b) => b.type === "markdown" && /jusqu'à 5 partenaires/.test(b.text) && /10 minutes/.test(b.text)));
   const on = await admin.panel(site().ctx, { query: {} });
   assert.ok(on.some((b) => b.tab === "moment" && b.type === "links" && b.items[0].href === "/en-direct"));
   const np = await admin.panel(site({ extra: { basePath: null } }).ctx, { query: {} });

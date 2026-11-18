@@ -189,21 +189,33 @@ export default {
   async adminPanel(ctx) {
     const url = String(ctx.setting("webhookUrl") ?? "").trim();
     const ok = isWebhook(url);
-    const blocks = [{ type: "heading", text: ctx.t("adminTitle") }, { type: "markdown", text: ctx.t(ok ? "configured" : "notConfigured") }];
-    // YouTube : une phrase, seulement si la Chaîne YouTube est installée (sinon rien ne change pour ceux qui n'ont pas YouTube).
-    try {
-      const yt = typeof ctx.api.services?.providers === "function" ? await ctx.api.services.providers(YT_SERVICE) : [];
-      if (Array.isArray(yt) && yt.length) blocks.push({ type: "markdown", text: ytEnabled(ctx) ? ctx.t("ytOn", { minutes: ytMinutes(ctx) }) : ctx.t("ytOff") });
-    } catch { /* l'information est un plus */ }
-    if (ok) blocks.push({ type: "adminForm", action: "test", title: ctx.t("testTitle"), submitLabel: ctx.t("testSubmit"), fields: [] });
     const log = await ctx.api.store.list("log", { limit: 50 });
-    blocks.push({ type: "heading", text: ctx.t("logTitle") });
-    if (!log.length) blocks.push({ type: "markdown", text: ctx.t("noLog") });
-    else blocks.push({
-      type: "table",
-      columns: [ctx.t("colDate"), ctx.t("colSubject"), ctx.t("colResult")],
-      rows: log.map((r) => [String(r.data.at).slice(0, 16).replace("T", " "), String(r.data.subject), r.data.ok ? ctx.t("resultOk") : ctx.t("resultFailed", { status: r.data.status ?? "—", attempts: r.data.attempts ?? 1, error: r.data.error ?? "" })]),
-    });
+    const last = log[0]?.data;
+    const toEdit = { href: "?tab=settings" };
+    let yt = false;
+    // YouTube : mentionné dans le résumé seulement si la Chaîne YouTube est installée ET que le réglage est coché.
+    try {
+      const providers = typeof ctx.api.services?.providers === "function" ? await ctx.api.services.providers(YT_SERVICE) : [];
+      yt = Array.isArray(providers) && providers.length > 0 && ytEnabled(ctx);
+    } catch { /* l'information est un plus */ }
+    const title = ctx.t("adminTitle");
+    const blocks = [];
+    if (!ok) {
+      blocks.push({ type: "connection", id: "webhook", title, state: "notConfigured", reason: ctx.t(url ? "badAddress" : "notSet"), primary: { label: ctx.t("setAddress"), ...toEdit },
+        setup: [{ type: "markdown", text: ctx.t("setupSteps") }] });
+    } else if (last && last.ok === false) {
+      blocks.push({ type: "connection", id: "webhook", title, state: "degraded", reason: ctx.t(last.status ? "lastFailedCode" : "lastFailed", { status: last.status ?? "" }), primary: { label: ctx.t("testSubmit"), action: "test" }, edit: toEdit });
+    } else {
+      blocks.push({ type: "connection", id: "webhook", title, state: "configured", summary: ctx.t(yt ? "sumYoutube" : "sumBase"), edit: toEdit, menu: [{ label: ctx.t("testSubmit"), action: "test" }] });
+    }
+    if (log.length) {
+      blocks.push({ type: "heading", text: ctx.t("logTitle") });
+      blocks.push({
+        type: "table",
+        columns: [ctx.t("colDate"), ctx.t("colSubject"), ctx.t("colResult")],
+        rows: log.map((r) => [String(r.data.at).slice(0, 16).replace("T", " "), String(r.data.subject), r.data.ok ? ctx.t("resultOk") : ctx.t("resultFailed", { status: r.data.status ?? "—", attempts: r.data.attempts ?? 1, error: r.data.error ?? "" })]),
+      });
+    }
     return blocks;
   },
 

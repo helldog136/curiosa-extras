@@ -1,9 +1,6 @@
 {
-  "adminTitle": "Discord announcements",
-  "notConfigured": "No sending address is set: nothing is sent. Paste it in the “Settings” tab.",
-  "configured": "Sending address set. New content is announced automatically, with one check per minute.",
-  "testTitle": "Send a test message",
-  "testSubmit": "Send the test",
+  "adminTitle": "Discord channel",
+  "testSubmit": "Send a test message",
   "testMessage": "✅ Test from {site}: Discord announcements work.",
   "okTest": "Test message sent.",
   "errTest": "Sending failed: {error}. Check the sending address in the “Settings” tab.",
@@ -14,12 +11,17 @@
   "colResult": "Result",
   "resultOk": "sent",
   "resultFailed": "failed ({status}) after {attempts} attempt(s): {error}",
-  "noLog": "Nothing announced yet.",
   "platformTwitch": "Twitch",
   "platformYoutube": "YouTube",
   "platformBoth": "Twitch and YouTube",
   "linkLine": "{platform}: {url}",
   "liveDefault": "🔴 Live on {platform}: {title}",
-  "ytOn": "Your YouTube lives are announced too (checked every {minutes} minutes at most, one message per live).",
-  "ytOff": "Your YouTube lives are not announced. To do so, tick “Announce my YouTube lives too” in the settings."
+  "notSet": "No sending address is set: nothing is sent.",
+  "badAddress": "The sending address is not a valid Discord address.",
+  "setAddress": "Set the sending address",
+  "setupSteps": "In Discord: channel settings, Integrations, then create a sending address. Paste it in “Discord channel sending address” (Settings tab).",
+  "sumBase": "Site news and Twitch lives",
+  "sumYoutube": "Site news, Twitch and YouTube lives",
+  "lastFailed": "The last send failed.",
+  "lastFailedCode": "The last send failed (code {status})."
 }

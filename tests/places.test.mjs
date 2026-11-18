@@ -32,30 +32,30 @@ const TWITCH = {
   "home-assistant": ["1.3.1", { main: "live.rewards.home" }],
   "twitch-connector": ["1.7.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.5.1", { main: "networks.twitch", stats: "networks.stats" }],
-  "twitch-raid": ["2.6.1", { list: "live.raid.list", featured: "live.raid.featured" }],
+  "twitch-raid": ["2.6.2", { list: "live.raid.list", featured: "live.raid.featured" }],
 };
 /** Every other module with settings or an admin panel (1.100.0): version after migration, and its sections (id → place). */
 const ROLLOUT = {
   "audience": ["1.12.1", { rooms: "live.participation.rooms", nicknames: "live.participation.rooms", draw: "live.participation.draw" }],
   "bandcamp": ["1.2.1", { main: "networks.accounts" }],
   "bluesky": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
-  "calendar-ical": ["1.2.0", { sources: "calendar.schedule.sources" }],
+  "calendar-ical": ["1.2.1", { sources: "calendar.schedule.sources" }],
   "calendar-manual": ["1.3.1", { streams: "calendar.schedule.streams" }],
   "commissions": ["1.1.1", { main: "community.commissions", packages: "community.commissions.packages" }],
-  "community-stats": ["1.4.0", { main: "networks.stats" }],
+  "community-stats": ["1.4.1", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
   "contacts": ["2.6.1", { main: "community.contacts" }],
   "content-planner": ["1.1.1", { main: "calendar.notebook" }],
   "countdown": ["1.4.1", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.1", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.2.1", { main: "content.directory" }],
-  "discord-announcer": ["1.3.0", { main: "networks.discord", golive: "live.golive" }],
+  "discord-announcer": ["1.4.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.1", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
   "faq": ["1.1.1", { main: "content.faq", inbox: "content.faq.inbox" }],
   "gallery": ["1.3.1", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
-  "game-covers": ["1.4.0", { covers: "community.games.covers", kept: "community.games.covers" }],
+  "game-covers": ["1.5.0", { covers: "community.games.covers", kept: "community.games.covers" }],
   "game-suggestions": ["1.11.1", { main: "community.games" }],
   "github": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "hero": ["1.1.0", { banner: "site.home.banners" }],
@@ -64,7 +64,7 @@ const ROLLOUT = {
   "kick": ["1.2.1", { main: "networks.accounts" }],
   "kofi": ["1.2.1", { main: "networks.accounts" }],
   "legal-pages": ["1.1.1", { legal: "site.general.privacy" }],
-  "live-status": ["1.5.0", { main: "live.golive" }],
+  "live-status": ["1.6.0", { main: "live.golive" }],
   "map": ["1.2.1", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "maze-overlay": ["1.3.1", { look: "obs.overlays.maze", motion: "obs.overlays.maze" }],
@@ -83,7 +83,7 @@ const ROLLOUT = {
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
   "stream-story": ["2.15.1", { main: "calendar.story", styles: "calendar.story.styles" }],
-  "supporters": ["1.2.0", { main: "community.supporters" }],
+  "supporters": ["1.3.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.5.1", { main: "community.reviews", share: "community.reviews.share" }],
   "thanks-wall": ["1.4.1", { wall: "community.supporters.wall" }],
@@ -251,8 +251,9 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     const before = beforeBy[BEFORE(id)];
     const old = before[id], now = manifests[id];
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
-    const { places, version, ...rest } = now;
-    const { version: oldVersion, ...oldRest } = old;
+    const { places, version, minCore: nowCore, ...rest } = now;
+    const { version: oldVersion, minCore: oldCore, ...oldRest } = old;
+    assert.ok(nowCore === oldCore || nowCore === "0.36.0", `${id}: minCore only moves for the connection block (0.36.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
     if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
@@ -260,7 +261,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     // What an older core needs to keep showing the module in the same place.
     assert.equal(now.adminMenu, old.adminMenu, `${id}: adminMenu kept for cores older than 0.31.0`);
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);
-    assert.equal(now.minCore, old.minCore, `${id}: minCore unchanged`);
+    assert.ok(now.minCore === old.minCore || now.minCore === "0.36.0", `${id}: minCore unchanged (0.36.0 for the connection block)`);
   }
   // The modules that stay without a place are untouched.
   for (const id of Object.keys(NOT_PLACED)) assert.equal(manifests[id].places, undefined, `${id}: ${NOT_PLACED[id]}`);

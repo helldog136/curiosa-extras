@@ -64,7 +64,7 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.6.1"); assert.equal(manifest.minCore, "0.11.0"); assert.equal(manifest.pageSetting, "publicPage");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.6.2"); assert.equal(manifest.minCore, "0.11.0"); assert.equal(manifest.pageSetting, "publicPage");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
   assert.equal(manifest.dataVersion, 3);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false], ["contact.curate", 1, false]], "sans Contacts, Raid n'a plus de liste : besoin dur ; son extension sert à ajouter et retirer");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");
@@ -424,7 +424,7 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
   const secret = await data.dockSecret(ctx);
   const copy = blocks.find((b) => b.type === "copy");
   assert.equal(copy.text, `https://site.example.test/m/raid/dock?k=${secret}`);
-  assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("Docks de navigateur personnalisés")));
+  assert.ok(blocks.some((b) => b.type === "html" && b.html.includes("Docks de navigateur personnalisés") && b.html.includes("<details>")), "les étapes OBS sont repliées");
   const warn = blocks.find((b) => b.type === "banner");
   assert.deepEqual([warn.tone, warn.href], ["warning", "/admin/instances/id-tw"]);
   assert.match(warn.text, /Réglez d'abord le Connecteur Twitch/);
@@ -441,7 +441,7 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
   blocks = await def.adminPanel(mk(), { query: {} });
   assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), "tout est prêt : pas d'avertissement");
   const en2 = await def.adminPanel(mk({ locale: "en", messages: { ...en } }), { query: {} });
-  assert.ok(en2.some((b) => b.type === "markdown" && b.text.includes("Custom Browser Docks")));
+  assert.ok(en2.some((b) => b.type === "html" && b.html.includes("Custom Browser Docks")));
 });
 
 
@@ -449,7 +449,7 @@ test("admin : nouvelle adresse (confirmée) ; les actions sont celles de l'ajout
   const ctx = mk();
   assert.deepEqual(Object.keys(admin.actions).sort(), ["attach", "bulkApply", "bulkCancel", "bulkPreview", "check", "create", "find", "finish", "listSearch", "migrate", "momentCheck", "momentReroll", "pick", "remove", "renew"]);
   const before = await data.dockSecret(ctx);
-  assert.match((await act(ctx, "renew")).ok, /nouvelle adresse/);
+  assert.match((await act(ctx, "renew")).ok, /Nouvelle adresse créée/);
   assert.notEqual(await data.dockSecret(ctx), before);
 });
 
@@ -461,7 +461,7 @@ test("admin : « Voir qui est en direct maintenant » dit ce qui va ou ce qu'il 
   api.streams = [row("alice_tv", 4)];
   assert.match((await act(ctx, "check")).ok, /En direct maintenant : ALICE_TV/);
   api.streams = [];
-  assert.match((await act(ctx, "check")).ok, /personne n'est en direct pour le moment. Chaînes dans votre liste : 2/);
+  assert.match((await act(ctx, "check")).ok, /Personne n'est en direct\. Chaînes dans votre liste : 2/);
   api.accounts = [{ ok: true, channel: "emma_live", ready: false }];
   assert.match((await act(ctx, "check")).error, /Réglez d'abord le Connecteur Twitch/);
   api.accounts = [{ ok: true, channel: "emma_live", ready: true }]; api.reply = { ok: false, error: "network" };

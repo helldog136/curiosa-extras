@@ -159,7 +159,7 @@ test("Statut live sur le même site : les deux chaînes sont annoncées, l'admin
   const banner = await liveStatus.slots["layout.banner"](ctx);
   assert.equal(banner[0].type, "html");
   assert.ok(banner[0].html.includes("twitch.tv/machaine") && banner[0].html.includes("twitch.tv/autre"));
-  assert.deepEqual(await liveStatus.adminPanel(ctx), []);
+  assert.deepEqual((await liveStatus.adminPanel(ctx)).map((b) => [b.type, b.state]), [["connection", "configured"]], "une carte « Configuré », rien à régler");
 });
 
 // ── channel.mjs (le même fichier dans Raid et Bot) : cas limites, sans perte et toujours bornés ─────────────────────────────────────────

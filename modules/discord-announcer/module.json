@@ -5,7 +5,7 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "adminMenu": "Réseaux.Discord",
   "menuGroup": "connections",
   "platform": "discord",
@@ -158,8 +158,8 @@
         "fr": "Adresse d'envoi du salon Discord"
       },
       "help": {
-        "en": "In Discord: channel settings, Integrations, then create a sending address. It stays secret and is never shown again.",
-        "fr": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Elle reste secrète et n'est jamais réaffichée."
+        "en": "In Discord: channel settings, Integrations, then create a sending address.",
+        "fr": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi."
       },
       "example": {
         "en": "https://discord.com/…/your-code",
@@ -223,10 +223,6 @@
       "label": {
         "en": "Live on Twitch and YouTube at once",
         "fr": "Direct sur Twitch et YouTube en même temps"
-      },
-      "help": {
-        "en": "Either way, only one message is sent.",
-        "fr": "Dans les deux cas, un seul message part."
       },
       "options": [
         {
@@ -326,7 +322,7 @@
       }
     }
   ],
-  "minCore": "0.6.0",
+  "minCore": "0.36.0",
   "requires": [
     {
       "service": "youtube.live",

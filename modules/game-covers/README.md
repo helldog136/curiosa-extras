@@ -31,7 +31,7 @@ Chaque source a **son propre disjoncteur** : après trois échecs d'affilée, el
 Pour élargir les résultats avec Rawg :
 1. Créez un compte gratuit sur **rawg.io/apidocs** et copiez votre code d'accès.
 2. Ouvrez l'onglet **Réglages** de ce module et collez-le dans « Code d'accès gratuit Rawg ».
-3. Revenez sur l'onglet principal et cliquez sur **« Tester le code »**.
+3. Revenez sur l'onglet principal et choisissez **« Tester le code »** dans le menu **⋯** de la carte « Sources des jaquettes ».
 
 Pour ajouter les jaquettes de boîte de Twitch (en dernier secours) : installez et réglez le **Connecteur Twitch** (Jaquettes de jeux n'y demande rien d'autre).
 
