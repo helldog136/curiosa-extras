@@ -16,7 +16,7 @@ takes it over, then it is retired. Read the overlay's README, section "Twitch ac
 2. Update **Alerts overlay (OBS)** to 1.18.0. Within a minute (or at once when its page is opened) it takes over the journal, the switches, the options and the dock key,
    and listens to Twitch at its own address.
 3. In OBS, replace the dock address by the one of the overlay's first tab (same key). Tick again the four tools `alerts-overlay__twitch_event*` for the assistants that had them.
-4. Remove Twitch activity.
+4. Remove Twitch activity **only once the site log says "Twitch activity taken over: N journal lines" with N greater than 0** (Alerts overlay 1.18.1 or later).
 
 The other order works too: the overlay 1.18.0 waits (it keeps showing Twitch activity's alerts) and asks to update Twitch activity.
 

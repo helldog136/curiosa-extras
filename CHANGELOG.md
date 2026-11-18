@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.95.1 — 2026-11-18
+
+*En bref : Overlay alertes 1.18.1 reprend enfin l'ancien journal d'Activité Twitch. La 1.18.0 avait repris l'état et les réglages, mais aucune ligne du journal. Gardez Activité Twitch installée jusqu'à la mise à jour.*
+
+*In short: Alerts overlay 1.18.1 finally takes over the old journal of Twitch activity. 1.18.0 took over the state and the settings, but no journal line. Keep Twitch activity installed until the update.*
+
+### Corrections
+
+- **Le journal repris.** La 1.18.0 refusait les vrais identifiants des messages Twitch : le journal de la reprise affichait « 0 lignes ». La 1.18.1 copie l'ancien journal une seule fois, sans rien refaire d'autre.
+- **Rien en double, rien à l'écran.** Les lignes reçues depuis la reprise restent, en tête du journal. Les anciennes lignes ne s'affichent pas en alerte.
+- **Avant de retirer Activité Twitch.** Attendez que le journal du site dise « Activité Twitch reprise : N lignes du journal » avec N plus grand que 0.
+- **The journal taken over.** 1.18.0 refused the real ids of Twitch messages: the log of the takeover said "0 lines". 1.18.1 copies the old journal once, and redoes nothing else.
+- **Nothing twice, nothing on screen.** The lines received since the takeover stay, at the top of the journal. The old lines do not show as alerts.
+- **Before removing Twitch activity.** Wait until the site log says "Twitch activity taken over: N journal lines" with N greater than 0.
+
+### Pour les développeurs
+
+- **Alerts overlay 1.18.1** : `importLine` accepte les identifiants base64 de Twitch (`=`, `+`, `/`, `-`, `_`) et laisse de côté les lignes de test et de rejeu ; une reprise de la 1.18.0 (document `handover` sans `importVersion`) relance seulement `export`, une fois, tant qu'Activité Twitch est installée, puis écrit `importVersion: 2` ; les lignes reçues depuis sont réécrites après les lignes copiées (le journal reste du plus récent au plus ancien). Tests avec des identifiants au format réel et le cas « reprise faite à 0 ligne, puis nouvelle copie ».
+
 ## 1.95.0 — 2026-11-17
 
 *En bref : Activité Twitch fait maintenant partie d'Overlay alertes : une seule extension pour vos événements Twitch et leurs alertes. Overlay alertes 1.18.0 reprend tout seul le journal, les interrupteurs, les options et l'adresse du dock d'Activité Twitch 1.13.0. Sans Twitch, Overlay alertes ne montre plus rien de Twitch.*
