@@ -14,7 +14,7 @@ On core 0.31.0 the settings live in **Live › Goals** (`live.goals`), two tabs,
 | Tab | What you do | Fields shown | Folded under « Advanced settings » |
 |---|---|---|---|
 | **Goal** | choose what counts and the target | What counts (Followers · Paid subs · By hand), Target (empty: the next round number) | Title of the bar |
-| **Subathon** | choose when it starts and how long | Start (date and time of the site), Starting length (4 h by default) | Time added per sub (5 min; tier 2 twice, tier 3 five times), per 100 bits (1 min), per new follower (0), longest total length (0: no limit), title |
+| **Subathon** | choose when it starts and how long | Start (date and time of the site), Starting length (4 h by default) | Time added per sub (5 min), what a tier 1, 2 or 3 sub counts as (1, 2 and 5 subs, folded under « More options »), per 100 bits (1 min), per new follower (0), longest total length (0: no limit), title |
 
 Then, in **Overlay pages**, add the element **Goal bar** or **Subathon** (this module) where you want it. The element has the two options of every animated element: **Effects** (automatic, all, light, none) and **Calm motion**.
 
@@ -50,10 +50,11 @@ displayed = last reference value + events counted since its date
 ## The subathon, exactly
 
 - Nothing counts before the start. From the start the clock runs for the starting length plus the time added, and **stands still while paused** (events during a pause still add time).
-- Each event adds its rule: a sub or a renewal `seconds per sub × tier factor` (tier 1: ×1, tier 2: ×2, tier 3: ×5), a gift of N subs `N × seconds per sub × tier factor` (the gifted subs themselves are not counted again), bits `bits / 100 × seconds per 100 bits` (rounded down), a new follower `seconds per follower` (once per login).
+- Each event adds its rule: a sub or a renewal `seconds per sub × tier factor` (by default tier 1: ×1, tier 2: ×2, tier 3: ×5; each factor is a setting, « A tier 1 / 2 / 3 sub counts as », from 0 to 20 in steps of 0.5, 0 meaning that tier adds no time; the result is rounded to the second), a gift of N subs `N × seconds per sub × tier factor` (the gifted subs themselves are not counted again), bits `bits / 100 × seconds per 100 bits` (rounded down), a new follower `seconds per follower` (once per login).
 - An event counts only if the subathon was still running at its instant: once at zero, it is over.
 - **Cap**: the longest total length (starting length + added time). What goes beyond is noted (« longest length reached ») but not added; the bar's span is the cap.
 - **Corrections**: « Add this time » with a negative number removes time, never below « ends now ».
+- **Changing a factor** re-computes the whole countdown from the list of events, past events included (the same rule for every setting of the subathon).
 - Everything is computed from the list of events in time order: the same list gives the same countdown on every overlay page and after a reload.
 
 ## Live behaviour
@@ -76,7 +77,7 @@ displayed = last reference value + events counted since its date
 | `subathon_add_time` | off | adds or removes minutes (−600 to 600) |
 | `subathon_pause` | off | pauses or resumes |
 
-The target, what counts, the start and the rules are settings: the assistant changes them with the core's `maintenance_module_configure` (`goalMetric`, `goalTarget`, `subathonStart`, `subathonLength`, `secondsPerSub`, `secondsPerHundredBits`, `secondsPerFollow`, `subathonCap`).
+The target, what counts, the start and the rules are settings: the assistant changes them with the core's `maintenance_module_configure` (`goalMetric`, `goalTarget`, `subathonStart`, `subathonLength`, `secondsPerSub`, `tierFactor1`, `tierFactor2`, `tierFactor3`, `secondsPerHundredBits`, `secondsPerFollow`, `subathonCap`).
 
 ## Privacy
 

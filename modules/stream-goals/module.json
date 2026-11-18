@@ -5,7 +5,7 @@
     "en": "Live goals",
     "fr": "Objectifs du live"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minCore": "0.30.0",
   "description": {
     "en": "A goal bar and a subathon whose time grows with each sub, bits or follow. Both follow the skin of your overlay pages.",
@@ -311,8 +311,77 @@
         "fr": "Temps ajouté par sub"
       },
       "help": {
-        "en": "Tier 2: twice, tier 3: five times",
-        "fr": "Palier 2 : double, palier 3 : cinq fois"
+        "en": "Multiplied by the tier factors below",
+        "fr": "Multiplié par les facteurs de palier ci-dessous"
+      }
+    },
+    {
+      "key": "tierFactor1",
+      "type": "number",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "default": 1,
+      "unit": {
+        "en": "subs",
+        "fr": "subs"
+      },
+      "example": "1",
+      "label": {
+        "en": "A tier 1 sub counts as",
+        "fr": "Un sub palier 1 compte pour"
+      },
+      "help": {
+        "en": "0: adds no time",
+        "fr": "0 : n'ajoute rien"
+      }
+    },
+    {
+      "key": "tierFactor2",
+      "type": "number",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "default": 2,
+      "unit": {
+        "en": "subs",
+        "fr": "subs"
+      },
+      "example": "2",
+      "label": {
+        "en": "A tier 2 sub counts as",
+        "fr": "Un sub palier 2 compte pour"
+      },
+      "help": {
+        "en": "0: adds no time",
+        "fr": "0 : n'ajoute rien"
+      }
+    },
+    {
+      "key": "tierFactor3",
+      "type": "number",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "default": 5,
+      "unit": {
+        "en": "subs",
+        "fr": "subs"
+      },
+      "example": "5",
+      "label": {
+        "en": "A tier 3 sub counts as",
+        "fr": "Un sub palier 3 compte pour"
+      },
+      "help": {
+        "en": "0: adds no time",
+        "fr": "0 : n'ajoute rien"
       }
     },
     {
@@ -585,7 +654,7 @@
     {
       "name": "subathon_get",
       "readOnly": true,
-      "description": "Read the subathon: start, whether it runs, is paused or ended, the time left, the time added so far, what went beyond the cap, and the rules (seconds per sub with tier factors 1, 2 and 5, per 100 bits, per new follower, starting length, cap).",
+      "description": "Read the subathon: start, whether it runs, is paused or ended, the time left, the time added so far, what went beyond the cap, and the rules (seconds per sub with the factor of each tier (1, 2 and 5 unless changed), per 100 bits, per new follower, starting length, cap).",
       "input": {
         "type": "object",
         "properties": {}
@@ -594,7 +663,7 @@
     {
       "name": "subathon_add_time",
       "default": false,
-      "description": "Add time to the running subathon by hand (a donation received elsewhere, a correction), or remove some with a negative number; never below 'ends now'. Shown on screen like an event. The start and the rules are settings (subathonStart, subathonLength, secondsPerSub, secondsPerHundredBits, secondsPerFollow, subathonCap).",
+      "description": "Add time to the running subathon by hand (a donation received elsewhere, a correction), or remove some with a negative number; never below 'ends now'. Shown on screen like an event. The start and the rules are settings (subathonStart, subathonLength, secondsPerSub, tierFactor1, tierFactor2, tierFactor3, secondsPerHundredBits, secondsPerFollow, subathonCap).",
       "input": {
         "type": "object",
         "properties": {

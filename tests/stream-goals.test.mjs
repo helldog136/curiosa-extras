@@ -1,4 +1,4 @@
-// Stream goals 1.0.0: the goal bar and the subathon countdown. The pure rules first (dedup, rebase, subathon arithmetic), then the module with a fake
+// Stream goals 1.1.0: the goal bar and the subathon countdown. The pure rules first (dedup, rebase, subathon arithmetic), then the module with a fake
 // context (sources, concurrency, reload), then the engine of the core drawing the states frame by frame (the same engine OBS runs, from its page text).
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
@@ -304,4 +304,90 @@ test("frames: states pass the engine's checker; a burst of five follows is ONE r
   assert.deepEqual(d, [100, 101, 100]);
   // two engines, the same instant: the same picture (two overlay pages)
   assert.deepEqual(JSON.stringify(engine(ctx).frame(st, null, T0 + 2000, { w: 800, h: 200 }, {})), JSON.stringify(A.frame(st, null, T0 + 2000, { w: 800, h: 200 }, {})));
+});
+
+/* ───────────── Tier factors (1.1.0): configurable, defaults unchanged ───────────── */
+const tierField = (n) => manifest.settings.find((s) => s.key === `tierFactor${n}`);
+const secondsFor = (rules, tier) => M.subathonSeconds({ kind: "sub", tier }, rules);
+
+test("tier factors: the defaults are 1, 2 and 5, so a site that never touched them counts exactly as before", () => {
+  const unset = M.rulesOf({ secondsPerSub: 300 });
+  assert.deepEqual(unset.tiers, { 1: 1, 2: 2, 3: 5 });
+  assert.deepEqual([1, 2, 3].map((t) => secondsFor(unset, t)), [300, 600, 1500]);
+  for (const n of [1, 2, 3]) assert.equal(tierField(n).default, [1, 2, 5][n - 1], `manifest default of tier ${n}`);
+  // an empty or unreadable stored value is the default too
+  assert.deepEqual(M.rulesOf({ secondsPerSub: 300, tierFactor1: "", tierFactor2: "abc", tierFactor3: null }).tiers, { 1: 1, 2: 2, 3: 5 });
+  // the same rows give the same total as the fixed table of 1.0.0 (sub, resub, gift of 5)
+  const rows = rowsSub([{ kind: "sub", at: T0 + 1000, tier: 2 }, { kind: "resub", at: T0 + 2000, tier: 3 }, { kind: "gift", at: T0 + 3000, count: 5 }]);
+  assert.equal(M.subathonFold({ startAt: T0, rules: unset, rows, now: T0 + 10_000 }).addedS, 600 + 1500 + 1500);
+});
+
+test("tier factors: custom factors change the time of a sub, a renewal and a gift; gifted subs are still counted once, by the gift", () => {
+  const r = M.rulesOf({ secondsPerSub: 300, tierFactor1: 1, tierFactor2: 3, tierFactor3: 10 });
+  assert.deepEqual(r.tiers, { 1: 1, 2: 3, 3: 10 });
+  assert.equal(M.subathonSeconds({ kind: "sub", tier: 2 }, r), 900);
+  assert.equal(M.subathonSeconds({ kind: "resub", tier: 3 }, r), 3000);
+  assert.equal(M.subathonSeconds({ kind: "gift", tier: 2, count: 4 }, r), 3600);
+  assert.equal(M.subathonSeconds({ kind: "sub", tier: 3, gifted: true }, r), 0, "a gifted sub is in its gift line");
+  const half = M.rulesOf({ secondsPerSub: 300, tierFactor1: 0.5, tierFactor2: 0, tierFactor3: 20 });
+  assert.deepEqual([1, 2, 3].map((t) => secondsFor(half, t)), [150, 0, 6000], "fractions are allowed, 0 adds nothing");
+  assert.equal(M.subathonSeconds({ kind: "sub", tier: 1 }, M.rulesOf({ secondsPerSub: 301, tierFactor1: 1.5 })), 452, "rounded to the second");
+  assert.equal(M.subathonSeconds({ kind: "cheer", bits: 200 }, r), 120, "bits and follows ignore the tier factors");
+  const f = M.subathonFold({ startAt: T0, rules: r, rows: rowsSub([{ kind: "sub", at: T0 + 1000, tier: 3 }, { kind: "sub", at: T0 + 2000, tier: 1 }]), now: T0 + 5000 });
+  assert.deepEqual(f.applied.map((a) => a.seconds), [3000, 300]);
+});
+
+test("tier factors: out-of-range readings are kept within the bounds (the core refuses them at the form)", () => {
+  const r = M.rulesOf({ secondsPerSub: 300, tierFactor1: -4, tierFactor2: 999, tierFactor3: "2,5" });
+  assert.equal(r.tiers[1], 0);
+  assert.equal(r.tiers[2], 20);
+  assert.equal(r.tiers[3], 5, "an unreadable text is the default");
+});
+
+test("tier factors: the settings sit in the subathon fold with a unit, a visible default, bounds and an example; EN/FR; short path unchanged", () => {
+  for (const n of [1, 2, 3]) {
+    const f = tierField(n);
+    assert.ok(f, `tierFactor${n}`);
+    assert.equal(f.type, "number");
+    assert.equal(f.tab, "subathon");
+    assert.equal(f.rare, true, "folded, not in the short path");
+    assert.deepEqual([f.min, f.max, f.step], [0, 20, 0.5]);
+    assert.ok(f.unit.en && f.unit.fr, "a unit in both languages");
+    assert.equal(f.example, String(f.default), "an example under the field");
+    for (const lang of ["en", "fr"]) {
+      assert.ok(f.label[lang].length <= 60 && !/:/.test(f.label[lang]), "R10");
+      assert.ok(f.help[lang].length <= 60, "R11");
+      assert.doesNotMatch(`${f.label[lang]} ${f.help[lang]} ${f.unit[lang]}`, /\b(token|webhook|api|json|cache|slug|jeton|clé|identifiant)\b/i, "R9");
+    }
+  }
+  const visible = (tab) => manifest.settings.filter((s) => s.tab === tab && !s.rare && !s.advanced).map((s) => s.key);
+  assert.deepEqual(visible("subathon"), ["subathonStart", "subathonLength"]);
+  assert.ok(manifest.settings.filter((s) => s.tab === "subathon" && !s.rare).length <= 7, "R5");
+  assert.equal(manifest.minCore, "0.30.0");
+  assert.equal(manifest.version, "1.1.0");
+  assert.deepEqual(manifest.places.map((p) => p.place), ["live.goals.goal", "live.goals.subathon"], "same place, two sections");
+  assert.equal(manifest.tabs.filter((t) => !t.hidden).length, 2);
+});
+
+test("tier factors: the core refuses a bad value under the field, with a bound and an example", async () => {
+  const { checkFieldInput } = await import("@/core/modules/settingValues");
+  const field = tierField(2);
+  for (const ok of ["0", "1", "2", "2,5", "2.5", "20"]) assert.equal(checkFieldInput(field, ok).ok, true, ok);
+  assert.deepEqual(checkFieldInput(field, "2,5"), { ok: true, value: 2.5 });
+  for (const bad of ["-1", "21", "2.3", "abc", "1e99"]) assert.equal(checkFieldInput(field, bad).ok, false, bad);
+  assert.equal(checkFieldInput(field, "21").reason, "range");
+  assert.equal(checkFieldInput(field, "abc").reason, "number");
+  const core = process.env.CURIOSA_DIR;
+  for (const lang of ["en", "fr"]) {
+    const msgs = JSON.parse(fs.readFileSync(`${core}/src/locales/${lang}.json`, "utf8"));
+    assert.match(msgs["instances.error.range"], /\{min\}.*\{max\}.*\{example\}/, `${lang}: bounds and an example in the message`);
+  }
+});
+
+test("tier factors: a custom factor reaches the countdown through the settings, and the assistant reads them", async () => {
+  const { ctx } = world({ timezone: "UTC", settings: { subathonStart: startIn(-10), subathonLength: 3600, tierFactor2: 4, tierFactor3: 0 } });
+  const g = await def.mcp.subathon_get(ctx);
+  assert.deepEqual(g.rules.tierFactors, { 1: 1, 2: 4, 3: 0 });
+  const dflt = await def.mcp.subathon_get(world({ timezone: "UTC", settings: { subathonStart: startIn(-10) } }).ctx);
+  assert.deepEqual(dflt.rules.tierFactors, { 1: 1, 2: 2, 3: 5 });
 });
