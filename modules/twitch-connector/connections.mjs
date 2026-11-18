@@ -124,15 +124,16 @@ export async function adopt(ctx, args) {
   const before = await store.credsOf(ctx);
   if (incoming.clientId && before.clientId && incoming.clientId !== before.clientId) return { ok: false, error: "conflict", adopted: [], ready: false };
   const adopted = [];
-  const ownSet = { clientId: text(ctx.setting("appClientId")), secret: text(ctx.setting("appSecret")) };
   const appDoc = await store.first(ctx, COL.app);
   const had = appDoc?.data ?? {};
+  const carried = new Set(before.carried);
   const next = { ...had };
-  if (incoming.clientId && !ownSet.clientId && !text(had.clientId)) { next.clientId = incoming.clientId; adopted.push("clientId"); }
+  // les valeurs saisies ici (ni vides, ni reprises) ne sont jamais écrasées ; une valeur reprise est notée « carried »
+  if (incoming.clientId && !text(had.clientId)) { next.clientId = incoming.clientId; carried.add("clientId"); adopted.push("clientId"); }
   // le secret ne va qu'avec SON application : repris seulement si l'identifiant retenu est celui qui arrive
-  const clientId = ownSet.clientId || text(next.clientId);
-  if (incoming.secret && !ownSet.secret && !text(had.clientSecret) && (!incoming.clientId || incoming.clientId === clientId)) { next.clientSecret = incoming.secret; adopted.push("clientSecret"); }
-  if (adopted.length) await store.put(ctx, COL.app, appDoc, next);
+  const clientId = text(next.clientId);
+  if (incoming.secret && !text(had.clientSecret) && (!incoming.clientId || incoming.clientId === clientId)) { next.clientSecret = incoming.secret; carried.add("clientSecret"); adopted.push("clientSecret"); }
+  if (adopted.length) await store.put(ctx, COL.app, appDoc, { ...next, carried: [...carried].sort() });
   const creds = await store.credsOf(ctx);
 
   const channel = store.loginOf(a.channel);

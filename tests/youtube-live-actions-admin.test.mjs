@@ -3,17 +3,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { world, A, E, S, R, def, manifest, messages } from "./helpers/ytLiveWorld.mjs";
 
-const BLOCK_TYPES = new Set(["markdown", "html", "heading", "banner", "table", "adminForm", "suggestInstall", "copy", "links", "netHealth", "download"]);
-const texts = (blocks) => blocks.flatMap((b) => [b.text, b.html, b.submitLabel, b.title, ...(b.fields ?? []).flatMap((f) => [f.label, f.help]), ...(b.columns ?? []), ...(b.rows ?? []).flat(), b.reason].filter((x) => typeof x === "string"));
+const BLOCK_TYPES = new Set(["markdown", "html", "heading", "banner", "table", "adminForm", "suggestInstall", "copy", "links", "netHealth", "download", "connection"]);
+const texts = (blocks) => blocks.flatMap((b) => [b.text, b.html, b.submitLabel, b.title, ...(b.fields ?? []).flatMap((f) => [f.label, f.help]), ...(b.columns ?? []), ...(b.rows ?? []).flat(), b.reason, b.summary, b.primary?.label, ...(b.setup ?? []).flatMap((x) => [x.text, x.reason])].filter((x) => typeof x === "string"));
 const find = (blocks, type, pred = () => true) => blocks.filter((b) => b.type === type && pred(b));
 const addRule = (w, over = {}) => S.saveRule(w.ctx, null, { ...R.validateRule({ name: "Rouge", type: "superchat", currency: "EUR", min: "5", cooldownSec: "30", action: "lumieres:rouge", ...over }).rule, lastAt: 0 });
 const act = (w, name, values = {}) => def.adminActions[name].run(w.ctx, values);
 
-test("la page : blocs valides, état clair, gros bouton « Tout couper », règles, simulation, journal, limite du jour, rechargement", async () => {
+test("la page : blocs valides, états clairs (une carte par service), gros bouton « Tout couper », règles, simulation, journal, rechargement", async () => {
   const w = await world();
   const blocks = await w.panel();
   for (const b of blocks) assert.ok(BLOCK_TYPES.has(b.type), b.type);
-  assert.equal(blocks[0].type, "banner");
+  assert.deepEqual(blocks.filter((b) => b.type === "connection").map((b) => [b.id, b.state]), [["chat", "configured"], ["house", "configured"]], "one card per service, each in one state");
+  assert.ok(!blocks.some((b) => b.type === "banner" && b.tone !== "warning"), "no sentence that says it is fine (the one banner is the warning that a simulation really plays)");
   const big = find(blocks, "adminForm", (b) => b.action === "stop")[0];
   assert.ok(big && big.fields[0].name === "yt_big" && big.submitLabel === messages.fr.big_stop, "le gros bouton est le premier formulaire");
   assert.ok(blocks.indexOf(big) < blocks.findIndex((b) => b.type === "heading"), "visible sans défiler : avant les règles");
@@ -22,7 +23,8 @@ test("la page : blocs valides, état clair, gros bouton « Tout couper », règl
   const all = texts(blocks).join("\n");
   assert.match(all, /Gardez cette page ouverte/);
   assert.match(all, /!stop/);
-  assert.match(all, /environ|%/);
+  assert.match(all, /limite du jour : \d+ % sur \d+ %/);
+  assert.ok(!/Ce qu'il faut savoir|Cette page se recharge toute seule|50 évènements au plus/.test(all), "no tutorial, no filler");
   const reload = find(blocks, "html", (b) => /location\.reload/.test(b.html))[0];
   assert.ok(reload, "la page se recharge d'elle-même");
   assert.match(reload.html, /getClientRects/, "elle ne recharge pas un onglet caché");
@@ -32,8 +34,8 @@ test("la page : blocs valides, état clair, gros bouton « Tout couper », règl
 
 test("état de la page selon la situation : chaque cas a sa phrase et dit quoi faire", async () => {
   const cases = [
-    [{ settings: { readChat: false } }, /coupée dans les Réglages/],
-    [{ noBridge: true }, /Il manque le Connecteur Home Assistant/],
+    [{ settings: { readChat: false } }, /désactivée dans les réglages/],
+    [{ noBridge: true }, /Rien n'est lu sans Home Assistant/],
     [{ noConnector: true }, /code d'accès YouTube du site/],
     [{ noChannel: true }, /Chaîne YouTube/],
     [{ choice: { status: "ambiguous" } }, /plusieurs chaînes/],
@@ -47,18 +49,19 @@ test("état de la page selon la situation : chaque cas a sa phrase et dit quoi f
   }
   const w = await world();
   w.yt.goLive({ title: "Soirée jeux" });
-  assert.match(texts(await w.panel()).join("\n"), /Je lis le chat de votre direct « Soirée jeux »/);
+  assert.match(texts(await w.panel()).join("\n"), /Lecture de « Soirée jeux »/);
   w.done();
 });
 
-test("sans Home Assistant : le module propose de l'installer, reste utile pour les règles et le journal, et le dit", async () => {
+test("sans Home Assistant : le module propose de l'installer et reste utile pour les règles et le journal", async () => {
   const w = await world({ noBridge: true });
   const blocks = await w.panel();
-  const suggest = find(blocks, "suggestInstall");
+  const suggest = blocks.filter((b) => b.type === "connection").flatMap((b) => b.setup ?? []).filter((b) => b.type === "suggestInstall");
   assert.ok(suggest.some((b) => b.service === "home-assistant.bridge"));
   assert.equal(find(blocks, "adminForm", (b) => b.action === "stop").length, 0, "pas de bouton Tout couper sans pont");
   assert.equal(find(blocks, "adminForm", (b) => b.action === "simulate").length, 0);
-  assert.match(texts(blocks).join("\n"), /écrire des règles et lire le journal/);
+  assert.equal(blocks.find((b) => b.type === "connection" && b.id === "house").state, "notConfigured");
+  assert.ok(!/écrire des règles et lire le journal/.test(texts(blocks).join("\n")), "no consolation sentence");
   assert.equal(find(blocks, "adminForm", (b) => b.action === "saveRule").length, 1);
   assert.equal(w.yt.calls.all.length, 0);
   w.done();
@@ -75,11 +78,13 @@ test("état de la maison : coupée, pas en direct, ne répond plus, pas associé
   w3.tick(70_000);
   assert.match(texts(await w3.panel()).join("\n"), /ne répond plus chez vous/);
   await w3.ha.pull(); w3.tick(1100);
-  assert.match(texts(await w3.panel()).join("\n"), /connecté et vous voit en direct/);
+  assert.match(texts(await w3.panel()).join("\n"), /Associé, vous voit en direct/);
   await w3.bridge.stop({ by: "test" });
   const blocks = await w3.panel();
   assert.match(texts(blocks).join("\n"), /Tout est coupé/);
-  assert.ok(find(blocks, "adminForm", (b) => b.action === "start").length === 1);
+  const house = blocks.find((b) => b.type === "connection" && b.id === "house");
+  assert.deepEqual([house.state, house.primary.label, house.primary.action], ["degraded", messages.fr.big_start, "start"], "the card offers « Tout reprendre »");
+  assert.equal(find(blocks, "adminForm", (b) => b.action === "start").length, 0);
   assert.equal(find(blocks, "adminForm", (b) => b.action === "stop").length, 0);
   w3.done();
 });

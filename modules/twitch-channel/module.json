@@ -1,18 +1,18 @@
 {
   "apiVersion": 2,
-  "minCore": "0.11.0",
+  "minCore": "0.36.0",
   "id": "twitch-channel",
   "name": {
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.5.1",
+  "version": "2.6.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 20,
   "platform": "twitch",
   "description": {
-    "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
-    "fr": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnements payants. Mesure aussi vos directs (audience moyenne et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos."
+    "en": "Showcases your Twitch channel: header button, live status, latest clips. Once connected, it counts your followers and paying subscribers, and measures your lives and the views of your videos.",
+    "fr": "Met en avant votre chaîne Twitch : bouton, statut en direct, derniers clips. Une fois connectée, elle compte vos followers et abonnements payants, et mesure vos directs et les vues de vos vidéos."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -268,8 +268,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your followers and paying subscribers for the site's statistics, and measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured by your site every 2 minutes while you are live, from the day this is switched on: Twitch gives no history. Twitch must authorize the follower count: once this is on and saved, a “Connect my Twitch channel” button appears in the “My channel” tab.",
-        "fr": "Compte vos followers et vos abonnements payants pour les statistiques du site, et mesure vos directs : audience, heures de live, followers par jeu, vues de vos vidéos. Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ceci est activé : Twitch ne fournit pas l'historique. Twitch doit autoriser le comptage des followers : une fois ceci activé et enregistré, le bouton « Connecter ma chaîne Twitch » apparaît dans l'onglet « Ma chaîne »."
+        "en": "Counts your followers and paying subscribers. Also measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured while you are live, from the day this is switched on: Twitch gives no history. Once saved, the “Connect my Twitch channel” button appears in the “My channel” tab.",
+        "fr": "Compte vos followers et vos abonnements payants. Mesure aussi vos directs : audience, heures de live, followers par jeu, vues de vos vidéos. Mesuré pendant vos directs, depuis le jour de l'activation : Twitch ne fournit pas l'historique. Une fois enregistré, le bouton « Connecter ma chaîne Twitch » apparaît dans l'onglet « Ma chaîne »."
       }
     },
     {
@@ -304,8 +304,8 @@
         "fr": "Fréquence de mesure pendant un direct"
       },
       "help": {
-        "fr": "Toutes les 2 minutes convient très bien : le site interroge Twitch à peine plus d'une fois par mesure, très loin de sa limite. Hors direct, il vérifie seulement toutes les 4 minutes.",
-        "en": "Every 2 minutes is just fine: the site asks Twitch about once per measurement, far below its limit. Outside a live, it only checks every 4 minutes."
+        "fr": "Le site interroge Twitch une fois par mesure. Hors direct, il vérifie seulement toutes les 4 minutes.",
+        "en": "The site asks Twitch once per measurement. Outside a live, it only checks every 4 minutes."
       },
       "options": [
         {
@@ -348,8 +348,8 @@
         "fr": "Garder le détail des mesures"
       },
       "help": {
-        "en": "The detail (one line per measurement) takes room, so it is erased after this. The summary of each live is kept much longer.",
-        "fr": "Le détail (une ligne par mesure) prend de la place : il est effacé au-delà. Le résumé de chaque direct est gardé bien plus longtemps."
+        "en": "After this, the detail (one line per measurement) is erased. The summary of each live stays.",
+        "fr": "Au-delà, le détail (une ligne par mesure) est effacé. Le résumé de chaque direct reste."
       },
       "options": [
         {
@@ -392,8 +392,8 @@
         "fr": "Garder le résumé de chaque direct"
       },
       "help": {
-        "en": "A summary weighs about 2 KB: 5 years of daily lives fit in a few MB.",
-        "fr": "Un résumé pèse environ 2 Ko : 5 ans de directs quotidiens tiennent dans quelques Mo."
+        "en": "After this, the summary of a live is erased.",
+        "fr": "Au-delà, le résumé d'un direct est effacé."
       },
       "options": [
         {

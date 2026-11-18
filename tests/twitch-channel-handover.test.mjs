@@ -72,8 +72,7 @@ test("l'ancienne adresse de retour reste valable : les liens de cette chaîne la
   assert.equal(res.status, 303);
   assert.equal((await C.methods.account({ channel: "machaine" })).status, "ok");
   assert.ok((await C.methods.account({ channel: "machaine" })).scopes.includes("channel:read:subscriptions"));
-  // la page du Connecteur liste cette adresse : à laisser chez Twitch
-  assert.ok(JSON.stringify(await connectorModule.default.adminPanel(C.ctx)).includes(OLD()));
+  assert.ok(!JSON.stringify(await connectorModule.default.adminPanel(C.ctx, { query: {} })).includes(OLD()), "the page of the connector does not list the old addresses");
 });
 
 test("migration rejouée deux fois (idempotente) : rien de plus n'est écrit ni effacé, aucun appel en plus", async () => {
@@ -111,7 +110,8 @@ test("échec de la reprise → RIEN n'est effacé : Connecteur absent, Connecteu
   assert.deepEqual(c.calls.legacyCleared, []);
   assert.equal(await c.api.store.count("twitchConnection"), 1);
   assert.equal((await c.api.store.list("handover"))[0].data.reason, "incomplete");
-  assert.ok((await def.adminPanel(c)).some((x) => x.type === "banner" && x.text === fr.handover_incomplete));
+  const incomplete = (await def.adminPanel(c)).find((x) => x.type === "connection");
+  assert.deepEqual([incomplete.state, incomplete.reason], ["degraded", fr.handover_incomplete]);
   // plus tard, l'application est complétée dans le Connecteur : l'ouverture de l'administration termine la reprise
   await C.methods.adopt({ clientId: "cid", clientSecret: "SEC-RET" });
   mod.resetCache();
@@ -179,10 +179,10 @@ test("instance avec une AUTRE application : « conflict », rien n'est effacé ;
   assert.deepEqual(other.calls.legacyCleared, []);
   assert.equal(await other.api.store.count("twitchConnection"), 1);
   const panel = await def.adminPanel(other);
-  assert.ok(panel.some((b) => b.type === "banner" && b.text === fr.handover_conflict));
+  const conflict = panel.find((b) => b.type === "connection");
+  assert.deepEqual([conflict.state, conflict.reason], ["notConfigured", fr.handover_conflict]);
   // le bouton passe par l'application du Connecteur et SON adresse (l'ancienne appartient à l'autre application)
-  const html = panel.find((b) => b.type === "html" && b.html.includes("data-twitch-connect"));
-  const link = html.html.match(/href="([^"]+)"/)[1].replace(/&amp;/g, "&");
+  const link = conflict.primary.href;
   assert.equal(new URL(link).searchParams.get("client_id"), "cid");
   assert.equal(new URL(link).searchParams.get("redirect_uri"), OWN);
   await C.callback(new Request(tw.approve(link)));
