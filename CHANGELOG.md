@@ -4,6 +4,23 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.99.1 — 2026-11-18
+
+*En bref : « Prochain stream » ne montre plus le stream en cours. Dès que l'heure de début est passée, ce stream n'est plus « le prochain » : c'est celui d'après.*
+
+*In short: "Next stream" no longer shows the stream that is running. As soon as its start time has passed, that stream is no longer "the next one": the one after it is.*
+
+### Corrections
+
+- **Planning 2.8.1 : le prochain stream est toujours à venir.** L'élément d'overlay « Prochain stream », la carte « Prochain stream » de l'accueil et l'apparence « À la une + à suivre » (page et accueil) montraient le stream déjà commencé, avec « En cours ». Ils passent maintenant au suivant dès la minute du début. Le stream en cours reste dans les listes (« Prochains streams », semaine, « À suivre ») avec sa pastille « En cours ». Un stream sur toute la journée reste « le prochain » pendant sa journée. S'il n'y a rien d'autre à venir, l'élément d'overlay reste vide.
+- **Planning 2.8.1: the next stream is always still to come.** The "Next stream" overlay element, the "Next stream" card on the home page and the "Spotlight + up next" look (page and home) showed the stream that had already started, marked "Happening now". They now move on to the following one the minute the start time passes. The stream under way stays in the lists ("Next streams", week, "Up next") with its "Happening now" mark. A whole-day stream stays "the next one" during its day. When nothing else is coming, the overlay element stays empty.
+
+### Pour les développeurs
+
+- `slots.mjs` : `notStarted(slot, now, tz)` et `nextSlot(slots, now, tz)`, la règle commune (début strictement après maintenant ; journée entière : pendant son jour dans le fuseau d'affichage). Le modèle des apparences donne `toCome` par créneau et `model.next` n'est jamais un stream commencé. Les autres lecteurs de `planning.slot` suivaient déjà cette règle (bot Twitch, Story d'annonce).
+- `slots.mjs`: `notStarted(slot, now, tz)` and `nextSlot(slots, now, tz)`, the shared rule (start strictly after now; whole day: during its own day in the display zone). The appearance model gives `toCome` per slot and `model.next` is never a stream that has started. The other readers of `planning.slot` already followed this rule (Twitch bot, announcement story). The `planning_upcoming` tool still lists streams under way (its answer is unchanged).
+- Tests : `tests/planning-next.test.mjs` (début -1 min, +1 min, +29 min, +31 min, minuit, changements d'heure, journée entière, sans heure de fin).
+
 ## 1.99.0 — 2026-11-18
 
 *En bref : fini les bandeaux et phrases de réassurance qui ne demandent rien. « Oublier l'application reprise » n'est plus un gros bouton.*
