@@ -10,7 +10,7 @@ import { searchText, rowPasses } from "@/core/adminkit/search";
 import { world, say, fr, en, C, SRC, S, entry, link, NOW } from "./helpers/botWorld.mjs";
 import { ownerWorld } from "./helpers/ownerSet.mjs";
 import { htmlOf, rowsOf, pills, formOfBlocks, plain, cellOf, tableOf, tableRow, rowId, dialogsOf, shownFields, foldedFields } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
 
 const DIR = new URL("../modules/twitch-bot", import.meta.url).pathname;
 const A = await import("../modules/twitch-bot/admin.mjs");

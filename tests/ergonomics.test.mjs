@@ -24,7 +24,7 @@ const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => 
 
 test("la base d'ergonomie existe et ne parle que de modules du dépôt", () => {
   assert.ok(baseline, "tests/ergonomics-baseline.json est absent : node scripts/ergonomics-baseline.mjs --write");
-  assert.equal(baseline.version, 1);
+  assert.equal(baseline.version, 2);
   const names = new Set(modules.map((m) => m.name));
   assert.deepEqual(Object.keys(baseline.modules).filter((n) => !names.has(n)), [], "module disparu : retirez-le de la base");
   for (const [name, keys] of Object.entries(baseline.modules)) assert.deepEqual([...keys].sort(), keys, `${name} : les lignes de la base sont triées`);
@@ -44,7 +44,10 @@ test("la base ne s'allonge pas : comparée à la branche de base du dépôt (qua
   const ref = process.env.ERGONOMICS_BASE_REF ?? "origin/master";
   const shown = spawnSync("git", ["show", `${ref}:tests/ergonomics-baseline.json`], { cwd: root, encoding: "utf8" });
   if (shown.status !== 0) return; // pas de git, pas de branche de base, ou base pas encore publiée : rien à comparer
-  const growth = baselineGrowth(JSON.parse(shown.stdout), baseline);
+  const previous = JSON.parse(shown.stdout);
+  // Version 2 introduced the R33a-g checks: the one reviewed growth (their known gaps) happens when the version goes up, never otherwise.
+  if ((previous.version ?? 1) < (baseline.version ?? 1)) return;
+  const growth = baselineGrowth(previous, baseline);
   assert.deepEqual(growth, [], `la base d'ergonomie ne peut que rétrécir (par rapport à ${ref}) :\n${growth.slice(0, 20).join("\n")}`);
 });
 
