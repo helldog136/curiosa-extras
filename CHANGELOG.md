@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.103.0 — 2026-11-18
+
+*En bref : les pages du Connecteur Twitch, de Ma Chaîne Twitch, du Connecteur YouTube et des Actions du live YouTube montrent un état en trois mots (Configuré, Dégradé, Non configuré), une ligne de résumé et un seul bouton « Modifier ». Plus de « Reprise », plus de consigne déjà faite, plus de tableau d'adresses à garder, plus d'état répété.*
+
+*In short: the pages of the Twitch connector, My Twitch channel, the YouTube connector and YouTube live actions show a state in three words (Configured, Degraded, Not configured), one summary line and a single "Edit" button. No more "Carried over", no instruction that is already done, no table of addresses to keep, no repeated state.*
+
+### Améliorations
+
+- **Connecteur Twitch 1.8.0.** Une carte « Application Twitch » : Configuré (« Client ID …a1b2 »), Dégradé (une ligne, depuis quand, et le bouton « Autoriser de nouveau ») ou Non configuré (le guide et l'adresse à copier, seulement tant que l'application n'est pas enregistrée). « Modifier » ouvre une fenêtre : une valeur déjà réglée s'affiche comme réglée (« Laisser vide pour garder l'actuel »), et « Oublier l'application reprise » est dans cette fenêtre. Disparus : l'état « Reprise », l'explication de l'adresse de retour, le tableau des adresses des chaînes, « Twitch répond normalement » (deux fois), « Cela se fait en 5 minutes ». Les comptes connectés sont une seule colonne avec « Déconnecter ».
+- **Ma Chaîne Twitch 2.6.0.** Une carte « Connexion à Twitch » (compte, depuis quand, followers) et une carte « Mes directs » (depuis quand la mesure tourne, « Effacer les mesures » dans son menu). Disparus : le tableau « Reprise », les paragraphes d'explication, les phrases « rien à faire », la zone « Effacer les mesures » à trois éléments. Une chaîne reprise d'un autre module s'écrit « Chaîne etoile_nord ».
+- **Connecteur YouTube 1.5.0.** Deux cartes : « Code d'accès YouTube » (une ligne : la limite du jour) et « Compte YouTube » (étapes seulement tant que l'ID client n'est pas enregistré). Le code d'accès, l'ID client et le code secret se saisissent dans des fenêtres « Modifier ».
+- **Actions du live YouTube 1.3.0.** Deux cartes (lecture du chat, Home Assistant) au lieu de bandeaux ; « Tout reprendre » est dans la carte. Disparus : « Je lis le chat… », « Home Assistant est connecté… », « Ce qu'il faut savoir », la limite du jour en paragraphe, le rappel de rechargement.
+
+### Pour les développeurs
+
+- Bloc `connection` du cœur 0.36.0 : `minCore` 0.36.0 pour les quatre modules. Les réglages `appClientId`, `appSecret` (Twitch) et `apiKey`, `oauthClientId`, `oauthClientSecret` (YouTube) deviennent `legacySettings` ; `dataVersion` 2 et une migration les rangent dans le stockage (`twitchApp`, `credential`) ; le champ `carried` liste les valeurs reprises d'un autre module.
+- Un test à trois états (`assertConnectionStates`) par module ; `tests/ergonomics-baseline.json` perd 80 lignes.
+
+*(English)*
+
+- **Twitch connector 1.8.0.** One "Twitch application" card: Configured ("Client ID …a1b2"), Degraded (one line, since when, and the "Authorize again" button) or Not configured (the guide and the address to copy, only until the application is registered). "Edit" opens a window: a value that is set shows as set ("Leave empty to keep the current one"), and "Forget the carried-over application" lives in that window. Gone: the "Carried over" state, the redirect address explanation, the table of channel addresses, "Twitch answers normally" (twice), "It takes 5 minutes". Connected accounts are one column with "Disconnect".
+- **My Twitch channel 2.6.0.** A "Twitch connection" card (account, since when, followers) and a "My lives" card (since when it measures, "Erase the measurements" in its menu). Gone: the "Carried over" table, the explanation paragraphs, the "nothing to do" sentences, the three-part "Erase" area.
+- **YouTube connector 1.5.0.** Two cards: "YouTube access code" (one line: the daily allowance) and "YouTube account" (steps only until the client ID is registered). The access code, the client ID and the secret are typed in "Edit" windows.
+- **YouTube live actions 1.3.0.** Two cards (chat reading, Home Assistant) instead of banners; "Resume everything" is in the card. Gone: "I am reading the chat…", "Home Assistant is connected…", "What to know", the daily allowance paragraph, the reload reminder.
+
 ## 1.101.1 — 2026-11-18
 
 *En bref : aucun changement visible dans vos pages. Le dépôt contrôle désormais sept nouvelles règles de clarté (états en mots simples, champs déjà remplis, formulations conditionnelles, phrases de remplissage), pour que les prochains nettoyages ne puissent que réduire les écarts connus.*
