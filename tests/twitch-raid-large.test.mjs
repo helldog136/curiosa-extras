@@ -514,11 +514,11 @@ test("admin : seul le passage au tirage au hasard est dit (FR et EN), jamais la 
   const blocks = await def.adminPanel(mkList(3), { query: {} });
   assert.equal(blocks.some((b) => b.type === "banner" && b.tone === "info"), false, "aucun encadré d'information sans action");
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
-  assert.match(renew.columns[0], /coupe l'accès à tout le monde/); assert.match(renew.rows[0][0], /l'ancienne cesse de marcher pour tout le monde/); assert.match(renew.rowActions[0].confirm, /POUR PERSONNE/);
+  assert.match(renew.columns[0], /coupe l'accès à tout le monde/); assert.match(renew.rows[0][0], /la précédente cesse de marcher pour tout le monde/); assert.match(renew.rowActions[0].confirm, /POUR PERSONNE/);
   assert.ok(renew.rowActions[0].danger);
   assert.match(blocks.find((b) => b.type === "markdown" && /ouvre votre dock/.test(b.text)).text, /Cette adresse ouvre votre dock à toute personne qui l'a/);
   assert.match(blocks.find((b) => b.type === "html" && /Docks de navigateur/.test(b.html)).html, /<details><summary>Ajouter le dock dans OBS<\/summary>/, "les étapes OBS sont repliées");
-  assert.match(fr.renewed, /l'ancienne ne marche plus/);
+  assert.match(fr.renewed, /la précédente ne marche plus/);
 });
 
 

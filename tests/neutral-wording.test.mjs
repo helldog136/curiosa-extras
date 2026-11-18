@@ -94,8 +94,6 @@ export const ALLOWED = [
     why: "libellé du bouton « Trouver un streameur en ligne au hasard » du DOCK, figé par les empreintes de la 2.1 ; les textes d'administration qui citent ce bouton doivent l'écrire à l'identique." },
   { file: "modules/twitch-raid/README.md", term: "streameur·se", text: "streameur",
     why: "cite le libellé exact du bouton du dock (voir l'entrée précédente)." },
-  { file: "modules/twitch-raid/locales/fr.json", term: "« vous êtes + adjectif accordé »", text: "vous êtes nombreux",
-    why: "phrase d'introduction du bouton « au hasard » du DOCK, figée par les empreintes de la 2.1 (voir plus haut). À reformuler (« Votre liste est longue ! ») dans le lot qui régénère les empreintes." },
   { file: "modules/legal-pages/locales/fr.json", term: "auteur·rice", text: "auteur",
     why: "« droit d'auteur » : expression juridique figée (copyright), sans équivalent courant." },
   { file: "modules/audience/lib.mjs", term: "administrateur·rice (rôle)", text: "administrateur",

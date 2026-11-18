@@ -1,7 +1,7 @@
 {
   "guide": "1. Créez un compte gratuit sur [rawg.io/apidocs](https://rawg.io/apidocs) et copiez votre code d'accès.\n2. Collez-le dans « Code d'accès gratuit Rawg » (onglet Réglages).",
-  "forget_key": "Oublier l'ancien code",
-  "forgot_key": "L'ancien code est oublié.",
+  "forget_key": "Oublier le code précédent",
+  "forgot_key": "Le code précédent est oublié.",
   "test_key": "Tester le code",
   "test_ok": "Le code d'accès fonctionne.",
   "test_refused": "Rawg refuse ce code d'accès. Vérifiez-le sur rawg.io/apidocs.",
@@ -104,7 +104,7 @@
   "copy_why_format": "le fichier n'est pas une image PNG, JPEG ou WebP",
   "copy_why_network": "le site des images n'a pas répondu",
   "copy_retry": "Copier l'image maintenant",
-  "forget_key_confirm": "Oublier l'ancien code ? Les jaquettes en ligne s'arrêtent jusqu'à ce que vous colliez le vôtre dans l'onglet « Réglages ».",
+  "forget_key_confirm": "Oublier le code précédent ? Les jaquettes en ligne s'arrêtent jusqu'à ce que vous colliez le vôtre dans l'onglet « Réglages ».",
   "source_down": "{list} ne répond pas.",
   "sources_down": "{list} ne répondent pas.",
   "fix_key": "Corriger le code",
