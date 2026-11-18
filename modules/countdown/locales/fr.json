@@ -62,7 +62,7 @@
   "fWhere": "Lieu ou plateforme (facultatif)",
   "fWhereHelp": "Exemple : Twitch, ou Paris Expo.",
   "fZone": "Fuseau horaire de l’événement",
-  "fZoneHelp": "L’heure d’été et d’hiver est gérée toute seule. Votre public verra l’heure chez lui.",
+  "fZoneHelp": "Votre public voit l'heure chez lui.",
   "fZoneOther": "Autre fuseau (nom officiel)",
   "fZoneOtherHelp": "Seulement s’il manque dans la liste, par exemple Asia/Kolkata. Il remplace le choix ci-dessus.",
   "featuredDone": "« {name} » est maintenant à la une.",
@@ -85,7 +85,7 @@
   "linkPage": "Adresse de la page de cet événement",
   "listTitle": "Affichés sur le site",
   "localTemplate": "{when} chez vous",
-  "moreOptionsHint": "Pour ajouter un message de fin, une description, un lieu ou une image, cliquez sur « Modifier » à côté de votre événement.",
+  "moreOptionsHint": "Message de fin, description, lieu et image : « Modifier » à côté de votre événement.",
   "nextPage": "Page suivante",
   "notFound": "Cet événement n’existe plus. Il a peut-être été supprimé.",
   "noteFold": "Cette heure existe deux fois ce jour-là (retour à l’heure d’hiver) : c’est la première qui est prise.",
@@ -118,7 +118,7 @@
   "unit_s": "seconde|secondes",
   "upcomingTitle": "Prochains événements",
   "whereLabel": "Lieu :",
-  "whereToShow": "Pour montrer un compte à rebours sur votre page d’accueil : ouvrez « Page d’accueil » dans le menu, puis ajoutez le morceau « Compte à rebours à la une ». Pour votre stream, collez dans OBS l’adresse affichée dans l’onglet « Mes événements ». Le style, la place et la taille ci-dessous ne concernent que OBS.",
+  "whereToShow": "Page d'accueil : ajoutez le morceau « Compte à rebours à la une » depuis « Page d'accueil » dans le menu. Stream : collez dans OBS l'adresse de l'onglet « Mes événements ». Le style, la place et la taille ci-dessous ne concernent que OBS.",
   "overlayDemo": "Exemple : le grand lancement",
   "cleanupConfirm": "Supprimer ces {n} événements masqués ? Ils sont supprimés définitivement."
 }

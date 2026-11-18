@@ -22,6 +22,6 @@
   "lblBorder": "Frame",
   "lblReset": "Undo changes",
   "lblHint": "Pick a brush, then click or drag over the cells.",
-  "autoNotice": "The maze will be generated randomly at every display. Nothing changes until you save.",
+  "autoNotice": "The maze is generated at random each time it is shown.",
   "generateError": "Could not generate a layout."
 }

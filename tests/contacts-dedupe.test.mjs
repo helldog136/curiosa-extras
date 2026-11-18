@@ -146,7 +146,7 @@ test("aperçu = résultat : ce que l'écran annonce est exactement ce que fait l
   assert.match(page, /Champs vides complétés : e-mail\./);
   assert.match(page, /Pas de notes à reprendre\./);
   assert.match(page, /Les autres modules \(Partenariats, Raid, Story…\) sont prévenus/);
-  assert.match(page, /Tant que vous ne validez pas, rien ne change : vous pouvez annuler\./);
+  assert.match(page, /Une fois validé, c.{1,6}est définitif\./);
 });
 
 test("écran : comparer deux fiches, choisir celle qu'on garde, voir ce qui sera repris, ANNULER sans rien changer, puis valider — les autres modules reçoivent le remap", async () => {

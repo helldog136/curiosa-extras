@@ -5,7 +5,7 @@
     "fr": "Questions fréquentes",
     "en": "FAQ"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.2.6",
   "description": {
     "fr": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a été utile » et une boîte pour les questions du public.",
@@ -172,8 +172,8 @@
         "en": "E-mail me about a new question"
       },
       "help": {
-        "fr": "Au plus un e-mail toutes les 6 heures. Demande le serveur d'e-mail réglé dans les Réglages du site ; les questions arrivent de toute façon dans l'onglet « Questions reçues ».",
-        "en": "At most one e-mail every 6 hours. Needs the e-mail server set in the site Settings; questions always arrive in the “Received” tab anyway."
+        "fr": "Au plus un e-mail toutes les 6 heures. Demande l'envoi d'e-mails réglé dans les Réglages du site.",
+        "en": "At most one e-mail every 6 hours. Needs e-mail sending set up in the site settings."
       }
     },
     {

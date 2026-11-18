@@ -5,7 +5,7 @@
     "fr": "Participation",
     "en": "Audience"
   },
-  "version": "1.12.0",
+  "version": "1.12.1",
   "menuGroup": "community",
   "minCore": "0.11.0",
   "description": {
@@ -220,8 +220,8 @@
         "en": "Words not allowed in nicknames"
       },
       "help": {
-        "fr": "Un mot par ligne. « mot » bloque ce mot seul ; « mot* » tout ce qui commence ainsi ; « *mot* » tout ce qui le contient. Accents et majuscules ne comptent pas. Cette liste de départ est à vous : ajoutez, retirez.",
-        "en": "One word per line. \"word\" blocks that word alone; \"word*\" anything starting with it; \"*word*\" anything containing it. Accents and capitals do not matter. This starter list is yours: add or remove."
+        "fr": "Un mot par ligne. « mot » bloque ce mot seul ; « mot* » tout ce qui commence ainsi ; « *mot* » tout ce qui le contient. Accents et majuscules ne comptent pas.",
+        "en": "One word per line. \"word\" blocks that word only; \"word*\" everything starting with it; \"*word*\" everything containing it. Accents and capitals do not count."
       }
     },
     {

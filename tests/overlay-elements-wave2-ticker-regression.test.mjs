@@ -126,7 +126,7 @@ const GOLDEN = {
     }
   },
   "testimonials": {
-    "manifest": "7805598329ad28a8",
+    "manifest": "d406d0ea8711b941",
     "keys": [
       "adminActions",
       "adminDownloads",
@@ -160,7 +160,7 @@ const GOLDEN = {
         "overlayItem": "cae58c6fb6a61775",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "4bbd1d675cd75c00"
+        "admin": "b4b4f0cddceddae5"
       },
       "slow-fr": {
         "main": "41d1b3b2eebdcc2d",
@@ -175,7 +175,7 @@ const GOLDEN = {
         "overlayItem": "a5d2a7e99e43787c",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "2396491003b96769"
+        "admin": "827b0ad90dd5df12"
       },
       "grid-fr": {
         "main": "30bb0b500b5d2f36",
@@ -190,7 +190,7 @@ const GOLDEN = {
         "overlayItem": "a5d2a7e99e43787c",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "9921cf1a4465518d"
+        "admin": "f8a8ae188f93d6f1"
       }
     }
   },
@@ -220,7 +220,7 @@ const GOLDEN = {
         "lines": "a9868ed5f3d02f91",
         "js": "82346ba7741261ce",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "3b477adb7bcfe2d5",
+        "admin": "ca41049c4ecfd8a8",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       },
@@ -233,7 +233,7 @@ const GOLDEN = {
         "lines": "fd2e39c77a231d53",
         "js": "2cb5bd46390d87c1",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "967a13e24ab955e4",
+        "admin": "dd9cbbb0be2a4d49",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       }

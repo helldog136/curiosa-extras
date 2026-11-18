@@ -84,8 +84,8 @@ async function placesBlocks(ctx, query) {
   const pages = Math.max(1, Math.ceil(list.length / PER));
   const page = Math.min(num(query.page, 1, 1, 200), pages);
   const slice = list.slice((page - 1) * PER, page * PER);
-  if (!w.places.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("emptyAdmin") });
-  else if (!list.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("noMatch") });
+  if (!w.places.length) blocks.push({ type: "markdown", text: ctx.t("emptyAdmin") });
+  else if (!list.length) blocks.push({ type: "markdown", text: ctx.t("noMatch") });
   else {
     blocks.push({
       type: "table", columns: [ctx.t("colName"), ctx.t("colType"), ctx.t("colState")],

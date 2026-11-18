@@ -111,7 +111,7 @@ ${c.accounts.length ? `<span class="ct-nets">${[...new Map(c.accounts.map((a) =>
 ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoOrigin(ctx, c))}</span><span class="ct-sub">${U.esc(t("sourceLine", { date, source: sourceLabel(ctx, c.source) }))}</span></div></section>
 <div class="ct-actions"><a class="ct-btn" href="?contact=${encodeURIComponent(c.id)}&amp;edit=1">${U.esc(t("edit"))}</a></div>`;
   const blocks = [first(nav(ctx, org ? "orgs" : "contacts") + head)];
-  if (fresh) blocks.push({ type: "banner", tone: "info", text: t("freshBanner") });
+  if (fresh) blocks.push({ type: "markdown", text: t("freshBanner") });
   if (c.status === "to_review") {
     blocks.push({ type: "banner", tone: "warning", text: t("reviewBanner") });
     blocks.push({ type: "adminForm", action: "verify", submitLabel: t("verify"), fields: [{ name: "id", kind: "hidden", value: c.id }] });
@@ -205,7 +205,7 @@ async function viaPage(ctx) {
   const chosen = last && list.includes(last) ? last : list[0];
   return [
     first(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a>${tabsOfNew(ctx, "via")}`),
-    ...(fallback ? [{ type: "banner", tone: "info", text: t("viaNoConnector") }] : []),
+    ...(fallback ? [{ type: "markdown", text: t("viaNoConnector") }] : []),
     {
       type: "adminForm", action: "addVia", title: t("newPersonTitle"), submitLabel: t("save"), cancelHref: "?",
       fields: [
@@ -287,7 +287,7 @@ async function categoriesPage(ctx, q) {
     blocks.push({ type: "heading", text: t("catMergeTitle", { name: target.name }) }, { type: "markdown", text: t("catMergeHelp", { name: target.name }) });
     blocks.push(others.length
       ? { type: "adminForm", action: "mergeCategory", submitLabel: t("catMergeButton"), fields: [{ name: "drop", kind: "hidden", value: target.id }, { name: "keep", label: t("catMergeTarget"), kind: "select", options: others.map((k) => ({ value: k.id, label: k.name })), value: others[0].id }] }
-      : { type: "banner", tone: "info", text: t("catMergeNone") });
+      : { type: "markdown", text: t("catMergeNone") });
     blocks.push({ type: "heading", text: t("catDeleteTitle") }, { type: "markdown", text: t("catDeleteHelp") });
     blocks.push({ type: "table", columns: [t("colCategory")], rows: [[target.name]], rowIds: [target.id], rowActions: [{ label: t("catDelete"), action: "deleteCategory", confirm: t("confirmCatDelete"), danger: true }] });
     return blocks;

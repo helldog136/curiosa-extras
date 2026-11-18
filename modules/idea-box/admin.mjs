@@ -29,7 +29,7 @@ function listBlocks(ctx, all, review) {
     blocks.push({ type: "links", items: [{ label: ctx.t("seeAll"), href: "?tab=use" }] });
     if (!shown.length) return [...blocks, { type: "markdown", text: ctx.t("nothingToReview") }];
   } else if (pending > 0) {
-    blocks.push({ type: "banner", tone: "info", text: ctx.t(pending === 1 ? "pendingBanner_one" : "pendingBanner", { n: pending }) });
+    blocks.push({ type: "banner", tone: "info", text: ctx.t(pending === 1 ? "pendingBanner_one" : "pendingBanner", { n: pending }), href: "?show=review" });
   }
   const rows = inWorkOrder(shown);
   const path = ctx.instance.basePath ? `/${ctx.instance.basePath}` : "/";

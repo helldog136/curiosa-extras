@@ -165,7 +165,8 @@ export async function adminPanel(ctx, { query } = {}) {
     });
     if (editor && g.items.length > 1) blocks.push({ type: "links", items: [{ label: ctx.t("linkOrder"), href: `${here(ctx)}?order=${g.theme ? g.theme.id : "none"}` }] });
   }
-  if (published.some((i) => i.n >= 3 && i.n > i.y)) blocks.push({ type: "markdown", text: ctx.t("votesHint") });
+  const disliked = published.filter((i) => i.n >= 3 && i.n > i.y).length;
+  if (disliked) blocks.push({ type: "markdown", text: ctx.t("votesHint", { n: disliked }) });
 
   // Thèmes
   blocks.push({ type: "heading", text: ctx.t("themesTitle", { count: themes.length }) });

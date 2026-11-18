@@ -144,7 +144,7 @@
   "okLast": "This question is already the last.",
   "okMoved": "Order changed.",
   "previewTitle": "Question preview",
-  "previewHelp": "This is what visitors will see. Only here is the right answer marked ✔: on the site it only appears after answering.",
+  "previewHelp": "Public preview. Only this view marks the right answer ✔.",
   "previewEmpty": "This question is not complete yet: add the question and at least two answers.",
   "previewIn": "See in {lang}",
   "newTitle": "New question",

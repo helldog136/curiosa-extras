@@ -39,7 +39,7 @@ test("le panneau : brouillon, publiée, sans phrase, sans page — chaque état 
   assert.equal(blocks[1].action, "unpublish");
   assert.ok(blocks.some((b) => b.type === "links" && b.items[0].href === "/?mascot=voir"));
   await run(ctx, "applyTemplate", { id: "empty" });
-  assert.match((await panel(ctx))[0].text, /aucune phrase publiée/);
+  assert.match((await panel(ctx))[0].text, /sans phrase publiée/);
   const some = ctxFor({ where: "some", pages: "" });
   await panel(some); await run(some, "publish");
   assert.match((await panel(some))[0].text, /aucune page/);
