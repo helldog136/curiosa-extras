@@ -11,7 +11,8 @@
 //   - a new reference value never plays a celebration: the bar glides to it (`rebase`), up or down;
 //   - tests and replays never change a value: they play a short rehearsal that goes back by itself.
 
-export const TIER = { 1: 1, 2: 2, 3: 5 };   // a tier 2 sub buys twice the time of a tier 1, a tier 3 five times (close to their prices)
+export const TIER = { 1: 1, 2: 2, 3: 5 };   // the DEFAULT factors: a tier 2 sub buys twice the time of a tier 1, a tier 3 five times (close to their prices); the settings tierFactor1..3 change them
+export const TIER_LIMITS = { min: 0, max: 20 };
 export const FP_WINDOW = { follow: Infinity, sub: 600_000, resub: 600_000, sub_end: 600_000, gift: 10_000, cheer: 10_000 };
 export const SHOW_DELAY_MS = 1600;    // a highlight starts this long after the event reached this module (every page polls every 1.5 s: all show it, together)
 export const FRESH_MS = 60_000;       // an event older than this when it is first seen (a catch-up, the first reading after install) counts silently
@@ -96,27 +97,30 @@ export function crossing(before, after, { min, target }) {
 
 /* ───────────── Subathon ───────────── */
 /**
- * The rules: seconds a tier 1 sub (or renewal, or each gifted sub) adds, seconds per 100 bits, seconds a new follower adds, and the cap (0: none) on the
+ * The rules: seconds a tier 1 sub (or renewal, or each gifted sub) adds (times the factor of its tier: `tiers`), seconds per 100 bits, seconds a new follower adds, and the cap (0: none) on the
  * whole length (start length + added time). Read from the settings with their bounds.
  */
 export function rulesOf(s) {
   const n = (v, def, min, max) => { const x = Math.round(num(v)); return Number.isFinite(x) ? Math.min(max, Math.max(min, x)) : def; };
+  // a tier factor may be fractional (1.5): an empty or unreadable value is the default, the rest is kept within its bounds
+  const f = (v, def) => { const x = num(v); return Number.isFinite(x) ? Math.min(TIER_LIMITS.max, Math.max(TIER_LIMITS.min, Math.round(x * 100) / 100)) : def; };
   return {
     lengthS: n(s.subathonLength, 4 * 3600, 60, 30 * 86400),
     capS: n(s.subathonCap, 0, 0, 60 * 86400),
     perSubS: n(s.secondsPerSub, 300, 0, 86400),
     perHundredBitsS: n(s.secondsPerHundredBits, 60, 0, 86400),
     perFollowS: n(s.secondsPerFollow, 0, 0, 86400),
+    tiers: { 1: f(s.tierFactor1, TIER[1]), 2: f(s.tierFactor2, TIER[2]), 3: f(s.tierFactor3, TIER[3]) },
   };
 }
 
 /** The seconds one ledger row asks to add to the subathon (before the cap): its rule times the tier; a manual row carries its own (may be negative). */
 export function subathonSeconds(row, rules) {
-  const tier = TIER[row.tier] ?? 1;
+  const tier = rules.tiers?.[row.tier] ?? TIER[row.tier] ?? 1;   // the factor of the tier (a row of an older shape has none: the default)
   switch (row.kind) {
-    case "sub": return row.gifted ? 0 : rules.perSubS * tier;            // gifted subs are counted by their gift line
-    case "resub": return rules.perSubS * tier;
-    case "gift": return rules.perSubS * tier * (row.count ?? 1);
+    case "sub": return row.gifted ? 0 : Math.round(rules.perSubS * tier);            // gifted subs are counted by their gift line
+    case "resub": return Math.round(rules.perSubS * tier);
+    case "gift": return Math.round(rules.perSubS * tier * (row.count ?? 1));
     case "cheer": return Math.floor(((row.bits ?? 0) / 100) * rules.perHundredBitsS);
     case "follow": return rules.perFollowS;
     case "manual": return Math.round(num(row.seconds)) || 0;
