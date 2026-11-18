@@ -4,6 +4,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.99.0 — 2026-11-18
+
+*En bref : fini les bandeaux et phrases de réassurance qui ne demandent rien. « Oublier l'application reprise » n'est plus un gros bouton.*
+
+*In short: no more banners and reassuring sentences that ask for nothing. "Forget the carried-over application" is no longer a big button.*
+
+### Nouveautés
+
+- **Connecteur Twitch 1.7.1 : l'application reprise tient en un mot.** Le bandeau violet est remplacé par « Reprise » (le détail est dans l'info-bulle). « Oublier l'application reprise » passe dans un menu discret et demande confirmation en disant ce qui sera perdu.
+- **Même ménage ailleurs.** Ma chaîne Twitch (chaîne reprise, déconnexion), Jaquettes (code repris), Alertes (vider la file), Maison connectée et Live YouTube (vider le journal), Compte à rebours (supprimer les masqués) : ces actions rares ne sont plus de gros boutons et confirment ce qui sera perdu.
+- **Moins de phrases inutiles.** « Rien à faire », « rien n'est perdu », « gardé en sécurité » et quelques explications en fin de bandeau ont disparu.
+- **The connector's carried-over application is one word.** The purple banner is replaced by "Carried over" (details in a tooltip). "Forget the carried-over application" moves to a discreet menu and asks for confirmation, saying what will be lost.
+- **Same tidy-up elsewhere.** My Twitch channel (carried-over channel, disconnect), Game covers (picked-up code), Alerts (empty the queue), Home Assistant and YouTube live (clear the log), Countdown (delete hidden events): these rare actions are no longer big buttons and confirm what will be lost.
+- **Fewer useless sentences.** "Nothing to do", "nothing is lost", "kept safe" and a few explanations at the end of banners are gone.
+
+### Pour les développeurs
+
+- Nouveau contrôle R32 : une bannière « info » ou « succès » sans lien échoue au test, sauf si elle est dans `tests/banners-baseline.json` (la liste ne fait que rétrécir).
+- Exports morts retirés ; versions corrigées en patch pour les 20 modules touchés.
+- New R32 check: an info or success banner without a link fails the test unless it is in `tests/banners-baseline.json` (the list only shrinks). Dead exports removed; patch versions for the 20 touched modules.
+
 ## 1.98.0 — 2026-11-18
 
 *En bref : dans « Objectifs du live », vous choisissez maintenant combien de temps ajoute un sub de palier 1, 2 ou 3 dans le subathon.*
