@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { FakeHaClient, directTransport } from "./helpers/fakeHaClient.mjs";
 import { parseManifest } from "@/core/modules/manifest";
+import { assertConnectionStates } from "./helpers/connectionKit.mjs";
 
 const DIR = new URL("../modules/home-assistant", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${DIR}/${p}`, "utf8"));
@@ -64,7 +65,7 @@ const dump = (w) => JSON.stringify(w.ctx.dumpStore());
 test("le manifeste est valide et déclare le contrat exact", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.3.1"); assert.equal(manifest.minCore, "0.6.0");
+  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.4.0"); assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
@@ -460,10 +461,10 @@ test("sans « Ma Chaîne Twitch » : reste fermé et la page le dit (et propose 
   assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "r1" }), { ok: false, reason: "not_live" });
   const blocks = await A.panel(w.ctx);
   const text = JSON.stringify(blocks);
-  assert.match(text, /on ne peut pas savoir si vous êtes en direct/);
+  assert.match(text, /Impossible de savoir si vous êtes en direct/);
   assert.ok(blocks.some((b) => b.type === "suggestInstall" && b.service === "twitch.live"));
   assert.ok(blocks.some((b) => b.type === "suggestInstall" && b.service === "youtube.live"));
-  assert.match(text, /Chaîne YouTube/);
+  assert.match(text, /direct sur YouTube/);
   w.done();
 });
 
@@ -509,7 +510,7 @@ test("direct : YouTube seul (pas de Chaîne Twitch) : en direct => ouvert, la pa
   const r = await ha.pull();
   assert.equal(r.body.live, true);
   assert.equal((await bridge().status(w.ctx)).live, true);
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /YouTube dit que vous êtes en direct/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /En direct sur YouTube/);
   w.done();
 });
 
@@ -524,7 +525,7 @@ test("direct : YouTube seul, fin du direct => marge de 5 minutes, puis fermé (n
   refreshLive(); w.tick(61_000); await ha.pull();
   assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "r3" }), { ok: false, reason: "not_live" });
   refreshLive();
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /vous n'êtes pas en direct/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Hors direct/);
   w.done();
 });
 
@@ -534,7 +535,7 @@ test("direct : Twitch seul inchangé ; Twitch en direct n'interroge pas YouTube 
   await pairUp(w);
   assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
   assert.equal(asked, 0);
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /Twitch dit que vous êtes en direct/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /En direct sur Twitch/);
   w.done();
 });
 
@@ -563,7 +564,7 @@ test("direct : aucune source => fermé, la page dit « Chaîne Twitch ou Chaîne
   await pairUp(w);
   assert.equal((await L.liveNow(w.ctx)).source, "none");
   assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "r1" }), { ok: false, reason: "not_live" });
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /Ma Chaîne Twitch.*Chaîne YouTube/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Impossible de savoir si vous êtes en direct.*direct sur Twitch.*direct sur YouTube/);
   w.done();
 });
 
@@ -668,9 +669,10 @@ test("coupe-circuit : le gros bouton et sa confirmation par l'état (sans boîte
   assert.ok(blocks.findIndex((b) => b === form) <= 3, "visible sans défiler : juste après l'état");
   assert.match((await def.adminActions.stop.run(w.ctx)).ok, /Tout est coupé/);
   blocks = await A.panel(w.ctx);
-  assert.equal(blocks[0].tone, "warning"); assert.match(blocks[0].text, /Tout est coupé/);
-  assert.equal(blocks.find((b) => b.type === "adminForm" && ["stop", "start"].includes(b.action)).submitLabel, "Reprendre");
-  assert.match((await def.adminActions.start.run(w.ctx)).ok, /C'est repris/);
+  assert.equal(blocks[0].type, "connection"); assert.equal(blocks[0].state, "degraded"); assert.match(blocks[0].reason, /Tout est coupé/);
+  assert.deepEqual(blocks[0].primary, { label: "Reprendre", action: "start" }, "reprendre : le bouton de la carte d'état, pas un second gros bouton");
+  assert.ok(!blocks.some((b) => b.type === "adminForm" && ["stop", "start"].includes(b.action)), "plus de gros bouton quand tout est coupé");
+  assert.match((await def.adminActions.start.run(w.ctx)).ok, /Les actions sont reprises/);
   assert.equal(await A.badge(w.ctx), 0);
   await def.adminActions.stop.run(w.ctx);
   assert.equal(await A.badge(w.ctx), 1);
@@ -870,28 +872,78 @@ test("bornes : le journal garde le texte lu accepté mais jamais le texte refus�
 
 /* ───────────── Journal et page ───────────── */
 
-test("page : état, bouton, assistant en 3 étapes avec le lien HACS, code copiable", async () => {
+test("page : un seul bloc « connection », ses trois états, l'assistant en 3 étapes seulement tant que rien n'est associé", async () => {
   const w = world();
   let blocks = await A.panel(w.ctx);
-  assert.equal(blocks[0].type, "banner"); assert.match(blocks[0].text, /pas encore associé/);
-  let text = JSON.stringify(blocks);
+  assert.equal(blocks[0].type, "connection"); assert.equal(blocks[0].state, "notConfigured"); assert.match(blocks[0].reason, /Aucun Home Assistant n'est associé/);
+  let text = JSON.stringify(blocks[0].setup);
   assert.ok(text.includes("https://github.com/helldog136/homeassistant-curiosa"));
   assert.match(text, /1\. Installer l'intégration/); assert.match(text, /2\. Associer/); assert.match(text, /3\. Créer une première récompense/);
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pair"));
+  assert.ok(blocks[0].setup.some((b) => b.type === "adminForm" && b.action === "pair"));
+  assert.ok(!blocks.some((b) => b.type === "adminForm" && ["stop", "start"].includes(b.action)), "rien à couper tant que rien n'est associé");
+  assert.ok(!JSON.stringify(blocks.filter((b) => b.type !== "connection" && b.tab !== "settings")).includes("Direct"), "pas de ligne de direct sans association");
   await def.adminActions.pair.run(w.ctx);
   blocks = await A.panel(w.ctx);
-  const code = blocks.find((b) => b.type === "copy" && /^[A-Z2-9]{8}$/.test(b.text));
-  assert.ok(code);
-  assert.ok(blocks.some((b) => b.type === "copy" && b.text === "https://site.example.org"));
+  const code = blocks[0].setup.find((b) => b.type === "copy" && /^[A-Z2-9]{8}$/.test(b.text));
+  assert.ok(code); assert.match(code.label, /valable encore 10 min/);
+  assert.ok(blocks[0].setup.some((b) => b.type === "copy" && b.text === "https://site.example.org"));
   const ha = new FakeHaClient({ send: directTransport(def, w.ctx) });
   await ha.pair(code.text);
   await ha.pull();
   blocks = await A.panel(w.ctx);
-  assert.equal(blocks[0].tone, "success"); assert.match(blocks[0].text, /Home Assistant est connecté/);
-  assert.ok(blocks.some((b) => b.type === "table" && b.rowActions?.[0]?.action === "unpair" && b.rowActions[0].confirm));
+  assert.equal(blocks[0].state, "configured"); assert.match(blocks[0].summary, /^Home Assistant|^[^·]+ · vu /);
+  assert.deepEqual(blocks[0].edit, { href: "?edit=ha", label: "Changer d'appareil" });
+  assert.equal(blocks[0].menu, undefined);
+  assert.ok(!blocks.some((b) => b.type === "table" && b.rowActions?.[0]?.action === "unpair"), "plus de tableau d'un seul appareil");
   w.tick(3 * 60_000);
   blocks = await A.panel(w.ctx);
-  assert.equal(blocks[0].tone, "warning"); assert.match(blocks[0].text, /pas été vu depuis/);
+  assert.equal(blocks[0].state, "degraded"); assert.match(blocks[0].reason, /Plus de réponse/);
+  w.done();
+});
+
+test("page : les trois états passent les contrôles R33 du kit (état, doublons, consignes après coup)", async () => {
+  const notConfigured = await A.panel(world().ctx);
+  const w = world(); await pairUp(w);
+  const configured = await A.panel(w.ctx);
+  w.tick(3 * 60_000);
+  const lost = await A.panel(w.ctx);
+  const w2 = world(); await pairUp(w2); await def.adminActions.stop.run(w2.ctx);
+  const cut = await A.panel(w2.ctx);
+  const w3 = world(); const code = (await B.createPairing(w3.ctx)).code;
+  const never = (await (async () => { await new FakeHaClient({ send: directTransport(def, w3.ctx) }).pair(code, "Maison"); return A.panel(w3.ctx); })());
+  assertConnectionStates({ notConfigured, configured, degraded: lost });
+  assertConnectionStates({ notConfigured, configured, degraded: cut });
+  assertConnectionStates({ notConfigured, configured, degraded: never });
+  assert.equal(cut[0].since, new Date(T0 + 1100).toISOString()); assert.match(cut[0].reason, /^Tout est coupé/);
+  assert.equal(never[0].state, "degraded"); assert.match(never[0].reason, /Jamais connecté/);
+  for (const x of [w, w2, w3]) x.done();
+});
+
+test("page : « Changer d'appareil » ouvre une fenêtre (adresse ?edit=ha) avec le seul bouton principal et « Dissocier » à part, sinon rien", async () => {
+  const w = world(); await pairUp(w);
+  assert.ok(!(await A.panel(w.ctx)).some((b) => b.type === "adminForm" && b.presentation === "dialog"), "fermée tant que l'adresse ne la demande pas");
+  const blocks = await A.panel(w.ctx, { query: { edit: "ha" } });
+  const dlg = blocks.find((b) => b.type === "adminForm" && b.presentation === "dialog");
+  assert.equal(dlg.action, "pair"); assert.equal(dlg.cancelHref, "?"); assert.deepEqual(dlg.fields, []);
+  assert.equal(dlg.title, "Remplacer Maison par un autre appareil"); assert.equal(dlg.submitLabel, "Obtenir un code");
+  assert.deepEqual(dlg.secondaryAction, { label: "Dissocier Home Assistant", action: "unpair", confirm: dlg.secondaryAction.confirm });
+  assert.match(dlg.secondaryAction.confirm, /ne recevra plus rien/);
+  const none = world({ rights: ["ha.stop"] }); await pairUp(none);
+  const viewer = await A.panel(none.ctx, { query: { edit: "ha" } });
+  assert.ok(!viewer.some((b) => b.type === "adminForm" && b.presentation === "dialog"));
+  assert.equal(viewer[0].edit, undefined); assert.equal(viewer[0].primary, undefined);
+  w.done(); none.done();
+});
+
+test("page : un nouveau code pendant que Home Assistant est associé s'affiche sous la carte, avec ses minutes", async () => {
+  const w = world(); await pairUp(w);
+  await def.adminActions.pair.run(w.ctx);
+  const blocks = await A.panel(w.ctx);
+  assert.equal(blocks[0].state, "configured");
+  const copies = blocks.filter((b) => b.type === "copy");
+  assert.equal(copies.length, 2); assert.match(copies[0].label, /valable encore 10 min/);
+  w.tick(4 * 60_000);
+  assert.match((await A.panel(w.ctx)).find((b) => b.type === "copy").label, /valable encore 6 min/);
   w.done();
 });
 
@@ -911,7 +963,7 @@ test("page : journal avec les motifs de refus, pastille Test, pseudo échappé",
   assert.match(html, /hj-pill">Test</);
   assert.ok(!html.includes("<script>"));
   assert.ok((html.match(/<li/g) ?? []).length <= 50);
-  assert.match(JSON.stringify(blocks), /Les 50 dernières lignes, gardées 7 jours/);
+  assert.match(JSON.stringify(blocks), /50 dernières lignes, gardées 7 jours/);
   w.done();
 });
 
@@ -957,21 +1009,22 @@ test("test : parcours complet avec le faux Home Assistant, marqueur `test: true`
   w.done();
 });
 
-test("test : le suivi se recharge seul pendant 60 s tant que ce n'est pas fini, puis s'arrête", async () => {
+test("test : le suivi se met à jour seul (bloc refreshWhile) pendant 60 s tant que ce n'est pas fini, puis s'arrête", async () => {
   const w = world();
   const ha = await pairUp(w);
   await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" });
-  const reload = async () => JSON.stringify(await A.panel(w.ctx)).includes("location.reload");
-  assert.equal(await reload(), true);
+  const refresh = async (x = w) => (await A.panel(x.ctx)).some((b) => b.type === "refreshWhile" && b.pending === true);
+  assert.equal(await refresh(), true);
+  assert.ok(!JSON.stringify(await A.panel(w.ctx)).includes("location.reload"), "plus de script de rechargement : le cœur rafraîchit");
   w.tick(30_000); await ha.pull();
-  assert.equal(await reload(), true, "récupéré mais pas fini");
+  assert.equal(await refresh(), true, "récupéré mais pas fini");
   w.tick(31_000);
-  assert.equal(await reload(), false, "plus de 60 s");
+  assert.equal(await refresh(), false, "plus de 60 s");
   const w2 = world();
   const ha2 = await pairUp(w2);
   await def.adminActions.test.run(w2.ctx, { key: "lumieres:rouge" });
   await ha2.step();
-  assert.equal(JSON.stringify(await A.panel(w2.ctx)).includes("location.reload"), false, "fini : plus de rechargement");
+  assert.equal(await refresh(w2), false, "fini : plus de rafraîchissement");
   w.done(); w2.done();
 });
 
@@ -992,7 +1045,7 @@ test("test : issues expiré, ignoré (pas de liaison) et échec sont suivies ave
 
 test("test : possible hors direct, mais jamais si tout est coupé, si rien n'est associé ou si Home Assistant est absent", async () => {
   const w = world({ live: { live: false } });
-  assert.match((await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" })).error, /pas encore associé/);
+  assert.match((await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" })).error, /Associez d'abord/);
   const ha = await pairUp(w);
   w.tick(3100);
   assert.match((await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" })).ok, /Test envoyé/);

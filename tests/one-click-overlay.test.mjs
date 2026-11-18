@@ -26,7 +26,7 @@ test("the steps of the Twitch part: authorized, listening, and the placement ste
 });
 
 test("FR and EN: same keys for the texts, no colon at the end, short", () => {
-  for (const [en, fr, keys] of [[evEn, evFr, ["cl_placed", "cl_placed_link", "cl_placed_title"]], [botEn, botFr, ["media_setup_btn", "media_setup_ok", "media_setup_denied", "media_setup_err", "media_suggest_reason"]]]) {
+  for (const [en, fr, keys] of [[evEn, evFr, ["cl_placed", "cl_placed_link", "cl_placed_title"]], [botEn, botFr, ["media_setup_btn", "media_setup_ok", "media_setup_denied", "media_setup_err"]]]) {
     for (const k of keys) { assert.ok(en[k] && fr[k], k); assert.ok(!/:\s*$/.test(en[k]) && !/:\s*$/.test(fr[k])); }
   }
   assert.ok(botEn.media_setup_btn.length <= 60);
@@ -53,11 +53,11 @@ test("bot: installed overlay without a copy: the window has the button beside it
   assert.equal((await BM.pendingSetUp(w.ctx)), null, "nothing left to set up");
 });
 
-test("bot: not installed or without permission: no button; the core suggestion takes over; an editor is refused with a sentence", async () => {
+test("bot: not installed or without permission: no button; the field of the window says where to install it; an editor is refused with a sentence", async () => {
   const absent = bot({ installedModules: {} });
   const [form] = await windowsOf(absent.ctx);
   assert.equal(form.extraActions, undefined);
-  assert.ok((await botAdmin.panel(absent.ctx, { query: {} })).some((b) => b.type === "suggestInstall" && b.service === "alerts.show"));
+  assert.ok(!(await botAdmin.panel(absent.ctx, { query: {} })).some((b) => b.type === "suggestInstall"), "R33f: no install suggestion on a configured page; the field of the window says where to install it");
   const editor = bot({ person: { id: "u2", email: "e@example.test", role: "editor" } });
   assert.match((await botAdmin.actions.setUpAlerts(editor.ctx, {})).error, /Only the administration team/);
   assert.equal((await BM.pendingSetUp(editor.ctx)).module, "alerts-overlay", "still to set up");

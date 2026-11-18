@@ -58,7 +58,7 @@ function commandRow(ctx, info, c) {
     : { text: cur.word, title: cur.full, switch: { on: c.enabled, action: "toggle", label: c.kind === "word" ? t("sw_label_word", { word: first }) : t("sw_label", { command: first }), onText: (c.enabled ? cur : would).text, offText: t("state_off") } };
   const shows = c.media ? t("row_media", { name: MD.nameOf(c.media, info.lib ?? { items: [] }) }) : "";   // what it also puts on screen: only when it does (R14)
   const answer = [c.text, shows].filter(Boolean).join(" · ");
-  return [{ text: name, title: `${words(p, c).join("  ")}${role ? `  (${role})` : ""}` }, { text: answer, title: answer }, { text: t(`origin_${origin}`), badge: BADGES[origin] }, state];
+  return [{ text: name, title: `${words(p, c).join("  ")}${role ? `  (${role})` : ""}` }, { text: answer, title: answer }, origin === "builtin" ? "" : { text: t(`origin_${origin}`), badge: BADGES[origin] }, state];
 }
 
 /**

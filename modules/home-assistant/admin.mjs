@@ -96,15 +96,30 @@ export function refusalText(ctx, r) {
 
 /* ───────────── Les blocs ───────────── */
 
-function statusBlocks(ctx, o) {
+/**
+ * The state of the link, in the three words of the core (R33): configured, degraded, not configured. What is wrong says what to do.
+ * "Edit" opens the window to pair another device (and to unpair): there is no setting to show once paired.
+ */
+function connectionBlock(ctx, o, manage, setup) {
   const t = ctx.t;
-  const out = [];
-  if (!o.paired) out.push({ type: "banner", tone: "info", text: t("st_unpaired") });
-  else if (!o.enabled) out.push({ type: "banner", tone: "warning", text: t("st_cut", { by: o.stoppedBy ?? "", when: o.stoppedAt ? ago(ctx, o.stoppedAt, o.now) : "" }) });
-  else if (o.online) out.push({ type: "banner", tone: "success", text: t("st_connected", { name: o.paired.name, when: ago(ctx, o.lastSeenAt, o.now) }) });
-  else if (o.lastSeenAt) out.push({ type: "banner", tone: "warning", text: t("st_lost", { when: ago(ctx, o.lastSeenAt, o.now) }) });
-  else out.push({ type: "banner", tone: "warning", text: t("st_never", { when: ago(ctx, o.paired.at, o.now) }) });
-  return out;
+  const base = { type: "connection", id: "ha", title: t("conn_title") };
+  if (!o.paired) return { ...base, state: "notConfigured", reason: t("conn_none"), setup: manage ? setup : [] };
+  const summary = o.lastSeenAt ? t("conn_summary", { name: o.paired.name, when: ago(ctx, o.lastSeenAt, o.now) }) : t("conn_summary_paired", { name: o.paired.name, when: ago(ctx, o.paired.at, o.now) });
+  const edit = manage ? { edit: { href: "?edit=ha", label: t("edit_btn") } } : {};
+  if (!o.enabled) {
+    const by = o.stoppedBy && o.stoppedBy !== "admin" ? o.stoppedBy : "";
+    return { ...base, state: "degraded", summary, reason: t(by ? "conn_cut_by" : "conn_cut", { by }), ...(o.stoppedAt ? { since: new Date(o.stoppedAt).toISOString() } : {}), ...(manage ? { primary: { label: t("big_start"), action: "start" } } : {}), ...edit };
+  }
+  const again = manage ? { primary: { label: t("wiz_again"), action: "pair" } } : {};
+  if (!o.online) return { ...base, state: "degraded", summary, reason: t(o.lastSeenAt ? "conn_lost" : "conn_never"), ...again, ...edit };
+  return { ...base, state: "configured", summary, ...edit };
+}
+
+/** The window of "Edit": another device takes the place of this one, or this one is unpaired. Only when the address asks for it. */
+function editDialog(ctx, o) {
+  const t = ctx.t;
+  return { type: "adminForm", action: "pair", presentation: "dialog", cancelHref: "?", title: t("edit_title", { name: o.paired.name }), submitLabel: t("edit_submit"), fields: [],
+    secondaryAction: { label: t("dev_unpair_btn"), action: "unpair", confirm: t("dev_unpair_confirm") } };
 }
 
 function liveBlocks(ctx, o) {
@@ -117,59 +132,58 @@ function liveBlocks(ctx, o) {
   return [{ type: "markdown", text: t("live_no") }];
 }
 
-// Le grand bouton : le formulaire du cœur, agrandi par une règle de style qui le retrouve grâce à un champ caché.
+// The big button: the core's form, enlarged by a style rule that finds it through a hidden field.
 const BIG_CSS = `<style>
 form:has(input[name="ha_big"]){padding:1rem}
 form:has(input[name="ha_big"]) button{width:100%;min-height:4.5rem;font-size:1.5rem;font-weight:800;border-radius:1rem;letter-spacing:.01em}
 form:has(input[name="ha_big"][value="stop"]) button{background:#b91c1c!important;color:#fff!important;border-color:#7f1d1d!important}
-form:has(input[name="ha_big"][value="start"]) button{background:#15803d!important;color:#fff!important;border-color:#14532d!important}
 form:has(input[name="ha_big"]) button:focus-visible{outline:3px solid currentColor;outline-offset:3px}
 </style>`;
 
+/** The emergency stop: only once there is something to cut (paired). Resuming is the button of the state card. */
 function bigButton(ctx, o) {
   const t = ctx.t;
   const hidden = (value) => ({ name: "ha_big", kind: "hidden", value });
   if (o.enabled) {
+    if (!o.paired) return [];
     if (!can(ctx, "ha.stop")) return [{ type: "markdown", text: t("big_no_right") }];
     return [{ type: "html", html: BIG_CSS }, { type: "adminForm", action: "stop", submitLabel: t("big_stop"), fields: [hidden("stop")] }];
   }
-  if (!can(ctx, "ha.manage")) return [{ type: "markdown", text: t("big_resume_no_right") }];
-  return [{ type: "html", html: BIG_CSS }, { type: "adminForm", action: "start", submitLabel: t("big_start"), fields: [hidden("start")] }];
+  return can(ctx, "ha.manage") ? [] : [{ type: "markdown", text: t("big_resume_no_right") }];   // resuming is the fix of the state card ("Resume")
 }
 
+/** The code to type in Home Assistant, and the address of the site: only while a code is waiting. */
+function codeBlocks(ctx, o) {
+  const t = ctx.t;
+  if (!o.pending) return [];
+  const site = String(ctx.api.siteUrl ?? "").replace(/\/+$/, "");
+  return [
+    { type: "copy", text: o.pending.code, label: t("wiz_code_label", { minutes: Math.max(1, Math.ceil((o.pending.expiresAt - o.now) / 60_000)) }) },
+    { type: "copy", text: site, label: t("wiz_site_label") },
+  ];
+}
+
+/** The steps shown while Home Assistant is not paired (inside the `connection` block: the core hides them once it is). */
 function wizardBlocks(ctx, o, botPath) {
   const t = ctx.t;
-  const site = String(ctx.api.siteUrl ?? "").replace(/\/+$/, "");
-  const out = [{ type: "heading", text: t("wiz_title") }];
-  out.push({ type: "markdown", text: t("wiz_1", { repo: INTEGRATION_REPO }) });
-  out.push({ type: "markdown", text: t("wiz_2") });
-  if (o.pending) {
-    out.push({ type: "copy", text: o.pending.code, label: t("wiz_code_label") });
-    out.push({ type: "markdown", text: t("wiz_code_help", { minutes: Math.max(1, Math.ceil((o.pending.expiresAt - o.now) / 60_000)) }) });
-    out.push({ type: "copy", text: site, label: t("wiz_site_label") });
-    out.push({ type: "adminForm", action: "pair", submitLabel: t("wiz_again"), fields: [] });
-  } else {
-    out.push({ type: "adminForm", action: "pair", submitLabel: t("wiz_make"), fields: [] });
-  }
-  out.push({ type: "markdown", text: t("wiz_3") });
-  out.push(...botLink(ctx, botPath));
-  return out;
+  return [
+    { type: "markdown", text: t("wiz_1", { repo: INTEGRATION_REPO }) },
+    { type: "markdown", text: t("wiz_2") },
+    ...codeBlocks(ctx, o),
+    { type: "adminForm", action: "pair", submitLabel: t(o.pending ? "wiz_again" : "wiz_make"), fields: [] },
+    { type: "markdown", text: t("wiz_3") },
+    ...botLink(ctx, botPath),
+  ];
 }
 
-/** Le bouton vers l'onglet « Récompenses » du Bot Twitch ; sans Bot Twitch, une phrase simple et le chemin du Catalogue. */
+// The button to the tab of the Twitch bot where rewards are made; without the bot, the way to install it.
 function botLink(ctx, botPath) {
   const t = ctx.t;
   if (botPath) return [{ type: "links", items: [{ label: t("next_btn"), href: `${botPath}${BOT_TAB}` }] }];
-  return [{ type: "markdown", text: t("next_no_bot") }, { type: "links", items: [{ label: t("next_catalogue"), href: "/admin/catalogue" }] }];
+  return [{ type: "links", items: [{ label: t("next_install"), href: "/admin/catalogue" }] }];
 }
 
-/** « Étape suivante » : créer ou modifier les récompenses, dans le Bot Twitch (les récompenses n'existent pas ici : chacun son rôle). */
-function nextStepBlocks(ctx, o, botPath) {
-  const t = ctx.t;
-  return [{ type: "heading", text: t("next_title") }, { type: "markdown", text: t(botPath ? "next_text" : "next_text_no_bot") }, ...botLink(ctx, botPath)];
-}
-
-/** « Actions en attente de liaison » : Home Assistant a reçu ces actions mais n'a pas encore de script pour elles (20 au plus, les plus récentes d'abord). */
+/** "Actions waiting to be linked": Home Assistant received these actions but has no script for them yet (20 at most, the latest first). */
 function pendingBlocks(ctx, o) {
   const t = ctx.t;
   if (!o.unmapped.length) return [];
@@ -180,19 +194,7 @@ function pendingBlocks(ctx, o) {
   ];
 }
 
-function deviceBlocks(ctx, o) {
-  const t = ctx.t;
-  return [
-    { type: "heading", text: t("dev_title") },
-    { type: "table", columns: [t("dev_name")], rows: [[t("dev_row", { name: o.paired.name, since: ago(ctx, o.paired.at, o.now), mark: o.paired.fp })]], rowIds: ["device"],
-      rowActions: [{ label: t("dev_unpair"), action: "unpair", confirm: t("dev_unpair_confirm"), danger: true }] },
-    ...(o.pending ? [{ type: "copy", text: o.pending.code, label: t("wiz_code_label") }, { type: "markdown", text: t("wiz_code_help", { minutes: Math.max(1, Math.ceil((o.pending.expiresAt - o.now) / 60_000)) }) }] : []),
-    { type: "adminForm", action: "pair", submitLabel: t("dev_another"), fields: [] },
-    { type: "markdown", text: t("dev_another_help") },
-  ];
-}
-
-/** Le dernier test et où il en est, avec le délai total. Se recharge tout seul pendant 60 s tant qu'il n'est pas terminé (pas de minuteur côté serveur). */
+/** The last test and where it stands, with the total delay. The panel refreshes itself (core block) while it is not finished. */
 function followBlocks(ctx, o) {
   const t = ctx.t;
   const l = o.lines.find((x) => x.kind === "action" && x.test && x.id);
@@ -205,7 +207,7 @@ function followBlocks(ctx, o) {
   else steps.push(t("fol_waiting_run"));
   const follow = !finished && o.now - l.at < TEST_FOLLOW_MS;
   const out = [{ type: "markdown", text: `**${t("fol_title")}**\n\n${steps.map((s) => `- ${s}`).join("\n")}` }];
-  if (follow) out.push({ type: "html", html: `<p style="margin:0;font-size:.85em;opacity:.75">${esc(t("fol_live"))}</p><img alt="" width="1" height="1" src="data:," onerror="var d=this;setTimeout(function(){location.reload()},3000)">` });
+  if (follow) out.push({ type: "refreshWhile", pending: true, everySeconds: 3 });
   return out;
 }
 
@@ -218,7 +220,7 @@ function testBlocks(ctx, o) {
     { type: "heading", text: t("test_title") },
     { type: "markdown", text: t("test_help") },
     { type: "adminForm", action: "test", submitLabel: t("test_btn"), fields: [
-      { name: "key", kind: "select", label: t("test_key"), value: seen[0], options: seen.map((k) => ({ value: k, label: label(k) })), help: t("test_key_help") },
+      { name: "key", kind: "select", label: t("test_key"), value: seen[0], options: seen.map((k) => ({ value: k, label: label(k) })) },
       { name: "customKey", kind: "text", label: t("test_custom"), help: t("test_custom_help") },
       { name: "text", kind: "textarea", label: t("test_text"), help: t("test_text_help", { max: settingsOf(ctx).maxChars }) },
     ] },
@@ -257,15 +259,14 @@ function journalHtml(ctx, o) {
 function journalBlocks(ctx, o) {
   const t = ctx.t;
   const out = [{ type: "heading", text: t("jr_title") }];
-  const history = [{ type: "markdown", text: t("jr_central") }, { type: "links", items: [{ label: t("jr_history"), href: "?tab=history" }] }];   // l'onglet « Historique » du cœur (selon les droits de la personne)
-  if (!o.lines.length) { out.push({ type: "markdown", text: t("jr_empty") }, ...history); return out; }
+  if (!o.lines.length) { out.push({ type: "markdown", text: t("jr_empty") }); return out; }
   out.push({ type: "html", html: journalHtml(ctx, o) });
-  out.push({ type: "markdown", text: t("jr_note") }, ...history);
+  out.push({ type: "markdown", text: t("jr_note") });
   if (can(ctx, "ha.manage")) out.push({ type: "table", columns: [t("jr_col")], pageSize: 0, rows: [[String(o.lines.length)]], rowIds: ["log"], rowActions: [{ label: t("jr_clear"), action: "clearLog", confirm: t("jr_clear_confirm", { n: o.lines.length }), danger: true }] });
   return out;
 }
 
-/** Réglages : ce que les mots refusés couvrent, et les actions déjà vues. Dans l'onglet « Réglages ». */
+/** Settings tab: how many words are refused, and the actions already received. */
 function settingsBlocks(ctx, o) {
   const t = ctx.t;
   const s = settingsOf(ctx);
@@ -273,22 +274,22 @@ function settingsBlocks(ctx, o) {
   return [
     { type: "markdown", text: t("words_intro", { count: s.matcher.size }), tab: "settings" },
     { type: "html", html: list, tab: "settings" },
-    { type: "markdown", text: o.keys.length ? t("keys_seen", { keys: o.keys.map((k) => nameOf(o, k) ?? `\`${k}\``).join(", ") }) : t("keys_none"), tab: "settings" },
+    ...(o.keys.length ? [{ type: "markdown", text: t("keys_seen", { keys: o.keys.map((k) => nameOf(o, k) ?? `\`${k}\``).join(", ") }), tab: "settings" }] : []),
   ];
 }
 
-/** Le panneau de l'onglet « Utiliser » (et quelques blocs de l'onglet « Réglages »). */
-export async function panel(ctx) {
+/** The panel of the "Use" tab (and a few blocks of the "Settings" tab). */
+export async function panel(ctx, { query } = {}) {
   const o = await overview(ctx);
   const manage = can(ctx, "ha.manage");
   const botPath = await pathOf(ctx, "twitch-bot");
-  const wizard = manage && !o.paired;
   return [
-    ...statusBlocks(ctx, o),
+    connectionBlock(ctx, o, manage, wizardBlocks(ctx, o, botPath)),
+    ...(o.paired && manage && query?.edit === "ha" ? [editDialog(ctx, o)] : []),
+    // A new code while Home Assistant is paired (another device): shown while it waits, not in the paired state of the card.
+    ...(o.paired && manage ? codeBlocks(ctx, o) : []),
     ...bigButton(ctx, o),
-    ...liveBlocks(ctx, o),
-    ...(wizard ? wizardBlocks(ctx, o, botPath) : manage ? deviceBlocks(ctx, o) : []),
-    ...(wizard ? [] : nextStepBlocks(ctx, o, botPath)),
+    ...(o.paired ? [...liveBlocks(ctx, o), ...botLink(ctx, botPath)] : []),
     ...pendingBlocks(ctx, o),
     ...(o.paired ? testBlocks(ctx, o) : []),
     ...journalBlocks(ctx, o),

@@ -73,10 +73,10 @@ test("timers choice: one value (pause, 2, 3, 5) maps to the stored { mode, ratio
   assert.equal(CO.timersOf(CO.choicesOf({ collabCfg: { mode: "thin", ratio: 4 } })), "3", "a damaged ratio falls back to the default");
 });
 
-test("state line: says exactly what is active now, with the time left; off says the bot talks as usual", () => {
+test("state line: says exactly what is active now, with the time left; off says only that it is off", () => {
   const t = (k, v) => en[k].replace(/\{(\w+)\}/g, (m, n) => v?.[n] ?? m);
   const on = (o) => CO.effective({ collab: { on: true, since: NOW, by: "remote", until: o.until }, collabCfg: o.cfg }, NOW + (o.at ?? 0));
-  assert.equal(CO.stateLine(t, CO.effective({}, NOW), NOW), "Off — the bot talks as usual");
+  assert.equal(CO.stateLine(t, CO.effective({}, NOW), NOW), "Off");
   assert.equal(CO.stateLine(t, on({ until: NOW + 6 * H, cfg: { mode: "pause", ratio: 3, factor: 1, quiet: false, hours: 6 }, at: 40 * MIN }), NOW + 40 * MIN), "On — timers paused — stops in 5 h 20");
   assert.equal(CO.stateLine(t, on({ until: NOW + 6 * H, cfg: { mode: "thin", ratio: 3 }, at: 40 * MIN }), NOW + 40 * MIN), "On — timers 1 in 3 — stops in 5 h 20");
   assert.equal(CO.stateLine(t, on({ until: NOW + 2 * H, cfg: { mode: "thin", ratio: 5 }, at: 0 }), NOW), "On — timers 1 in 5 — stops in 2 h");
@@ -314,8 +314,11 @@ test("page: the line under the status bar says off by default, then on with sinc
   assert.match(r.ok, /Collaboration mode is on/);
   html = await barOf(ctx);
   assert.match(html, /Collaboration mode on/); assert.match(html, /Since /); assert.match(html, /1 timer in 3 goes out/); assert.match(html, /Ends by itself at/); assert.match(html, /Stop collaboration mode/);
-  const blocks = await A.panel(ctx, { query: {} });
+  assert.ok(!(await A.panel(ctx, { query: {} })).some((b) => b.type === "adminForm" && b.action === "collabSave"), "closed until the address asks for it: no filled form left on the page");
+  assert.match(await barOf(ctx), /href="\?tab=use&collab=1"[^>]*>Set the mode</);
+  const blocks = await A.panel(ctx, { query: { collab: "1" } });
   const form = blocks.find((b) => b.type === "adminForm" && b.action === "collabSave");
+  assert.deepEqual([form.presentation, form.cancelHref], ["dialog", "?tab=use"]);
   assert.deepEqual(form.fields.filter((f) => !f.folded).map((f) => f.name), ["collabTimers"], "one visible choice: what the timers do");
   assert.deepEqual(form.fields.filter((f) => f.folded).map((f) => f.name), ["collabFactor", "collabQuiet", "collabHours"], "the rare ones are folded");
   assert.deepEqual(form.fields[0].options.map((o) => [o.value, o.label]), [["pause", "Pause"], ["2", "1 in 2"], ["3", "1 in 3"], ["5", "1 in 5"]]);
@@ -333,7 +336,7 @@ test("page: saving the choices keeps them; a wrong value is said under its field
   const bad = await A.actions.collabSave(ctx, { collabMode: "thin", collabRatio: "3", collabFactor: "9", collabHours: "30" });
   assert.match(bad.errors.collabFactor, /for example 3/); assert.match(bad.errors.collabHours, /for example 6/);
   assert.equal(CO.choicesOf(await S.readState(ctx)).factor, 2, "nothing saved");
-  assert.equal(formOfBlocks(await A.panel(ctx, { query: {} }), "collabSave").fields.find((f) => f.name === "collabTimers").value, "pause", "the saved choices are shown");
+  assert.equal(formOfBlocks(await A.panel(ctx, { query: { collab: "1" } }), "collabSave").fields.find((f) => f.name === "collabTimers").value, "pause", "the saved choices are shown");
   // the one-value field: every choice, kept next to the other settings
   for (const x of CO.TIMERS) { assert.equal((await A.actions.collabSave(ctx, { collabTimers: x, collabFactor: "2", collabQuiet: "on", collabHours: "4" })).ok, "Choices saved."); assert.equal(CO.timersOf(CO.choicesOf(await S.readState(ctx))), x); }
   const refused = await A.actions.collabSave(ctx, { collabTimers: "4", collabHours: "4" });
@@ -359,7 +362,7 @@ test("page: ergonomics (field budget, labels, helps) and the same page in French
   for (const k of ["rc_collab_timers", "rc_collab_hours"]) for (const d of [en, fr]) { assert.deepEqual(labelProblems(d[k]), [], k); assert.ok(d[k].length <= 40, `${k} fits a card label`); }
   assert.match(en.co_f_timers, /when the mode is on/i); assert.match(fr.co_f_timers, /quand le mode est activé/i);
   for (const k of ["co_f_timers", "co_f_factor", "co_f_quiet", "co_f_hours", "co_start_btn", "co_stop_btn", "co_pill_on"]) for (const d of [en, fr]) assert.deepEqual(labelProblems(d[k]), [], k);
-  for (const k of ["co_off_text", "co_f_factor_help", "co_f_quiet_help", "co_f_hours_help"]) for (const d of [en, fr]) assert.ok(d[k].length <= 60, `${k} (${d[k].length})`);
+  for (const k of ["co_f_factor_help", "co_f_quiet_help", "co_f_hours_help"]) for (const d of [en, fr]) assert.ok(d[k].length <= 60, `${k} (${d[k].length})`);
 });
 
 /* ───────────── Remote control and assistant ───────────── */
@@ -368,9 +371,9 @@ test("remote: a second switch shows the CURRENT state and carries the action tha
   const w = await remoteWorld();
   let p = (await w.panels()).find((x) => x.id === "id-bot");
   assert.deepEqual(p.toggles.map((t) => [t.id, t.on]), [["pause", true], ["collabon", false]]);
-  assert.equal(p.toggles[1].text, "Off — the bot talks as usual");
+  assert.equal(p.toggles[1].text, "Off");
   const r = await w.press("collabon");
-  assert.deepEqual([r.ok, r.message], [true, "Collaboration mode is on: the bot talks less on its own."]);
+  assert.deepEqual([r.ok, r.message], [true, "Collaboration mode is on."]);
   p = (await w.panels()).find((x) => x.id === "id-bot");
   assert.deepEqual([p.toggles[1].id, p.toggles[1].on, p.toggles[1].text, p.badge, p.alert], ["collaboff", true, "On — timers 1 in 3 — stops in 6 h", "Collab", false]);
   assert.equal((await CO.current(w.bot)).by, "remote");
@@ -385,7 +388,7 @@ test("remote card: it says what it does when off and on, shows what is active, o
   const w = await remoteWorld();
   const card = async () => (await w.panels()).find((x) => x.id === "id-bot").toggles[1];
   let c = await card();
-  assert.deepEqual([c.calm, c.on, c.text, c.hint], [true, false, "Off — the bot talks as usual", ""], "the card says only the state; no sentence under the switch");
+  assert.deepEqual([c.calm, c.on, c.text, c.hint], [true, false, "Off", ""], "the card says only the state; no sentence under the switch");
   assert.ok(c.text.length <= 60);
   assert.match(c.more, /Commands typed by your viewers still get their answer/, "what it does is in the \"?\" bubble");
   assert.equal(c.foldLabel, "More options");
@@ -407,7 +410,7 @@ test("remote card: it says what it does when off and on, shows what is active, o
 test("in French the card words state the same condition (label, not a sentence of filler), and the tooltips name the timers", async () => {
   const w = await remoteWorld({ locale: "fr" });
   const c = (await w.panels()).find((x) => x.id === "id-bot").toggles[1];
-  assert.deepEqual([c.label, c.text, c.choices[0].label, c.choices[1].label], ["Mode collaboration", "Désactivé — le bot parle comme d'habitude", "Timers quand le mode est activé", "Quand le mode est activé, arrêt après"]);
+  assert.deepEqual([c.label, c.text, c.choices[0].label, c.choices[1].label], ["Mode collaboration", "Désactivé", "Timers quand le mode est activé", "Quand le mode est activé, arrêt après"]);
   assert.deepEqual(c.choices[0].options.map((o) => o.title), ["Timers en pause", "Timers : 1 fois sur 2", "Timers : 1 fois sur 3, utilisé à l'activation", "Timers : 1 fois sur 5"]);
   assert.equal(c.hint ?? "", "");
 });
@@ -461,7 +464,7 @@ test("remote card: values outside the short lists are refused under the switch w
 test("remote card in French: the same card, with 'vous' and short words", async () => {
   const w = await remoteWorld({ locale: "fr" });
   const c = (await w.panels()).find((x) => x.id === "id-bot").toggles[1];
-  assert.equal(c.text, "Désactivé — le bot parle comme d'habitude");
+  assert.equal(c.text, "Désactivé");
   assert.deepEqual(c.choices[0].options.map((o) => o.label), ["Pause", "1 sur 2", "1 sur 3", "1 sur 5"]);
   assert.deepEqual(c.choices[1].options.map((o) => o.label), ["2 h", "4 h", "6 h", "Jamais"]);
   assert.ok(c.text.length <= 60 && c.more.length <= 400);
@@ -525,7 +528,7 @@ test("assistant tool: timers pause / every_n with n (2, 3 or 5) and autoStopHour
   const shown = ctx.dumpLog().filter((l) => l.action === "collab.on" || l.action === "collab.off");
   assert.ok(shown.every((l) => l.data.by === "assistant"));
   // the page and the tool read the same choices
-  const form = formOfBlocks(await A.panel(ctx, { query: {} }), "collabSave");
+  const form = formOfBlocks(await A.panel(ctx, { query: { collab: "1" } }), "collabSave");
   assert.equal(form.fields.find((f) => f.name === "collabTimers").value, "2");
 });
 

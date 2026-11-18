@@ -96,7 +96,7 @@ test("plus aucun morceau de page pour ranger un formulaire ou animer un interrup
 
 test("les textes de la fenêtre : mêmes clés en français et en anglais, ton neutre, libellés courts sans deux-points, pas de point d'exclamation", () => {
   const keys = ["delete_row_confirm", "delete_own_only", "edit_partner_title", "edit_network_help", "f_wait_all", "f_wait_user", "unit_seconds", "unit_messages", "f_text_example", "reset_help",
-    "rep_every_help", "rep_lines_help", "rep_when_help", "tm_save_btn", "tm_edit_title", "tm_delete_btn", "tm_delete_confirm", "tm_deleted_cmd", "tm_pick_status", "rw_rename_btn", "rw_save_btn", "rw_new_link"];
+    "rep_every_help", "rep_lines_help", "rep_when_help", "tm_save_btn", "tm_edit_title", "tm_delete_btn", "tm_delete_confirm", "tm_deleted_cmd", "rw_rename_btn", "rw_save_btn", "rw_new_link"];
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
   for (const k of keys) {
     assert.ok(fr[k] && en[k], k);

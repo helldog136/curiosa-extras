@@ -52,58 +52,74 @@ export async function context(ctx, { declare = true } = {}) {
   return { ctx, s, d, sources, cfg, list, words: W.wordCatalog(cfg), library, env: { src: sources, t: ctx.t, prefix: s.prefix, library } };
 }
 
-/* ───────────── Le haut de page : UNE ligne d'état et l'arrêt d'urgence ───────────── */
+/* ───────────── Top of the page: ONE connection block (chat listening) and the emergency stop ───────────── */
 
 /**
- * The button to Twitch. `force` and the missing `scopes`: the connector offers the link even when it believes the connection is fine; without a link there is still a way to its page.
- * First connection: the plain verb; otherwise "Authorize again with Twitch". The steps are in the tooltip.
+ * The address of the Twitch authorisation. `force` and the missing `scopes`: the connector offers the link even when it believes the connection is fine; without a link
+ * the page of the connector is the way. { url, label } or null.
  */
-async function connectBlocks(ctx, d, slot, { first = false, scopes = [] } = {}) {
-  if (!d.channel) return [];
+async function connectTarget(ctx, d, slot, { first = false, scopes = [] } = {}) {
+  if (!d.channel) return null;
   let r = null;
   try { r = (await ctx.api.services.callAll(SERVICE, "connectLink", { channel: d.channel, slot, force: true, scopes, returnTo: `/admin/instances/${ctx.instance.id}` })).find((x) => x.ok && x.value?.ok); } catch { r = null; }
-  const tip = ctx.t(slot === "bot" ? "connect_bot_tip" : "connect_tip");
-  const url = r?.value?.url;
-  if (url) return [button(ctx.t(first ? (slot === "bot" ? "connect_bot_btn" : "connect_btn") : "connect_again_btn"), url, tip)];
+  if (r?.value?.url) return { url: r.value.url, label: ctx.t(first ? (slot === "bot" ? "connect_bot_btn" : "connect_btn") : "connect_again_btn") };
   const page = (slot === "bot" ? d.bot : d.main)?.adminPath ?? d.main?.adminPath;
-  return page ? [button(ctx.t("connect_fallback"), page, tip)] : [];
+  return page ? { url: page, label: ctx.t("connect_fallback") } : null;
+}
+/** The button to Twitch, as a block (first connection: the plain verb; otherwise "Authorize again with Twitch"). The steps are in the tooltip. */
+async function connectBlocks(ctx, d, slot, opts) {
+  const target = await connectTarget(ctx, d, slot, opts);
+  return target ? [button(target.label, target.url, ctx.t(slot === "bot" ? "connect_bot_tip" : "connect_tip"))] : [];
 }
 
-const PROBLEM_TONE = "warning";
-/** Le code qui dit où en est l'écoute. */
+/** The code that says where the listening stands. */
 const listenCode = (d, state) => (d.code !== "ready" ? d.code : (state.sub ?? {}).code ?? "unknown");
+const NEEDS_SETUP = new Set(["need_connect", "creds_missing", "no_channel", "bot_need_connect"]);
+const REPAIR = new Set(["revoked", "refused"]);
+
 /**
- * La ligne d'état : « Le bot écoute votre chat · dernier message … · répond pendant vos directs » + « Vérifier » (ou « Réparer l'écoute » s'il y a un problème) + l'arrêt d'urgence,
- * un petit bouton distinct, toujours visible sans défiler. Coupé, la ligne le dit et le bouton devient « Réactiver les réponses ». Aucune carte à un seul bouton (R3, R14, R24).
+ * The state of the chat in the three words of the core (R33): configured = one line (who answers, last message), degraded = the reason and the fix, not configured = the steps.
+ * "Edit" leads to the settings; the account of the bot (when another account answers) is folded in: its summary, its disconnection in the menu "⋯", its setup while it is missing.
  */
-function topBar(ctx, info, state) {
-  const t = ctx.t, { s, d } = info, code = listenCode(d, state), ok = code === "listening", muted = state.muted === true;
+async function chatConnection(ctx, info, state) {
+  const t = ctx.t, { s, d } = info, code = listenCode(d, state), sub = state.sub ?? {};
   const fmt = (at) => new Date(at).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone: s.timeZone });
-  const fail = t("err_toggle");
-  const repair = !ok && ["revoked", "refused", "pending", "twitch_down", "twitch_busy"].includes(code);
-  const check = repair ? K.actionButton({ label: t("relisten_btn"), act: "relisten", cls: "small", fail }) : K.actionButton({ label: t("check_short"), act: "check", cls: "small", fail });
-  const stop = muted ? K.actionButton({ label: t("mute_off_btn"), act: "unmute", cls: "small primary", fail }) : K.actionButton({ label: t("mute_short"), act: "mute", cls: "small ck-danger", fail, title: t("mute_tip") });
-  const texts = muted ? [state.mutedAt ? t(state.mutedBy === "remote" ? "mute_since_remote" : "mute_since", { date: fmt(state.mutedAt) }) : ""] : ok ? [state.lastMessageAt ? t("top_last", { when: fmt(state.lastMessageAt) }) : t("top_nomsg")] : [];
-  return K.statusBar(ctx, { kind: muted ? "danger" : ok ? "ok" : "warn", pill: muted ? t("top_muted") : ok ? t("top_listening") : t("top_problem"), texts: texts.filter(Boolean), grey: ok && !muted ? t(s.onlyWhenLive ? "top_live_only" : "top_always") : "", buttons: `${check}${stop}` });
+  const base = { type: "connection", id: "chat", title: t("conn_title"), edit: { href: "?tab=settings" } };
+  const botLogin = s.replyAs === "bot" && (d.bot?.status === "ok" || d.bot?.status === "more") ? d.bot.login ?? "" : "";
+  const menu = botLogin ? [{ label: t("bot_disconnect"), action: "disconnectBot", confirm: t("bot_disconnect_confirm"), danger: true }] : [];
+  const summary = [botLogin ? t("conn_via_bot", { login: botLogin }) : "", t(s.onlyWhenLive ? "top_live_only" : "top_always"), state.lastMessageAt ? t("top_last", { when: fmt(state.lastMessageAt) }) : ""].filter(Boolean).join(" · ");
+  if (state.muted === true) {
+    return { ...base, state: "degraded", summary, reason: t(state.mutedBy === "remote" ? "conn_muted_remote" : "conn_muted"), ...(state.mutedAt ? { since: new Date(state.mutedAt).toISOString() } : {}), primary: { label: t("mute_off_btn"), action: "unmute" }, menu };
+  }
+  if (code === "listening") return { ...base, state: "configured", summary, menu };
+  const failure = sub.failure ? ` ${t(`listen_failure_${sub.failure}`)}` : "";
+  const reason = `${t(`listen_${code}`, { detail: sub.detail ?? "" })}${failure}`;
+  if (NEEDS_SETUP.has(code)) {
+    const setup = code === "need_connect" ? await connectBlocks(ctx, d, "main", { first: true, scopes: await missingFor(ctx, s, d, "main") })
+      : code === "bot_need_connect" ? [{ type: "markdown", text: t("bot_help") }, ...(await connectBlocks(ctx, d, "bot", { first: true, scopes: await missingFor(ctx, s, d, "bot") }))]
+      : code === "creds_missing" ? (d.main?.adminPath ? [{ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) }] : [])
+      : [{ type: "markdown", text: t("no_channel_steps") }];
+    return { ...base, state: "notConfigured", reason, setup, edit: undefined };
+  }
+  let primary = { label: t("conn_check"), action: "check" };
+  if (REPAIR.has(code)) primary = { label: t("relisten_btn"), action: "relisten" };
+  else if (["need_reconnect", "need_more", "bot_reconnect", "bot_more"].includes(code)) {
+    const slot = code.startsWith("bot_") ? "bot" : "main";
+    const target = await connectTarget(ctx, d, slot, { scopes: await missingFor(ctx, s, d, slot) });
+    if (target) primary = { label: target.label, href: target.url };
+  } else if (code === "channel_unknown") primary = { label: t("conn_choose_channel"), href: "?tab=settings" };
+  return { ...base, state: "degraded", summary, reason, primary, menu };
 }
 
-/** Ce qui reste sous la ligne quand il y a un problème : la phrase qui dit pourquoi et quoi faire, le bouton d'autorisation. */
-async function listenBlocks(ctx, ctxInfo, state) {
-  const t = ctx.t, { s, d } = ctxInfo;
-  const sub = state.sub ?? {};
-  const code = listenCode(d, state);
-  const out = [];
-  const res = d.main?.result;
-  const botRes = d.bot?.result;
+/** The emergency stop: a small button, always visible without scrolling, apart from the state (R24). Muted, the state card resumes. */
+const stopButton = (ctx, state) => (state.muted === true ? [] : [K.inlineActions(ctx, K.actionButton({ label: ctx.t("mute_short"), act: "mute", cls: "small ck-danger", fail: ctx.t("err_toggle"), title: ctx.t("mute_tip") }))]);
+
+/** What stays under the card: the outcome of the last attempt at Twitch (refused, expired…), which says what to redo. */
+function resultBlocks(ctx, { s, d }) {
+  const t = ctx.t, out = [];
+  const res = d.main?.result, botRes = d.bot?.result;
   if (res && res.code) out.push({ type: "banner", tone: "warning", text: t(`res_${res.code}`, { login: res.login ?? "" }) });
   if (botRes && botRes.code && s.replyAs === "bot") out.push({ type: "banner", tone: "warning", text: t(`res_${botRes.code}`, { login: botRes.login ?? "" }) });
-  if (code === "listening") return out;
-  const failure = sub.failure ? ` ${t(`listen_failure_${sub.failure}`)}` : "";
-  out.push({ type: "banner", tone: PROBLEM_TONE, text: `${t(`listen_${code}`, { detail: sub.detail ?? "" })}${failure}` });
-  if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push(...(await connectBlocks(ctx, d, "main", { first: code === "need_connect", scopes: await missingFor(ctx, s, d, "main") })));
-  else if (["bot_need_connect", "bot_reconnect", "bot_more"].includes(code)) out.push(...(await connectBlocks(ctx, d, "bot", { first: code === "bot_need_connect", scopes: await missingFor(ctx, s, d, "bot") })));
-  else if (code === "creds_missing" && d.main?.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) });
-  else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
   return out;
 }
 
@@ -163,17 +179,6 @@ function newBlocks(ctx, info, query) {
   return [CU.commandForm(ctx, info, { mode: "new", kind: "custom", tab: tabOf(query), varsHelp: varsHelp(ctx.t, "custom"), view: { name: "", text: "", role: "everyone", aliases: [], vars: {} } })];
 }
 
-/* ───────────── Compte qui répond (mode avancé) ───────────── */
-
-function botAccountBlocks(ctx, info) {
-  const t = ctx.t, { s, d } = info;
-  if (s.replyAs !== "bot") return [];
-  const out = [{ type: "heading", text: t("bot_title") }];
-  if (d.bot?.status === "ok" || d.bot?.status === "more") out.push({ type: "banner", tone: "success", text: t("bot_connected", { login: d.bot.login ?? "" }) }, K.inlineActions(ctx, K.actionButton({ label: t("bot_disconnect"), act: "disconnectBot", cls: "small", fail: t("err_toggle") })));
-  else out.push({ type: "markdown", text: t("bot_help") });
-  return out;
-}
-
 /* ───────────── La page ───────────── */
 
 export async function panel(ctx, { query }) {
@@ -188,17 +193,16 @@ export async function panel(ctx, { query }) {
     await ensureListening(ctx, info.s, { settle: true }).catch(() => {});
     state = await st.readState(ctx);
   }
-  const blocks = [K.bootstrap(ctx), topBar(ctx, info, state), ...COU.blocks(ctx, info.s, await CO.current(ctx)), ...(await listenBlocks(ctx, info, state)), ...botAccountBlocks(ctx, info)];
+  const conn = await chatConnection(ctx, info, state), collab = await CO.current(ctx), working = conn.state !== "notConfigured";   // nothing to stop or to share before the chat is connected
+  const blocks = [K.bootstrap(ctx), conn, ...(working ? stopButton(ctx, state) : []), ...resultBlocks(ctx, info), ...(working || collab.on ? COU.blocks(ctx, info.s, collab, { open: query?.collab === "1" }) : [])];
   // La fenêtre « Modifier » ou « Nouvelle commande » : le formulaire n'est renvoyé que quand l'adresse le demande (`?edit=…`, `?new=1`) ; la liste est toujours là, dessous.
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
   else if (query?.new) blocks.push(...newBlocks(ctx, info, query));
-  blocks.push({ type: "heading", text: t("summary_title") }, { type: "markdown", text: t("summary_help") }, CU.newLink(ctx, { example: !info.words.length }));
+  blocks.push({ type: "heading", text: t("summary_title") }, CU.newLink(ctx, { example: !info.words.length }));
   blocks.push(CU.commandsTable(ctx, info));
   const add = CU.addChooser(ctx, info, { partnerHref: partnerHref(ctx) });
   if (add) blocks.push(add);
-  // No alerts overlay at all: the core's install suggestion (installs it with its first copy, owner only, can be dismissed). Installed without a copy: the button of the windows.
-  if (!info.lib.available && !info.lib.setUp) blocks.push({ type: "suggestInstall", service: MD.SERVICE, min: 1, reason: t("media_suggest_reason") });
   blocks.push(CU.logBlock(ctx, info.s, await st.readLog(ctx)));
   blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
   blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
