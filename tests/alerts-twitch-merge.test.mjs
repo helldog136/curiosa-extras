@@ -393,13 +393,14 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
   for (const s of ["alerts.show", "alerts.queue"]) assert.deepEqual(offer(manifest, s), offer(OLD.alMan, s), s);
   assert.deepEqual(offer(manifest, "twitch.journal"), offer(OLD.evMan, "twitch.journal"));
   assert.deepEqual(manifest.provides, OLD.evMan.provides);
-  assert.deepEqual(manifest.overlayElements, OLD.alMan.overlayElements, "the elements placed on the overlay pages are unchanged");
+  // (1.20.0) two animated elements are added after them; the ones already placed are unchanged
+  assert.deepEqual(manifest.overlayElements.slice(0, OLD.alMan.overlayElements.length), OLD.alMan.overlayElements, "the elements placed on the overlay pages are unchanged");
   // who still needs what: the Twitch bot (alerts.show, optional) and live status (twitch.live, from My Twitch channel) are untouched; nobody needs the old protocol
   const all = fs.readdirSync(path.join(REPO, "modules")).map((id) => json(path.join(REPO, "modules", id, "module.json")));
   const needs = all.flatMap((m) => (m.requires ?? []).map((r) => [m.id, r.service]));
   // (Twitch activity 1.13.0, the bridge, keeps its optional needs of 1.12.0 until it hands over: it is not counted)
   assert.deepEqual(needs.filter(([id, s]) => id !== "twitch-events" && ["alerts.reaction", "alerts.reaction.editor"].includes(s)), []);
-  assert.deepEqual(needs.filter(([id, s]) => id !== "twitch-events" && s.startsWith("alerts.")).map(([id, s]) => `${id}:${s}`).sort(), ["twitch-bot:alerts.show"]);
+  assert.deepEqual(needs.filter(([id, s]) => id !== "twitch-events" && s.startsWith("alerts.")).map(([id, s]) => `${id}:${s}`).sort(), ["stream-goals:alerts.queue", "twitch-bot:alerts.show"], "(1.97.0) Live goals needs the queue only to know the overlay is there (optional)");
   assert.ok(json(path.join(REPO, "modules/live-status/module.json")).requires.every((r) => r.service !== "twitch.journal"));
 });
 

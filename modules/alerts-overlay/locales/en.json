@@ -698,5 +698,11 @@
   "two_group_help": "Gifts and follows close together become one alert.",
   "two_err_group": "Write a whole number between {min} and {max}, for example 5.",
   "two_err_ignore": "The list is too long: 2000 characters at most.",
-  "two_saved": "Twitch options saved."
+  "two_saved": "Twitch options saved.",
+  "ev_kind_sub_end": "Sub ended",
+  "gauge_hype_label": "Hype train",
+  "gauge_session_label_subs": "Subs of the live",
+  "gauge_session_label_bits": "Bits of the live",
+  "gauge_session_label_follows": "Follows of the live",
+  "gauge_update_core": "Update Curiosa to show this element"
 }

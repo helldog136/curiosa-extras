@@ -5,6 +5,9 @@
 // VERIFIED against https://dev.twitch.tv/docs/eventsub/reference/ (read on 2026-11-12, quoted in the tests):
 //   - channel.follow v2: condition { broadcaster_user_id, moderator_user_id } (the moderator may be the broadcaster), scope moderator:read:followers, event user_*, followed_at;
 //   - channel.subscribe v1 (not the resubs): scope channel:read:subscriptions, event user_*, tier "1000" | "2000" | "3000", is_gift;
+//   - (1.20.0) channel.subscription.end v1: same scope and condition, event user_*, broadcaster_*, tier, is_gift (a subscription that expired: the paid total goes down).
+//     Checked 2026-11-18 against the reference index and the source of twitchdev/twitch-cli (trigger "unsubscribe" / "subscribe-end" builds this body). There is NO
+//     unfollow event at Twitch: a follower count can only go down at the next reading of the channel's figures;
 //   - channel.subscription.gift v1: user_* nullable (anonymous), total, tier, cumulative_total (nullable), is_anonymous;
 //   - channel.subscription.message v1: user_*, tier, message.text, cumulative_months, streak_months (nullable), duration_months;
 //   - channel.cheer v1: scope bits:read, is_anonymous, user_* nullable, message, bits;
@@ -12,6 +15,7 @@
 //   - stream.online / stream.offline v1: no authorisation, event id, broadcaster_user_*, type + started_at (online only);
 //   - channel.hype_train.begin / progress / end: the page documents version 2 only, scope channel:read:hype_train, fields id, level, total, progress, goal, top_contributions[{user_*, type, total}],
 //     started_at, expires_at, ended_at, cooldown_ends_at, all_time_high_level, is_shared_train, type "regular" | "golden_kappa" | "treasure";
+//     (1.20.0) `expires_at` (begin, progress: when the train ends without a new contribution, about 5 minutes later; twitch-cli sends now + 5 min) is kept as `expiresAt`;
 //   - webhook transport: https on port 443, secret of 10 to 100 ASCII characters, HMAC-SHA256 over id + timestamp + raw body ("sha256=" prefix), message types notification /
 //     webhook_callback_verification / revocation, delivery "at least once", revocation statuses user_removed / authorization_revoked / notification_failures_exceeded / version_removed.
 //   - listing: Twitch fills every condition field of a type, the unused ones with "" (channel.raid: from_broadcaster_user_id ""; redemption: reward_id ""): see sameCondition;
@@ -31,7 +35,8 @@ const FOLLOW = "moderator:read:followers", SUBS = "channel:read:subscriptions", 
  */
 export const TYPES = [
   { id: "follow", default: true, scopes: [FOLLOW], subs: [{ type: "channel.follow", version: "2", cond: (b) => ({ broadcaster_user_id: b, moderator_user_id: b }) }], kinds: ["follow"] },
-  { id: "sub", default: true, scopes: [SUBS], subs: [{ type: "channel.subscribe", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["sub"] },
+  // (1.20.0) the end of a subscription rides with the "sub" switch (same permission): no alert, no switch of its own; a goal of paid subs can go down with it
+  { id: "sub", default: true, scopes: [SUBS], subs: [{ type: "channel.subscribe", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }, { type: "channel.subscription.end", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["sub", "sub_end"] },
   { id: "resub", default: true, scopes: [SUBS], subs: [{ type: "channel.subscription.message", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["resub"] },
   { id: "gift", default: true, scopes: [SUBS], subs: [{ type: "channel.subscription.gift", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["gift"] },
   { id: "cheer", default: true, scopes: [BITS], subs: [{ type: "channel.cheer", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["cheer"] },
@@ -115,7 +120,7 @@ export function parseBody(messageType, rawBody) {
 
 /**
  * One notification → the normalised event, or null (not one of ours, or unusable). Only public data is kept: display names, amounts, tiers, counts, the viewer's public message.
- * Shape: { kind, name?, login?, anonymous?, tier?, months?, streak?, count?, cumulative?, amount?, viewers?, text?, title?, level?, total?, goal?, progress?, trainType?, shared?, top?, gifted?, at }.
+ * Shape: { kind, name?, login?, anonymous?, tier?, months?, streak?, count?, cumulative?, amount?, viewers?, text?, title?, level?, total?, goal?, progress?, expiresAt?, trainType?, shared?, top?, gifted?, at }.
  * `deliveredAt`: the Twitch-Eventsub-Message-Timestamp, used when the event carries no date of its own.
  */
 export function normalise(subType, event, deliveredAt) {
@@ -126,6 +131,7 @@ export function normalise(subType, event, deliveredAt) {
   switch (subType) {
     case "channel.follow": { const o = who(); return o.name ? out({ kind: "follow", ...o }, ms(e.followed_at)) : null; }
     case "channel.subscribe": { const o = who(); return o.name ? out({ kind: "sub", ...o, tier: tierOf(e.tier), ...(e.is_gift === true ? { gifted: true } : {}) }) : null; }
+    case "channel.subscription.end": { const o = who(); return o.name ? out({ kind: "sub_end", ...o, tier: tierOf(e.tier), ...(e.is_gift === true ? { gifted: true } : {}) }) : null; }
     case "channel.subscription.message": {
       const o = who(); if (!o.name) return null;
       return out({ kind: "resub", ...o, tier: tierOf(e.tier), months: int(e.cumulative_months, 0, 10_000), streak: int(e.streak_months, 0, 10_000), text: clean(e.message?.text, TEXT) });
@@ -153,6 +159,8 @@ export function normalise(subType, event, deliveredAt) {
         kind: `hype_${phase}`, level: int(e.level, 1, 200) ?? 1, total: int(e.total, 0, 1_000_000_000) ?? 0, ...(phase !== "end" ? { goal: int(e.goal, 0, 1_000_000_000) ?? 0, progress: int(e.progress, 0, 1_000_000_000) ?? 0 } : {}),
         trainType: ["regular", "golden_kappa", "treasure"].includes(e.type) ? e.type : "regular", shared: e.is_shared_train === true, ...(top.length ? { top } : {}),
         ...(phase === "begin" && int(e.all_time_high_level, 0, 200) ? { bestLevel: int(e.all_time_high_level, 0, 200) } : {}),
+        // (1.20.0) the countdown of the train: kept (it was dropped before, so no countdown could be drawn)
+        ...(phase !== "end" && ms(e.expires_at) ? { expiresAt: ms(e.expires_at) } : {}),
       }, phase === "end" ? ms(e.ended_at) : phase === "begin" ? ms(e.started_at) : null);
     }
     case "channel.channel_points_custom_reward_redemption.add": {

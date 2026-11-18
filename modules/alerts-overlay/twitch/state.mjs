@@ -43,7 +43,7 @@ export async function ensureSecret(ctx, { renew = false } = {}) {
 export const enabledOf = (state) => Object.fromEntries(es.TYPES.map((t) => [t.id, typeof state.enabled?.[t.id] === "boolean" ? state.enabled[t.id] : t.default]));
 
 /* ───────────── Journal ───────────── */
-const KEEP = ["kind", "name", "login", "anonymous", "tier", "gifted", "months", "streak", "count", "cumulative", "amount", "viewers", "text", "title", "level", "total", "goal", "progress", "trainType", "shared", "top", "streamType", "bestLevel", "rewardId"];
+const KEEP = ["kind", "name", "login", "anonymous", "tier", "gifted", "months", "streak", "count", "cumulative", "amount", "viewers", "text", "title", "level", "total", "goal", "progress", "expiresAt", "trainType", "shared", "top", "streamType", "bestLevel", "rewardId"];
 /** What is stored: the normalised event minus anything not listed above, plus the bookkeeping. `source`: twitch | test | replay | catchup. */
 export function toDoc(id, ev, { source = "twitch", of = null, now = Date.now(), missed = false } = {}) {
   const d = { id, at: Number.isFinite(ev.at) ? ev.at : now, receivedAt: now, source };

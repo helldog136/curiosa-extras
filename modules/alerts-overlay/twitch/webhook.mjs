@@ -6,6 +6,7 @@ const st = await import(`./state.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const cycle = await import(`./cycle.mjs${v}`);
 const { learnSub } = await import(`./catchup.mjs${v}`);
+const hype = await import(`./hype.mjs${v}`);
 
 export const LIMITS = { perMinute: 600, badPerMinute: 30 };
 const reply = (status, body = null) => new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -57,16 +58,19 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
     const enabled = st.enabledOf(state);
     const group = es.groupOf(ev.kind);
     if (!group || enabled[group] !== true) return { response: reply(204), done: none };
+    // (1.20.0) every hype message moves the live state of the train (progress inside a level, countdown), written after the answer like the rest of the state
+    const isHype = String(ev.kind).startsWith("hype_");
+    const noteTrain = (d) => { if (isHype) d.hype = hype.noteHype(d.hype, ev, { id: v1.id, receivedAt: now }); };
     if (ev.kind === "hype_progress") {
-      // A train sends many "progress" messages; only a new level is worth a line.
+      // A train sends many "progress" messages; only a new level is worth a line of the journal.
       const last = m.hype;
-      if (last && last.level >= ev.level) return { response: reply(204), done: none };
+      if (last && last.level >= ev.level) return { response: reply(204), done: st.updateState(ctx, noteTrain).catch(() => {}) };
       m.hype = { level: ev.level };
     } else if (ev.kind === "hype_begin") m.hype = { level: ev.level };
     else if (ev.kind === "hype_end") m.hype = null;
     const r = await st.record(ctx, v1.id, ev, { now });
     if (r.stored && ev.kind === "sub" && ev.login) learnSub(ctx, ev.login).catch(() => {});   // a sub we saw is not "new" for a later catch-up
-    const done = r.stored ? st.updateState(ctx, (d) => { d.last = { ...(d.last ?? {}), [ev.kind]: ev.at }; d.lastEventAt = now; if (ev.kind === "online") d.liveSince = ev.at; if (ev.kind === "offline") d.liveSince = null; }).catch(() => {}) : none;
+    const done = r.stored ? st.updateState(ctx, (d) => { d.last = { ...(d.last ?? {}), [ev.kind]: ev.at }; d.lastEventAt = now; if (ev.kind === "online") d.liveSince = ev.at; if (ev.kind === "offline") d.liveSince = null; noteTrain(d); }).catch(() => {}) : none;
     return { response: reply(204), done };
   } catch (e) {
     if (marked) st.memoryOf(ctx).seen.delete(marked);   // not stored: Twitch will deliver it again, and it must not be taken for a duplicate
