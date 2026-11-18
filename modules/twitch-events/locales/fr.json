@@ -354,7 +354,7 @@
   "rw_col_cost": "Coût",
   "rw_col_alert": "Alerte",
   "rw_search": "Rechercher une récompense",
-  "rw_empty": "Aucune récompense pour l'instant : créez-en une avec « Ajouter une récompense ».",
+  "rw_empty": "Aucune récompense. Créez-en une avec « Ajouter une récompense ».",
   "rw_forget_btn": "Retirer la réaction",
   "rw_forget_confirm": "Les images, vidéos, sons et textes placés de cette récompense seront retirés. Elle montrera la réaction des autres récompenses.",
   "rw_switch_on": "Alerte de « {reward} » allumée.",

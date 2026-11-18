@@ -354,7 +354,7 @@
   "rw_col_cost": "Cost",
   "rw_col_alert": "Alert",
   "rw_search": "Search a reward",
-  "rw_empty": "No reward yet: create one with “Add a reward”.",
+  "rw_empty": "No reward. Create one with “Add a reward”.",
   "rw_forget_btn": "Remove the reaction",
   "rw_forget_confirm": "The pictures, videos, sounds and placed texts of this reward will be removed. It will show the reaction of the other rewards.",
   "rw_switch_on": "Alert of “{reward}” on.",

@@ -593,7 +593,7 @@
   "co_start_btn": "Start collaboration mode",
   "co_stop_btn": "Stop collaboration mode",
   "co_start_tip": "For a shared chat: the bot talks less on its own. Commands still answer.",
-  "co_form_title": "Collaboration mode choices",
+  "co_form_title": "Collaboration mode",
   "co_save_btn": "Save the choices",
   "co_o_pause": "Pause",
   "co_o_ratio": "1 in {n}",

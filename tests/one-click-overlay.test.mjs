@@ -15,25 +15,15 @@ const json = (p) => JSON.parse(fs.readFileSync(new URL(p, import.meta.url), "utf
 const botMan = json("../modules/twitch-bot/module.json"), botEn = json("../modules/twitch-bot/locales/en.json"), botFr = json("../modules/twitch-bot/locales/fr.json");
 const overlay = (instances = 0, offers = ["alerts.queue", "alerts.show"]) => ({ "alerts-overlay": { name: "Alerts overlay", offers: offers.map((service) => ({ service, version: 2 })), instances } });
 
-test("the steps of the Twitch part: authorized, listening, and the placement step as a link without a state (no checkmark, no badge); nothing when all is done", async () => {
-  const { ctx } = evWorld({ locale: "en" });
-  const t = await rx.checklist(ctx, { authorized: true, listening: false });
-  assert.deepEqual(t.rowIds, ["authorized", "listening", "placed"]);
-  const row = t.rows[2];
-  assert.equal(row[0], "Alerts placed in an overlay page"); assert.equal(row[1].badge, undefined); assert.equal(row[1].text, "—"); assert.match(row[1].title, /cannot tell/);
-  assert.deepEqual([row[2].text, row[2].href], ["Open the overlay pages →", "/admin/overlay-pages"]);
-  assert.equal(await rx.checklist(ctx, { authorized: true, listening: true }), null, "an undetectable step never keeps the list on screen");
-});
-
 test("FR and EN: same keys for the texts, no colon at the end, short", () => {
-  for (const [en, fr, keys] of [[evEn, evFr, ["cl_placed", "cl_placed_link", "cl_placed_title"]], [botEn, botFr, ["media_setup_btn", "media_setup_ok", "media_setup_denied", "media_setup_err"]]]) {
+  for (const [en, fr, keys] of [[botEn, botFr, ["media_setup_btn", "media_setup_ok", "media_setup_denied", "media_setup_err"]]]) {
     for (const k of keys) { assert.ok(en[k] && fr[k], k); assert.ok(!/:\s*$/.test(en[k]) && !/:\s*$/.test(fr[k])); }
   }
   assert.ok(botEn.media_setup_btn.length <= 60);
 });
 
 test("manifests: the bot keeps the permission, core 0.15.0", () => {
-  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.23.1", "0.15.0", true]);
+  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.24.0", "0.36.0", true]);
 });
 
 /* ───────────── Twitch bot ───────────── */

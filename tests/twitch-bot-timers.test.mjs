@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHmac } from "node:crypto";
 import { htmlOf, rowsOf, formOfBlocks, plain, cellOf, tableOf, tableRow } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 import { world, chat, NOW, S, SRC, C, es, fr } from "./helpers/botWorld.mjs";
 
 const T = await import("../modules/twitch-bot/timers.mjs");
@@ -352,7 +352,7 @@ test("état vide et « Ajouter un timer » : une phrase + un bouton ; deux voies
   const emptyTab = (await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers");
   const et = tableOf(emptyTab, fr.col_command);
   assert.deepEqual([et.rows.length, et.empty], [0, fr.tm_empty], "un état vide dit quoi faire");
-  assert.match(et.empty, /Aucun timer pour l'instant\. Ajoutez-en un/);
+  assert.match(et.empty, /Aucun timer\./);
   assert.equal(emptyTab.find((b) => b.type === "links").items[0].label, "Ajouter un timer");
   const info = await A.context(ctx, { declare: false });
   await C.saveCommand(ctx, { kind: "custom" }, { name: "deja", text: "Déjà", repeat: { minutes: 5 } }, info.env);

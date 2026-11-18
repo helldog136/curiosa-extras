@@ -221,8 +221,8 @@ test("upgrade from the real 1.94.0: the old module is retired: no listening, its
   assert.equal(newDock.status, 200, "the OBS dock keeps its key: only the address changes");
   assert.deepEqual(await bridge.exports["twitch.event"](ev, {}), []);
   const page = await bridge.adminPanel(ev, { query: {} });
-  assert.deepEqual(page.map((b) => b.type), ["banner", "links", "markdown"]);
-  assert.equal(page[1].items[0].href, "/admin/instances/id-al");
+  assert.deepEqual(page.map((b) => b.type), ["banner", "markdown"], "R33: the banner is the link, no second button");
+  assert.equal(page[0].href, "/admin/instances/id-al");
   assert.equal(await bridge.adminBadge(ev), 0);
   const subs = old.twFake.subs.length, calls = old.twFake.calls.length;
   await bridge.tasks.listen.run(ev); await bridge.tasks.purge.run(ev);
@@ -352,7 +352,7 @@ test("the copy that listens: one Twitch events tab (two switches per type, the r
   assert.ok(page.some((b) => b.action === "applyPreset") && page.some((b) => b.action === "simulate"));
   assert.ok(page.some((b) => b.action === "saveTwitchOptions" && b.tab === "twitch"));
   const journal = page.find((b) => b.type === "table" && !b.tab && b.filters);
-  assert.ok(journal && page.indexOf(journal) < page.findIndex((b) => b.type === "heading" && b.text === en.adminTitle), "the journal comes before the push address");
+  assert.ok(journal && page.indexOf(journal) < page.findIndex((b) => b.type === "adminForm" && b.action === "test"), "the journal comes before the test alert");
   const optionsForm = page.find((b) => b.action === "saveJournal");
   assert.ok(optionsForm.fields.every((f) => f.folded));
   assert.ok((await def.adminActions.saveJournal(w.ctx, { retentionDays: "400", silentHours: "2" })).errors.retentionDays);
@@ -405,12 +405,12 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
 });
 
 test("the bridge 1.13.0: offers only the hand-over, keeps working as 1.12.0 until it is called, says it moved, FR/EN parity", () => {
-  assert.equal(bridgeMan.version, "1.13.1");
+  assert.equal(bridgeMan.version, "1.14.0");
   assert.deepEqual(bridgeMan.offers.map((o) => [o.service, o.version]), [["twitch.events.handover", 1]]);
   assert.equal(bridgeMan.mcp, undefined, "its tools are the overlay's now");
   assert.ok(!bridgeMan.permissions.includes("mcp"));
   const fr = json(new URL("../modules/twitch-events/locales/fr.json", import.meta.url).pathname);
   assert.deepEqual(Object.keys(bridgeEn).sort(), Object.keys(fr).sort());
-  for (const k of ["moved_banner", "moved_link", "moved_remove"]) assert.ok(bridgeEn[k] && fr[k], k);
+  for (const k of ["moved_banner", "moved_remove"]) assert.ok(bridgeEn[k] && fr[k], k);
   assert.match(bridgeMan.description.fr, /journal/);
 });

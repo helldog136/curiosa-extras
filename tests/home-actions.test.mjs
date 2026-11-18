@@ -545,7 +545,7 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
   const s = blocks.find((b) => b.type === "suggestInstall");
   assert.equal(s.service, "home-assistant.bridge"); assert.ok(s.reason);
   assert.ok(!blocks.some((b) => b.type === "links" && b.items[0].label === "Relier à votre maison"));
-  assert.match(JSON.stringify(blocks), /il faut le Connecteur Home Assistant/);
+  assert.ok(!JSON.stringify(blocks).includes("il faut le Connecteur"), "R33 : la phrase en double a disparu, la suggestion du cœur reste");
   // pas de Bot Twitch : un seul lien, vers le Catalogue
   const noBot = world({ noBot: true }); await pairUp(noBot, {});
   ha = await hapanel(noBot);

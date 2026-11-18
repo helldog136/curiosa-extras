@@ -1,9 +1,7 @@
 {
   "comment": "KNOWN informational banners without a link (R32). This list only shrinks: fix one, then node tests/helpers/banners.mjs --write.",
   "known": [
-    "alerts-overlay/twitch-admin.mjs q_paused",
     "alerts-overlay/twitch-admin.mjs state[1]",
-    "alerts-overlay/twitch/admin.mjs status_listening",
     "commissions/admin.mjs seen_${ps.state}",
     "daily-game/admin.mjs bannerLow",
     "events/admin.mjs ctx.t(alb.state === \"absent\" ? \"albumsAbsent\" : \"albumsDown\"",
@@ -18,10 +16,7 @@
     "mascot/admin-anim.mjs voState_${mode}",
     "mascot/admin.mjs statusLive",
     "testimonials/admin.mjs bannerPending",
-    "twitch-bot/admin.mjs bot_connected",
-    "twitch-bot/admin.mjs listen_${code}",
     "twitch-bot/entry.mjs entry_unpublished",
-    "twitch-bot/rewardsAdmin.mjs houseLine(t, house)",
     "twitch-channel/analytics.mjs live_now",
     "twitch-channel/analytics.mjs live_since",
     "twitch-channel/analytics.mjs live_starting",

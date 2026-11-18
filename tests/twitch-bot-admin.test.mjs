@@ -10,7 +10,7 @@ import { searchText, rowPasses } from "@/core/adminkit/search";
 import { world, say, fr, en, C, SRC, S, entry, link, NOW } from "./helpers/botWorld.mjs";
 import { ownerWorld } from "./helpers/ownerSet.mjs";
 import { htmlOf, rowsOf, pills, formOfBlocks, plain, cellOf, tableOf, tableRow, rowId, dialogsOf, shownFields, foldedFields } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const DIR = new URL("../modules/twitch-bot", import.meta.url).pathname;
 const A = await import("../modules/twitch-bot/admin.mjs");
@@ -442,7 +442,7 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.23.1");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.24.0");
 });
 
 /* ───────────── "Started by": the timer and the chat | the timer only ───────────── */
