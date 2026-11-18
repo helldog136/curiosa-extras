@@ -11,6 +11,7 @@ const { buildModel } = await import(`./appearances/model.mjs${V}`);
 const { renderFragment } = await import(`./appearances/registry.mjs${V}`);
 const { BASE_CSS, minify, esc } = await import(`./appearances/kit.mjs${V}`);
 const { sampleData } = await import(`./appearances/preview.mjs${V}`);
+const { notStarted } = await import(`./slots.mjs${V}`);
 
 export const ELEMENTS = ["week", "next"];
 export const LOOKS = ["auto", "week", "classic", "alternating", "timeline", "posters"];
@@ -167,7 +168,8 @@ export function renderContent(ctx, p, data, now = new Date()) {
   const grid = look === "week";
   const days = p.id === "week" ? p.days : WINDOW_DAYS;
   const until = now.getTime() + days * 86_400_000;
-  const slots = (data.slots ?? []).filter((s) => (opts.cancelled || !s.cancelled) && (grid || s.start.getTime() <= until));
+  // "Next stream": only streams that have not started yet (before the count is applied, so a stream under way never takes the place of the next one).
+  const slots = (data.slots ?? []).filter((s) => (opts.cancelled || !s.cancelled) && (grid || s.start.getTime() <= until) && (p.id !== "next" || notStarted(s, now, data.tz ?? "UTC")));
   const model = buildModel({
     slots, covers: data.covers ?? new Map(), now, tz: data.tz ?? "UTC", locale: ctx.locale, t: ctx.t, opts,
     mode: grid ? "days" : "list", days, count: p.id === "next" ? 1 + (p.more ?? 0) : fitCount(p, look), surface: SURFACE,
@@ -186,9 +188,11 @@ export function renderContent(ctx, p, data, now = new Date()) {
 }
 
 /** Contenu d'exemple du mode test (`ov-demo=1`) : les créneaux de l'aperçu de l'administration, rien d'inventé qui parte ailleurs. */
-export function demoData(ctx, now = new Date()) {
+export function demoData(ctx, now = new Date(), element = "week") {
   const { slots, covers } = sampleData(ctx.t, now);
-  return { slots: slots.map((s) => ({ ...s, cancelled: false })), tz: "UTC", covers, vis: null };
+  // "Next stream" example: the first stream still to come, shown with one game (the example under way, first of the sample, is never "next").
+  const shown = element === "next" ? slots.filter((s) => s.start.getTime() > now.getTime()).map((s, i) => (i ? s : { ...s, games: s.games.slice(0, 1) })) : slots;
+  return { slots: shown.map((s) => ({ ...s, cancelled: false })), tz: "UTC", covers, vis: null };
 }
 
 /* ───────────────────────────── La page de l'élément ───────────────────────────── */
@@ -236,7 +240,7 @@ export async function elementResponse(request, ctx, deps) {
   const p = readParams(slug, url.searchParams);
   let content = "";
   try {
-    const data = p.demo ? demoData(ctx) : await sharedSlots(ctx, deps);
+    const data = p.demo ? demoData(ctx, new Date(), p.id) : await sharedSlots(ctx, deps);
     content = renderContent(ctx, p, data);
   } catch { content = ""; }
   const v = hash(content);

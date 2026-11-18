@@ -21,7 +21,8 @@ function rowHtml(s, day, model) {
 
 export function render(model, options = {}) {
   const pairs = model.days.flatMap((d) => d.slots.map((s) => [s, d]));
-  const lead = pairs.find(([s]) => !s.cancelled && s.endMs >= model.now.getTime());
+  // The lead is the next stream: one already under way is listed below with its "live" mark, never as the next one (the admin gallery keeps its sample, which starts with a live stream).
+  const lead = pairs.find(([s]) => (model.surface === "preview" ? !s.cancelled && s.endMs >= model.now.getTime() : s.toCome));
   if (!lead) return { html: pairs.length ? `<ul class="pa-hr-list">${pairs.map(([s, d]) => rowHtml(s, d, model)).join("")}</ul>` : emptyHtml(model), css: CSS };
   const rest = pairs.filter((p) => p !== lead).slice(0, options.heroUpNext ?? 5);
   const more = rest.length ? `<h${model.headingLevel} class="pa-hr-sub">${esc(model.t("upNext"))}</h${model.headingLevel}><ul class="pa-hr-list">${rest.map(([s, d]) => rowHtml(s, d, model)).join("")}</ul>` : "";

@@ -98,7 +98,7 @@ const ROLLOUT = {
 };
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
-const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : "v1.99.0");
+const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
 /** Modules with no place, and why. Every other module of modules/ declares places. */

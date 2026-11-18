@@ -4,7 +4,7 @@
 const V = new URL(import.meta.url).search;
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`../dates.mjs${V}`);
 const { relativeLabel } = await import(`../relative.mjs${V}`);
-const { gamesOf } = await import(`../slots.mjs${V}`);
+const { gamesOf, notStarted } = await import(`../slots.mjs${V}`);
 const { safePhoto } = await import(`../avatar.mjs${V}`);
 
 const safeTwitch = (u) => (/^https:\/\/www\.twitch\.tv\/[a-z0-9_]{4,25}$/.test(String(u ?? "")) ? String(u) : null);
@@ -56,7 +56,7 @@ export function buildModel(input) {
       key: `${s.uid ?? ""}|${s.start.toISOString()}`, title: String(s.title ?? ""), allDay: !!s.allDay, live, cancelled, rel,
       iso: s.allDay ? wallKey(w) : s.start.toISOString(), isoEnd: s.allDay ? wallKey(wallDateNow(tz, new Date(end.getTime() - 1))) : end.toISOString(),
       timeText: s.allDay ? t("allDay") : fm.time(s.start), endText: s.allDay ? "" : fm.time(end),
-      startMs: s.start.getTime(), endMs: end.getTime(), dayKey: wallKey(w),
+      startMs: s.start.getTime(), endMs: end.getTime(), dayKey: wallKey(w), toCome: !cancelled && notStarted(s, now, tz),
       games, people, covers: games.map((name) => ({ name, url: covers.get(name) })).filter((c) => typeof c.url === "string" && (/^https:\/\//.test(c.url) || (allowData && /^data:image\/svg\+xml/.test(c.url)))),
     };
   }).sort((a, b) => a.startMs - b.startMs);
@@ -107,7 +107,7 @@ export function buildModel(input) {
   const offset = (() => { try { return fm.tzShort.formatToParts(now).find((p) => p.type === "timeZoneName")?.value ?? ""; } catch { return ""; } })();
   return {
     surface, headingLevel: surface === "page" ? 2 : surface === "preview" ? 4 : 3, t, locale, tz, tzName: offset ? `${tz} (${offset})` : tz, now, opts, vis, planningHref, channelUrl,
-    days: list, weeks, slots: all, upcoming, next: upcoming[0] ?? null,
+    days: list, weeks, slots: all, upcoming, next: upcoming.find((s) => s.toCome) ?? null,   // never a stream that has already started (that one is `live`)
     empty: all.length === 0, quiet: upcoming.length === 0,
   };
 }

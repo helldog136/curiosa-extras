@@ -202,7 +202,7 @@ test("mode test (ov-demo=1) : des streams d'exemple, même sans calendrier", asy
   serve("");
   const { html } = await page("week", query(1000, 600, {}, {}, { "ov-demo": "1" }), ctxWith("week", {}, { messages: { ...fr } }));
   assert.match(html, /Soirée découverte/);
-  assert.match((await page("next", query(1000, 600, {}, {}, { "ov-demo": "1" }))).html, /Soirée découverte/);
+  assert.match((await page("next", query(1000, 600, {}, {}, { "ov-demo": "1" }))).html, /Speedrun et discussion/, "the example shows the first stream still to come, never the one under way");
 });
 
 /* ───────────────────────────── Mise à jour douce ───────────────────────────── */
