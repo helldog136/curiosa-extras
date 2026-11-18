@@ -6,7 +6,7 @@
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "2.4.0",
+  "version": "2.5.0",
   "menuGroup": "community",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
@@ -66,6 +66,14 @@
         "fr": "Partenaires",
         "en": "Partners"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "community.partners",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "settings": [

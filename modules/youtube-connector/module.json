@@ -5,7 +5,7 @@
     "en": "YouTube connector",
     "fr": "Connecteur YouTube"
   },
-  "version": "1.3.4",
+  "version": "1.4.0",
   "adminMenu": "Réseaux.YouTube",
   "adminMenuOrder": 10,
   "platform": "youtube",
@@ -40,6 +40,14 @@
     {
       "id": "use",
       "hidden": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.youtube",
+      "order": 100,
+      "fromTab": "settings"
     }
   ],
   "settings": [

@@ -17,7 +17,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.20.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -82,8 +82,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/audience",
-      "ref": "v1.99.1",
-      "version": "1.11.1",
+      "ref": "v1.100.0",
+      "version": "1.12.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🙌",
@@ -99,6 +99,9 @@
           "service": "audience.remote",
           "optional": true
         }
+      ],
+      "places": [
+        "live.participation"
       ]
     },
     {
@@ -117,8 +120,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bandcamp",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "bandcamp",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -149,7 +152,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "blog",
@@ -167,7 +173,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/blog",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -192,8 +198,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bluesky",
-      "ref": "v1.99.1",
-      "version": "1.2.1",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "platform": "bluesky",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -222,7 +228,11 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts",
+        "networks.stats"
+      ]
     },
     {
       "id": "calendar-ical",
@@ -240,8 +250,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-ical",
-      "ref": "v1.99.1",
-      "version": "1.1.0",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗓️",
@@ -250,7 +260,10 @@
       ],
       "requires": {
         "core": "0.2.5"
-      }
+      },
+      "places": [
+        "calendar.schedule"
+      ]
     },
     {
       "id": "calendar-manual",
@@ -268,8 +281,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-manual",
-      "ref": "v1.99.1",
-      "version": "1.2.1",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "✍️",
@@ -278,7 +291,10 @@
       ],
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "calendar.schedule"
+      ]
     },
     {
       "id": "codes",
@@ -296,7 +312,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/codes",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -318,7 +334,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/collection",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -340,8 +356,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/commissions",
-      "ref": "v1.99.1",
-      "version": "1.0.4",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎨",
@@ -374,6 +390,9 @@
             "en": "Commissions page showing the queue is open, the number of slots and a request form."
           }
         }
+      ],
+      "places": [
+        "community.commissions"
       ]
     },
     {
@@ -392,14 +411,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/community-stats",
-      "ref": "v1.99.1",
-      "version": "1.3.0",
+      "ref": "v1.100.0",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
       "requires": {
         "core": "0.11.0"
-      }
+      },
+      "places": [
+        "networks.stats"
+      ]
     },
     {
       "id": "contact-form",
@@ -417,8 +439,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contact-form",
-      "ref": "v1.99.1",
-      "version": "1.0.5",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "✉️",
@@ -427,6 +449,9 @@
       },
       "needs": [
         "contact.store"
+      ],
+      "places": [
+        "community.contacts"
       ]
     },
     {
@@ -445,8 +470,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contacts",
-      "ref": "v1.99.1",
-      "version": "2.5.2",
+      "ref": "v1.100.0",
+      "version": "2.6.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📇",
@@ -475,6 +500,9 @@
           "service": "youtube.api",
           "optional": true
         }
+      ],
+      "places": [
+        "community.contacts"
       ]
     },
     {
@@ -493,14 +521,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/content-planner",
-      "ref": "v1.99.1",
-      "version": "1.0.2",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📓",
       "requires": {
         "core": "0.2.5"
-      }
+      },
+      "places": [
+        "calendar.notebook"
+      ]
     },
     {
       "id": "countdown",
@@ -518,14 +549,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/countdown",
-      "ref": "v1.99.1",
-      "version": "1.3.1",
+      "ref": "v1.100.0",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "⏳",
       "requires": {
         "core": "0.11.0"
-      }
+      },
+      "places": [
+        "calendar.countdowns"
+      ]
     },
     {
       "id": "daily-game",
@@ -543,8 +577,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/daily-game",
-      "ref": "v1.99.1",
-      "version": "1.1.3",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎲",
@@ -573,6 +607,9 @@
             "en": "Quiz page with a question about colours and four answers to pick from."
           }
         }
+      ],
+      "places": [
+        "community.games"
       ]
     },
     {
@@ -591,8 +628,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/directory",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗂️",
@@ -627,6 +664,9 @@
             "en": "Directory page with a search field, category buttons and member cards with photo and name."
           }
         }
+      ],
+      "places": [
+        "content.directory"
       ]
     },
     {
@@ -645,8 +685,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
-      "ref": "v1.99.1",
-      "version": "1.3.1",
+      "ref": "v1.100.0",
+      "version": "1.4.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -683,7 +723,11 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.discord",
+        "networks.stats"
+      ]
     },
     {
       "id": "discord-announcer",
@@ -701,8 +745,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
-      "ref": "v1.99.1",
-      "version": "1.2.3",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -715,6 +759,10 @@
           "service": "youtube.live",
           "optional": true
         }
+      ],
+      "places": [
+        "networks.discord",
+        "live.golive"
       ]
     },
     {
@@ -733,8 +781,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/events",
-      "ref": "v1.99.1",
-      "version": "1.4.0",
+      "ref": "v1.100.0",
+      "version": "1.5.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -797,6 +845,9 @@
             "en": "Detailed page of a workshop with time, place, the afternoon programme, two speakers and a sign-up button."
           }
         }
+      ],
+      "places": [
+        "calendar.events"
       ]
     },
     {
@@ -815,8 +866,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/facebook",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "facebook",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -854,7 +905,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "faq",
@@ -872,8 +926,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/faq",
-      "ref": "v1.99.1",
-      "version": "1.0.4",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "❓",
@@ -905,6 +959,9 @@
             "en": "FAQ admin screen with the list of questions and their categories."
           }
         }
+      ],
+      "places": [
+        "content.faq"
       ]
     },
     {
@@ -923,8 +980,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/gallery",
-      "ref": "v1.99.1",
-      "version": "1.2.0",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🖼️",
@@ -968,6 +1025,9 @@
             "en": "Album page with a grid of nine photos."
           }
         }
+      ],
+      "places": [
+        "content.galleries"
       ]
     },
     {
@@ -986,8 +1046,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
-      "ref": "v1.99.1",
-      "version": "1.3.3",
+      "ref": "v1.100.0",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
@@ -1003,6 +1063,9 @@
           "min": 3,
           "optional": true
         }
+      ],
+      "places": [
+        "community.games"
       ]
     },
     {
@@ -1021,8 +1084,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
-      "ref": "v1.99.1",
-      "version": "1.10.0",
+      "ref": "v1.100.0",
+      "version": "1.11.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
@@ -1037,6 +1100,9 @@
           "service": "game.cover",
           "optional": true
         }
+      ],
+      "places": [
+        "community.games"
       ]
     },
     {
@@ -1055,8 +1121,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/github",
-      "ref": "v1.99.1",
-      "version": "1.2.1",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "platform": "github",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1085,7 +1151,11 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts",
+        "networks.stats"
+      ]
     },
     {
       "id": "hero",
@@ -1103,11 +1173,14 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/hero",
-      "ref": "v1.99.1",
-      "version": "1.0.3",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "🏁"
+      "icon": "🏁",
+      "places": [
+        "site.home"
+      ]
     },
     {
       "id": "home-assistant",
@@ -1125,7 +1198,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/home-assistant",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.3.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1170,8 +1243,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/idea-box",
-      "ref": "v1.99.1",
-      "version": "1.0.2",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💡",
@@ -1215,6 +1288,9 @@
             "en": "Edit form of an idea with the Published switch, the status and the short reply."
           }
         }
+      ],
+      "places": [
+        "community.ideas"
       ]
     },
     {
@@ -1233,8 +1309,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/instagram",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1262,7 +1338,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "kick",
@@ -1280,8 +1359,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/kick",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "kick",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1309,7 +1388,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "kofi",
@@ -1327,8 +1409,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/kofi",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "ko-fi",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1356,7 +1438,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "legal-pages",
@@ -1374,14 +1459,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/legal-pages",
-      "ref": "v1.99.1",
-      "version": "1.0.4",
+      "ref": "v1.100.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "⚖️",
       "requires": {
         "core": "0.2.5"
-      }
+      },
+      "places": [
+        "site.general"
+      ]
     },
     {
       "id": "links",
@@ -1399,7 +1487,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/links",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1435,8 +1523,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
-      "ref": "v1.99.1",
-      "version": "1.4.7",
+      "ref": "v1.100.0",
+      "version": "1.5.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1453,6 +1541,9 @@
           "service": "youtube.live",
           "optional": true
         }
+      ],
+      "places": [
+        "live.golive"
       ]
     },
     {
@@ -1471,14 +1562,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/map",
-      "ref": "v1.99.1",
-      "version": "1.1.0",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗺️",
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "content.map"
+      ]
     },
     {
       "id": "mascot",
@@ -1496,7 +1590,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mascot",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.5.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1535,8 +1629,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mastodon",
-      "ref": "v1.99.1",
-      "version": "1.2.2",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "platform": "mastodon",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1571,7 +1665,11 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts",
+        "networks.stats"
+      ]
     },
     {
       "id": "maze-overlay",
@@ -1589,14 +1687,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/maze-overlay",
-      "ref": "v1.99.1",
-      "version": "1.2.0",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🌀",
       "requires": {
         "core": "0.5.0"
-      }
+      },
+      "places": [
+        "obs.overlays"
+      ]
     },
     {
       "id": "pages",
@@ -1614,7 +1715,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/pages",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1636,8 +1737,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/partnerships",
-      "ref": "v1.99.1",
-      "version": "2.4.0",
+      "ref": "v1.100.0",
+      "version": "2.5.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤝",
@@ -1655,6 +1756,9 @@
       ],
       "needs": [
         "contact.book"
+      ],
+      "places": [
+        "community.partners"
       ]
     },
     {
@@ -1673,8 +1777,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/patreon",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "patreon",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1702,7 +1806,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "pinterest",
@@ -1720,8 +1827,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/pinterest",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "pinterest",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1749,7 +1856,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "planning",
@@ -1767,8 +1877,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
-      "ref": "v1.99.1",
-      "version": "2.8.1",
+      "ref": "v1.100.0",
+      "version": "2.9.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -1827,6 +1937,9 @@
             "en": "Planning page as a vertical timeline with the next streams in order."
           }
         }
+      ],
+      "places": [
+        "calendar.schedule"
       ]
     },
     {
@@ -1845,8 +1958,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/platform-links",
-      "ref": "v1.99.1",
-      "version": "1.1.3",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔗",
@@ -1881,6 +1994,9 @@
             "en": "Notice page with an adults-only message, a continue button and a back-to-site button."
           }
         }
+      ],
+      "places": [
+        "networks.accounts"
       ]
     },
     {
@@ -1899,8 +2015,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/polls",
-      "ref": "v1.99.1",
-      "version": "1.8.1",
+      "ref": "v1.100.0",
+      "version": "1.9.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
@@ -1944,6 +2060,9 @@
             "en": "Colourful stream background with, in the centre, a poll showing a question, three choices and their result bars."
           }
         }
+      ],
+      "places": [
+        "live.participation"
       ]
     },
     {
@@ -1962,14 +2081,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/press-kit",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📰",
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "content.press-kit"
+      ]
     },
     {
       "id": "reddit",
@@ -1987,8 +2109,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/reddit",
-      "ref": "v1.99.1",
-      "version": "1.2.1",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "platform": "reddit",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2033,7 +2155,11 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts",
+        "networks.stats"
+      ]
     },
     {
       "id": "snapchat",
@@ -2051,8 +2177,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/snapchat",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "snapchat",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2084,7 +2210,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "soundcloud",
@@ -2102,8 +2231,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/soundcloud",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "soundcloud",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2131,7 +2260,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "sponsor-ticker",
@@ -2149,14 +2281,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/sponsor-ticker",
-      "ref": "v1.99.1",
-      "version": "1.4.1",
+      "ref": "v1.100.0",
+      "version": "1.5.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
       "requires": {
         "core": "0.11.0"
-      }
+      },
+      "places": [
+        "obs.overlays"
+      ]
     },
     {
       "id": "sponsors",
@@ -2174,13 +2309,16 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/sponsors",
-      "ref": "v1.99.1",
-      "version": "1.1.0",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💸",
       "provides": [
         "sponsor.card"
+      ],
+      "places": [
+        "community.partners"
       ]
     },
     {
@@ -2199,8 +2337,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/spotify",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "spotify",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2222,7 +2360,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "steam",
@@ -2240,8 +2381,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/steam",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "steam",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2276,7 +2417,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "stream-goals",
@@ -2294,7 +2438,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-goals",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2333,8 +2477,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-story",
-      "ref": "v1.99.1",
-      "version": "2.14.0",
+      "ref": "v1.100.0",
+      "version": "2.15.0",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2362,6 +2506,9 @@
           "service": "game.cover",
           "optional": true
         }
+      ],
+      "places": [
+        "calendar.story"
       ]
     },
     {
@@ -2380,8 +2527,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/supporters",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤝",
@@ -2408,6 +2555,9 @@
           "service": "contact.curate",
           "optional": true
         }
+      ],
+      "places": [
+        "community.supporters"
       ]
     },
     {
@@ -2426,8 +2576,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/telegram",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "telegram",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2456,7 +2606,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "testimonials",
@@ -2474,8 +2627,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/testimonials",
-      "ref": "v1.99.1",
-      "version": "1.4.1",
+      "ref": "v1.100.0",
+      "version": "1.5.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
@@ -2498,6 +2651,9 @@
             "en": "Reviews page with a grid of testimonials, each with the person's name, a star rating and a text."
           }
         }
+      ],
+      "places": [
+        "community.reviews"
       ]
     },
     {
@@ -2516,8 +2672,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/thanks-wall",
-      "ref": "v1.99.1",
-      "version": "1.3.0",
+      "ref": "v1.100.0",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💛",
@@ -2549,6 +2705,9 @@
             "en": "Thank-you page with a person in the spotlight at the top, then cards with photo and name, arranged in groups."
           }
         }
+      ],
+      "places": [
+        "community.supporters"
       ]
     },
     {
@@ -2567,8 +2726,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/threads",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "threads",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2597,7 +2756,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "ticker-overlay",
@@ -2615,14 +2777,17 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/ticker-overlay",
-      "ref": "v1.99.1",
-      "version": "1.2.0",
+      "ref": "v1.100.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📺",
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "obs.overlays"
+      ]
     },
     {
       "id": "tiktok",
@@ -2640,8 +2805,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/tiktok",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "tiktok",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2669,7 +2834,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "twitch-bot",
@@ -2687,7 +2855,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.23.1",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2784,7 +2952,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "2.5.1",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2836,7 +3004,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-connector",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.7.1",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2871,7 +3039,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-events",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.13.1",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2922,7 +3090,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "2.6.1",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2969,8 +3137,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/videos",
-      "ref": "v1.99.1",
-      "version": "1.1.0",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎬",
@@ -2988,6 +3156,9 @@
           "service": "gallery.albums",
           "optional": true
         }
+      ],
+      "places": [
+        "content.videos"
       ]
     },
     {
@@ -3006,8 +3177,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/x-twitter",
-      "ref": "v1.99.1",
-      "version": "1.1.1",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "x",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3041,7 +3212,10 @@
       },
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "places": [
+        "networks.accounts"
+      ]
     },
     {
       "id": "youtube-channel",
@@ -3059,8 +3233,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-channel",
-      "ref": "v1.99.1",
-      "version": "1.4.4",
+      "ref": "v1.100.0",
+      "version": "1.5.0",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3089,6 +3263,10 @@
           "service": "youtube.api",
           "optional": true
         }
+      ],
+      "places": [
+        "networks.youtube",
+        "networks.stats"
       ]
     },
     {
@@ -3107,8 +3285,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-connector",
-      "ref": "v1.99.1",
-      "version": "1.3.4",
+      "ref": "v1.100.0",
+      "version": "1.4.0",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3118,6 +3296,9 @@
       },
       "offers": [
         "youtube.api"
+      ],
+      "places": [
+        "networks.youtube"
       ]
     },
     {
@@ -3136,8 +3317,8 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-live-actions",
-      "ref": "v1.99.1",
-      "version": "1.1.4",
+      "ref": "v1.100.0",
+      "version": "1.2.0",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3161,6 +3342,10 @@
           "service": "youtube.live",
           "optional": true
         }
+      ],
+      "places": [
+        "live.chat",
+        "live.alerts"
       ]
     },
     {
@@ -3179,7 +3364,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/announcement-banner",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3207,7 +3392,7 @@
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/guestbook",
-      "ref": "v1.99.1",
+      "ref": "v1.100.0",
       "version": "1.0.6",
       "apiVersion": 2,
       "author": "Helldog136",

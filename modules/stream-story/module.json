@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.14.0",
+  "version": "2.15.0",
   "menuGroup": "tools",
   "platform": "instagram",
   "description": {
@@ -47,6 +47,23 @@
         "en": "My styles"
       },
       "panel": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "calendar.story",
+      "order": 200,
+      "fromTab": "settings",
+      "seeAlso": [
+        "calendar.schedule"
+      ]
+    },
+    {
+      "id": "styles",
+      "place": "calendar.story.styles",
+      "order": 200,
+      "fromTab": "styles"
     }
   ],
   "settings": [

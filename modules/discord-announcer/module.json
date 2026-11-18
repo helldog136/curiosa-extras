@@ -5,7 +5,7 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.2.3",
+  "version": "1.3.0",
   "adminMenu": "Réseaux.Discord",
   "menuGroup": "connections",
   "platform": "discord",
@@ -111,6 +111,42 @@
         "fr": "Annonces",
         "en": "Announcements"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.discord",
+      "order": 200,
+      "fromTab": "settings",
+      "settings": [
+        "webhookUrl",
+        "mention",
+        "prefix",
+        "freshHours"
+      ],
+      "seeAlso": [
+        "live.golive"
+      ]
+    },
+    {
+      "id": "golive",
+      "place": "live.golive",
+      "order": 300,
+      "settings": [
+        "youtubeLive",
+        "liveBoth",
+        "liveText",
+        "liveCooldownHours",
+        "youtubeCheckMinutes"
+      ],
+      "title": {
+        "en": "Discord announcement",
+        "fr": "Annonce sur Discord"
+      },
+      "seeAlso": [
+        "networks.discord"
+      ]
     }
   ],
   "settings": [

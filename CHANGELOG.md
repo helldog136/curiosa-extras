@@ -4,6 +4,36 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.100.0 — 2026-11-18
+
+*En bref : sur un site en Curiosa 0.31.0 ou plus récent, presque toutes les extensions rangent maintenant leurs réglages par tâche : « Communauté », « Agenda », « En direct », « Réseaux », « OBS » et « Contenu ». Les entrées une à une (Planning, Contacts, Sondages, Discord, Instagram…) disparaissent du menu, remplacées par une page par tâche. Sur un cœur plus ancien, rien ne change.*
+
+*In short: on a site with Curiosa 0.31.0 or later, nearly every extension now puts its settings by task: "Community", "Calendar", "Live", "Networks", "OBS" and "Content". The one-by-one entries (Schedule, Contacts, Polls, Discord, Instagram…) leave the menu, replaced by one page per task. On an older core, nothing changes.*
+
+### Nouveautés
+
+- **Communauté.** « Contacts » (avec le formulaire de contact), « Partenaires » (avec les sponsors), « Soutiens » (avec le mur des remerciements), « Témoignages », « Boîte à idées », « Jeux » (suggestions, jeu du jour, jaquettes) et « Commandes ».
+- **Agenda.** « Planning » (créneaux, apparence, agendas en ligne, streams saisis à la main), « Événements », « Comptes à rebours », « Story d'annonce » et « Cahier de contenu ».
+- **En direct.** « Participation » (sondages, salles et pseudos, tirage au sort) et « Passage en direct », qui réunit le statut du live et l'annonce Discord. Les actions du live YouTube rejoignent « Chat » et « Alertes ».
+- **Réseaux.** « YouTube », « Discord » et « Autres comptes » (Instagram, TikTok, GitHub et les autres, plus les autres plateformes). Les chiffres suivis de chaque réseau, et les statistiques de la communauté, sont sur « Chiffres ».
+- **OBS.** « Overlays tout prêts » : labyrinthe, sponsors et bandeau défilant.
+- **Contenu.** « Questions fréquentes », « Galeries photos », « Vidéothèque », « Carte », « Annuaire » et « Kit presse ».
+- **Rien ne bouge ailleurs.** Vos réglages, vos listes, les outils des assistants et les éléments d'overlay restent les mêmes. La page de chaque extension reste dans Extensions. Le Bandeau d'accueil et les Mentions légales gardent leur entrée tant que le cœur ne les montre pas sur ses propres pages.
+- **Community.** "Contacts" (with the contact form), "Partners" (with the sponsors), "Supporters" (with the thank-you wall), "Reviews", "Idea box", "Games" (suggestions, daily game, covers) and "Commissions".
+- **Calendar.** "Schedule" (slots, look, online calendars, hand-written streams), "Events", "Countdowns", "Announcement story" and "Content notebook".
+- **Live.** "Audience games" (polls, rooms and nicknames, prize draw) and "Going live", which gathers the live status and the Discord announcement. The YouTube live actions join "Chat" and "Alerts".
+- **Networks.** "YouTube", "Discord" and "Other accounts" (Instagram, TikTok, GitHub and the others, plus the other platforms). The figures followed on each network, and the community statistics, are on "Figures".
+- **OBS.** "Ready-made overlays": maze, sponsors and ticker.
+- **Content.** "FAQ", "Photo galleries", "Video library", "Map", "Directory" and "Press kit".
+- **Nothing moves elsewhere.** Your settings, your lists, the assistants' tools and the overlay elements stay the same. Each extension's page stays in Extensions. The Home banner and the Legal pages keep their entry until the core shows them on its own pages.
+
+### Pour les développeurs
+
+- **Places.** 59 modules (new `places[]` with `fromTab`, minor version bump each, no `minCore` change, `adminMenu` / `menuGroup` untouched): a core older than 0.31.0 ignores the key and shows exactly the manifest of 1.99.0 (test from the real tag). Only Overlay alertes and the other Twitch extensions (1.96.0), Mascot, Twitch activity (bridge version) and the content-only modules (Blog, Pages, Links, Codes, Collection) declare nothing new.
+- **Vocabulary.** `catalogue/places.json` is unchanged: the pages and tabs of 1.96.0 already covered every module.
+- **Limits found.** Mascot has five tabs with their own blocks and the core allows 3 sections of one module per page: it keeps its own entry. A section on a page of the core (`site.home.banners` for Hero, `site.general.privacy` for Legal pages) is accepted but not shown by the core yet, so those two keep their entry.
+- **Tests.** `tests/places.test.mjs`: the table of sections of every module, every module of `modules/` placed or listed with its reason, the real manifests of 1.95.1 and 1.99.0, the kits `places.valid` / `places.budget` / `compat.minCore`, and the sidebar of the four live sites (`tests/fixtures/places-menus.json`).
+
 ## 1.99.1 — 2026-11-18
 
 *En bref : « Prochain stream » ne montre plus le stream en cours. Dès que l'heure de début est passée, ce stream n'est plus « le prochain » : c'est celui d'après.*

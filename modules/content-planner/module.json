@@ -6,7 +6,7 @@
     "en": "Content notebook",
     "fr": "Cahier de contenu"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "menuGroup": "tools",
   "description": {
     "en": "Your private notebook for videos, articles and posts: ideas, work in progress and published, with steps to tick off and a target date. Nothing is ever shown on your site.",
@@ -31,6 +31,14 @@
         "fr": "Mon cahier",
         "en": "My notebook"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "calendar.notebook",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "settings": [

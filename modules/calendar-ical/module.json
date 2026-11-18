@@ -6,7 +6,7 @@
     "en": "Online calendar",
     "fr": "Agenda en ligne"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": {
     "en": "Reads your Google Calendar (or any online calendar) so your site can show your streams: schedule, chat bot… Nothing to retype.",
     "fr": "Lit votre Google Agenda (ou tout agenda en ligne) pour que votre site montre vos streams : planning, bot du chat… Rien à recopier."
@@ -31,6 +31,14 @@
     "topics",
     "routes",
     "admin"
+  ],
+  "places": [
+    {
+      "id": "sources",
+      "place": "calendar.schedule.sources",
+      "order": 200,
+      "fromTab": "settings"
+    }
   ],
   "settings": [
     {

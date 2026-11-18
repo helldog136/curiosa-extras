@@ -6,7 +6,7 @@
     "fr": "Actions du live YouTube",
     "en": "YouTube live actions"
   },
-  "version": "1.1.4",
+  "version": "1.2.0",
   "adminMenu": "Réseaux.YouTube",
   "platform": "youtube",
   "description": {
@@ -146,6 +146,44 @@
         "admin": true,
         "editor": false
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "chat",
+      "place": "live.chat.youtube",
+      "order": 200,
+      "fromTab": "settings",
+      "settings": [
+        "channel",
+        "readChat",
+        "modsStop",
+        "readWithoutHouse",
+        "ifRefused",
+        "thanks",
+        "intervalSec",
+        "budgetPercent",
+        "maxAgeSec",
+        "extraCurrencies"
+      ],
+      "seeAlso": [
+        "networks.youtube"
+      ]
+    },
+    {
+      "id": "alerts",
+      "place": "live.alerts.events",
+      "order": 300,
+      "settings": [
+        "shareAlerts"
+      ],
+      "title": {
+        "en": "YouTube donations",
+        "fr": "Dons YouTube"
+      },
+      "seeAlso": [
+        "live.chat"
+      ]
     }
   ],
   "settings": [

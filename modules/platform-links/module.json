@@ -6,7 +6,7 @@
     "en": "Other platforms",
     "fr": "Autres plateformes"
   },
-  "version": "1.1.3",
+  "version": "1.2.0",
   "menuGroup": "content",
   "description": {
     "en": "Add your OnlyFans, Mym, Fansly, Patreon, Ko-fi or any other page as an icon next to your social networks, with an optional notice page (18+) before the link opens.",
@@ -59,6 +59,14 @@
         "admin": true,
         "editor": false
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.accounts.other",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "settings": [
