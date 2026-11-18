@@ -46,6 +46,8 @@ const evDock = await import(new URL(`./twitch/dock.mjs${v}`, import.meta.url).hr
 const evKit = await import(new URL(`./twitch/dockkit.mjs${v}`, import.meta.url).href);
 const evFlag = await import(new URL(`./twitch/flag.mjs${v}`, import.meta.url).href);
 const evRx = await import(new URL(`./twitch/reaction.mjs${v}`, import.meta.url).href);
+// (1.20.0) The animated elements "Hype train" and "Session counter" (core 0.30.0 engine)
+const gauges = await import(new URL(`./gauges.mjs${v}`, import.meta.url).href);
 /** (1.18.0) What each Twitch event type and each reward shows: the methods of the former service `alerts.reaction` (version 3), same inputs and answers, now internal. */
 export const reactionService = evRx.methods;
 /**
@@ -369,6 +371,21 @@ export default {
       return Response.json({ ok: true, listeners: listeners(ctx.instance.key) });
     },
 
+    // (1.20.0) The animated elements: the page (`gauge/hype`, `gauge/session`) and what it reads every 1.5 s (`gauge-state/<el>`). Read-only, no secret in them:
+    // the numbers they give are the ones shown on stream.
+    "gauge/:slug"(request, ctx) {
+      const el = ctx.params?.slug;
+      if (el !== "hype" && el !== "session") return new Response("Not found", { status: 404 });
+      return new Response(gauges.elementPage(ctx, el, new URL(request.url).searchParams), { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": gauges.CSP, "X-Content-Type-Options": "nosniff" } });
+    },
+    async "gauge-state/:slug"(request, ctx) {
+      if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
+      const el = ctx.params?.slug;
+      if (el !== "hype" && el !== "session") return new Response("Not found", { status: 404 });
+      if (!evSt.allow(ctx, `gauge-${el}`, { max: 600, windowMs: 60_000 })) return Response.json({ now: Date.now() }, { status: 429, headers: { "Cache-Control": "no-store" } });
+      return Response.json(await gauges.stateOf(ctx, el, new URL(request.url).searchParams), { headers: { "Cache-Control": "no-store" } });
+    },
+
     // (1.18.0, formerly Twitch activity) The address Twitch calls. Public by nature; only a request signed with our secret is accepted. The copy that listens only.
     async webhook(request, ctx) {
       if (!(await home.isHome(ctx))) return notHere();
@@ -443,6 +460,9 @@ export default {
     alerts: (ctx, request) => ({ url: `/overlays/${ctx.instance.key}${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
     // (1.12.0) "Large alerts": the same alerts in a frame the person sizes freely (the whole canvas by default), so a placed text shows at its real size.
     "alerts-stage": (ctx, request) => ({ url: `/overlays/${ctx.instance.key}${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
+    // (1.20.0) the animated elements: the core adds ov-* and opt-* to these addresses
+    "hype-train": (ctx, request) => ({ url: `/m/${ctx.instance.key}/gauge/hype${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
+    "session-counter": (ctx, request) => ({ url: `/m/${ctx.instance.key}/gauge/session${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
   },
 
   // Overlay du module (`/overlays/<clé>`), et, avec les paramètres `ov-*` du cœur, la page de l'ÉLÉMENT : même rendu, même fichier, rien de dupliqué.

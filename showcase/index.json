@@ -934,6 +934,26 @@
       "shots": 1
     },
     {
+      "id": "stream-goals",
+      "category": "looks",
+      "order": 40,
+      "title": {
+        "en": "Live goals",
+        "fr": "Objectifs du live"
+      },
+      "pitch": {
+        "en": "A goal bar and a subathon whose time grows with each sub, bits or follow.",
+        "fr": "Une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow."
+      },
+      "tags": [
+        "goal",
+        "subathon",
+        "overlay",
+        "twitch"
+      ],
+      "shots": 2
+    },
+    {
       "id": "sponsor-ticker",
       "category": "looks",
       "order": 50,

@@ -65,6 +65,21 @@ waits (mode `waiting`) and says to update it. Nothing of Twitch activity is dele
   again (they are off by default). Every other tool of the overlay keeps its name and its rights;
 - custom roles: neither module declares rights, nothing to redo. The menu has one entry fewer.
 
+## Hype train and session counter, animated (version 1.20.0, core 0.30.0)
+
+Two more elements for overlay pages, drawn by the core's animation engine in the style of the page's skin (any skin: the engine has a plain rendering for skins without an animation recipe):
+
+- **Hype train** (`hype-train`, genre `levels`): the level, the progress inside it and the countdown Twitch gives. Each contribution is a reaction, a new level a celebration, the end a last celebration; the element hides when no train is on (20 s after the end). The Test of the « hype » type shows a short demonstration.
+- **Session counter** (`session-counter`, genre `counter`): subs (new, renewed and gifted; the gifted subs are not counted twice), bits or follows (once per login) since the stream started. The session starts at the last « online »; a stream that drops and comes back within 10 minutes is the same session; without any « online », the last 12 hours. Tests lift the counter for 8 seconds and it comes back: they never count.
+
+Both read the journal of the copy that listens (another copy reads the topic, without the progress inside a level), every 1.5 s, with the server's clock: a reaction starts 1.6 s after the event arrived, the same on every open page; a reloaded page replays nothing. Options: **Title**, **What it counts** (counter), and the engine's **Effects** and **Calm motion**. Readers never write.
+
+### The Twitch data behind them
+
+- The live state of a train is kept in the listening state (`hype`: level, progress, goal, `expiresAt`, the last 20 messages), updated by every « progress » message. The journal still gets one line per **new** level only (its size and retention are unchanged). Its lines now keep `expiresAt` (Twitch's `expires_at`), and the topic item carries it.
+- A state written by an older version has no `hype` key: it is rebuilt from the journal lines of the train (no countdown in those).
+- **End of a subscription**: `channel.subscription.end` (v1, same permission as subs, checked against the Twitch reference and the Twitch CLI) is listened to with the « sub » switch and stored as `sub_end`. It never makes an alert (the overlay does not know that type) and the Test of « sub » still sends one sub. Twitch has **no unfollow event**.
+
 ## YouTube alerts (version 1.1.0)
 
 If the **YouTube live actions** module is installed, the **Super Chats, Super Stickers, new memberships and gifted memberships** of your YouTube live also appear, one after the other (a queue of 50 at most). Nothing to connect: the overlay reads the `live.event` topic that module publishes ("Data sources" tab of the overlay if you want to choose which ones).
