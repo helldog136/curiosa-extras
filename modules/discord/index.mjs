@@ -145,6 +145,16 @@ const measure = (ctx, t) => t.code ? lookup(t.code, async () => {
   return { account: name && name.length <= 100 ? name : t.account, stats: { followers: count(j.approximate_member_count) } };
 }) : Promise.resolve({ error: "config", reason: "invite", at: Date.now() });
 
+/**
+ * Les lignes du panneau des chiffres (R33) : « libellé : valeur » ; un chiffre qui ne vient pas dit pourquoi. Si TOUS les chiffres disent la même chose, elle n'est écrite qu'une fois, sans libellé
+ * (le message nomme déjà la plateforme).
+ */
+function statLines(ctx, items, why) {
+  const texts = items.map((i) => (i.error ? why(i) : null));
+  if (items.length && texts.every((t) => t !== null && t === texts[0])) return [texts[0]];
+  return items.map((i, n) => ctx.t("stat_line", { label: i.label, value: texts[n] ?? i.value.toLocaleString(ctx.locale) }));
+}
+
 export default {
   exports: {
     "social.link"(ctx) {
@@ -166,7 +176,8 @@ export default {
     const target = targetOf(ctx);
     if (!target) return [];
     const r = await measure(ctx, target);
-    const rows = statItems(ctx, target, r).map((i) => [i.label, i.error ? whyNot(ctx, i, r) : i.value.toLocaleString(ctx.locale)]);
-    return [{ type: "heading", text: ctx.t("stats_title") }, { type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows }, ...[{ type: "markdown", text: ctx.t("stats_note") }]];
+    const items = statItems(ctx, target, r);
+    const lines = statLines(ctx, items, (i) => whyNot(ctx, i, r));
+    return lines.length ? [{ type: "markdown", text: lines.join("\n\n") }] : [];
   },
 };

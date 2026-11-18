@@ -5,7 +5,7 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "adminMenu": "Réseaux.Discord",
   "adminMenuOrder": 10,
   "platform": "discord",
@@ -82,12 +82,8 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Your profile address",
-        "fr": "Adresse de votre profil"
-      },
-      "help": {
-        "en": "Paste your invitation link.",
-        "fr": "Collez votre lien d'invitation."
+        "en": "Your invitation link",
+        "fr": "Votre lien d'invitation"
       },
       "example": {
         "en": "https://discord.gg/abcDEF",
@@ -103,8 +99,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your server's members for the site's statistics (an approximate number, read from the invitation link).",
-        "fr": "Compte les membres de votre serveur pour les statistiques du site (un nombre approximatif, lu à partir du lien d'invitation)."
+        "en": "Counts your server's members. The number is approximate.",
+        "fr": "Compte les membres de votre serveur. Le nombre est approximatif."
       }
     },
     {
@@ -124,12 +120,8 @@
       "key": "invite",
       "type": "text",
       "label": {
-        "en": "Invitation link",
-        "fr": "Lien d'invitation"
-      },
-      "help": {
-        "en": "Only if the address above is not an invitation.",
-        "fr": "Seulement si l'adresse ci-dessus n'est pas une invitation."
+        "en": "Invitation used to count members",
+        "fr": "Invitation pour compter les membres"
       },
       "optional": true,
       "example": {

@@ -5,7 +5,7 @@
     "en": "Threads",
     "fr": "Threads"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "threads",
   "description": {
     "en": "Shows your Threads button in the site header.",
@@ -43,10 +43,6 @@
       "label": {
         "en": "Your profile address",
         "fr": "Adresse de votre profil"
-      },
-      "help": {
-        "en": "Paste the link to your page.",
-        "fr": "Collez le lien de votre page."
       },
       "example": {
         "en": "https://www.threads.net/@myname",

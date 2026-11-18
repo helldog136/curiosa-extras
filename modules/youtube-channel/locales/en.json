@@ -4,14 +4,11 @@
   "stat_followers": "YouTube subscribers",
   "stat_content": "YouTube videos",
   "stat_views": "YouTube views",
-  "stats_title": "Your YouTube statistics",
-  "col_stat": "Number followed",
-  "col_value": "Currently",
-  "stats_note": "YouTube rounds the subscriber count (for example 1,230,000 for 1,234,567): this is normal.",
+  "stat_line": "**{label}**: {value}",
   "err_hidden": "YouTube hides your subscriber count: make it public in YouTube Studio.",
   "err_auth": "The YouTube access code is refused: check it in Settings, on the page of the site's YouTube connector.",
-  "err_rate": "YouTube has reached its request limit for today: nothing to do, it will resume by itself.",
-  "err_network": "YouTube is not answering right now: nothing to do, we try again automatically.",
+  "err_rate": "YouTube has reached its request limit for today.",
+  "err_network": "YouTube is not answering.",
   "err_config_key": "To follow your statistics, add your YouTube access code in Settings, on the page of the site's YouTube connector. It is free.",
   "err_config_channel": "YouTube cannot find this channel: check the channel code in Settings (it starts with UC).",
   "err_config_connector": "To follow your statistics, the site needs a YouTube access code. Install what is suggested above, then add your code to it.",
@@ -21,5 +18,5 @@
   "events_setup_connector": "To see your scheduled videos and live streams, the site needs a YouTube access code. Install what the YouTube channel page offers, then add your code there.",
   "events_setup_key": "To see your scheduled lives, add your YouTube access code in Settings, on the site's YouTube connector page. It is free.",
   "events_setup_refused": "The YouTube access code is refused: check it in Settings, on the site's YouTube connector page.",
-  "events_setup_update": "To see your scheduled videos, the site's YouTube connector must be updated (Extensions, Check for updates)."
+  "events_setup_update": "To see your scheduled videos, update the site's YouTube connector (Extensions, Check for updates)."
 }

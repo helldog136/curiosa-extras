@@ -6,7 +6,7 @@
     "en": "GitHub",
     "fr": "GitHub"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
   "platform": "github",
   "description": {
     "en": "Shows your GitHub button in the site header and shares your follower count.",
@@ -80,10 +80,6 @@
         "en": "Your profile address",
         "fr": "Adresse de votre profil"
       },
-      "help": {
-        "en": "Paste the link to your page.",
-        "fr": "Collez le lien de votre page."
-      },
       "example": {
         "en": "https://github.com/myname",
         "fr": "https://github.com/monpseudo"
@@ -98,8 +94,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your followers for the site's statistics. This number is public: nothing to set up.",
-        "fr": "Compte vos followers pour les statistiques du site. Ce chiffre est public : rien à régler."
+        "en": "Counts your followers for the site's statistics.",
+        "fr": "Compte vos followers pour les statistiques du site."
       }
     }
   ],
