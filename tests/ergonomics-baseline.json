@@ -1,12 +1,24 @@
 {
   "$comment": "Écarts d'ergonomie CONNUS par module (docs/ERGONOMIE-ADMIN.md, règles [auto]). Ce fichier ne peut que rétrécir : corrigez un écart, puis node scripts/ergonomics-baseline.mjs --write. Ne rajoutez jamais une ligne à la main.",
-  "version": 1,
+  "version": 2,
   "modules": {
     "alerts-overlay": [
       "R13 locale:en:ytHelp #69a682",
       "R13 locale:en:ytTestText #e7e585",
       "R13 locale:fr:ytHelp #30133e",
-      "R13 locale:fr:ytTestText #69e2e0"
+      "R13 locale:fr:ytTestText #69e2e0",
+      "R33a locale:fr:state_taken #408d60",
+      "R33a locale:fr:state_unknown #b21287",
+      "R33e locale:en:catchup_note #907a58",
+      "R33e locale:en:d_missed #323464",
+      "R33e locale:fr:catchup_note #cf9e0a",
+      "R33e locale:fr:d_missed #7d68a7",
+      "R33e locale:fr:tts_state_nosupport #ecdf47",
+      "R33g locale:en:mail_body_back #e92b86",
+      "R33g locale:en:mail_body_problem #0b25d7",
+      "R33g locale:fr:check_ok #4280b4",
+      "R33g locale:fr:mail_body_back #995145",
+      "R33g locale:fr:mail_body_problem #adbce1"
     ],
     "audience": [
       "R10 locale:en:currentPseudo #d22930",
@@ -39,7 +51,8 @@
       "R13 locale:fr:tutoErr5 #4e2444",
       "R13 locale:fr:tutoExNoGameDesc #074820",
       "R13 setting:timezone.help[en] #aa4432",
-      "R13 setting:timezone.help[fr] #aecde2"
+      "R13 setting:timezone.help[fr] #aecde2",
+      "R33b setting:url"
     ],
     "commissions": [
       "R13 description[en] #d6b5c1",
@@ -52,6 +65,7 @@
       "R13 locale:fr:explain_delivered #df3688",
       "R13 locale:fr:mailStatusBody #5383c2",
       "R13 locale:fr:modeHelp_open #05c054",
+      "R33e locale:fr:trackUnknown #470a4d",
       "R9 locale:en:csvHeader #f7260c",
       "R9 locale:fr:csvHeader #17a721",
       "R9 locale:fr:modeHelp_closed #9ff9b3",
@@ -65,6 +79,13 @@
       "R13 locale:fr:emptyAutoShort #f1fadf",
       "R13 locale:fr:footerAdvanced #93a72b",
       "R13 locale:fr:manualHelp #befd65",
+      "R33e locale:fr:notFound #6110a4",
+      "R33g locale:en:reason_network #ffd8e7",
+      "R33g locale:en:reason_rate #00a86b",
+      "R33g locale:fr:reason_network #f2178e",
+      "R33g locale:fr:reason_rate #59aa83",
+      "R33g setting:period.help[en] #fb8275",
+      "R33g setting:period.help[fr] #1ddfce",
       "R9 locale:fr:reason_hidden #6cf8dc",
       "R9 locale:fr:reason_hidden_youtube #63044b"
     ],
@@ -87,7 +108,11 @@
       "R13 locale:fr:impColumns #65a5c2",
       "R13 locale:fr:privacyHelp #7fed3b",
       "R13 locale:fr:templateRows #8a71ff",
-      "R13 right:email.view.help[fr] #039d2f"
+      "R13 right:email.view.help[fr] #039d2f",
+      "R33e locale:fr:deletedSilent #058c84",
+      "R33e locale:fr:eraseSilent #c02829",
+      "R33e locale:fr:impStaging #c87e3b",
+      "R33e locale:fr:privReportWarn #1ebfb1"
     ],
     "content-planner": [
       "R10 group:rhythm.addLabel[en] #440190",
@@ -117,7 +142,8 @@
       "R13 locale:fr:endDefault #0b433c",
       "R13 locale:fr:fEndMessageHelp #d2713c",
       "R13 setting:endMessage.help[en] #41f66e",
-      "R13 setting:endMessage.help[fr] #70d420"
+      "R13 setting:endMessage.help[fr] #70d420",
+      "R33e locale:fr:notFound #965d68"
     ],
     "directory": [
       "R10 locale:en:sortLabel #242324",
@@ -137,7 +163,12 @@
       "R13 setting:mapConsent.help[fr] #54153e",
       "R13 setting:photos.help[en] #b10c9b",
       "R13 setting:photos.help[fr] #9015ce",
+      "R33g locale:en:tidyNothing #b2c4c3",
+      "R33g locale:fr:tidyNothing #af2a87",
       "R9 locale:fr:adminHideHow #2c2c86"
+    ],
+    "discord-announcer": [
+      "R33b setting:webhookUrl"
     ],
     "events": [
       "R10 setting:mapLink.label[fr] #843839",
@@ -149,7 +180,8 @@
       "R13 description[fr] #92b234",
       "R13 locale:en:emptyUpcoming #f5d89d",
       "R13 locale:fr:emptyUpcoming #4030d4",
-      "R13 locale:fr:fToSeriesHelp #cb1f12"
+      "R13 locale:fr:fToSeriesHelp #cb1f12",
+      "R33g overlayElement:next.description[fr] #93e633"
     ],
     "faq": [
       "R10 locale:en:mailAdmin #799a56",
@@ -164,7 +196,9 @@
       "R13 locale:en:voteThanks #596e16",
       "R13 locale:fr:askSent #46ff94",
       "R13 locale:fr:voteThanks #e52197",
-      "R13 setting:fallback.help[fr] #90b98c"
+      "R13 setting:fallback.help[fr] #90b98c",
+      "R33e locale:fr:askIntro #cfc645",
+      "R33e locale:fr:askSent #46ff94"
     ],
     "gallery": [
       "R10 locale:en:mailAdmin #74b79d",
@@ -186,6 +220,8 @@
       "R13 setting:allowedHosts.help[fr] #262909",
       "R13 setting:maxPhotoKB.help[en] #74c286",
       "R13 setting:maxPhotoKB.help[fr] #3c50d5",
+      "R33e locale:fr:errNotFound #c30923",
+      "R33g setting:forwardToContacts.help[fr] #870414",
       "R9 locale:fr:legacyPhotoNote #053d96"
     ],
     "game-covers": [
@@ -196,7 +232,14 @@
       "R13 locale:en:health_label #a6b0ee",
       "R13 locale:en:test_unreachable #2e9ca9",
       "R13 locale:fr:health_label #c4d483",
-      "R13 locale:fr:test_unreachable #53ba0e"
+      "R13 locale:fr:test_unreachable #53ba0e",
+      "R33a locale:fr:key_state #913219",
+      "R33b setting:rawgKey",
+      "R33g locale:en:all_fine #b1d5cd",
+      "R33g locale:fr:all_fine #74bf02"
+    ],
+    "game-suggestions": [
+      "R33e locale:fr:coversAmbiguous #877014"
     ],
     "guestbook": [
       "R10 locale:en:mailAdmin #e1cfb0",
@@ -235,6 +278,9 @@
       "R13 locale:fr:next_text #6520c8",
       "R13 locale:fr:wiz_1 #749186",
       "R13 locale:fr:wiz_3 #188764",
+      "R33e locale:en:next_text #2c9ad7",
+      "R33e locale:fr:next_text #6520c8",
+      "R33g right:ha.test.help[en] #8b4428",
       "R9 locale:en:test_custom_help #f75924",
       "R9 locale:en:test_unknown_key #91be70",
       "R9 locale:fr:test_custom_help #75b00e",
@@ -304,6 +350,9 @@
       "R13 locale:fr:st.address.help.CA_QC #8e6cee",
       "R13 locale:fr:st.address.help.FR #c73233",
       "R13 locale:fr:st.business.help.FR #228283",
+      "R33e locale:en:note.thirdParty #f2897e",
+      "R33e locale:fr:note.thirdParty #267df4",
+      "R33e locale:fr:rem.removed.collector #e78429",
       "R9 locale:en:doc.cookies.essential #888a18",
       "R9 locale:en:doc.cookies.noneExceptThirdParty #85077c",
       "R9 locale:en:doc.cookies.thirdParty #7dcda5",
@@ -369,6 +418,7 @@
       "R13 locale:fr:errPos_range #d959f3",
       "R13 locale:fr:fMapLinkHelp #03c22d",
       "R13 locale:fr:importIntro #60a21c",
+      "R33g locale:en:noPoints #a4dbae",
       "R9 locale:en:mapHelp #e2c7d4",
       "R9 locale:en:mapPrivacy #503fcf",
       "R9 locale:fr:mapPrivacy #4f99ea"
@@ -390,7 +440,9 @@
       "R13 locale:fr:textHelp #50bc46",
       "R13 overlayElement:mascot.description[en] #0eb56c",
       "R13 overlayElement:mascot.description[fr] #82ff6e",
-      "R13 setting:show.help[fr] #c9df68"
+      "R13 setting:show.help[fr] #c9df68",
+      "R33e locale:en:uiNormal #3eece5",
+      "R33e locale:fr:uiNormal #3819b6"
     ],
     "maze-overlay": [
       "R10 setting:extraWall.label[en] #8f3c40",
@@ -418,7 +470,8 @@
       "R13 locale:en:imageEmptyHint #f4c35e",
       "R13 locale:fr:coversNone #fdde11",
       "R13 locale:fr:imageEmptyHint #7a3b5c",
-      "R13 overlayElement:week.description[fr] #c9d17f"
+      "R13 overlayElement:week.description[fr] #c9d17f",
+      "R33e locale:fr:coversAmbiguous #547be6"
     ],
     "platform-links": [
       "R13 description[en] #ae27b3",
@@ -430,7 +483,8 @@
       "R13 setting:originEnabled.help[fr] #e456f2",
       "R13 setting:warnAdult.help[en] #01011b",
       "R13 setting:warnAdult.help[fr] #4c4d96",
-      "R13 setting:warnMessage.help[en] #232efa"
+      "R13 setting:warnMessage.help[en] #232efa",
+      "R33e locale:fr:p_missing_message #84cc54"
     ],
     "polls": [
       "R10 locale:en:localLabel #52606d",
@@ -452,7 +506,9 @@
       "R13 locale:fr:limitsText #4773dc",
       "R13 locale:fr:msg_already #dfd013",
       "R13 locale:fr:msg_thanks #a30416",
-      "R13 locale:fr:noPolls #eb3cdb"
+      "R13 locale:fr:noPolls #eb3cdb",
+      "R33g locale:fr:nowWaiting #e130d3",
+      "R33g setting:obsRefreshSeconds.help[fr] #c57097"
     ],
     "sponsor-ticker": [
       "R13 setting:devMode.help[en] #aad9be",
@@ -470,7 +526,9 @@
       "R13 locale:fr:ui_cover_ambiguous_named #dfd9a7",
       "R13 locale:fr:ui_cover_no_key #ee35d0",
       "R13 locale:fr:ui_members_help #8c2c2d",
-      "R13 locale:fr:ui_prep_stream_gone #4c5941"
+      "R13 locale:fr:ui_prep_stream_gone #4c5941",
+      "R33e locale:fr:ui_cover_ambiguous #a5e4df",
+      "R33e locale:fr:ui_cover_ambiguous_named #dfd9a7"
     ],
     "supporters": [
       "R10 right:people.manage.label[en] #a3f59d",
@@ -493,7 +551,9 @@
       "R13 locale:fr:meExplain #4c721d",
       "R13 locale:fr:tiersIntro #105e67",
       "R13 setting:wallCategory.help[en] #57efa1",
-      "R13 setting:wallCategory.help[fr] #ebf226"
+      "R13 setting:wallCategory.help[fr] #ebf226",
+      "R33b setting:accessToken",
+      "R33e setting:keepDays.help[en] #35a603"
     ],
     "testimonials": [
       "R10 locale:en:errSummary #7140de",
@@ -539,7 +599,9 @@
       "R13 setting:hide.help[en] #46a4e0",
       "R13 setting:hide.help[fr] #cf4948",
       "R13 setting:title.help[en] #9c2d99",
-      "R13 setting:title.help[fr] #fa92d2"
+      "R13 setting:title.help[fr] #fa92d2",
+      "R33g locale:en:tidyNothing #59bc54",
+      "R33g locale:fr:tidyNothing #63d506"
     ],
     "ticker-overlay": [
       "R13 overlayElement:banner.description[en] #1aa062",
@@ -583,6 +645,12 @@
       "R13 setting:rewardsNotice.help[fr] #c0ca54",
       "R13 setting:showKeys.help[en] #16b463",
       "R13 setting:showKeys.help[fr] #373ea9",
+      "R33g locale:en:listen_twitch_busy #c92e4e",
+      "R33g locale:en:listen_twitch_down #d41afb",
+      "R33g locale:en:rw_na #be8b7e",
+      "R33g locale:en:rw_sim_help #1b58a6",
+      "R33g locale:fr:listen_twitch_busy #b3d6b6",
+      "R33g locale:fr:listen_twitch_down #ab715a",
       "R9 locale:en:rw_acts_key_help #67b90c",
       "R9 locale:en:rw_e_key #7d60f8",
       "R9 locale:en:rw_e_key_taken #ece02e",
@@ -613,7 +681,13 @@
       "R13 locale:fr:noConnector #915ccc",
       "R13 setting:liveEveryMinutes.help[fr] #c1472f",
       "R13 setting:trackStats.help[en] #8052ae",
-      "R13 setting:trackStats.help[fr] #a4e0dc"
+      "R13 setting:trackStats.help[fr] #a4e0dc",
+      "R33a locale:en:adopted_state #e84552",
+      "R33a locale:fr:adopted_state #10de22",
+      "R33g locale:en:err_network #0f70c6",
+      "R33g locale:en:err_rate #d7457e",
+      "R33g locale:fr:err_network #6f33e3",
+      "R33g locale:fr:err_rate #c205e0"
     ],
     "twitch-connector": [
       "R11 setting:appClientId.help[en] #a4e83f",
@@ -623,7 +697,28 @@
       "R13 locale:en:redirect_keep #50ef52",
       "R13 locale:fr:accounts_none #a8e4b8",
       "R13 locale:fr:redirect_adopted #8d0374",
-      "R13 locale:fr:redirect_keep #b9883f"
+      "R13 locale:fr:redirect_keep #b9883f",
+      "R33a locale:en:app_state_adopted #e84552",
+      "R33a locale:en:app_state_incomplete #688708",
+      "R33a locale:fr:app_state_adopted #10de22",
+      "R33a locale:fr:app_state_incomplete #0cffef",
+      "R33a locale:fr:app_state_ready #0021a3",
+      "R33b setting:appClientId",
+      "R33b setting:appSecret",
+      "R33e locale:fr:redirect_keep #b9883f"
+    ],
+    "twitch-events": [
+      "R33a locale:fr:state_taken #408d60",
+      "R33a locale:fr:state_unknown #b21287",
+      "R33e locale:en:catchup_note #907a58",
+      "R33e locale:en:d_missed #323464",
+      "R33e locale:fr:catchup_note #cf9e0a",
+      "R33e locale:fr:d_missed #7d68a7",
+      "R33g locale:en:mail_body_back #e92b86",
+      "R33g locale:en:mail_body_problem #0b25d7",
+      "R33g locale:fr:check_ok #4280b4",
+      "R33g locale:fr:mail_body_back #995145",
+      "R33g locale:fr:mail_body_problem #adbce1"
     ],
     "twitch-raid": [
       "R10 setting:category.label[fr] #8470f1",
@@ -671,7 +766,17 @@
       "R13 setting:pageIntro.help[en] #ecde3f",
       "R13 setting:pageIntro.help[fr] #306c9c",
       "R13 setting:publicPage.help[en] #e19c43",
-      "R13 setting:publicPage.help[fr] #b23ba9"
+      "R13 setting:publicPage.help[fr] #b23ba9",
+      "R33g locale:en:check_live #dac96a",
+      "R33g locale:en:check_none #af8181",
+      "R33g locale:en:check_random_found #0860a3",
+      "R33g locale:en:check_random_none #1336de",
+      "R33g locale:en:mo_page_off_addr #8742d4",
+      "R33g locale:fr:check_live #d0a61b",
+      "R33g locale:fr:check_none #1d217d",
+      "R33g locale:fr:check_random_found #ea4aff",
+      "R33g locale:fr:check_random_none #e8581d",
+      "R33g locale:fr:mo_page_off_addr #fdd77a"
     ],
     "videos": [
       "R10 locale:en:partOf #bb85ca",
@@ -699,6 +804,11 @@
       "R13 locale:fr:acc_write_idle #805aa7",
       "R13 setting:chatReply.help[en] #08f981",
       "R13 setting:chatReply.help[fr] #5dd90d",
+      "R33b setting:apiKey",
+      "R33b setting:oauthClientId",
+      "R33b setting:oauthClientSecret",
+      "R33g locale:en:pend_4 #69bcec",
+      "R33g locale:fr:pend_4 #9e3be5",
       "R9 locale:en:err_scope #f24cba",
       "R9 locale:fr:acc_steps_again #90a2b3",
       "R9 locale:fr:acc_steps_title #e6b4c4",
@@ -726,6 +836,11 @@
       "R13 setting:shareAlerts.help[en] #dc1f68",
       "R13 setting:shareAlerts.help[fr] #1283ce",
       "R13 setting:thanks.help[fr] #a66007",
+      "R33e setting:ifRefused.help[fr] #793902",
+      "R33g locale:en:st_no_chat #5e48ad",
+      "R33g locale:fr:st_no_chat #612e0c",
+      "R33g setting:channel.help[en] #5b3f3b",
+      "R33g setting:channel.help[fr] #c6ced4",
       "R9 right:yt.manage.help[en] #b3f667",
       "R9 right:yt.manage.help[fr] #e0ee27"
     ]

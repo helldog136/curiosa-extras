@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { world, fr, en, C, NOW } from "./helpers/botWorld.mjs";
 import { tableOf, dialogsOf, shownFields, foldedFields } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
 
 const A = await import("../modules/twitch-bot/admin.mjs");
 const tools = (await import("../modules/twitch-bot/tools.mjs")).default;

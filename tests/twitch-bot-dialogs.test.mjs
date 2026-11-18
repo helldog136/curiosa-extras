@@ -7,7 +7,7 @@ import fs from "node:fs";
 import { world, fr, en, C, SRC } from "./helpers/botWorld.mjs";
 import { ownerWorld } from "./helpers/ownerSet.mjs";
 import { tableOf, dialogsOf, shownFields, foldedFields, cellOf } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics, adminPageErgonomicsProblems } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics, adminPageErgonomicsProblems } from "./helpers/ergonomicsPending.mjs";
 import { opensInDialog, dialogsLast } from "@/core/adminkit/dialog";
 
 const DIR = new URL("../modules/twitch-bot", import.meta.url).pathname;

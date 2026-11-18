@@ -8,6 +8,9 @@
 //   2. PAGES produites par du code — `assertAdminPageErgonomics(blocks, { errors })` lit les blocs d'un panneau d'administration (faux contexte du kit).
 //      Règles : R3 (verbe du bouton), R4 (champs visibles), R9/R10 (textes des champs), R14 (étiquette répétée), R15 (recherche), R17, R22 (erreurs avec exemple).
 //
+//   R33a-g (docs/ERGONOMIE-ADMIN.md, R33) : états en mots de la personne (R33a), champs déjà remplis visibles (R33b), lignes d'état en double (R33c), encadré de bonne nouvelle sans action (R33d),
+//   formulation conditionnelle (R33e), consigne de mise en place après coup (R33f), phrase de remplissage (R33g). Statiques : e, g, a (locales) ; sur pages : a, b, c, d, f.
+//
 // Le CLIQUET (ratchet) : `compareToBaseline(gaps, known)` sépare les écarts TOLÉRÉS (listés dans la base), les NOUVEAUX (échec) et les DISPARUS (la base doit rétrécir).
 import { AssertionError } from "node:assert";
 
@@ -66,7 +69,56 @@ export const RULES = {
   R24: "Une fenêtre de modification sait revenir à la liste",
   R28: "Chaque image a un texte alternatif",
   R29: "FR et EN à parité",
+  R33a: "Un état se dit « Configuré », « Dégradé » ou « Non configuré » (jamais un mot interne)",
+  R33b: "Configuré = replié : pas de champ déjà rempli sur la page",
+  R33c: "Une information d'état n'est montrée qu'une fois",
+  R33d: "Pas d'encadré de bonne nouvelle sans action",
+  R33e: "Pas de consigne conditionnelle ni approximative",
+  R33f: "Pas de consigne de mise en place une fois la mise en place faite",
+  R33g: "Pas de phrase de remplissage ni de réassurance",
 };
+
+/**
+ * R33a — le VOCABULAIRE D'ÉTAT : les trois seuls états d'une application, d'une connexion ou d'une fonction (le bloc `connection` du cœur les écrit lui-même).
+ * Le cœur les traduit : cette liste sert aux contrôles et aux tests, pas à l'affichage.
+ */
+export const STATE_VOCABULARY = {
+  fr: { configured: "Configuré", degraded: "Dégradé", notConfigured: "Non configuré" },
+  en: { configured: "Configured", degraded: "Degraded", notConfigured: "Not configured" },
+};
+export const CONNECTION_STATES = ["configured", "degraded", "notConfigured"];
+/** R33a — mots internes interdits comme état (pastille ou texte d'état). Liste modifiable ICI ; un terme par entrée, casse et accents ignorés, mot entier. */
+export const FORBIDDEN_STATUS = [
+  "reprise", "repris", "reprises", "prete", "pretes", "incomplete", "incompletes", "pris ailleurs", "legacy", "herite", "heritee", "carried over", "taken over", "bridged", "adopte", "adoptee", "adopted", "handover", "pas verifie",
+];
+/**
+ * R33e — formulations CONDITIONNELLES ou approximatives : si le code connaît l'état, l'écran le montre. Expressions entières ; casse et accents ignorés.
+ * Un « peut-être » sur le comportement d'un tiers que le code ne peut pas connaître est une exception à justifier dans CONDITIONAL_WHITELIST.
+ */
+export const CONDITIONAL_WORDS = [
+  // français
+  "si ce n'est pas deja fait", "si ce n'est pas encore fait", "si ce n'etait pas deja fait", "en principe", "normalement", "en general", "peut-etre", "peuvent-etre", "le cas echeant", "si besoin", "au besoin", "eventuel", "eventuelle", "eventuels", "eventuelles", "eventuellement",
+  // anglais
+  "if not already", "if you have not already", "if you haven't already", "in principle", "normally", "usually", "maybe", "perhaps", "if needed", "if any", "if necessary", "possibly",
+];
+/**
+ * R33e / R33g — exceptions JUSTIFIÉES. `term` : l'expression autorisée (déjà pliée : minuscules, sans accents) ; `text` : la regex que le texte entier doit vérifier ;
+ * `why` : pourquoi. Une exception n'est pas une dette (elle ne va pas dans la base).
+ */
+export const CONDITIONAL_WHITELIST = [];
+/** R33g — phrases de REMPLISSAGE ou de réassurance (R32, R33.8) : elles ne disent rien sur quoi agir. Expressions entières ; casse et accents ignorés. */
+export const FILLER_PHRASES = [
+  "rien a faire", "rien a regler", "rien a configurer", "rien a craindre", "vous n'avez rien a", "il n'y a rien a", "c'est normal", "tout fonctionne", "tout va bien", "tout est en ordre", "tout est a jour",
+  "sans risque", "rien n'est perdu", "rien ne sera perdu", "ne vous inquietez pas", "pas d'inquietude", "rien n'est obligatoire", "rien n'est impose", "rien d'obligatoire", "rien ne change",
+  "nothing to do", "nothing to set", "nothing to configure", "nothing to worry", "you have nothing to", "there is nothing to", "that's normal", "that is normal", "everything works", "everything is working", "all is well", "everything is fine", "everything is in order",
+  "everything is up to date", "risk-free", "without risk", "nothing is lost", "nothing will be lost", "don't worry", "do not worry", "nothing is required", "nothing is mandatory",
+];
+/** R33g — exceptions justifiées (même forme que CONDITIONAL_WHITELIST). */
+export const FILLER_WHITELIST = [];
+/** R33f — ce qui, dans une page « configurée », est une consigne de mise en place. */
+export const SETUP_PATTERN = /redirect urls?|collez|coller (?:cette|ce|le|la)|copiez|copier (?:cette|ce|le|la)|[ée]tape \d|mise en place|mise en route|ouvrez la console|paste (?:this|the)|copy (?:this|the)|step \d|set ?up guide|open the console/i;
+/** R33d — un texte qui dit que tout va bien. */
+export const GOOD_NEWS_PATTERN = /\b(?:fonctionne|va bien|est connect[ée]e?|enregistr[ée]e?s?|normal|tout est|works|is working|is connected|saved|all set|up to date)\b/i;
 
 /* ═══════════════════════════ Outils de texte ═══════════════════════════ */
 
@@ -99,6 +151,32 @@ export function forbiddenWords(text, moduleId) {
   }
   return [...found];
 }
+
+const foldQuote = (s) => fold(plain(s)).replace(/[’‘]/g, "'").replace(/\s+/g, " ");
+const phraseRe = (list) => new RegExp(`(?<![${LETTER}])(${list.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?![${LETTER}])`, "giu");
+const CONDITIONAL_RE = phraseRe(CONDITIONAL_WORDS);
+const FILLER_RE = phraseRe(FILLER_PHRASES);
+const STATUS_RE = phraseRe(FORBIDDEN_STATUS);
+const matches = (re, text, whitelist) => {
+  const body = foldQuote(text);
+  const found = new Set();
+  for (const m of body.matchAll(re)) {
+    const term = m[1].toLowerCase();
+    if (!whitelist.some((w) => w.term === term && (!w.text || w.text.test(String(text))))) found.add(term);
+  }
+  return [...found];
+};
+/** R33e — expressions conditionnelles ou approximatives d'un texte visible, hors exceptions justifiées. */
+export const conditionalWording = (text) => matches(CONDITIONAL_RE, text, CONDITIONAL_WHITELIST);
+/** R33g — phrases de remplissage ou de réassurance d'un texte visible, hors exceptions justifiées. */
+export const fillerPhrases = (text) => matches(FILLER_RE, text, FILLER_WHITELIST);
+/** R33a — mots internes d'un texte COURT qui dit un état (une pastille : 4 mots au plus). */
+export function forbiddenStatus(text) {
+  if (wordCount(plain(text)) > 4) return [];
+  return matches(STATUS_RE, text, []);
+}
+/** Les clés de langue qui portent un état (pastille) : « …_state_… », « …status… », « …chip… », « …badge… ». */
+export const STATE_KEY = /(?:^|[._-])(?:state|status|chip|badge|pill)(?:$|[._-])|_state_|state_/i;
 
 const EXAMPLE_WORD = /(?:par exemple|exemple|\bex\.|\bex\s?:|\be\.g\.|for example|for instance|example)/i;
 const EXAMPLE_VALUE = /«[^»]+»|“[^”]+”|"[^"]+"|`[^`]+`|https?:\/\/|\bwww\.|(?<![\p{L}\p{N}])[@#][\p{L}\p{N}_]+/u;
@@ -233,7 +311,13 @@ export function analyzeModule(m) {
   }
   for (const [tab, keys] of perTab) if (keys.length > SETTINGS_PER_TAB_MAX) push("R5", `tab:${tab}`, `${keys.length}`, `l'onglet « ${tab} » montre ${keys.length} réglages simples (${SETTINGS_PER_TAB_MAX} au plus) : choisir des valeurs par défaut, regrouper ou passer en avancé`, { key: `R5 tab:${tab} (${keys.length})` });
 
-  /* Textes du manifeste : R9, R10, R11, R13, R17, R19, R29. */
+  /* R33b — un secret ou un identifiant de connexion réglé en clair sur l'écran (champ déjà rempli que personne ne rouvre) : à ranger derrière « Modifier » (bloc `connection`). */
+  for (const f of man.settings ?? []) {
+    if (f.advanced === true || f.rare === true || folded.has(f.key)) continue;
+    if (f.type === "secret" || /(?:client_?id|api_?key|webhook|token|secret)/i.test(f.key)) push("R33b", `setting:${f.key}`, f.key, `le réglage « ${f.key} » est un champ de mise en place visible une fois configuré : le ranger derrière « Modifier » (bloc « connection ») ou en avancé`, { identity: "count" });
+  }
+
+  /* Textes du manifeste : R9, R10, R11, R13, R17, R19, R29, R33. */
   const texts = manifestTexts(man);
   const byWhere = new Map();
   for (const t of texts) byWhere.set(t.where, [...(byWhere.get(t.where) ?? []), t]);
@@ -246,6 +330,9 @@ export function analyzeModule(m) {
     }
     if (t.kind === "label" || t.kind === "option") for (const p of labelProblems(t.text)) push("R10", `${t.where}[${t.lang}]`, t.text, `libellé : ${p} : « ${excerpt(t.text, 60)} »`);
     for (const p of toneProblems(t.text, t.lang)) push("R13", `${t.where}[${t.lang}]`, t.text, `${p} (${lang.toUpperCase()}) : « ${excerpt(t.text, 60)} »`);
+    for (const c of conditionalWording(t.text)) push("R33e", `${t.where}[${t.lang}]`, t.text, `formulation conditionnelle ou approximative « ${c} » (${lang.toUpperCase()}) : dire ce qui est vrai maintenant : « ${excerpt(t.text, 60)} »`);
+    for (const c of fillerPhrases(t.text)) push("R33g", `${t.where}[${t.lang}]`, t.text, `phrase de remplissage « ${c} » (${lang.toUpperCase()}) : la retirer ou la ranger en info-bulle : « ${excerpt(t.text, 60)} »`);
+    if (t.kind === "option" || t.kind === "label") for (const c of forbiddenStatus(t.text)) push("R33a", `${t.where}[${t.lang}]`, t.text, `mot d'état interne « ${c} » : « Configuré », « Dégradé » ou « Non configuré » : « ${excerpt(t.text, 60)} »`);
     if (TOGGLE_RE.test(t.text)) push("R17", `${t.where}[${t.lang}]`, t.text, `« Activer / désactiver » : un interrupteur montre l'état : « ${excerpt(t.text, 60)} »`);
     if (t.kind === "label" && t.setting?.type === "boolean" && NEGATIVE_LABEL.test(t.text)) push("R19", `${t.where}[${t.lang}]`, t.text, `case négative (« Ne pas… ») : écrire ce qu'on veut qui se passe : « ${excerpt(t.text, 60)} »`);
     if (t.kind === "help") {
@@ -291,6 +378,9 @@ export function analyzeModule(m) {
       const bad = forbiddenWords(text, id);
       if (bad.length) push("R9", where, text, `mot${bad.length > 1 ? "s" : ""} interdit${bad.length > 1 ? "s" : ""} « ${bad.join("», « ")} » : « ${excerpt(text, 60)} »`);
       for (const p of toneProblems(text, lang)) push("R13", where, text, `${p} : « ${excerpt(text, 60)} »`);
+      for (const c of conditionalWording(text)) push("R33e", where, text, `formulation conditionnelle ou approximative « ${c} » : dire ce qui est vrai maintenant : « ${excerpt(text, 60)} »`);
+      for (const c of fillerPhrases(text)) push("R33g", where, text, `phrase de remplissage « ${c} » : la retirer ou la ranger en info-bulle : « ${excerpt(text, 60)} »`);
+      if (STATE_KEY.test(k)) for (const c of forbiddenStatus(text)) push("R33a", where, text, `mot d'état interne « ${c} » : « Configuré », « Dégradé » ou « Non configuré » : « ${excerpt(text, 60)} »`);
       if (TOGGLE_RE.test(text)) push("R17", where, text, `« Activer / désactiver » : un interrupteur montre l'état : « ${excerpt(text, 60)} »`);
       if (len(text.trim()) <= LABEL_MAX && BAD_TRAILING_COLON.test(text.trim())) push("R10", where, text, `libellé qui se termine par « : » : « ${excerpt(text, 60)} »`);
     }
@@ -404,7 +494,7 @@ function imageSrcProblem(src, hosts) {
 /**
  * Problèmes d'ergonomie mesurables sur les blocs d'un panneau d'administration. Ne lève jamais.
  * @param {object[]} blocks blocs produits par `adminPanel` (ou par un formulaire) avec le faux contexte du kit
- * @param {{ errors?: string[], skip?: string[], imageHosts?: string[] }} [opts] `errors` : messages d'erreur que la page peut afficher (R22) ; `imageHosts` : les `imageHosts` du manifeste (pour contrôler l'hôte des vignettes) ; `skip` : règles à ne pas contrôler (par exemple ["R15"], avec la raison dans votre test)
+ * @param {{ errors?: string[], skip?: string[], imageHosts?: string[], state?: "configured" | "degraded" | "notConfigured" }} [opts] `state` (R33b, R33f) : l'état que montre cette page (le faux contexte du module est réglé pour lui) : « configured » interdit alors les consignes de mise en place et les champs déjà remplis ; `errors` : messages d'erreur que la page peut afficher (R22) ; `imageHosts` : les `imageHosts` du manifeste (pour contrôler l'hôte des vignettes) ; `skip` : règles à ne pas contrôler (par exemple ["R15"], avec la raison dans votre test)
  * @returns {{ rule: string, message: string }[]}
  */
 export function adminPageErgonomicsProblems(blocks, opts = {}) {
@@ -412,8 +502,35 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
   const out = [];
   const add = (rule, message) => { if (!opts.skip?.includes(rule)) out.push({ rule, message }); };
   let sectionFields = 0, sectionTitle = "(début de page)";
+  let previousStatus = null; // R33c : le texte d'état du bloc précédent
   const closeSection = () => { if (sectionFields > SECTION_FIELDS_MAX) add("R4", `la section « ${sectionTitle} » montre ${sectionFields} champs (${SECTION_FIELDS_MAX} au plus) : replier ou découper en onglets`); sectionFields = 0; };
   for (const b of list) {
+    // R33c — deux lignes d'état qui disent la même chose (bandeaux, textes, résumés) se suivent : n'en garder qu'une.
+    const statusText = b.type === "banner" ? b.text : b.type === "connection" ? b.summary : b.type === "markdown" ? b.text : null;
+    if (statusText !== null) {
+      const folded = foldQuote(statusText);
+      if (folded && folded === previousStatus) add("R33c", `deux lignes d'état identiques se suivent : « ${excerpt(statusText, 50)} » : n'en garder qu'une`);
+      previousStatus = folded || null;
+    } else previousStatus = null;
+    if (b.type === "banner") {
+      // R33d — un encadré qui dit que tout va bien, sans action.
+      const hasAction = typeof b.href === "string" && b.href !== "";
+      if (!hasAction && (b.tone === "success" || GOOD_NEWS_PATTERN.test(b.text ?? ""))) add("R33d", `le bandeau « ${excerpt(b.text, 50)} » dit que tout va bien et n'offre aucune action : une pastille, ou rien`);
+    }
+    if (b.type === "connection") {
+      if (!CONNECTION_STATES.includes(b.state)) add("R33a", `le bloc « connection » « ${b.title ?? b.id ?? ""} » a l'état « ${b.state} » : ${CONNECTION_STATES.join(", ")} seulement`);
+      if (b.state !== "configured" && !String(b.reason ?? "").trim()) add("R33a", `le bloc « connection » « ${b.title ?? ""} » (${b.state}) n'a pas de raison (« reason ») : dire ce qui manque ou ce qui ne va pas`);
+      if (b.state !== "configured" && !b.primary && !(b.state === "notConfigured" && Array.isArray(b.setup) && b.setup.length)) add("R33a", `le bloc « connection » « ${b.title ?? ""} » (${b.state}) n'a pas de marche à suivre (« primary » ou, à configurer, « setup »)`);
+      if (b.state === "configured" && !String(b.summary ?? "").trim()) add("R33a", `le bloc « connection » « ${b.title ?? ""} » configuré n'a pas de résumé (« summary ») : ce qui est configuré, en une ligne`);
+      if (b.state === "configured" && Array.isArray(b.setup) && b.setup.length) add("R33f", `le bloc « connection » « ${b.title ?? ""} » est configuré mais porte des consignes de mise en place (« setup ») : le cœur ne les montre pas, ne les produisez pas`);
+      if (b.state !== "notConfigured" && !b.edit) add("R33a", `le bloc « connection » « ${b.title ?? ""} » (${b.state}) n'a pas de bouton « Modifier » (« edit »)`);
+      for (const r of b.rows ?? []) for (const w of forbiddenStatus(r?.text ?? "")) add("R33a", `ligne « ${excerpt(r.text, 40)} » : mot d'état interne « ${w} »`);
+    }
+    // R33f — page « configurée » : aucune consigne de mise en place.
+    if (opts.state === "configured") {
+      if (b.type === "copy" || b.type === "suggestInstall") add("R33f", `un bloc « ${b.type} » (consigne de mise en place) est affiché alors que la page est configurée`);
+      if ((b.type === "markdown" && SETUP_PATTERN.test(b.text ?? "")) || (b.type === "html" && SETUP_PATTERN.test(stripTags(b.html)) && !/<details\b/i.test(b.html ?? ""))) add("R33f", `un texte de mise en place (« ${excerpt(stripTags(b.type === "markdown" ? b.text : b.html), 50)} ») est affiché alors que la page est configurée`);
+    }
     if (b.type === "heading") { closeSection(); sectionTitle = stripTags(b.text); continue; }
     if (b.type === "adminForm") {
       const shown = (b.fields ?? []).filter((f) => !hiddenKind(f) && !folded_(f));
@@ -437,6 +554,10 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
         if (a?.label === b.submitLabel) add("R3", `the extra button « ${a?.label} » of the form ${name} has the label of the main button: only ONE main button`);
       }
       if (TOGGLE_RE.test(b.submitLabel ?? "")) add("R17", `le bouton « ${b.submitLabel} » : un interrupteur montre l'état`);
+      // R33b — page configurée : un formulaire en place dont tous les champs sont déjà remplis (ou masqués par `valueHint`) est un réglage fini : le ranger derrière « Modifier » (fenêtre).
+      if (opts.state === "configured" && !inDialog && shown.length > 0 && shown.every((f) => (f.valueHint !== undefined || (f.value !== undefined && f.value !== "")) && f.kind !== "switch" && f.kind !== "checkbox")) {
+        add("R33b", `le formulaire ${name} est configuré (tous ses champs sont déjà remplis) mais reste visible : le replier derrière un bouton « Modifier » (« connection » + « presentation: "dialog" »)`);
+      }
       for (const f of shown) {
         for (const p of labelProblems(f.label ?? "")) add("R10", `champ « ${f.name} » : ${p}`);
         const bad = forbiddenWords(`${f.label ?? ""} ${f.help ?? ""}`);
@@ -455,6 +576,10 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
       for (const a of b.rowActions ?? []) if (a.presentation === "dialog" && (typeof a.href !== "string" || a.action)) add("R24", `the row button « ${a.label} » asks for a dialog (presentation: "dialog") but is not a link: give it an \`href\` such as "?edit={id}", not an \`action\``);
       for (const a of b.rowActions ?? []) if (TOGGLE_RE.test(a.label ?? "")) add("R17", `le bouton de ligne « ${a.label} » : un interrupteur montre l'état courant`);
       // Vignettes (cellule `image`) : un texte alternatif (R28) et une adresse que le cœur affichera (R16) ; sinon la vignette disparaît en silence et la ligne est plus courte que les autres.
+      // R33a — une pastille d'état n'est jamais un mot interne (« Reprise », « Prête », « Legacy »…).
+      rows.forEach((r) => (r ?? []).forEach((c) => {
+        if (c && typeof c === "object" && c.badge !== undefined) for (const w of forbiddenStatus(c.text ?? "")) add("R33a", `pastille « ${excerpt(c.text, 30)} » : mot d'état interne « ${w} » (utiliser « Configuré », « Dégradé » ou « Non configuré »)`);
+      }));
       rows.forEach((r, i) => (r ?? []).forEach((c) => {
         if (!c || typeof c !== "object" || c.image === undefined) return;
         const where = `ligne ${i + 1} de « ${cols.join(" · ") || "tableau"} »`;
@@ -481,4 +606,29 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
 export function assertAdminPageErgonomics(blocks, opts = {}) {
   const problems = adminPageErgonomicsProblems(blocks, opts);
   if (problems.length) throw new AssertionError({ message: `Ergonomie de la page d'administration (docs/ERGONOMIE-ADMIN.md) :\n${problems.map((p) => `• ${p.rule} — ${p.message}`).join("\n")}`, actual: problems.map((p) => `${p.rule} ${p.message}`), expected: [] });
+}
+
+/**
+ * R33 — vérifie les TROIS états d'une page de connexion avec le faux contexte du kit : `notConfigured`, `configured` et `degraded` sont les blocs que renvoie `adminPanel`
+ * pour chaque fixture. Chacun doit porter UN bloc « connection » dans le bon état ; l'état configuré ne montre aucune consigne de mise en place (R33f) ni formulaire rempli (R33b) ;
+ * l'état dégradé dit la raison et la marche à suivre ; l'état à configurer montre la mise en place. Les règles générales (R3, R4, R33a, R33c…) s'appliquent à chacun.
+ *
+ *   assertConnectionStates({
+ *     notConfigured: await def.adminPanel(fakeCtx({ settings: {} }), { query: {} }),
+ *     configured:    await def.adminPanel(fakeCtx({ settings: { clientId: "abc", secret: "x" } }), { query: {} }),
+ *     degraded:      await def.adminPanel(fakeCtx({ settings: { clientId: "abc", secret: "x" }, net: fakeNet.down() }), { query: {} }),
+ *   });
+ */
+export function assertConnectionStates(fixtures, opts = {}) {
+  const lines = [];
+  for (const state of CONNECTION_STATES) {
+    const blocks = fixtures?.[state];
+    if (!Array.isArray(blocks)) { lines.push(`• R33 — le jeu d'essai « ${state} » manque (les blocs que renvoie adminPanel dans cet état)`); continue; }
+    const conns = blocks.filter((b) => b && b.type === "connection");
+    if (conns.length === 0) lines.push(`• R33a — état « ${state} » : aucun bloc « connection »`);
+    else if (!conns.some((c) => c.state === state)) lines.push(`• R33a — état « ${state} » : le bloc « connection » dit « ${conns.map((c) => c.state).join(", ")} »`);
+    if (state === "notConfigured" && conns.length && !conns.some((c) => Array.isArray(c.setup) && c.setup.length) && !blocks.some((b) => b && (b.type === "adminForm" || b.type === "copy"))) lines.push("• R33 — état « notConfigured » : ni consignes (« setup ») ni formulaire : la personne ne sait pas quoi faire");
+    for (const p of adminPageErgonomicsProblems(blocks, { ...opts, state })) lines.push(`• ${p.rule} — (${state}) ${p.message}`);
+  }
+  if (lines.length) throw new AssertionError({ message: `États de la connexion (docs/ERGONOMIE-ADMIN.md, R33) :\n${lines.join("\n")}`, actual: lines, expected: [] });
 }

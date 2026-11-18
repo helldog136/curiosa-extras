@@ -39,7 +39,7 @@ export function readModules(base = root) {
 }
 
 export const readBaseline = (file = BASELINE) => (fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null);
-const render = (modules) => `${JSON.stringify({ $comment: COMMENT, version: 1, modules }, null, 2)}\n`;
+const render = (modules) => `${JSON.stringify({ $comment: COMMENT, version: 2, modules }, null, 2)}\n`;
 
 /** { name: écarts[] } pour tous les modules du dépôt. */
 export function currentGaps(base = root) {
