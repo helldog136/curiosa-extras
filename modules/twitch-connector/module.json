@@ -11,8 +11,8 @@
   "adminMenuOrder": 10,
   "platform": "twitch",
   "description": {
-    "en": "Links your site to Twitch for every Twitch module.",
-    "fr": "Relie votre site à Twitch pour tous les modules Twitch."
+    "en": "Links your site to Twitch, once, for everything that uses Twitch.",
+    "fr": "Relie votre site à Twitch, une seule fois, pour tout ce qui utilise Twitch."
   },
   "author": "Helldog136",
   "license": "MIT",
