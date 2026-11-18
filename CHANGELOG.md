@@ -4,7 +4,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.96.0 — 2026-11-18
 
 *En bref : sur un site en Curiosa 0.31.0, les extensions Twitch rangent leurs réglages par tâche : « En direct › Alertes », « Récompenses », « Chat », « Raid », et « Réseaux › Twitch ». Leurs entrées « Réseaux › Twitch » disparaissent du menu. Sur un cœur plus ancien, rien ne change.*
 
