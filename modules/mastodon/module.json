@@ -6,7 +6,7 @@
     "en": "Mastodon",
     "fr": "Mastodon"
   },
-  "version": "1.2.2",
+  "version": "1.3.0",
   "platform": "mastodon",
   "description": {
     "en": "Shows your Mastodon button in the site header and shares your follower and post counts.",
@@ -45,6 +45,31 @@
         "fr": "Statistiques",
         "en": "Statistics"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.accounts",
+      "order": 200,
+      "settings": [
+        "profile"
+      ],
+      "seeAlso": [
+        "networks.stats"
+      ]
+    },
+    {
+      "id": "stats",
+      "place": "networks.stats",
+      "order": 200,
+      "fromTab": "settings",
+      "settings": [
+        "trackStats"
+      ],
+      "seeAlso": [
+        "networks.accounts"
+      ]
     }
   ],
   "settings": [

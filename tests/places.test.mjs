@@ -3,6 +3,7 @@
 // 2. places.known: our modules only use places of the vocabulary (with the core's own pages) or places they define inline (`define`).
 // 3. Dual mode: the migrated modules use `places[].fromTab` only, so an older core sees exactly the manifest of before (adminMenu kept, minCore unchanged).
 // 4. On core 0.31.0 they place everything they show (each setting once, every panel), pass the kit, and the four live sites get the menus below.
+// 5. Rollout: every module with settings or an admin panel is migrated (the Twitch cluster in 1.96.0, the rest in 1.100.0), except the few listed in NOT_PLACED with their reason.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -24,8 +25,8 @@ try { M = await import("@/core/modules/menuPath"); } catch { /* core older than 
 const noCore = P ? false : "the tested core has no places (0.31.0 or later)";
 const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(vocabFile)) : null;
 
-/** The Twitch cluster (places rollout, step 4): version after migration, and the sections each one declares (id → place). */
-const MIGRATED = {
+/** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
+const TWITCH = {
   "alerts-overlay": ["1.20.1", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.23.1", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.3.1", { main: "live.rewards.home" }],
@@ -33,8 +34,79 @@ const MIGRATED = {
   "twitch-channel": ["2.5.1", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.1", { list: "live.raid.list", featured: "live.raid.featured" }],
 };
-/** The last release before the migration: what the sites run (or update from). */
-const BEFORE = "v1.95.1";
+/** Every other module with settings or an admin panel (1.100.0): version after migration, and its sections (id → place). */
+const ROLLOUT = {
+  "audience": ["1.12.0", { rooms: "live.participation.rooms", nicknames: "live.participation.rooms", draw: "live.participation.draw" }],
+  "bandcamp": ["1.2.0", { main: "networks.accounts" }],
+  "bluesky": ["1.3.0", { main: "networks.accounts", stats: "networks.stats" }],
+  "calendar-ical": ["1.2.0", { sources: "calendar.schedule.sources" }],
+  "calendar-manual": ["1.3.0", { streams: "calendar.schedule.streams" }],
+  "commissions": ["1.1.0", { main: "community.commissions", packages: "community.commissions.packages" }],
+  "community-stats": ["1.4.0", { main: "networks.stats" }],
+  "contact-form": ["1.1.0", { form: "community.contacts.form" }],
+  "contacts": ["2.6.0", { main: "community.contacts" }],
+  "content-planner": ["1.1.0", { main: "calendar.notebook" }],
+  "countdown": ["1.4.0", { main: "calendar.countdowns" }],
+  "daily-game": ["1.2.0", { daily: "community.games.daily", packs: "community.games.daily" }],
+  "directory": ["1.2.0", { main: "content.directory" }],
+  "discord-announcer": ["1.3.0", { main: "networks.discord", golive: "live.golive" }],
+  "discord": ["1.4.0", { main: "networks.discord", stats: "networks.stats" }],
+  "events": ["1.5.0", { main: "calendar.events", types: "calendar.events.types" }],
+  "facebook": ["1.2.0", { main: "networks.accounts" }],
+  "faq": ["1.1.0", { main: "content.faq", inbox: "content.faq.inbox" }],
+  "gallery": ["1.3.0", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
+  "game-covers": ["1.4.0", { covers: "community.games.covers", kept: "community.games.covers" }],
+  "game-suggestions": ["1.11.0", { main: "community.games" }],
+  "github": ["1.3.0", { main: "networks.accounts", stats: "networks.stats" }],
+  "hero": ["1.1.0", { banner: "site.home.banners" }],
+  "idea-box": ["1.1.0", { main: "community.ideas" }],
+  "instagram": ["1.2.0", { main: "networks.accounts" }],
+  "kick": ["1.2.0", { main: "networks.accounts" }],
+  "kofi": ["1.2.0", { main: "networks.accounts" }],
+  "legal-pages": ["1.1.0", { legal: "site.general.privacy" }],
+  "live-status": ["1.5.0", { main: "live.golive" }],
+  "map": ["1.2.0", { main: "content.map", types: "content.map.types" }],
+  "mastodon": ["1.3.0", { main: "networks.accounts", stats: "networks.stats" }],
+  "maze-overlay": ["1.3.0", { look: "obs.overlays.maze", motion: "obs.overlays.maze" }],
+  "partnerships": ["2.5.0", { main: "community.partners" }],
+  "patreon": ["1.2.0", { main: "networks.accounts" }],
+  "pinterest": ["1.2.0", { main: "networks.accounts" }],
+  "planning": ["2.9.0", { main: "calendar.schedule", look: "calendar.schedule.look" }],
+  "platform-links": ["1.2.0", { main: "networks.accounts.other" }],
+  "polls": ["1.9.0", { polls: "live.participation.polls", screen: "live.participation.polls" }],
+  "press-kit": ["1.2.0", { main: "content.press-kit" }],
+  "reddit": ["1.3.0", { main: "networks.accounts", stats: "networks.stats" }],
+  "snapchat": ["1.2.0", { main: "networks.accounts" }],
+  "soundcloud": ["1.2.0", { main: "networks.accounts" }],
+  "sponsor-ticker": ["1.5.0", { main: "obs.overlays.sponsors" }],
+  "sponsors": ["1.2.0", { sponsors: "community.partners.sponsors" }],
+  "spotify": ["1.2.0", { main: "networks.accounts" }],
+  "steam": ["1.2.0", { main: "networks.accounts" }],
+  "stream-story": ["2.15.0", { main: "calendar.story", styles: "calendar.story.styles" }],
+  "supporters": ["1.2.0", { main: "community.supporters" }],
+  "telegram": ["1.2.0", { main: "networks.accounts" }],
+  "testimonials": ["1.5.0", { main: "community.reviews", share: "community.reviews.share" }],
+  "thanks-wall": ["1.4.0", { wall: "community.supporters.wall" }],
+  "threads": ["1.2.0", { main: "networks.accounts" }],
+  "ticker-overlay": ["1.3.0", { main: "obs.overlays.ticker" }],
+  "tiktok": ["1.2.0", { main: "networks.accounts" }],
+  "videos": ["1.2.0", { main: "content.videos", shelves: "content.videos.shelves" }],
+  "x-twitter": ["1.2.0", { main: "networks.accounts" }],
+  "youtube-channel": ["1.5.0", { main: "networks.youtube", stats: "networks.stats" }],
+  "youtube-connector": ["1.4.0", { main: "networks.youtube" }],
+  "youtube-live-actions": ["1.2.0", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
+};
+const MIGRATED = { ...TWITCH, ...ROLLOUT };
+/** The last release before each migration: what the sites run (or update from). */
+const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : "v1.99.0");
+/** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
+const ON_CORE_PAGE = ["hero", "legal-pages"];
+/** Modules with no place, and why. Every other module of modules/ declares places. */
+const NOT_PLACED = {
+  blog: "content only: entries, no settings", codes: "content only: entries, no settings", collection: "content only: entries, no settings", links: "content only: entries, no settings", pages: "content only: entries, no settings",
+  mascot: "five tabs with their own blocks: the core allows 3 sections of one module per page",
+  "twitch-events": "bridge version, removed once Alerts overlay has taken over its journal and settings",
+};
 
 const L = (t, lang) => t[lang];
 const firstWord = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/^[^a-z0-9]+/, "").split(/[^a-z0-9]+/)[0];
@@ -165,14 +237,17 @@ test("dual mode: places[].fromTab only (never tabs[].place without minCore 0.31.
   }
 });
 
-const history = (() => { try { return Object.keys(manifestsAt(root, BEFORE)).length > 0; } catch { return false; } })();
-const needHistory = !history && process.env.HOT_UPDATE_REQUIRE_HISTORY !== "1" ? `no git history with ${BEFORE} here` : false;
+const tagsUsed = [...new Set(Object.keys(MIGRATED).map(BEFORE))];
+const histories = Object.fromEntries(tagsUsed.map((tag) => [tag, (() => { try { return Object.keys(manifestsAt(root, tag)).length > 0; } catch { return false; } })()]));
+const missingTag = tagsUsed.find((tag) => !histories[tag]);
+const needHistory = missingTag && process.env.HOT_UPDATE_REQUIRE_HISTORY !== "1" ? `no git history with ${missingTag} here` : false;
 
-test(`upgrade from the real ${BEFORE} manifests: an older core sees the same module (only « places » and the version change; adminMenu, settings, tabs, tools, elements, data kept)`, { skip: needHistory }, () => {
-  const before = manifestsAt(root, BEFORE);
+test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core sees the same module (only « places » and the version change; adminMenu, settings, tabs, tools, elements, data kept)`, { skip: needHistory }, () => {
+  const beforeBy = Object.fromEntries(tagsUsed.map((tag) => [tag, manifestsAt(root, tag)]));
   for (const id of Object.keys(MIGRATED)) {
+    const before = beforeBy[BEFORE(id)];
     const old = before[id], now = manifests[id];
-    assert.ok(old, `${id} exists at ${BEFORE}`);
+    assert.ok(old, `${id} exists at ${BEFORE(id)}`);
     const { places, version, ...rest } = now;
     const { version: oldVersion, ...oldRest } = old;
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
@@ -184,8 +259,20 @@ test(`upgrade from the real ${BEFORE} manifests: an older core sees the same mod
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);
     assert.equal(now.minCore, old.minCore, `${id}: minCore unchanged`);
   }
-  // The modules that are not migrated yet are untouched by this step.
-  for (const [id, m] of Object.entries(manifests)) if (!MIGRATED[id] && before[id]) assert.equal(m.places, undefined, `${id}: not migrated in this step`);
+  // The modules that stay without a place are untouched.
+  for (const id of Object.keys(NOT_PLACED)) assert.equal(manifests[id].places, undefined, `${id}: ${NOT_PLACED[id]}`);
+});
+
+test("rollout: every module of modules/ with settings or an admin panel declares its places; the few that do not are listed with their reason", () => {
+  const dirs = fs.readdirSync(path.join(root, "modules")).filter((d) => fs.existsSync(path.join(root, "modules", d, "module.json")));
+  const placed = new Set([...Object.keys(MIGRATED), "stream-goals"]);
+  for (const id of dirs) {
+    if (placed.has(id)) { assert.ok(manifests[id].places?.length, `${id}: places declared`); continue; }
+    assert.ok(NOT_PLACED[id], `${id}: no places and no reason in NOT_PLACED`);
+    assert.equal(manifests[id].places, undefined, `${id}: ${NOT_PLACED[id]}`);
+  }
+  for (const id of Object.keys(NOT_PLACED)) assert.ok(dirs.includes(id), `${id}: listed in NOT_PLACED but not a module`);
+  for (const id of ["blog", "codes", "collection", "links", "pages"]) assert.deepEqual(manifests[id].settings ?? [], [], `${id}: content only, nothing to place`);
 });
 
 test("every migrated manifest passes the core's own validator (the same check as at install)", async () => {
@@ -198,7 +285,7 @@ test("every migrated manifest passes the core's own validator (the same check as
 
 /* ───────────── 4. On core 0.31.0 ───────────── */
 
-test("core 0.31.0: each migrated module places everything it shows (every setting once, every panel tab) and leaves the sidebar for its pages", { skip: noCore }, async () => {
+test("core 0.31.0: each migrated module places everything it shows (every setting once, every panel tab) and leaves the sidebar for its pages (except Home and General banners, hosted by the core later)", { skip: noCore }, async () => {
   const { parseManifest } = await import("@/core/modules/manifest");
   const { planTabs, settingTab } = await import("@/core/modules/tabs");
   for (const [id, [, expected]] of Object.entries(MIGRATED)) {
@@ -210,7 +297,9 @@ test("core 0.31.0: each migrated module places everything it shows (every settin
     assert.equal(new Set(placed).size, placed.length, `${id}: a setting in one section only`);
     const shown = m.settings.filter((s) => !["sources", "general"].includes(settingTab(plan, s))).map((s) => s.key);
     assert.deepEqual([...placed].sort(), [...shown].sort(), `${id}: every setting of the module page is on a place page`);
-    assert.ok(P.fullyPlaced(m, sections, (s) => P.isCorePage(s.place, vocab)), `${id}: fully placed (its own sidebar entry goes on core 0.31.0)`);
+    // A section on a page of the core is accepted and listed, but the core does not show it there yet (docs/PLACES.md § 3): such a module keeps its own entry.
+    if (!ON_CORE_PAGE.includes(id)) assert.ok(P.fullyPlaced(m, sections, (s) => P.isCorePage(s.place, vocab)), `${id}: fully placed (its own sidebar entry goes on core 0.31.0)`);
+    for (const s of sections) assert.ok(sections.filter((x) => P.pageId(x.place) === P.pageId(s.place)).length <= 3, `${id}: 3 sections on a page at most`);
     assert.deepEqual(P.placeIssues(m, vocab), [], `${id}: places valid against the vocabulary in force`);
   }
 });
@@ -235,14 +324,26 @@ test("kit: places.valid and compat.minCore pass for the migrated modules; places
   // Advice already true on the module page before the migration (the same fields, now on a place page): to fold in a later step, never hidden here.
   const KNOWN_ADVICE = {
     "alerts-overlay": ['section "media" (live.chat.media) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
-    "home-assistant": ["no adminMenu: on a core older than 0.31.0 the module keeps its default sidebar section (fine if that is wanted)"],
     "twitch-raid": ['section "featured" (live.raid.featured) shows 7 fields (R4: 5 visible at most, fold the rare ones)'],
+    commissions: ['section "main" (community.commissions) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
+    "daily-game": ['section "daily" (community.games.daily) shows 9 simple settings (R5: 7 at most)'],
+    directory: ['section "main" (content.directory) shows 7 fields (R4: 5 visible at most, fold the rare ones)'],
+    faq: ['section "main" (content.faq) shows 7 fields (R4: 5 visible at most, fold the rare ones)'],
+    hero: ['section "banner" (site.home.banners) shows 9 simple settings (R5: 7 at most)'],
+    "maze-overlay": ['section "look" (obs.overlays.maze) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
+    polls: ['section "polls" (live.participation.polls) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
+    "thanks-wall": ['section "wall" (community.supporters.wall) shows 17 simple settings (R5: 7 at most)'],
   };
-  for (const id of Object.keys(MIGRATED)) {
+  // Dual mode: a module with neither adminMenu nor menuGroup keeps its default sidebar section on a core older than 0.31.0 (unchanged on purpose).
+  const NO_MENU = "no adminMenu: on a core older than 0.31.0 the module keeps its default sidebar section (fine if that is wanted)";
+  for (const id of [...Object.keys(MIGRATED), "stream-goals"]) {
     const report = await checkModule(path.join(root, "modules", id), { only: ["manifest.valid", "places.valid", "places.budget", "compat.minCore"] });
     const r = Object.fromEntries(report.results.map((x) => [x.id, x]));
-    for (const req of ["manifest.valid", "places.valid", "compat.minCore"]) assert.equal(r[req].status, "pass", `${id} ${req}: ${r[req].problems.join(" ; ")}`);
-    assert.deepEqual(r["places.budget"].problems, KNOWN_ADVICE[id] ?? [], `${id} places.budget`);
+    for (const req of ["manifest.valid", "places.valid"]) assert.equal(r[req].status, "pass", `${id} ${req}: ${r[req].problems.join(" ; ")}`);
+    // compat.minCore is "na" for a module that declares no minCore (nothing newer than the oldest core is used).
+    assert.ok(["pass", "na"].includes(r["compat.minCore"].status), `${id} compat.minCore: ${r["compat.minCore"].problems.join(" ; ")}`);
+    const menu = manifests[id].adminMenu || manifests[id].menuGroup ? [] : [NO_MENU];
+    assert.deepEqual(r["places.budget"].problems, [...(KNOWN_ADVICE[id] ?? []), ...menu], `${id} places.budget`);
   }
 });
 
@@ -286,7 +387,14 @@ async function siteMenu(site) {
   return { lines, warnings: index.warnings };
 }
 
-const EXPECTED_MENUS = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/places-menus.json"), "utf8"));
+const MENUS_FILE = path.join(root, "tests/fixtures/places-menus.json");
+// PLACES_MENUS_WRITE=1 rewrites the expected menus from the manifests (read the diff: it is the sidebar of each site).
+if (process.env.PLACES_MENUS_WRITE === "1" && !noCore && M) {
+  const fresh = {};
+  for (const site of Object.keys(SITES)) fresh[site] = (await siteMenu(site)).lines;
+  fs.writeFileSync(MENUS_FILE, `${JSON.stringify(fresh, null, 1)}\n`);
+}
+const EXPECTED_MENUS = JSON.parse(fs.readFileSync(MENUS_FILE, "utf8"));
 for (const site of Object.keys(EXPECTED_MENUS)) {
   test(`menu of the live site « ${site} » (${Object.values(SITES[site]).reduce((a, b) => a + b, 0)} instances) after this release, on core 0.31.0`, { skip: noCore || !M }, async () => {
     const { lines, warnings } = await siteMenu(site);

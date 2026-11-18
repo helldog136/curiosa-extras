@@ -5,7 +5,7 @@
     "en": "TikTok",
     "fr": "TikTok"
   },
-  "version": "1.1.1",
+  "version": "1.2.0",
   "platform": "tiktok",
   "description": {
     "en": "Shows your TikTok button in the site header.",
@@ -28,6 +28,14 @@
     }
   ],
   "permissions": [],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.accounts",
+      "order": 200,
+      "fromTab": "settings"
+    }
+  ],
   "settings": [
     {
       "key": "profile",

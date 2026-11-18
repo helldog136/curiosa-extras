@@ -6,7 +6,7 @@
     "fr": "Annuaire",
     "en": "Directory"
   },
-  "version": "1.1.1",
+  "version": "1.2.0",
   "menuGroup": "content",
   "description": {
     "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
@@ -100,6 +100,14 @@
         "admin": true,
         "editor": false
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "content.directory",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "settings": [

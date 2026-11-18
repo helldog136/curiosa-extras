@@ -5,7 +5,7 @@
     "fr": "Carte",
     "en": "Map"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "minCore": "0.6.0",
   "description": {
     "fr": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande de la personne qui visite, avec un bouton « Près de moi ».",
@@ -81,6 +81,20 @@
         "admin": true,
         "editor": false
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "content.map",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "types",
+      "place": "content.map.types",
+      "order": 200,
+      "fromTab": "tools"
     }
   ],
   "settings": [

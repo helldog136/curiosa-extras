@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.14.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.15.0");
   assert.equal(manifest.minCore, "0.6.7", "the \"My styles\" tab uses the rich administration blocks (core 0.6.0 and after) and the French text of the tools (0.6.7)"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");

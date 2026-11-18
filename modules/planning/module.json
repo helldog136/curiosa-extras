@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.8.0",
+  "version": "2.9.0",
   "menuGroup": "tools",
   "minCore": "0.11.0",
   "description": {
@@ -261,6 +261,23 @@
         "fr": "Apparence",
         "en": "Appearance"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "calendar.schedule",
+      "order": 200,
+      "fromTab": "settings",
+      "seeAlso": [
+        "calendar.story"
+      ]
+    },
+    {
+      "id": "look",
+      "place": "calendar.schedule.look",
+      "order": 200,
+      "fromTab": "look"
     }
   ],
   "settings": [
