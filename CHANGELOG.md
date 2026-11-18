@@ -4,6 +4,17 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.98.0 — 2026-11-18
+
+*En bref : dans « Objectifs du live », vous choisissez maintenant combien de temps ajoute un sub de palier 1, 2 ou 3 dans le subathon.*
+
+*In short: in "Live goals", you now choose how much time a tier 1, 2 or 3 sub adds to the subathon.*
+
+### Nouveautés
+
+- **Objectifs du live 1.1.0 : le temps d'un sub selon son palier se règle.** Trois nouveaux réglages, repliés dans l'onglet « Subathon » sous « Plus d'options » : un sub de palier 1, 2 ou 3 compte pour autant de subs (de 0 à 20). Par défaut 1, 2 et 5 : rien ne change pour vous tant que vous n'y touchez pas. Les subs offerts sont toujours comptés une seule fois.
+- **Live goals 1.1.0: the time of a sub by tier is now a setting.** Three new settings, folded in the "Subathon" tab under "More options": a tier 1, 2 or 3 sub counts as that many subs (0 to 20). The defaults are 1, 2 and 5, so nothing changes until you touch them. Gifted subs are still counted once.
+
 ## 1.97.0 — 2026-11-18
 
 *En bref : nouvelle extension « Objectifs du live » : une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow. Overlay alertes 1.20.0 ajoute le train de la hype et le compteur du live animés. Il faut Curiosa 0.30.0 pour les éléments animés.*
