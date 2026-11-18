@@ -175,7 +175,7 @@ export async function stateOf(ctx, el, query, now = Date.now()) {
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const PAGE_SCRIPT = `(function(){var A=window.CuriosaAnimate,root=document.getElementById("st"),cfg=JSON.parse(document.getElementById("cfg").textContent);if(!A){return}
 var o=A.optionsFromQuery(location.search),h=A.mount(root,{quality:o.quality,calm:o.calm,lang:o.lang,minText:o.minText,state:{genre:cfg.genre}});window.__anim=h;
-function go(){fetch(cfg.url,{credentials:"omit",cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(typeof d.now==="number")h.setClock(d.now);root.style.visibility=d.visible===false?"hidden":"visible";if(d.state)h.setState(d.state)}).catch(function(){}).then(function(){setTimeout(go,${POLL_MS})})}go()})();`;
+function go(){fetch(cfg.url,{credentials:"omit",cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(typeof d.now==="number")h.setClock(d.now);if(d.state)h.setState(d.state);if(d.visible===false)root.style.visibility="hidden";else if(d.state)root.style.visibility="visible"}).catch(function(){}).then(function(){setTimeout(go,${POLL_MS})})}go()})();`;
 
 /** The HTML of an element. An older core (no animation engine) shows a plain sentence instead of breaking. */
 export function elementPage(ctx, el, query) {

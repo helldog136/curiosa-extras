@@ -400,7 +400,7 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
   const needs = all.flatMap((m) => (m.requires ?? []).map((r) => [m.id, r.service]));
   // (Twitch activity 1.13.0, the bridge, keeps its optional needs of 1.12.0 until it hands over: it is not counted)
   assert.deepEqual(needs.filter(([id, s]) => id !== "twitch-events" && ["alerts.reaction", "alerts.reaction.editor"].includes(s)), []);
-  assert.deepEqual(needs.filter(([id, s]) => id !== "twitch-events" && s.startsWith("alerts.")).map(([id, s]) => `${id}:${s}`).sort(), ["twitch-bot:alerts.show"]);
+  assert.deepEqual(needs.filter(([id, s]) => id !== "twitch-events" && s.startsWith("alerts.")).map(([id, s]) => `${id}:${s}`).sort(), ["stream-goals:alerts.queue", "twitch-bot:alerts.show"], "(1.97.0) Live goals needs the queue only to know the overlay is there (optional)");
   assert.ok(json(path.join(REPO, "modules/live-status/module.json")).requires.every((r) => r.service !== "twitch.journal"));
 });
 

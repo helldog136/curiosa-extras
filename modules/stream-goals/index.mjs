@@ -46,7 +46,11 @@ export default {
       if (!allow(ctx, now)) return json({ now }, 429);
       if (q.get("demo") === "1") return json({ now, state: P.demoState(el, now, ctx.t(el === "goal" ? "label_followers" : "label_subathon")) });
       await S.sync(ctx, { now });
-      return json({ now, state: el === "goal" ? await S.goalState(ctx, now) : await S.subathonState(ctx, now) });
+      if (el === "goal") return json({ now, visible: true, state: await S.goalState(ctx, now) });
+      // a subathon with no start chosen has nothing to say: the element shows nothing (an idle overlay is invisible on stream)
+      const sub = await S.subathonNow(ctx, now);
+      if (!Number.isFinite(sub.startAt)) return json({ now, visible: false });
+      return json({ now, visible: true, state: await S.subathonState(ctx, now) });
     },
   },
   overlayElements: {

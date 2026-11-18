@@ -227,6 +227,11 @@ test("concurrency: two overlay pages asking at once count each event once and sh
   assert.equal(sa.state.format, "time");
   assert.equal(sa.state.highlights.filter((h) => h.kind === "extend").length, 1, "one +5:00 for the sub");
   assert.equal(sa.state.highlights[0].amount, 300);
+  // a subathon with no start: nothing to say, the element shows nothing
+  const idle = world({ timezone: "UTC" });
+  idle.ctx.__k = await S.secretOf(idle.ctx);
+  const none = await (await def.routes["state/:slug"](new Request(`https://example.test/m/x/state/subathon?k=${encodeURIComponent(idle.ctx.__k)}`), Object.assign(idle.ctx, { params: { slug: "subathon" } }))).json();
+  assert.equal(none.visible, false);
   const denied = await def.routes["state/:slug"](new Request("https://example.test/m/x/state/goal?k=wrong"), Object.assign(ctx, { params: { slug: "goal" } }));
   assert.equal(denied.status, 403, "the numbers need the secret of the element address");
 });
