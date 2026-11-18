@@ -159,6 +159,14 @@
   ],
   "tabs": [
     {
+      "id": "use",
+      "hidden": true
+    },
+    {
+      "id": "settings",
+      "hidden": true
+    },
+    {
       "id": "goal",
       "label": {
         "en": "Goal",
