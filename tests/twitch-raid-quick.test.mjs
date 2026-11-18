@@ -139,7 +139,7 @@ test("rejouer ne double rien : « déjà dans votre liste », une seule fiche, a
   await act(ctx, "find", { q: "@camille_tv" });
   const calls = api.calls.length;
   const again = await act(ctx, "find", { q: "twitch.tv/CAMILLE_TV" });
-  assert.match(again.ok, /camille_tv est déjà dans votre liste de raid\. Rien n'a changé\./);
+  assert.match(again.ok, /^camille_tv est déjà dans votre liste de raid\.$/);
   assert.equal(dumpOf(book).contacts.length, 1);
   assert.equal(api.calls.length, calls, "le nom et la photo sont déjà là : Twitch n'est pas redemandé");
 });
@@ -501,7 +501,7 @@ test("Retirer : la fiche sort de la catégorie Cible de raid et d'elle seule ; l
   book.seedContact({ name: "Bob", accounts: [{ network: "twitch", handle: "bob_live" }], categoryIds: [cat] });
   assert.equal((await source.targets(ctx)).partners.length, 2);
   const r = await act(ctx, "remove", { id });
-  assert.match(r.ok, /Retirée de la liste « Cible de raid »\. Sa fiche reste dans Contacts\./);
+  assert.match(r.ok, /^Retirée de la liste « Cible de raid »\.$/);
   assert.equal(r.redirect, undefined, "la page reste où elle est (pas de retour à la première page)");
   const c = dumpOf(book).contacts.find((x) => x.id === id);
   assert.deepEqual([c.name, c.categoryIds, c.accounts.length], ["Anna Petit", [other], 2]);

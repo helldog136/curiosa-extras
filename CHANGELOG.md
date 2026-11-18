@@ -4,6 +4,37 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.102.0 — 2026-11-18
+
+*En bref : sept extensions (Jaquettes de jeux, Annonces Discord, Soutiens, Statut du live, Statistiques de la communauté, Raid Twitch, Agenda en ligne) n'affichent plus que ce qui sert. Les connexions montrent un seul état (Configuré, Dégradé ou Non configuré) avec un seul bouton « Modifier » ; plus de « Tout fonctionne », de rappels ni de consignes une fois la mise en place faite.*
+
+*In short: seven extensions (Game covers, Discord announcements, Supporters, Live status, Community statistics, Twitch raid, Online calendar) now show only what is useful. Connections show one state (Configured, Degraded or Not configured) with a single "Modifier" button; no more "Everything works", reminders or instructions once the set-up is done.*
+
+### Améliorations
+
+- **Jaquettes de jeux** : une carte « Sources des jaquettes » remplace la bannière « Tout fonctionne », la ligne des sources, la date de la dernière jaquette et le tableau « Repris ». « Tester le code » passe dans le menu ⋯ de la carte ; le guide Rawg n'apparaît que sans source.
+- **Annonces Discord** : une carte « Salon Discord » (Dégradé quand le dernier envoi a échoué) ; plus de phrase sur YouTube, ni de titre de journal vide.
+- **Soutiens** : une carte de connexion par plateforme (Ko-fi reste « Non configuré » avec l'adresse à coller tant qu'aucune notification n'est arrivée) ; plus de bandeau « page publique éteinte » ni de phrases de réassurance.
+- **Statut du live** : une carte par source (Twitch, YouTube), avec la raison et le lien pour corriger.
+- **Agenda en ligne** : les étapes pour obtenir l'adresse ne s'affichent que tant qu'elle manque ; plus de liste d'erreurs fréquentes ; « Relire l'agenda » remplace « Tester l'adresse ».
+- **Statistiques de la communauté** : plus d'introduction sur l'IA, de promesse « bientôt », de phrases répétées sur chaque carte ni de « rien à faire » ; le rappel d'un chiffre ancien mène au formulaire.
+- **Raid Twitch** : une phrase d'introduction en haut, les étapes OBS repliées, plus de « Tout fonctionne » ni d'encadrés d'information.
+
+### Pour les développeurs
+
+- Jaquettes de jeux 1.5.0, Annonces Discord 1.4.0, Soutiens 1.3.0 et Statut du live 1.6.0 utilisent le bloc `connection` du cœur 0.36.0 (`minCore` 0.36.0, tests des trois états). Agenda en ligne 1.2.1 reste à `minCore` 0.2.5 (le Planning l'installe), Statistiques de la communauté 1.4.1 et Raid Twitch 2.6.2 : texte seulement.
+- `tests/ergonomics-baseline.json` perd 66 lignes (758 → 692), `tests/banners-baseline.json` 9. Il reste 4 lignes R33b (réglages secrets du manifeste). Empreintes du dock de Raid Twitch (pages) et référence de Statistiques de la communauté réenregistrées.
+
+*(English)*
+
+- **Game covers**: a "Cover sources" card replaces the "Everything works" banner, the sources line, the last cover date and the "Taken over" table. "Test the code" moves to the card's ⋯ menu; the Rawg guide only shows when no source works.
+- **Discord announcements**: a "Discord channel" card (Degraded when the last send failed); no more YouTube sentence or empty log title.
+- **Supporters**: one connection card per platform (Ko-fi stays "Not configured" with the address to paste until a first notification arrives); no more "public page is off" banner or reassurance sentences.
+- **Live status**: one card per source (Twitch, YouTube), with the reason and the link to fix it.
+- **Online calendar**: the steps to get the address only show while it is missing; no more list of frequent errors; "Read the calendar again" replaces "Test the address".
+- **Community statistics**: no more AI introduction, "coming soon" promise, sentences repeated on every card or "nothing to do"; the reminder of an old number leads to the form.
+- **Twitch raid**: one introduction sentence at the top, OBS steps folded, no more "Everything works" or information boxes.
+
 ## 1.101.1 — 2026-11-18
 
 *En bref : aucun changement visible dans vos pages. Le dépôt contrôle désormais sept nouvelles règles de clarté (états en mots simples, champs déjà remplis, formulations conditionnelles, phrases de remplissage), pour que les prochains nettoyages ne puissent que réduire les écarts connus.*

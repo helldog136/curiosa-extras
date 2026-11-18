@@ -70,12 +70,13 @@ beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCa
 afterEach(() => { mock.timers.reset(); globalThis.fetch = realFetch; });
 
 test("manifeste 1.3.2 : version corrective (1.3.0 + route cover/:slug), une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
-  assert.equal(manifest.version, "1.4.0");
+  assert.equal(manifest.version, "1.5.0");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
   assert.equal(manifest.dashboard, undefined, "rien qu'on ne puisse pas agir dessus : pas de carte ni de tâche");
   assert.deepEqual(manifest.logEvents.map((e) => e.key).slice(-2), ["cover.outage", "cover.back"]);
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
-  for (const k of ["all_fine", "last_found", "outage", "outage_saved", "sources_line"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["outage", "source_down", "sources_down", "none_available"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["all_fine", "last_found", "outage_saved", "sources_line", "key_state", "key_adopted"]) assert.ok(!(k in fr) && !(k in en), `${k} : retiré (R33)`);
   const vars = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
   for (const k of Object.keys(fr)) assert.equal(vars(fr[k]), vars(en[k]), `mêmes {variables} : ${k}`);
 });
@@ -259,7 +260,8 @@ test("les corrections de la personne passent avant tout ; une correction retire 
   tick(40 * HOUR); rawg.clearCache(); f = fakeFetch({ "*": () => ({ status: 403, json: {} }) }); globalThis.fetch = withImages(f);
   assert.equal((await svc.cover(c, "Tunic")).status, "found", "une jaquette gardée sert encore : une source refusée est une source de moins, pas un blocage");
   assert.equal((await svc.cover(c, "Jeu jamais vu")).status, "refused", "sans rien de gardé et sans autre source, on le dit");
-  assert.match((await mod.adminPanel(c, { query: {} })).find((b) => b.type === "markdown" && /^RAWG :/.test(b.text)).text, /^RAWG : code refusé/);
+  const refused = (await mod.adminPanel(c, { query: {} })).find((b) => b.type === "connection");
+  assert.equal(refused.state, "degraded"); assert.match(refused.reason, /^Rawg refuse le code d'accès/);
 });
 
 test("données bornées : 1 000 jaquettes automatiques au plus, les plus anciennes sortent à l'écriture par tranche, la plus récente reste ; aucun minuteur", async () => {
@@ -351,38 +353,33 @@ test("beaucoup de lignes : 1 000 corrections + 100 à vérifier + 1 000 automati
   assert.ok(list.items.every((i) => i.origin === "auto" && i.coverUrl.startsWith("https://media.rawg.io/media/")));
 });
 
-test("l'état en mots simples : « Tout fonctionne » avec la date, puis la phrase de panne avec la dernière réponse correcte, dans les deux onglets ; aucun mot du code, aucune clé", async () => {
+test("l'état des sources en mots simples : une carte (Configuré, puis Dégradé quand rien ne répond, puis de nouveau Configuré) ; aucun mot du code, aucune clé", async () => {
+  const card = (blocks) => blocks.find((b) => b.type === "connection");
   const c = makeCtx();
   await svc.cover(c, "Hades"); await settle();
   const ok = await mod.adminPanel(c, { query: {} });
-  assert.ok(ok.some((b) => b.type === "banner" && b.tone === "success" && b.text === "Tout fonctionne."));
-  assert.ok(ok.some((b) => b.type === "markdown" && /^Dernière jaquette trouvée : RAWG, le /.test(b.text)))
-  assert.ok(ok.some((b) => b.type === "markdown" && b.text === "RAWG : actif ✓ — Steam : coupé — Twitch : non connecté (facultatif)"), "l'état de chaque source, en mots simples");;
-  assert.ok(!ok.some((b) => b.type === "banner" && b.tone === "warning"));
+  assert.equal(card(ok).state, "configured");
+  assert.equal(card(ok).summary, "RAWG", "les sources qui servent, sans phrase de plus : Steam coupé, Twitch non connecté ne sont pas listés");
+  assert.ok(!ok.some((b) => b.type === "banner" || (b.type === "markdown" && /Dernière jaquette|Tout fonctionne/.test(b.text))), "ni « Tout fonctionne » ni date de dernière jaquette");
   tick(3 * HOUR); mode = "down"; rawg.clearCache();
   for (const t of ["A", "B", "C"]) await svc.cover(c, `Titre ${t}`);
   const down = await mod.adminPanel(c, { query: {} });
-  const warn = down.find((b) => b.type === "banner" && b.tone === "warning");
-  assert.equal(warn.text, "Aucune source ne répond pour le moment. Les jaquettes déjà gardées restent affichées.");
-  assert.ok(down.some((b) => b.type === "markdown" && /^RAWG : ne répond pas/.test(b.text)), "la source en panne est nommée");
-  assert.ok(down.some((b) => b.type === "adminForm" && b.action === "testKey"), "le bouton pour réessayer est là");
-  assert.ok(tabOf(down, "saved").some((b) => b.type === "banner" && b.tone === "warning"), "l'autre onglet le dit aussi");
+  assert.equal(card(down).state, "degraded");
+  assert.equal(card(down).reason, "Aucune source ne répond pour le moment.");
+  assert.deepEqual(card(down).primary, { label: "Tester le code", action: "testKey" }, "le moyen de réessayer est la correction proposée");
+  assert.ok(!tabOf(down, "saved").some((b) => b.type === "banner" || b.type === "connection"), "l'autre onglet ne répète pas l'état");
   assert.ok(!JSON.stringify(down).includes(KEY));
-  for (const text of [warn.text, fr.all_fine, fr.outage_saved, en.outage, en.all_fine, fr.none_available, en.none_available]) {
+  for (const text of [card(down).reason, en.outage, fr.none_available, en.none_available, fr.source_down, fr.sources_down]) {
     assert.ok(!/\b(api|cache|service|jeton|token|identifiant|webhook|instance|disjoncteur|timeout)\b/i.test(text), text);
     assert.ok(text.split(/[.!?]/).every((s) => s.trim().split(/\s+/).length <= 20), "phrases de 20 mots au plus");
     assert.ok(!text.includes("!"));
   }
-  // Retour : la phrase de panne disparaît.
+  // Retour : la panne disparaît.
   mode = "up"; tick(5 * MIN);
   await mod.adminActions.testKey(c);
-  const back = await mod.adminPanel(c, { query: {} });
-  assert.ok(back.some((b) => b.type === "banner" && b.text === "Tout fonctionne."));
-  assert.ok(!back.some((b) => b.type === "banner" && b.tone === "warning"));
-  // Jamais d'état avant la première réponse : la phrase d'avant.
-  const fresh = makeCtx();
-  const first = await mod.adminPanel(fresh, { query: {} });
-  assert.ok(first.some((b) => b.type === "banner" && b.text === "Tout fonctionne.") && !first.some((b) => b.type === "markdown" && /^Dernière jaquette trouvée/.test(b.text)));
+  assert.equal(card(await mod.adminPanel(c, { query: {} })).state, "configured");
+  // Jamais d'état « dégradé » avant la première réponse.
+  assert.equal(card(await mod.adminPanel(makeCtx(), { query: {} })).state, "configured");
 });
 
 test("ergonomie des écrans modifiés : onglets, état « injoignable », voir, changer (kit du cœur)", async () => {

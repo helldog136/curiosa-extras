@@ -47,10 +47,10 @@ const player = (ctx) => def.sections.player(ctx);
 
 test("live-status : manifeste valide, deux sources FACULTATIVES (twitch.live, youtube.live), n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.5.0");
+  assert.equal(m.version, "1.6.0");
   assert.equal(m.id, "live-status", "l'identifiant ne change pas : les sites existants gardent leur instance");
   assert.equal(m.platform, "twitch", "la plateforme déclarée ne change pas (regroupement visuel seulement)");
-  assert.equal(m.minCore, "0.2.2");
+  assert.equal(m.minCore, "0.36.0", "le bloc « connection » demande le cœur 0.36.0");
   assert.equal(m.dataVersion, 2);
   assert.equal(typeof def.migrations[2], "function");
   assert.deepEqual(m.legacySettings, [{ key: "channel" }, { key: "clientId" }, { key: "clientSecret", secret: true }]);
@@ -202,26 +202,29 @@ test("échappement : une chaîne hostile venue du fournisseur ne produit ni bann
   assert.ok(!JSON.stringify(await banner(wire().ctx)).includes("<script>"));
 });
 
-test("admin : sans application Twitch (Connecteur) ou sans chaîne (Ma Chaîne Twitch), message en langage simple avec le lien vers l'endroit où cela se règle ; absent si une chaîne est prête ou avec « toujours » ; jamais de bouton de reprise", async () => {
-  const m = { needCredentials: "RELIEZ", needChannel: "INDIQUEZ" };
-  const noApp = await def.adminPanel(wire({ provider: { channel: "machaine" }, messages: m }).ctx);
-  assert.equal(noApp.find((b) => b.text === "RELIEZ").type, "banner");
-  assert.ok(noApp.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/twitch-connector)")), "lien vers le Connecteur Twitch");
-  const noChannel = await def.adminPanel(wire({ provider: { clientId: "cid", clientSecret: "sec" }, messages: m }).ctx);
-  assert.equal(noChannel.find((b) => b.text === "INDIQUEZ").type, "banner");
-  assert.ok(noChannel.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/twitch-channel)")), "lien vers Ma Chaîne Twitch");
-  assert.ok((await def.adminPanel(wire({ provider: {}, messages: m }).ctx)).some((b) => b.text === "RELIEZ"), "ni l'un ni l'autre : d'abord le Connecteur");
-  for (const w of [wire({ messages: m }), wire({ provider: {}, own: { playerWhen: "always" }, messages: m })]) {
-    assert.ok(!(await def.adminPanel(w.ctx)).some((b) => b.text === "RELIEZ" || b.text === "INDIQUEZ"));
-  }
-  // Ni Ma Chaîne Twitch ni Chaîne YouTube : une phrase simple et une proposition d'installer l'une ou l'autre (les deux sources sont facultatives).
-  const none = await def.adminPanel(wire({ withProvider: false, messages: m }).ctx);
-  assert.deepEqual(none.map((b) => [b.type, b.service ?? b.text]), [["banner", "needSource"], ["suggestInstall", "twitch.live"], ["suggestInstall", "youtube.live"]]);
+test("admin : une carte d'état par source ; sans application Twitch ou sans chaîne, « Non configuré » avec la raison et le lien vers l'endroit où cela se règle ; réglée ou avec « toujours » : une ligne ; jamais de bouton de reprise", async () => {
+  const m = { twitchApp: "RELIEZ", twitchChannel: "INDIQUEZ", twitchTitle: "Twitch", sumTwitch: "Chaînes : {list}", sumAlways: "TOUJOURS", openConnector: "Ouvrir le Connecteur", openTwitch: "Ouvrir Ma Chaîne" };
+  const conns = (blocks) => blocks.filter((b) => b.type === "connection");
+  const noApp = conns(await def.adminPanel(wire({ provider: { channel: "machaine" }, messages: m }).ctx));
+  assert.deepEqual(noApp.map((b) => [b.id, b.state, b.reason]), [["twitch", "notConfigured", "RELIEZ"]]);
+  assert.deepEqual(noApp[0].primary, { label: "Ouvrir le Connecteur", href: "/admin/modules/twitch-connector" }, "lien vers le Connecteur Twitch");
+  const noChannel = conns(await def.adminPanel(wire({ provider: { clientId: "cid", clientSecret: "sec" }, messages: m }).ctx));
+  assert.deepEqual([noChannel[0].state, noChannel[0].reason, noChannel[0].primary.href], ["notConfigured", "INDIQUEZ", "/admin/modules/twitch-channel"], "lien vers Ma Chaîne Twitch");
+  assert.equal(conns(await def.adminPanel(wire({ provider: {}, messages: m }).ctx))[0].reason, "RELIEZ", "ni l'un ni l'autre : d'abord le Connecteur");
+  const ready = conns(await def.adminPanel(wire({ messages: m }).ctx));
+  assert.deepEqual([ready[0].state, ready[0].summary, ready[0].edit.href, ready[0].setup], ["configured", "Chaînes : machaine", "?tab=settings", undefined]);
+  const always = conns(await def.adminPanel(wire({ provider: {}, own: { playerWhen: "always" }, messages: m }).ctx));
+  assert.deepEqual([always[0].state, always[0].summary], ["configured", "TOUJOURS"], "« toujours » : le lecteur s'affiche quoi qu'il arrive");
+  // Ni Ma Chaîne Twitch ni Chaîne YouTube : une seule carte « à configurer » avec la proposition d'installer l'une ou l'autre (les deux sources sont facultatives).
+  const none = await def.adminPanel(wire({ withProvider: false, messages: { ...m, needSource: "AUCUNE", sourcesTitle: "Sources" } }).ctx);
+  assert.deepEqual(none.map((b) => [b.type, b.state, b.reason]), [["connection", "notConfigured", "AUCUNE"]]);
+  assert.deepEqual(none[0].setup.map((b) => [b.type, b.service]), [["suggestInstall", "twitch.live"], ["suggestInstall", "youtube.live"]]);
   assert.equal(def.adminActions, undefined, "plus d'action de reprise manuelle");
   assert.ok(!(await def.adminPanel(wire({ provider: {}, legacy: legacyOwn }).ctx)).some((b) => b.type === "adminForm"), "même avec d'anciennes valeurs : pas de bouton");
-  assert.match(locales.fr.needCredentials, /Reliez votre site à Twitch dans le Connecteur Twitch pour afficher le lecteur seulement quand vous êtes en direct/);
-  assert.match(locales.fr.needChannel, /Indiquez votre chaîne dans Ma Chaîne Twitch/);
+  assert.match(locales.fr.twitchApp, /Le site n'est pas relié à Twitch/);
+  assert.match(locales.fr.twitchChannel, /Aucune chaîne Twitch n'est indiquée/);
 });
+
 
 // ── Reprise automatique des identifiants d'avant (migration, legacySettings) ──────────────────────────────────────────────────────────
 const legacyOwn = { channel: "Ancienne_Chaine", clientId: "old-id", clientSecret: "old-SECRET" };
@@ -340,7 +343,8 @@ test("migration 2 avec plusieurs Chaînes Twitch : la chaîne reprise va dans la
 test("textes visibles : ni bouton ni message de reprise manuelle ; les clés qui restent existent en fr et en", () => {
   for (const l of ["fr", "en"]) {
     for (const k of Object.keys(locales[l])) assert.ok(!/^adopt|^field_/.test(k), `${l}.${k} : reprise manuelle retirée`);
-    for (const k of ["needCredentials", "needChannel", "openTwitch", "openConnector"]) assert.ok(locales[l][k], `${l}.${k}`);
+    for (const k of ["twitchApp", "twitchChannel", "openTwitch", "openConnector"]) assert.ok(locales[l][k], `${l}.${k}`);
+    for (const k of ["needCredentials", "needChannel"]) assert.ok(!(k in locales[l]), `${l}.${k} : remplacé par les cartes d'état (R33)`);
   }
 });
 
@@ -375,8 +379,8 @@ function fakeHelix({ lives = {}, errors = {} } = {}) {
 }
 const two = [{ name: "Twitch Helldog136", settings: { channel: "helldog136" } }, { name: "Twitch Etoile_Nord", settings: { channel: "etoile_nord" } }];
 
-test("manifeste : minCore 0.2.2, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
-  assert.equal(manifest.minCore, "0.2.2");
+test("manifeste : minCore 0.36.0, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
+  assert.equal(manifest.minCore, "0.36.0");
   const s = manifest.settings.find((x) => x.key === "channels");
   assert.equal(s.type, "text");
   assert.ok(!s.advanced && !s.default);

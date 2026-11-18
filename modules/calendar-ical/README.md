@@ -8,7 +8,7 @@ Il faut Curiosa 0.1.22 ou plus.
 
 1. Dans Google Agenda, **sur ordinateur** : roue dentée → *Paramètres* → cliquez sur le nom de votre agenda → descendez jusqu'à *Intégrer l'agenda* → copiez **« Adresse secrète au format iCal »**.
 2. Collez-la dans le réglage **« Adresse de votre agenda »** de ce module, puis enregistrez.
-3. Cliquez sur **« Tester l'adresse »** : le module dit combien de streams il voit, ou ce qui ne va pas (et quoi faire).
+3. Revenez sur l'onglet principal : la page « Votre agenda » dit combien de streams le module voit, ou ce qui ne va pas (et quoi faire). **« Relire l'agenda »** relit l'agenda tout de suite.
 
 **Utilisez un agenda dédié à vos streams** : tout ce qu'il contient devient visible sur votre site. L'adresse est un secret (qui la possède peut lire votre agenda) : elle n'est jamais réaffichée une fois enregistrée, ni écrite dans un message d'erreur.
 
