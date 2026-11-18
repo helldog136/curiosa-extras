@@ -47,16 +47,18 @@ const tokenCalls = (grant) => tw.log.filter((c) => c.path === "/oauth2/token" &&
 
 // ── Manifeste ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-test("manifeste : valide, une seule instance, twitch.api v3 NON each, minCore 0.2.0, réglages de l'application facultatifs (secret masqué), aucun réglage de jeton", () => {
+test("manifeste : valide, une seule instance, twitch.api v3 NON each, minCore 0.36.0, application saisie dans la fenêtre « Modifier » (anciens réglages migrés), aucun réglage de jeton", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifest.id, "twitch-connector");
   assert.deepEqual(manifest.name, { en: "Twitch connector", fr: "Connecteur Twitch" });
   assert.equal(manifest.instances, "single");
-  assert.equal(manifest.minCore, "0.2.2");
+  assert.equal(manifest.minCore, "0.36.0");
   assert.equal(manifest.type, "integration");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version, o.each ?? false]), [["twitch.api", 3, false]]);
   assert.ok(!manifest.requires, "le fournisseur ne dépend de personne");
-  assert.deepEqual(manifest.settings.map((s) => [s.key, s.type, s.optional]), [["appClientId", "text", true], ["appSecret", "secret", true], ["healthMail", "boolean", undefined]]);
+  assert.deepEqual(manifest.settings.map((s) => [s.key, s.type]), [["healthMail", "boolean"]], "the application is typed in the \"Modify\" window, not in a setting");
+  assert.deepEqual(manifest.legacySettings, [{ key: "appClientId" }, { key: "appSecret", secret: true }]);
+  assert.equal(manifest.dataVersion, 2);
   assert.ok(!manifest.settings.some((s) => /token|jeton|access|refresh/i.test(s.key)));
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
 });
@@ -422,38 +424,110 @@ test("adopt : jamais de fuite (journal, réponses, panneau, statut, comptes) ; r
 
 // ── Administration ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-test("panneau : guide pas à pas, adresse du Connecteur avec un bouton « Copier » ; prêt : la consigne de la garder ; adresses reprises listées ; santé de Twitch", async () => {
-  const empty = await def.adminPanel(mk({ settings: {} }).ctx);
-  const copy = empty.find((b) => b.type === "copy");
+const CONNECTION = (blocks) => blocks.find((b) => b.type === "connection");
+const dialog = (blocks) => blocks.find((b) => b.type === "adminForm" && b.presentation === "dialog");
+
+test("panneau, application à configurer : un bloc « connection » avec le guide et l'adresse à copier, jamais la table des adresses ni la consigne de la garder", async () => {
+  const p = await def.adminPanel(mk({ settings: {} }).ctx, { query: {} });
+  const c = CONNECTION(p);
+  assert.equal(c.state, "notConfigured");
+  assert.equal(c.reason, fr.app_none);
+  assert.equal(c.primary.href, "?edit=app");
+  const copy = c.setup.find((b) => b.type === "copy");
   assert.equal(copy.text, OWN);
   assert.match(copy.label, /Redirect URLs/);
-  assert.ok(empty.some((b) => b.type === "markdown" && /dev\.twitch\.tv\/console/.test(b.text) && /Register Your Application/.test(b.text)));
-  assert.ok(empty.some((b) => b.type === "markdown" && /Client ID/.test(b.text) && /New Secret/.test(b.text)));
+  assert.ok(c.setup.some((b) => b.type === "markdown" && /dev\.twitch\.tv\/console/.test(b.text) && /Register Your Application/.test(b.text)));
+  assert.ok(c.setup.some((b) => b.type === "markdown" && /Client ID/.test(b.text) && /New Secret/.test(b.text)));
+  assert.ok(!p.some((b) => b.type === "copy" || b.type === "netHealth"), "everything the person must do is in the block; the service health is folded into it");
+  assert.ok(!dialog(p), "the window opens from the button");
+  const open = dialog(await def.adminPanel(mk({ settings: {} }).ctx, { query: { edit: "app" } }));
+  assert.deepEqual(open.fields.map((f) => [f.name, f.kind, f.valueHint]), [["clientId", "text", undefined], ["clientSecret", "secret", undefined]]);
+  assert.ok(!open.secondaryAction, "nothing to forget");
+});
+
+test("panneau, application réglée : une ligne et « Modifier » ; ni guide, ni adresse, ni table d'adresses, ni état en double", async () => {
+  const C = mk({ settings: { appClientId: "abcd1234", appSecret: "SEC-RET" } });
+  const p = await def.adminPanel(C.ctx, { query: {} });
+  const c = CONNECTION(p);
+  assert.equal(c.state, "configured");
+  assert.equal(c.summary, "Client ID …1234 · aucun compte connecté");
+  assert.deepEqual(c.edit, { href: "?edit=app" });
+  assert.equal(c.setup, undefined);
+  assert.ok(!p.some((b) => b.type === "copy" || b.type === "markdown" || b.type === "banner" || b.type === "heading"), "no guide, no address, no sentence");
+  assert.deepEqual(c.net.map((i) => i.host), ["api.twitch.tv", "id.twitch.tv"]);
+  assert.ok(!JSON.stringify(p).includes("SEC-RET") && !JSON.stringify(p).includes('"abcd1234"'));
+  assert.ok(!/Reprise|Carried|Prête|Ready|Incomplete/.test(JSON.stringify(p)), "no internal state word");
+});
+
+test("fenêtre « Modifier » : les valeurs réglées s'affichent comme réglées ; une valeur reprise le dit, et « Oublier l'application reprise » vit ici", async () => {
+  const own = mk({ settings: { appClientId: "abcd1234", appSecret: "SEC-RET" } });
+  const w = dialog(await def.adminPanel(own.ctx, { query: { edit: "app" } }));
+  assert.equal(w.presentation, "dialog");
+  assert.deepEqual(w.fields.map((f) => [f.name, f.value, f.valueHint, f.valueTail]), [["clientId", "", "kept", "1234"], ["clientSecret", "", "kept", undefined]]);
+  assert.ok(w.fields[0].help.includes(OWN), "the address is in the help bubble of the field");
+  assert.ok(!w.secondaryAction);
   const C = mk({ settings: {} });
-  await C.methods.adopt({ clientId: "cid", clientSecret: "SEC-RET", channel: "machaine", redirectUri: OLD });
-  const p = await def.adminPanel(C.ctx);
-  assert.ok(!p.some((b) => b.type === "banner" && b.tone !== "warning"), "no informational banner: the state is one word in a table");
-  const status = p.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "forgetApp"));
-  assert.ok(status, "the carried-over application is forgotten from a discreet row menu");
-  assert.equal(status.rows[0][0].text, "Reprise");
-  assert.ok(status.rows[0][0].title && status.rowActions[0].danger && status.rowActions[0].confirm, "tooltip for the detail, confirmation that says what is lost");
-  assert.ok(!p.some((b) => b.type === "adminForm" && b.action === "forgetApp"), "no big button");
-  assert.ok(p.some((b) => b.type === "table" && JSON.stringify(b.rows).includes(OLD)), "l'ancienne adresse est listée : à garder chez Twitch");
-  const health = p.find((b) => b.type === "netHealth");
-  assert.deepEqual(health.items.map((i) => i.host), ["api.twitch.tv", "id.twitch.tv"]);
-  assert.ok(!JSON.stringify(p).includes("SEC-RET") && !JSON.stringify(p).includes('"cid"'));
+  await C.methods.adopt({ clientId: "abcd1234", clientSecret: "SEC-RET", channel: "machaine", redirectUri: OLD });
+  const carried = dialog(await def.adminPanel(C.ctx, { query: { edit: "app" } }));
+  assert.deepEqual(carried.fields.map((f) => [f.valueHint, f.valueSource]), [["carried", "Ma Chaîne Twitch"], ["carried", "Ma Chaîne Twitch"]]);
+  assert.equal(carried.secondaryAction.action, "forgetApp");
+  assert.equal(carried.secondaryAction.label, "Oublier l'application reprise");
+  assert.ok(carried.secondaryAction.confirm.includes("effacés"), "the confirmation says what is lost");
+  const page = await def.adminPanel(C.ctx, { query: {} });
+  assert.ok(!JSON.stringify(page).includes(fr.forget) && !JSON.stringify(page).includes(OLD), "not a loose button, not a table of addresses");
+  assert.equal(CONNECTION(page).state, "configured");
   await def.adminActions.forgetApp(C.ctx);
   assert.equal((await C.methods.status()).ready, false);
   assert.deepEqual((await C.methods.status()).missing, ["clientId", "clientSecret"]);
 });
 
-test("panneau : comptes connectés en tableau (chaîne, compte, état) avec « Déconnecter » ; aucun jeton", async () => {
+test("saveApp : un champ vide garde la valeur, une valeur saisie devient la vôtre, une erreur se dit sous le champ avec un exemple ; aucun secret ne revient", async () => {
+  const C = mk({ settings: {} });
+  const bad = await def.adminActions.saveApp(C.ctx, { clientId: "", clientSecret: "" });
+  assert.match(bad.errors.clientId, /par exemple abcd1234/);
+  assert.ok(bad.errors.clientSecret);
+  assert.deepEqual((await C.ctx.api.store.list("twitchApp")), []);
+  assert.deepEqual(await def.adminActions.saveApp(C.ctx, { clientId: "abcd1234", clientSecret: "SEC-RET" }), { ok: fr.saved, redirect: "?" });
+  assert.equal((await C.methods.status()).ready, true);
+  assert.equal((await def.adminActions.saveApp(C.ctx, { clientId: "a b", clientSecret: "" })).errors.clientId.length > 0, true, "no space");
+  await def.adminActions.saveApp(C.ctx, { clientId: "", clientSecret: "AUTRE-SEC" });
+  const doc = (await C.ctx.api.store.list("twitchApp"))[0].data;
+  assert.deepEqual([doc.clientId, doc.clientSecret, doc.carried], ["abcd1234", "AUTRE-SEC", []]);
+  const D = mk({ settings: {} });
+  await D.methods.adopt({ clientId: "abcd1234", clientSecret: "SEC-RET" });
+  await def.adminActions.saveApp(D.ctx, { clientId: "", clientSecret: "NEUF-SEC" });
+  assert.deepEqual((await D.ctx.api.store.list("twitchApp"))[0].data.carried, ["clientId"], "only the carried field stays carried");
+  await def.adminActions.forgetApp(D.ctx);
+  const left = (await D.ctx.api.store.list("twitchApp"))[0].data;
+  assert.deepEqual([left.clientId, left.clientSecret], [undefined, "NEUF-SEC"], "forgetting keeps what was typed here");
+});
+
+test("migration des réglages (données en version 2) : le Client ID et le secret passent dans la fenêtre « Modifier », les valeurs reprises restent reprises ; rejouable", async () => {
+  const C = connector({ settings: {}, legacy: { appClientId: "abcd1234", appSecret: "SEC-RET" }, rows: { twitchApp: [{ clientId: "reprisid", clientSecret: "reprissec" }] } });
+  await def.migrations[2](C.ctx);
+  const doc = (await C.ctx.api.store.list("twitchApp"));
+  assert.equal(doc.length, 1);
+  assert.deepEqual([doc[0].data.clientId, doc[0].data.clientSecret, doc[0].data.carried], ["abcd1234", "SEC-RET", []]);
+  assert.deepEqual(C.ctx.calls.legacyCleared.sort(), ["appClientId", "appSecret"]);
+  await def.migrations[2](C.ctx);
+  assert.equal((await C.ctx.api.store.list("twitchApp")).length, 1);
+  const half = connector({ settings: {}, legacy: { appClientId: "abcd1234", appSecret: null }, rows: { twitchApp: [{ clientId: "reprisid", clientSecret: "reprissec" }] } });
+  await def.migrations[2](half.ctx);
+  const d = (await half.ctx.api.store.list("twitchApp"))[0].data;
+  assert.deepEqual([d.clientId, d.clientSecret, d.carried], ["abcd1234", "reprissec", ["clientSecret"]]);
+  const none = connector({ settings: {}, legacy: { appClientId: null, appSecret: null } });
+  await def.migrations[2](none.ctx);
+  assert.deepEqual(await none.ctx.api.store.list("twitchApp"), []);
+});
+
+test("panneau : comptes connectés en une colonne avec « Déconnecter » ; aucun jeton, aucune étiquette « Connecté »", async () => {
   const C = mk();
   await connect(C);
-  const p = await def.adminPanel(C.ctx);
+  const p = await def.adminPanel(C.ctx, { query: {} });
   const t = p.find((b) => b.type === "table" && b.rowActions);
-  assert.deepEqual(t.rows, [["machaine", `machaine · ${fr.slot_main}`, fr.conn_state_ok]]);
+  assert.deepEqual(t.rows, [["machaine"]]);
   assert.equal(t.rowActions[0].action, "disconnect");
+  assert.equal(CONNECTION(p).summary, "Client ID …cid");
   assert.ok(!/at_\d|rt_\d/.test(JSON.stringify(p)));
 });
 

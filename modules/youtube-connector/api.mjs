@@ -13,6 +13,7 @@ import { createHash } from "node:crypto";
 
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const O = await import(`./oauth.mjs${v}`);
+const C = await import(`./credentials.mjs${v}`);
 
 export const HOST = "www.googleapis.com";
 const BASE = `https://${HOST}/youtube/v3/`;
@@ -170,17 +171,9 @@ function stateOf(ctx) {
 export function resetState() { states.clear(); O.resetOauth(); }
 
 // ── La clé ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-// Deux sources : le réglage « Clé YouTube » (saisi par la personne) l'emporte ; sinon la clé reprise d'un autre module par `adopt`, gardée dans le stockage.
-const CREDENTIAL = "credential";
-async function adoptedDoc(ctx) {
-  const rows = await ctx.api.store.list(CREDENTIAL, { limit: 5 });
-  return rows.find((r) => typeof r.data?.apiKey === "string" && r.data.apiKey) ?? null;
-}
-const settingKey = (ctx) => String(ctx.setting("apiKey") ?? "").trim();
+// La clé est dans le document des codes d'accès (credentials.mjs) : saisie dans la fenêtre « Modifier », ou reprise d'un autre module par `adopt` (notée « reprise »).
 export async function currentKey(ctx) {
-  const own = settingKey(ctx);
-  if (own) return own;
-  return (await adoptedDoc(ctx))?.data.apiKey ?? null;
+  return (await C.read(ctx)).apiKey || null;
 }
 const refused = (st, fp, now = Date.now()) => !!st.auth && st.auth.fp === fp && st.auth.until > now;
 
@@ -237,7 +230,7 @@ export async function request(ctx, args = {}) {
   let auth = null;
   if (spec.chat) {
     const b = await O.bearer(ctx, "read", { priority: args.priority === "interactive" ? "interactive" : "background" });
-    if (b.ok) auth = { kind: "oauth", token: b.token, fp: `oauth:${O.clientOf(ctx).fp}` };
+    if (b.ok) auth = { kind: "oauth", token: b.token, fp: `oauth:${(await O.clientOf(ctx)).fp}` };
   }
   if (!auth) {
     const key = await currentKey(ctx);
@@ -351,7 +344,7 @@ export async function chatPost(ctx, args = {}) {
   if (q.used + CHAT_POST_COST > budget - reserveOf(budget)) return { ok: false, error: "quota", retryAt: nextPacificMidnight(now), budget: true };
   q.used += CHAT_POST_COST;
   st.posts.push(now);
-  const fp = `oauth:${O.clientOf(ctx).fp}`;
+  const fp = `oauth:${(await O.clientOf(ctx)).fp}`;
   const r = await ctx.api.net.request({
     url: `${BASE}liveChat/messages?part=snippet`, method: "POST", headers: { accept: "application/json", authorization: `Bearer ${b.token}` },
     body: { snippet: { liveChatId: chatId, type: "textMessageEvent", textMessageDetails: { messageText: text } } },
@@ -460,15 +453,12 @@ export async function adopt(ctx, args = {}) {
   const value = typeof args?.apiKey === "string" ? args.apiKey.trim() : "";
   if (!/^[\x21-\x7e]{10,200}$/.test(value)) return { adopted: [], ready: await isReady(ctx), error: "invalid" };
   const st = stateOf(ctx);
-  const own = settingKey(ctx);
-  if (own) return { adopted: [], ready: !refused(st, fingerprint(own)), ...(own !== value ? { conflict: true } : {}) };
-  const doc = await adoptedDoc(ctx);
-  if (doc && doc.data.apiKey === value) return { adopted: [], ready: !refused(st, fingerprint(value)) };
-  if (doc && !refused(st, fingerprint(doc.data.apiKey))) return { adopted: [], ready: true, conflict: true };
-  const data = { apiKey: value, at: new Date().toISOString() };
-  if (doc) await ctx.api.store.update(doc.id, data); else await ctx.api.store.add(CREDENTIAL, data);
-  const check = await adoptedDoc(ctx);
-  const ok = check?.data.apiKey === value;
+  const cur = await C.read(ctx);
+  if (cur.apiKey && !cur.carried.includes("apiKey")) return { adopted: [], ready: !refused(st, fingerprint(cur.apiKey)), ...(cur.apiKey !== value ? { conflict: true } : {}) };   // saisie ici : jamais remplacée
+  if (cur.apiKey === value) return { adopted: [], ready: !refused(st, fingerprint(value)) };
+  if (cur.apiKey && !refused(st, fingerprint(cur.apiKey))) return { adopted: [], ready: true, conflict: true };
+  await C.save(ctx, { apiKey: value }, { carried: true });
+  const ok = (await C.read(ctx)).apiKey === value;
   return { adopted: ok ? ["apiKey"] : [], ready: ok };
 }
 export async function isReady(ctx) {

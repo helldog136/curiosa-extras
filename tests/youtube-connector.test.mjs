@@ -7,6 +7,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseManifest } from "@/core/modules/manifest";
 import { makeConnector, connectorModule, connectorApi as api, yt } from "./helpers/fakeYoutube.mjs";
+import { assertConnectionStates } from "./helpers/ergonomics.mjs";
 
 const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
 const { fakeFetch, netReplies } = kit;
@@ -44,10 +45,10 @@ test("manifeste : valide, une seule instance, offre youtube.api v1, clé secrèt
   assert.equal(manifest.type, "integration");
   assert.equal(manifest.platform, "youtube");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version, !!o.each]), [["youtube.api", 1, false]]);
-  assert.equal(manifest.minCore, "0.2.2");
-  const keySetting = manifest.settings.find((s) => s.key === "apiKey");
-  assert.equal(keySetting.type, "secret");
-  assert.ok(!keySetting.advanced && !("default" in keySetting), "saisissable en mode simple, sans valeur par défaut");
+  assert.equal(manifest.minCore, "0.36.0");
+  assert.ok(!manifest.settings.some((s) => ["apiKey", "oauthClientId", "oauthClientSecret"].includes(s.key)), "the codes are typed in the \"Modify\" windows, not in settings");
+  assert.deepEqual(manifest.legacySettings, [{ key: "apiKey", secret: true }, { key: "oauthClientId" }, { key: "oauthClientSecret", secret: true }]);
+  assert.equal(manifest.dataVersion, 2);
   assert.ok(manifest.settings.find((s) => s.key === "dailyBudget").advanced, "le budget est un réglage avancé (défaut 9 000)");
   assert.equal(def.tasks, undefined, "aucune tâche en arrière-plan : tout se fait à la demande");
   assert.ok(!/setInterval|\bfetch\(/.test(source), "ni minuteur répétitif, ni fetch direct (ctx.api.net seulement)");
@@ -145,9 +146,11 @@ test("quota épuisé : 403 quotaExceeded (pas un 429) → « quota » jusqu'à m
   const other = makeConnector({ key: "other" });
   assert.equal((await other.methods.request(chReq())).error, "quota");
   const panel = await def.adminPanel(c.ctx);
-  const banner = panel.find((b) => b.type === "banner" && /La limite YouTube du jour est épuisée, reprise (aujourd'hui|demain|le .*) à \d{1,2} h/.test(b.text));
-  assert.ok(banner, JSON.stringify(panel));
-  assert.deepEqual(panel.find((b) => b.type === "netHealth").items.map((i) => [i.host, i.label]), [["www.googleapis.com", "YouTube"]]);
+  const block = panel.find((b) => b.type === "connection" && b.id === "key");
+  assert.equal(block.state, "degraded");
+  assert.match(block.reason, /La limite YouTube du jour est épuisée, reprise (aujourd'hui|demain|le .*) à \d{1,2} h/);
+  assert.ok(!panel.some((b) => b.type === "banner" || b.type === "netHealth"), "the service health is folded into the block");
+  assert.deepEqual(block.net.map((i) => [i.host, i.label]), [["www.googleapis.com", "YouTube"]]);
 });
 
 test("quota épuisé, 429, silence, JSON tronqué : le dernier résultat connu est rendu, DATÉ (stale + at) ; sans résultat connu, une erreur claire ; jamais d'attente sans fin", async () => {
@@ -205,7 +208,10 @@ test("clé refusée (400 API_KEY_INVALID, 403 accessNotConfigured, 401) → « a
     assert.equal((await c.methods.request(chReq(CH("b")))).error, "auth");
     assert.equal(f.calls.length, 1, `${status} : pas d'insistance`);
     assert.equal((await c.methods.status()).key, "refused");
-    assert.match((await def.adminPanel(c.ctx)).map((b) => b.text).join(" "), /Le code d'accès YouTube est refusé/);
+    const block = (await def.adminPanel(c.ctx)).find((b) => b.type === "connection" && b.id === "key");
+    assert.equal(block.state, "degraded");
+    assert.match(block.reason, /YouTube refuse le code d'accès/);
+    assert.equal(block.primary.href, "?edit=key");
   }
   const fixed = makeConnector({ apiKey: "FAKE-YT-KEY-0002" });
   serve(happy);
@@ -248,8 +254,8 @@ test("adopt : reprise de la clé sans ressaisie, idempotente, JAMAIS renvoyée ;
   await c.methods.request(chReq());
   assert.equal(new Headers(f.calls[0].init.headers).get("x-goog-api-key"), KEY, "la clé reprise sert aux appels");
   const own = makeConnector({ key: "own", apiKey: "FAKE-YT-KEY-0009" });
-  assert.deepEqual(await own.methods.adopt({ apiKey: KEY }), { adopted: [], ready: true, conflict: true }, "le réglage saisi l'emporte");
-  assert.equal(own.ctx.dumpStore().length, 0);
+  assert.deepEqual(await own.methods.adopt({ apiKey: KEY }), { adopted: [], ready: true, conflict: true }, "ce qui est saisi ici l'emporte");
+  assert.equal(own.ctx.dumpStore().filter((x) => x.data.apiKey !== "FAKE-YT-KEY-0009").length, 0);
 });
 
 test("secret : la clé n'apparaît dans AUCUN retour, bloc, journal réseau ni ligne de console — même quand YouTube la répète dans son message d'erreur", async () => {
@@ -283,13 +289,105 @@ test("heure de reprise : minuit à Los Angeles (heure d'été et d'hiver), jour 
 
 test("panneau : sans clé, dit quoi faire et où créer la clé gratuite (un lien vers la console Google) ; aucun appel réseau à l'ouverture", async () => {
   const c = makeConnector({ apiKey: null });
-  const panel = await def.adminPanel(c.ctx);
-  assert.match(panel[0].text, /Ajoutez votre code d'accès YouTube dans le champ ci-dessous/);
-  const help = panel.find((b) => b.type === "markdown" && b.text.includes("console.cloud.google.com"));
+  const panel = await def.adminPanel(c.ctx, { query: {} });
+  const block = panel.find((b) => b.type === "connection" && b.id === "key");
+  assert.equal(block.state, "notConfigured");
+  assert.equal(block.reason, "Aucun code d'accès YouTube n'est enregistré.");
+  assert.equal(block.primary.href, "?edit=key");
+  const help = block.setup.find((b) => b.type === "markdown" && b.text.includes("console.cloud.google.com"));
   assert.ok(help, "une phrase et un lien vers la console Google");
   assert.equal((help.text.match(/\]\(https:\/\//g) ?? []).length, 1);
-  assert.match(panel.map((b) => b.text ?? "").join(" "), /Utilisé aujourd'hui : 0 sur 9/);
   assert.equal(f.calls.length, 0);
+});
+
+const keyBlock = (panel) => panel.find((b) => b.type === "connection" && b.id === "key");
+const accountBlock = (panel) => panel.find((b) => b.type === "connection" && b.id === "account");
+const dialog = (panel) => panel.find((b) => b.type === "adminForm" && b.presentation === "dialog");
+
+test("panneau, code d'accès réglé : une ligne (la limite du jour) et « Modifier » ; ni phrase « enregistré », ni consigne, ni ligne de santé du service", async () => {
+  const c = makeConnector();
+  const panel = await def.adminPanel(c.ctx, { query: {} });
+  const k = keyBlock(panel);
+  assert.equal(k.summary.replace(/\s/g, " "), "Limite du jour : 0 sur 9 000");
+  assert.deepEqual({ ...k, summary: "" }, { type: "connection", id: "key", title: "Code d'accès YouTube", summary: "", edit: { href: "?edit=key" }, net: [{ host: "www.googleapis.com", label: "YouTube" }], state: "configured" });
+  assert.ok(!panel.some((b) => b.type === "banner" || b.type === "markdown" || b.type === "netHealth" || b.type === "heading"));
+  assert.ok(!JSON.stringify(panel).includes(KEY));
+});
+
+test("fenêtre « Modifier » du code d'accès : une valeur réglée s'affiche comme réglée, une valeur reprise le dit et « Oublier » vit ici ; saisir ou laisser vide", async () => {
+  const own = makeConnector();
+  const w = dialog(await def.adminPanel(own.ctx, { query: { edit: "key" } }));
+  assert.deepEqual(w.fields.map((f) => [f.name, f.kind, f.value, f.valueHint]), [["apiKey", "secret", "", "kept"]]);
+  assert.ok(!w.secondaryAction);
+  const C = makeConnector({ apiKey: null });
+  await C.methods.adopt({ apiKey: KEY });
+  const carried = dialog(await def.adminPanel(C.ctx, { query: { edit: "key" } }));
+  assert.deepEqual([carried.fields[0].valueHint, carried.fields[0].valueSource], ["carried", "Chaîne YouTube"]);
+  assert.equal(carried.secondaryAction.action, "forgetKey");
+  assert.ok(carried.secondaryAction.confirm.includes("effacé"), "the confirmation says what is lost");
+  assert.equal(keyBlock(await def.adminPanel(C.ctx, { query: {} })).state, "configured");
+  assert.ok(!JSON.stringify(await def.adminPanel(C.ctx, { query: {} })).includes("Oublier"), "not a loose button");
+  // empty keeps, a typed value is "yours"
+  assert.deepEqual(await def.adminActions.saveKey(C.ctx, { apiKey: "" }), { ok: "Code d'accès enregistré.", redirect: "?" });
+  assert.deepEqual((await C.ctx.api.store.list("credential"))[0].data.carried, ["apiKey"], "an empty field changes nothing");
+  assert.match((await def.adminActions.saveKey(C.ctx, { apiKey: "court" })).errors.apiKey, /par exemple AIzaSy/);
+  await def.adminActions.saveKey(C.ctx, { apiKey: "FAKE-YT-KEY-MINE-1" });
+  assert.deepEqual((await C.ctx.api.store.list("credential"))[0].data.carried, []);
+  assert.equal((await def.adminActions.saveKey(makeConnector({ apiKey: null }).ctx, { apiKey: "" })).errors.apiKey.length > 0, true);
+  const D = makeConnector({ apiKey: null });
+  await D.methods.adopt({ apiKey: KEY });
+  await def.adminActions.saveAccount(D.ctx, { oauthClientId: "123456789-abcdefgh.apps.googleusercontent.com", oauthClientSecret: "client-secret-1" });
+  await def.adminActions.forgetKey(D.ctx);
+  const left = (await D.ctx.api.store.list("credential"))[0].data;
+  assert.deepEqual([left.apiKey, left.oauthClientId, left.carried], [undefined, "123456789-abcdefgh.apps.googleusercontent.com", []], "forgetting keeps what was typed here");
+  assert.equal((await D.methods.status()).key, "missing");
+});
+
+test("compte YouTube : à configurer (étapes, ID client à enregistrer), prêt à connecter, connecté, à reconnecter : un seul bloc, un seul état, aucun doublon", async () => {
+  const none = accountBlock(await def.adminPanel(makeConnector().ctx, { query: {} }));
+  assert.equal(none.state, "notConfigured");
+  assert.equal(none.reason, "Facultatif : sert à répondre dans le chat, ou si YouTube refuse la lecture.");
+  assert.equal(none.primary.href, "?edit=account");
+  assert.match(none.setup[0].html, /<ol/);
+  const GOOD = { oauthClientId: "123456789-abcdefgh.apps.googleusercontent.com", oauthClientSecret: "client-secret-1" };
+  const ready = await def.adminPanel(makeConnector({ settings: GOOD }).ctx, { query: {} });
+  assert.deepEqual([accountBlock(ready).state, accountBlock(ready).reason, accountBlock(ready).primary], ["notConfigured", "Aucun compte connecté.", { label: "Connecter mon compte YouTube", action: "accountConnect" }]);
+  assert.equal(accountBlock(ready).setup, undefined);
+  assert.ok(ready.some((b) => b.type === "links" && b.items[0].href === "?edit=account"));
+  const bad = accountBlock(await def.adminPanel(makeConnector({ settings: { oauthClientId: "pas-un-id" } }).ctx, { query: {} }));
+  assert.match(bad.reason, /ne ressemble pas à ce que donne Google/);
+  assert.equal(bad.primary.href, "?edit=account");
+  const w = dialog(await def.adminPanel(makeConnector({ settings: GOOD }).ctx, { query: { edit: "account" } }));
+  assert.deepEqual(w.fields.map((f) => [f.name, f.kind, f.valueHint, f.valueTail]), [["oauthClientId", "text", "kept", "efgh"], ["oauthClientSecret", "secret", "kept", undefined]]);
+  const C = makeConnector({ apiKey: null });
+  const err = await def.adminActions.saveAccount(C.ctx, { oauthClientId: "nope", oauthClientSecret: "" });
+  assert.match(err.errors.oauthClientId, /par exemple 123456789-abcdef/);
+  assert.ok(err.errors.oauthClientSecret);
+  assert.deepEqual(await def.adminActions.saveAccount(C.ctx, GOOD), { ok: "ID client enregistré.", redirect: "?" });
+  assert.equal(accountBlock(await def.adminPanel(C.ctx, { query: {} })).primary.action, "accountConnect");
+  assert.deepEqual(await def.adminActions.saveAccount(C.ctx, { oauthClientId: "", oauthClientSecret: "" }), { ok: "ID client enregistré.", redirect: "?" }, "empty fields keep the current values");
+});
+
+test("migration des réglages (données en version 2) : la clé, l'ID client et le secret passent dans le stockage ; une clé reprise reste reprise ; rejouable", async () => {
+  const C = makeConnector({ apiKey: null, legacy: { apiKey: "FAKE-YT-KEY-OWN", oauthClientId: "123456789-abcdefgh.apps.googleusercontent.com", oauthClientSecret: "client-secret-1" }, rows: { credential: [{ apiKey: "FAKE-YT-KEY-OLD" }] } });
+  await def.migrations[2](C.ctx);
+  const docs = await C.ctx.api.store.list("credential");
+  assert.equal(docs.length, 1);
+  assert.deepEqual([docs[0].data.apiKey, docs[0].data.oauthClientId, docs[0].data.oauthClientSecret, docs[0].data.carried], ["FAKE-YT-KEY-OWN", "123456789-abcdefgh.apps.googleusercontent.com", "client-secret-1", []]);
+  assert.deepEqual(C.ctx.calls.legacyCleared.sort(), ["apiKey", "oauthClientId", "oauthClientSecret"]);
+  await def.migrations[2](C.ctx);
+  assert.equal((await C.ctx.api.store.list("credential")).length, 1);
+  const carriedOnly = makeConnector({ apiKey: null, legacy: { apiKey: null, oauthClientId: null, oauthClientSecret: null }, rows: { credential: [{ apiKey: "FAKE-YT-KEY-OLD" }] } });
+  await def.migrations[2](carriedOnly.ctx);
+  assert.deepEqual((await carriedOnly.ctx.api.store.list("credential"))[0].data.carried, ["apiKey"], "an old document only held a carried key");
+  assert.equal((await carriedOnly.methods.status()).key, "set");
+});
+
+test("the three states (R33): not configured, configured, degraded: one state word written by the core, the right content in each", async () => {
+  const page = (c) => def.adminPanel(c.ctx, { query: {} });
+  const configured = makeConnector({ key: "yt-ok" });
+  const refused = makeConnector({ key: "yt-refused" }); serve(() => ({ status: 400, json: yt.keyInvalid() })); await refused.methods.request(chReq());
+  assertConnectionStates({ notConfigured: await page(makeConnector({ apiKey: null })), configured: await page(configured), degraded: await page(refused) });
 });
 
 test("SRP : seul le Connecteur YouTube parle à l'interface de données de YouTube (googleapis.com)", () => {

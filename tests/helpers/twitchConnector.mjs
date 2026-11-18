@@ -14,8 +14,11 @@ export const CONNECTOR_KEY = "twitch-connector";
 export const connectorCallback = (siteUrl = "https://example.test") => `${siteUrl}/m/${CONNECTOR_KEY}/oauth/callback`;
 
 /** Le Connecteur, réglé par défaut avec l'application « cid » / « SEC-RET » du faux Twitch. `settings: {}` : sans application. */
-export function connector({ settings = { appClientId: "cid", appSecret: "SEC-RET" }, siteUrl = "https://example.test", messages = {}, ...rest } = {}) {
-  const ctx = fakeCtx({ moduleId: "twitch-connector", key: CONNECTOR_KEY, settings, siteUrl, messages, logEvents: manifest.logEvents, ...rest });
+export function connector({ settings = { appClientId: "cid", appSecret: "SEC-RET" }, siteUrl = "https://example.test", messages = {}, rows = {}, ...rest } = {}) {
+  // Since 1.8 the application (Client ID and secret) lives in the connector's own storage, typed in the "Modify" window: `settings.appClientId` / `appSecret` seed that document.
+  const { appClientId, appSecret, ...other } = settings;
+  const app = appClientId || appSecret ? { twitchApp: [{ ...(appClientId ? { clientId: appClientId } : {}), ...(appSecret ? { clientSecret: appSecret } : {}), carried: [] }] } : {};
+  const ctx = fakeCtx({ moduleId: "twitch-connector", key: CONNECTOR_KEY, settings: other, siteUrl, messages, logEvents: manifest.logEvents, rows: { ...app, ...rows }, ...rest });
   const svc = connectorDef.services["twitch.api"];
   const methods = Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](ctx, args)]));
   return { ctx, methods, instance: { instance: CONNECTOR_KEY, name: "Connecteur Twitch", module: "twitch-connector", version: 3, methods }, callback: (req) => connectorDef.routes["oauth/callback"](req, ctx) };

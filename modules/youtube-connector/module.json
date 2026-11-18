@@ -5,7 +5,7 @@
     "en": "YouTube connector",
     "fr": "Connecteur YouTube"
   },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "adminMenu": "Réseaux.YouTube",
   "adminMenuOrder": 10,
   "platform": "youtube",
@@ -52,45 +52,6 @@
   ],
   "settings": [
     {
-      "key": "apiKey",
-      "type": "secret",
-      "optional": true,
-      "label": {
-        "en": "YouTube access code",
-        "fr": "Code d'accès YouTube"
-      },
-      "help": {
-        "en": "Free: create it in a few minutes on console.cloud.google.com (“YouTube Data v3”). Entered once, never shown again.",
-        "fr": "Gratuit : créez-le en quelques minutes sur console.cloud.google.com (« YouTube Data v3 »). Saisi une fois, jamais réaffiché."
-      }
-    },
-    {
-      "key": "oauthClientId",
-      "type": "text",
-      "optional": true,
-      "label": {
-        "en": "Google client ID (YouTube account)",
-        "fr": "ID client Google (compte YouTube)"
-      },
-      "help": {
-        "en": "Only to connect your YouTube account (see the steps above). It ends with .apps.googleusercontent.com.",
-        "fr": "Seulement pour connecter votre compte YouTube (voir les étapes ci-dessus). Il se termine par .apps.googleusercontent.com."
-      }
-    },
-    {
-      "key": "oauthClientSecret",
-      "type": "secret",
-      "optional": true,
-      "label": {
-        "en": "Google client secret (YouTube account)",
-        "fr": "Code secret du client Google (compte YouTube)"
-      },
-      "help": {
-        "en": "The secret code shown next to the client ID. Entered once, never shown again.",
-        "fr": "Le code secret affiché à côté de l'ID client. Saisi une fois, jamais réaffiché."
-      }
-    },
-    {
       "key": "dailyBudget",
       "type": "number",
       "default": 9000,
@@ -114,10 +75,24 @@
         "fr": "Laisser le site répondre dans le chat de votre direct"
       },
       "help": {
-        "en": "Off by default. When on, the site may write short messages in your live chat (for example “Everything is off.”) when another feature asks for it. Google will ask your permission to write in your chat when you connect your account (a new connection is needed after switching this on). You can switch it off or disconnect at any time.",
-        "fr": "Désactivé par défaut. Activé, le site peut écrire de courts messages dans le chat de votre direct (par exemple « Tout est coupé. ») quand une autre fonction le demande. Google vous demandera l'autorisation d'écrire dans votre chat quand vous connecterez votre compte (une nouvelle connexion est nécessaire après l'avoir activé). Vous pouvez le couper ou vous déconnecter à tout moment."
+        "en": "When on, the site writes short messages in your live chat when another feature asks. Example: “Everything is off.” Then reconnect your account so that Google asks for the permission to write.",
+        "fr": "Activé, le site écrit de courts messages dans le chat de votre direct, quand une autre fonction le demande. Exemple : « Tout est coupé. » Reconnectez ensuite votre compte pour que Google demande l'autorisation d'écrire."
       }
     }
   ],
-  "minCore": "0.2.2"
+  "legacySettings": [
+    {
+      "key": "apiKey",
+      "secret": true
+    },
+    {
+      "key": "oauthClientId"
+    },
+    {
+      "key": "oauthClientSecret",
+      "secret": true
+    }
+  ],
+  "dataVersion": 2,
+  "minCore": "0.36.0"
 }
