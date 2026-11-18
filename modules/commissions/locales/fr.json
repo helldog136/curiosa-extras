@@ -205,7 +205,7 @@
   "okDeleted": "Demande supprimée.",
   "bookNote": "Commande « {formula} » demandée par le formulaire du site.",
   "formulasHelp": "Vos formules s'affichent sur la page des commandes, dans cet ordre. Les prix sont indicatifs : le module ne gère jamais d'argent.",
-  "formulasNone": "Vous n'avez pas encore de formule. Ce n'est pas obligatoire : sans formule, le formulaire ne propose pas de choix.",
+  "formulasNone": "Vous n'avez pas encore de formule.",
   "colName": "Nom",
   "formulaDeleteConfirm": "Supprimer cette formule ? Les demandes déjà reçues gardent son nom.",
   "formulasMax": "Vous avez déjà {n} formules, c'est le maximum. Supprimez-en une pour en ajouter.",

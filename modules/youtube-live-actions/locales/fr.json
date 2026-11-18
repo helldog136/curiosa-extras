@@ -7,7 +7,7 @@
   "st_unverified": "Je n'arrive pas à vérifier votre chaîne YouTube pour l'instant. Je réessaie tout seul tant que la page est ouverte.",
   "st_budget": "Pause : la part de la limite YouTube prévue pour aujourd'hui ({percent} %) est utilisée. La lecture reprend {when}.",
   "st_no_chat": "Votre direct {title} n'a pas de chat : il n'y a rien à lire.",
-  "st_idle": "Pas de direct YouTube en ce moment. Je revérifie chaque minute tant que cette page reste ouverte.",
+  "st_idle": "Pas de direct YouTube en ce moment.",
   "st_reading": "Je lis le chat de votre direct {title}. Dernière lecture : {when}.",
   "st_just_now": "à l'instant",
   "st_starting": "Je vérifie votre direct…",
@@ -164,5 +164,7 @@
   "chat_started": "Tout est repris.",
   "st_connect": "Connectez votre compte YouTube dans le Connecteur YouTube. YouTube ne laisse pas lire ce chat avec le seul code d'accès du site.",
   "connect_link": "Ouvrir le Connecteur YouTube",
-  "res_alert_only": "Affiché en alerte seulement (pas de Home Assistant)"
+  "res_alert_only": "Affiché en alerte seulement (pas de Home Assistant)",
+  "jr_col": "Journal",
+  "jr_clear_confirm": "Vider le journal ? Ses {n} évènements sont effacés."
 }

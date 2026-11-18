@@ -80,7 +80,7 @@
   "tab_pending": "À valider ({count})",
   "tab_approved": "Publiés ({count})",
   "tab_rejected": "Refusés ({count})",
-  "bannerPending": "{count} avis attendent votre lecture. Rien n'est publié tant que vous ne l'avez pas décidé.",
+  "bannerPending": "Avis à lire : {count}.",
   "status_pending": "À valider",
   "status_approved": "Publié",
   "status_rejected": "Refusé",

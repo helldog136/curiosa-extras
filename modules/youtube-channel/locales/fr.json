@@ -16,7 +16,6 @@
   "err_config_channel": "YouTube ne trouve pas cette chaîne : vérifiez le code de la chaîne dans Réglages (il commence par UC).",
   "err_config_connector": "Pour suivre vos statistiques, il faut le code d'accès YouTube du site. Installez ce qui est proposé ci-dessus, puis ajoutez-y votre code.",
   "suggest_reason": "garde le code d'accès YouTube du site, et ajoute vos chiffres, les durées exactes et la détection des Shorts",
-  "key_waiting": "Votre code d'accès YouTube est gardé en sécurité. Dès que c'est installé, il sera repris tout seul, sans rien retaper.",
   "events_note": "Seuls les directs et premières publics sont visibles. Une vidéo privée programmée ne peut pas être vue avec le code d'accès du site : pour l'annoncer, écrivez l'événement vous-même.",
   "events_setup_channel": "Pour voir vos vidéos programmées, renseignez le code de votre chaîne (il commence par UC) dans ses réglages.",
   "events_setup_connector": "Pour voir vos vidéos et directs programmés, il faut le code d'accès YouTube du site. Installez ce que propose la page de la chaîne YouTube, puis ajoutez-y votre code.",

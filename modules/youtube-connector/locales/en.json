@@ -10,7 +10,7 @@
   "when_later": "on {date} at {hour}",
   "acc_title": "YouTube account (optional)",
   "acc_intro": "Connecting your YouTube account is for two things. It lets you **answer in the chat** of your live, if you allow it in the advanced options. It also lets you **read the chat** if YouTube refuses to let the site read it alone. You only do it once, and you can disconnect with one click.",
-  "acc_none": "No YouTube account is connected. It is not needed to read your channel's numbers. Follow these 4 steps only to answer in the chat. Do it also if YouTube refuses to let the chat be read.",
+  "acc_none": "No YouTube account is connected. Only needed to answer in the chat, or if YouTube refuses to let it be read.",
   "acc_steps_title": "Getting started, once (about 10 minutes)",
   "acc_steps_note": "If a name has changed at Google, look for the words in bold: Google's screens change over time.",
   "acc_steps_again": "See the 4 getting-started steps again",

@@ -61,7 +61,6 @@ export async function addBlocks(ctx, src, query) {
   out.push({ type: "heading", text: t("add_title") });
   if (src.state !== "ok" && BLOCKING.has(src.problem)) { out.push({ type: "markdown", text: t("add_blocked") }); return out; }
   out.push({ type: "markdown", text: t("add_help") });
-  if (src.state !== "ok" || !src.category) out.push({ type: "banner", tone: "info", text: t("add_will_create", { label: source.defaultName(ctx) }) });
 
   const q = param(query, "add"), who = param(query, "who", 80);
   out.push({ type: "adminForm", action: "find", submitLabel: t("add_btn"), fields: [{ name: "q", label: t("add_label"), kind: "text", help: t("add_field_help"), value: q }] });

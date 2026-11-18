@@ -389,8 +389,6 @@ export default {
 async function adoptedBlocks(ctx) {
   const a = (await firstDoc(ctx, hand.ADOPTED))?.data ?? {};
   if (!text(a.channel) || text(ctx.setting("channel"))) return [];
-  return [
-    { type: "banner", tone: "info", text: ctx.t("adoptedNote", { fields: ctx.t("field_channel") }) },
-    { type: "adminForm", action: "forgetAdopted", submitLabel: ctx.t("forget"), fields: [] },
-  ];
+  // One word in a table (the detail is a tooltip); forgetting is a discreet, confirmed row action, not a big button.
+  return [{ type: "table", columns: [ctx.t("adopted_col")], pageSize: 0, rows: [[{ text: ctx.t("adopted_state"), badge: "info", title: ctx.t("adopted_tip") }]], rowIds: ["adopted"], rowActions: [{ label: ctx.t("forget"), action: "forgetAdopted", confirm: ctx.t("forget_confirm"), danger: true }] }];
 }

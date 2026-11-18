@@ -157,7 +157,7 @@
   "dock_paused_note": "Alertes en pause, {n} retenues jusqu'à la reprise.",
   "dock_held": "{n} retenues",
   "dock_cleared": "File vidée : {n} retirées.",
-  "dock_paused_ok": "Alertes en pause. Rien n'est perdu.",
+  "dock_paused_ok": "Alertes en pause.",
   "dock_resumed_ok": "Alertes reprises : {n} sorties.",
   "dock_tested": "Test envoyé.",
   "dock_err_rate": "Trop d'essais. Attendez un peu.",

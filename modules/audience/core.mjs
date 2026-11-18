@@ -426,4 +426,3 @@ export async function participantsPage(ctx, room, cursor, limit = 50) {
   return { items: page.items.filter((r) => !r.data.n).map((r) => ({ id: r.data.k, pseudo: r.data.pseudo ?? null, muted: r.data.muted === true, last: r.data.last })), next: page.next };
 }
 
-export const publicRoom = (r) => ({ key: r.k, label: r.label, count: r.count || 0 });

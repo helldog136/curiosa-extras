@@ -140,5 +140,3 @@ export async function forgetAll(ctx, who) {
   return n;
 }
 
-/** Une ligne lisible du choix (titre et choix, jamais de secret). */
-export const fixSummary = (f) => `${f.title} → ${f.kind === "none" ? "no cover" : f.kind === "image" ? "image" : `${f.name ?? ""} #${f.rawgId ?? ""}`}`.slice(0, 300);

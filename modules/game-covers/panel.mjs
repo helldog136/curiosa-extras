@@ -91,7 +91,8 @@ async function keyBlocks(ctx) {
   const { key, source } = await rawg.keyOf(ctx);
   const blocks = [{ type: "heading", text: ctx.t("sources_title") }, ...(await statusBlocks(ctx))];
   if (!key) blocks.push({ type: "markdown", text: ctx.t("guide") });
-  if (key && source === "adopted") blocks.push({ type: "markdown", text: ctx.t("key_adopted") }, { type: "adminForm", action: "forgetKey", submitLabel: ctx.t("forget_key"), fields: [] });
+  // A picked-up code: one word and a tooltip, forgotten from a discreet confirmed menu (never a big button).
+  if (key && source === "adopted") blocks.push({ type: "table", columns: [ctx.t("key_col")], pageSize: 0, rows: [[{ text: ctx.t("key_state"), badge: "info", title: ctx.t("key_adopted") }]], rowIds: ["key"], rowActions: [{ label: ctx.t("forget_key"), action: "forgetKey", confirm: ctx.t("forget_key_confirm"), danger: true }] });
   if (key) blocks.push({ type: "adminForm", action: "testKey", submitLabel: ctx.t("test_key"), fields: [] });
   blocks.push({ type: "netHealth", items: [{ host: "api.rawg.io", label: ctx.t("health_label") }, { host: "store.steampowered.com", label: ctx.t("health_label_steam") }] });
   return blocks;

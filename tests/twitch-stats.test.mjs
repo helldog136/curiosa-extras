@@ -115,9 +115,9 @@ test("connexion (nouvelle configuration) : retour sur le Connecteur, puis sur la
   assert.equal(res.status, 303);
   assert.equal(res.headers.get("location"), "/admin/instances/id-tw");
   const blocks = await def.adminPanel(ctx);
-  assert.ok(blocks.some((b) => b.type === "banner" && b.tone === "success" && /machaine/.test(b.text)));
-  assert.deepEqual(blocks.find((b) => b.type === "table").rows, [["Followers Twitch", (1234).toLocaleString("fr")]]);
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "disconnect"));
+  const account = blocks.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "disconnect"));
+  assert.ok(account && /machaine/.test(account.rows[0][0].text) && account.rowActions[0].danger && account.rowActions[0].confirm, "le compte connecté et « Déconnecter » discret et confirmé");
+  assert.deepEqual(blocks.find((b) => b.type === "table" && !b.rowActions).rows, [["Followers Twitch", (1234).toLocaleString("fr")]]);
   assert.equal(await ctx.api.store.count("twitchConnection"), 0, "aucun jeton chez Ma Chaîne Twitch");
 });
 

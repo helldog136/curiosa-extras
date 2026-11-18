@@ -432,9 +432,13 @@ test("panneau : guide pas à pas, adresse du Connecteur avec un bouton « Copier
   const C = mk({ settings: {} });
   await C.methods.adopt({ clientId: "cid", clientSecret: "SEC-RET", channel: "machaine", redirectUri: OLD });
   const p = await def.adminPanel(C.ctx);
-  assert.ok(p.some((b) => b.type === "banner" && b.tone === "success"));
+  assert.ok(!p.some((b) => b.type === "banner" && b.tone !== "warning"), "no informational banner: the state is one word in a table");
+  const status = p.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "forgetApp"));
+  assert.ok(status, "the carried-over application is forgotten from a discreet row menu");
+  assert.equal(status.rows[0][0].text, "Reprise");
+  assert.ok(status.rows[0][0].title && status.rowActions[0].danger && status.rowActions[0].confirm, "tooltip for the detail, confirmation that says what is lost");
+  assert.ok(!p.some((b) => b.type === "adminForm" && b.action === "forgetApp"), "no big button");
   assert.ok(p.some((b) => b.type === "table" && JSON.stringify(b.rows).includes(OLD)), "l'ancienne adresse est listée : à garder chez Twitch");
-  assert.ok(p.some((b) => b.type === "adminForm" && b.action === "forgetApp"));
   const health = p.find((b) => b.type === "netHealth");
   assert.deepEqual(health.items.map((i) => i.host), ["api.twitch.tv", "id.twitch.tv"]);
   assert.ok(!JSON.stringify(p).includes("SEC-RET") && !JSON.stringify(p).includes('"cid"'));

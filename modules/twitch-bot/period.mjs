@@ -113,8 +113,6 @@ const dateText = (locale, x, withYear) => {
   const text = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(x.y ?? 2024, x.m - 1, x.d)));
   return String(locale).startsWith("fr") && x.d === 1 ? text.replace(/^1 /, "1er ") : text;   // « 1er novembre »
 };
-/** « Hors période : se réactive le 1er novembre » (ou « la période est terminée »). `now` : pour les tests. */
-export function outsideText(ctx, period, now, timeZone) { return reopenLabel(ctx, nextOpening(period, now, timeZone)); }
 /** La même phrase à partir d'une date de réouverture déjà calculée ({ y, m, d } ou null). */
 export const reopenLabel = (ctx, n) => (n ? ctx.t("per_outside", { date: dateText(ctx.locale, n, true) }) : ctx.t("per_ended"));
 /** Pour le journal : la date de réouverture en texte court « 2026-11-01 » (ou null). */

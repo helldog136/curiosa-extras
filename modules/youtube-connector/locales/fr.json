@@ -10,7 +10,7 @@
   "when_later": "le {date} à {hour}",
   "acc_title": "Compte YouTube (facultatif)",
   "acc_intro": "Connecter votre compte YouTube sert à deux choses. Il permet de **répondre dans le chat** de votre direct, si vous l'autorisez dans les options avancées. Il permet aussi de **lire le chat** si YouTube refuse de le laisser lire avec le seul code d'accès. Vous ne le faites qu'une fois, et vous pouvez vous déconnecter d'un clic.",
-  "acc_none": "Aucun compte YouTube n'est connecté. Ce n'est pas nécessaire pour lire les chiffres de votre chaîne. Suivez ces 4 étapes seulement pour répondre dans le chat. Faites-le aussi si YouTube refuse de laisser lire le chat.",
+  "acc_none": "Aucun compte YouTube n'est connecté. Utile seulement pour répondre dans le chat, ou si YouTube refuse de le laisser lire.",
   "acc_steps_title": "Mise en route, une seule fois (environ 10 minutes)",
   "acc_steps_note": "Si un nom a changé chez Google, cherchez les mots en gras : les écrans de Google évoluent.",
   "acc_steps_again": "Revoir les 4 étapes de mise en route",

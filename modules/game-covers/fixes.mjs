@@ -26,7 +26,6 @@ export const TO_CHECK_DAYS = 60;
 
 /** Le chemin (`/media/…`) d'une adresse d'image RAWG, ou null si elle n'est pas permise (https, hôte `media.rawg.io`, sans port, identifiant, paramètre ni détour). */
 export const rawgImagePath = (input) => hosts.imagePath("rawg", input);
-export const rawgImageUrl = (path) => hosts.imageUrl("rawg", path);
 /** La source d'un document (« rawg » quand elle manque) ; null si elle est inconnue. */
 export const srcOf = (v) => (v?.src === undefined ? "rawg" : hosts.isSource(v.src) ? v.src : null);
 /** L'adresse complète d'une image gardée, pour sa source. */

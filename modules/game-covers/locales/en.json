@@ -1,6 +1,6 @@
 {
   "guide": "Covers are looked up at Rawg, then at Steam, then at Twitch. A Rawg code is optional, but it widens the results.\n\n1. Create a free account on [rawg.io/apidocs](https://rawg.io/apidocs) and copy your access code.\n2. Open the “Settings” tab of this page and paste it in “Free Rawg access code”.\n3. Come back here and click “Test the code”.",
-  "key_adopted": "Your site's access code was picked up automatically: there is nothing for you to redo. To replace it, paste another one in the “Settings” tab.",
+  "key_adopted": "Picked up from your site. The code in the “Settings” tab wins.",
   "forget_key": "Forget the picked-up code",
   "forgot_key": "Done: the picked-up code is forgotten.",
   "test_key": "Test the code",
@@ -118,5 +118,8 @@
   "copy_why_size": "the image is too big (300 KB at most)",
   "copy_why_format": "the file is not a PNG, JPEG or WebP image",
   "copy_why_network": "the image site did not answer",
-  "copy_retry": "Copy the image now"
+  "copy_retry": "Copy the image now",
+  "key_col": "Access code",
+  "key_state": "Picked up",
+  "forget_key_confirm": "Forget the picked-up code? Online covers stop until you paste your own in the “Settings” tab."
 }

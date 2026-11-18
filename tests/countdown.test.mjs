@@ -37,7 +37,7 @@ test("manifeste : valide, widget avec page, droits, outils pour les assistants, 
   assert.ok(r.ok, r.ok ? "" : r.error);
   const m = r.manifest;
   assert.equal(m.id, "countdown");
-  assert.equal(m.version, "1.3.0");
+  assert.equal(m.version, "1.3.1");
   assert.equal(m.minCore, "0.11.0");
   assert.equal(m.apiVersion, 2);
   assert.equal(m.type, "widget");
@@ -284,9 +284,10 @@ test("à la une : un seul à la fois, quel que soit le chemin (case du formulair
 test("supprimer et faire le ménage : seulement ce qu'on désigne", async () => {
   const ctx = ctxFor([inMs(-3 * DAY, { title: "Vieux", slug: "vieux" }), inMs(-4 * DAY, { title: "Très vieux", slug: "tres-vieux" }), inMs(3 * DAY, { title: "Futur", slug: "futur" })]);
   const panel = await mod.adminPanel(ctx, { query: {} });
-  assert.equal(panel.filter((b) => b.type === "table").length, 2, "une liste des événements affichés, une des masqués");
-  const cleanup = panel.find((b) => b.type === "adminForm" && b.action === "cleanup");
-  assert.match(cleanup.submitLabel, /Supprimer ces 2 événements masqués/);
+  assert.equal(panel.filter((b) => b.type === "table" && !b.rowActions?.some((a) => a.action === "cleanup")).length, 2, "une liste des événements affichés, une des masqués");
+  const cleanup = panel.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "cleanup"));
+  assert.match(cleanup.rowActions[0].label, /Supprimer ces 2 événements masqués/);
+  assert.ok(cleanup.rowActions[0].danger && cleanup.rowActions[0].confirm, "discrète et confirmée, pas un gros bouton");
   assert.match((await run(ctx, "cleanup")).ok, /2 événement\(s\) supprimé\(s\)/);
   assert.deepEqual(stored(ctx).map((e) => e.title), ["Futur"]);
   assert.equal((await run(ctx, "remove", { id: stored(ctx)[0].id })).ok, FR.removed);

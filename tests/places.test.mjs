@@ -26,12 +26,12 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 
 /** The Twitch cluster (places rollout, step 4): version after migration, and the sections each one declares (id → place). */
 const MIGRATED = {
-  "alerts-overlay": ["1.20.0", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
-  "twitch-bot": ["1.23.0", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
-  "home-assistant": ["1.3.0", { main: "live.rewards.home" }],
-  "twitch-connector": ["1.7.0", { main: "networks.twitch" }],
-  "twitch-channel": ["2.5.0", { main: "networks.twitch", stats: "networks.stats" }],
-  "twitch-raid": ["2.6.0", { list: "live.raid.list", featured: "live.raid.featured" }],
+  "alerts-overlay": ["1.20.1", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
+  "twitch-bot": ["1.23.1", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
+  "home-assistant": ["1.3.1", { main: "live.rewards.home" }],
+  "twitch-connector": ["1.7.1", { main: "networks.twitch" }],
+  "twitch-channel": ["2.5.1", { main: "networks.twitch", stats: "networks.stats" }],
+  "twitch-raid": ["2.6.1", { list: "live.raid.list", featured: "live.raid.featured" }],
 };
 /** The last release before the migration: what the sites run (or update from). */
 const BEFORE = "v1.95.1";

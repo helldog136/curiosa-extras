@@ -160,7 +160,7 @@ const GOLDEN = {
         "overlayItem": "cae58c6fb6a61775",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "750486b3e0e18b3e"
+        "admin": "4bbd1d675cd75c00"
       },
       "slow-fr": {
         "main": "41d1b3b2eebdcc2d",
@@ -175,7 +175,7 @@ const GOLDEN = {
         "overlayItem": "a5d2a7e99e43787c",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "c7db373958afa187"
+        "admin": "2396491003b96769"
       },
       "grid-fr": {
         "main": "30bb0b500b5d2f36",
@@ -190,7 +190,7 @@ const GOLDEN = {
         "overlayItem": "a5d2a7e99e43787c",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "ca5c1f73ec741848"
+        "admin": "9921cf1a4465518d"
       }
     }
   },
@@ -220,7 +220,7 @@ const GOLDEN = {
         "lines": "a9868ed5f3d02f91",
         "js": "82346ba7741261ce",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "7ff4235fd85830b4",
+        "admin": "3b477adb7bcfe2d5",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       },
@@ -233,7 +233,7 @@ const GOLDEN = {
         "lines": "fd2e39c77a231d53",
         "js": "2cb5bd46390d87c1",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "2d4f5233306278e3",
+        "admin": "967a13e24ab955e4",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       }

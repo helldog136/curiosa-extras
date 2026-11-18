@@ -114,7 +114,6 @@ export function slugify(question, rand = Math.random) {
   return RESERVED.has(slug) ? `${slug}-x` : slug;
 }
 
-export const choiceIds = (n) => Array.from({ length: n }, (_, i) => `c${i + 1}`);
 
 /** État d'un sondage À LA LECTURE : jamais de minuteur en arrière-plan. */
 export function stateOf(poll, now = Date.now()) {
