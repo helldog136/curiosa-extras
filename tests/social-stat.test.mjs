@@ -8,6 +8,9 @@ import { problemsOf, problemsOfList } from "./helpers/socialStatContract.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 import { makeConnector, connectorApi } from "./helpers/fakeYoutube.mjs";
 import { fakeResolver, PUBLIC_V4, PUBLIC_V6 } from "./helpers/fakeResolver.mjs";
+/** R33 : le panneau des chiffres est un texte « **libellé** : valeur » par ligne (ou le seul message quand tous les chiffres disent la même chose) (plus de tableau à deux colonnes pour un ou deux chiffres) ; on le relit comme un tableau. */
+const asTable = (blocks) => { const b = blocks.find((x) => x.type === "markdown"); return b && { rows: b.text.split("\n\n").map((l) => { const m = /^\*\*(.+?)\*\* : (.*)$/s.exec(l); return m ? [m[1], m[2]] : [null, l]; }) }; };
+
 
 const root = new URL("../modules/", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${root}${p}`, "utf8"));
@@ -111,9 +114,16 @@ test("textes : fr et en alignés, toutes les clés utilisées existent, libellé
   }
 });
 
+test("R33 : les messages d'état disent l'état, sans réassurance ni promesse (« rien à faire », « on réessaie », « cela reprendra »)", () => {
+  for (const id of ids) for (const lang of ["fr", "en"]) for (const k of ["err_rate", "err_network"]) {
+    assert.ok(!/rien à faire|nothing to do|automatiquement|automatically|reprendra|resume|réessaie|try again/i.test(mods[id][lang][k]), `${id}.${lang}.${k} : ${mods[id][lang][k]}`);
+  }
+  for (const id of ids) for (const lang of ["fr", "en"]) for (const k of ["stats_title", "col_stat", "col_value", "stats_note"]) assert.equal(mods[id][lang][k], undefined, `${id}.${lang}.${k} : retiré (R33 : un titre et deux colonnes pour un chiffre ne disent rien)`);
+});
+
 test("chaque erreur dit quoi faire (phrases exactes demandées pour YouTube)", () => {
   const yt = mods["youtube-channel"].fr;
-  assert.equal(yt.err_hidden, "YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio.");
+  assert.equal(yt.err_hidden, "YouTube masque votre nombre de followers : rendez-le public dans YouTube Studio.");
   assert.equal(yt.err_auth, "Le code d'accès YouTube est refusé : vérifiez-le dans Réglages, sur la page du connecteur YouTube du site.");
   assert.match(yt.err_config_key, /ajoutez votre code d'accès YouTube dans Réglages/);
   for (const id of ids) for (const k of Object.keys(mods[id].fr).filter((k) => /^err_/.test(k))) assert.match(mods[id].fr[k], /\p{L}+.*[.]$/su, `${id}.${k} : phrase complète`);
@@ -166,7 +176,7 @@ for (const id of ids) {
       answer = () => (status === 200 ? reply(200, { items: [] }) : reply(status, { error: { message: "introuvable" } }));
       const items = await statOf(id, ctxOf(id));
       assert.ok(items.every((i) => i.error === "config" && !("value" in i)), `${status}`);
-      const table = (await def(id).adminPanel(ctxOf(id))).find((b) => b.type === "table");
+      const table = asTable((await def(id).adminPanel(ctxOf(id))));
       for (const row of table.rows) assert.ok(Object.values(mods[id].fr).includes(row[1]), `${id} : « ${row[1]} » doit venir des textes du module`);
     }
   });
@@ -200,7 +210,7 @@ for (const id of ids) {
     answer = happy();
     assert.equal((await statOf(id, ctxOf(id), { limit: 1 })).length, 1);
     const panel = await def(id).adminPanel(ctxOf(id));
-    const table = panel.find((b) => b.type === "table");
+    const table = asTable(panel);
     assert.deepEqual(table.rows.map((r) => r[0]), P.labels.fr);
     assert.equal(table.rows[0][1], P.values.followers.toLocaleString("fr"));
   });
@@ -226,8 +236,8 @@ test("YouTube : compteur d'abonnés caché → abonnés en error « hidden » SA
   const items = await statOf("youtube-channel", ctxOf("youtube-channel"));
   assert.deepEqual(problemsOfList(items, { module: "youtube-channel" }), []);
   assert.deepEqual(items.map((i) => [i.metric, i.error ?? i.value]), [["followers", "hidden"], ["content", 5], ["views", 100]]);
-  const rows = (await def("youtube-channel").adminPanel(ctxOf("youtube-channel"))).find((b) => b.type === "table").rows;
-  assert.equal(rows[0][1], "YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio.");
+  const rows = asTable((await def("youtube-channel").adminPanel(ctxOf("youtube-channel")))).rows;
+  assert.equal(rows[0][1], "YouTube masque votre nombre de followers : rendez-le public dans YouTube Studio.");
   // abonnés ni cachés ni donnés : même chose (jamais 0 inventé)
   reset("youtube-channel");
   answer = () => reply(200, { items: [{ id: YT, statistics: { viewCount: "100", videoCount: "5", hiddenSubscriberCount: false } }] });
@@ -245,13 +255,14 @@ test("YouTube : compteur d'abonnés caché → abonnés en error « hidden » SA
 test("YouTube : sans connecteur ou sans clé → « config » + message d'aide, AUCUNE requête, le reste du module ne casse pas ; clé refusée → auth ; quota → rate", async () => {
   const noConnector = fakeCtx({ key: "inst", locale: "fr", messages: mods["youtube-channel"].fr, settings: { trackStats: true, channelId: YT } });
   assert.deepEqual((await statOf("youtube-channel", noConnector)).map((i) => [i.error, "value" in i]), [["config", false], ["config", false], ["config", false]]);
-  assert.match((await def("youtube-channel").adminPanel(noConnector)).find((b) => b.type === "table").rows[0][1], /il faut le code d'accès YouTube du site/);
+  assert.match(asTable((await def("youtube-channel").adminPanel(noConnector))).rows[0][1], /il faut le code d'accès YouTube du site/);
+  assert.equal(asTable(await def("youtube-channel").adminPanel(noConnector)).rows.length, 1, "trois chiffres qui disent la même chose : une seule ligne (R33, pas de doublon)");
   resetYt({ apiKey: null });
   const noKey = ctxOf("youtube-channel");
   const items = await statOf("youtube-channel", noKey);
   assert.deepEqual(items.map((i) => [i.metric, i.error, "value" in i]), [["followers", "config", false], ["content", "config", false], ["views", "config", false]]);
   assert.equal(calls.length, 0);
-  assert.match((await def("youtube-channel").adminPanel(noKey)).find((b) => b.type === "table").rows[0][1], /ajoutez votre code d'accès YouTube dans Réglages/);
+  assert.match(asTable((await def("youtube-channel").adminPanel(noKey))).rows[0][1], /ajoutez votre code d'accès YouTube dans Réglages/);
   assert.deepEqual((await def("youtube-channel").exports["social.link"](noKey)).map((x) => x.icon), ["youtube"], "le bouton marche toujours");
   for (const [status, body, error] of [
     [400, { error: { code: 400, message: "API key not valid", errors: [{ reason: "keyInvalid" }] } }, "auth"],
@@ -379,10 +390,10 @@ test("Discord : le nombre de membres vient de l'invitation (with_counts) ; le li
   const none = await statOf("discord", ctxOf("discord", { profile: "https://discord.com/channels/1/2" }));
   assert.deepEqual(none.map((i) => [i.error, "value" in i]), [["config", false]]);
   assert.equal(calls.length, 0);
-  assert.match((await def("discord").adminPanel(ctxOf("discord", { profile: "https://discord.com/channels/1/2" }))).find((b) => b.type === "table").rows[0][1], /Ajoutez le lien d'invitation/);
+  assert.match(asTable((await def("discord").adminPanel(ctxOf("discord", { profile: "https://discord.com/channels/1/2" })))).rows[0][1], /Ajoutez le lien d'invitation/);
   // invitation expirée
   mods.discord.mod.resetCache(); answer = () => reply(404, { message: "Unknown Invite", code: 10006 });
-  assert.match((await def("discord").adminPanel(ctxOf("discord"))).find((b) => b.type === "table").rows[0][1], /n'existe plus/);
+  assert.match(asTable((await def("discord").adminPanel(ctxOf("discord")))).rows[0][1], /n'existe plus/);
   // nombre absent → hidden, jamais 0
   mods.discord.mod.resetCache(); answer = () => reply(200, { guild: { name: "X" } });
   assert.deepEqual((await statOf("discord", ctxOf("discord"))).map((i) => [i.error, "value" in i]), [["hidden", false]]);
