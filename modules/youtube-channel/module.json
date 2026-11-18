@@ -158,12 +158,8 @@
         "fr": "Code de la chaîne YouTube"
       },
       "help": {
-        "en": "In YouTube Studio: Channel, Advanced settings",
-        "fr": "Dans YouTube Studio : Chaîne, Paramètres avancés"
-      },
-      "example": {
-        "en": "UCabc123",
-        "fr": "UCabc123"
+        "en": "For example UCabc123 (YouTube Studio: Advanced settings)",
+        "fr": "Par exemple UCabc123 (YouTube Studio : Paramètres avancés)"
       },
       "refersTo": "external"
     },
