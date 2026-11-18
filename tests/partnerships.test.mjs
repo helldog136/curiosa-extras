@@ -207,7 +207,7 @@ test("adminPanel : vue d'ensemble vide → message, mention privée et formulair
   const blocks = await def.adminPanel(ctxFor("en"), { query: {} });
   assert.equal(blocks[0].type, "markdown");
   assert.match(blocks[0].text, /Private/);
-  assert.ok(blocks.some((b) => b.type === "markdown" && /^No partner yet/.test(b.text)));
+  assert.ok(blocks.some((b) => b.type === "markdown" && /^No partner\./.test(b.text)));
   assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), ["importPartners"], "no inline form: adding opens a window");
   const link = find(blocks, "links")[0].items[0];
   assert.deepEqual([link.href, link.presentation], ["?new=1", "dialog"]);

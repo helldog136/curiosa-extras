@@ -62,7 +62,7 @@
   "fWhere": "Place or platform (optional)",
   "fWhereHelp": "Example: Twitch, or Paris Expo.",
   "fZone": "Event time zone",
-  "fZoneHelp": "Summer and winter time are handled for you. Your visitors will see the time where they live.",
+  "fZoneHelp": "Your visitors see the time where they live.",
   "fZoneOther": "Other time zone (official name)",
   "fZoneOtherHelp": "Only if it is missing from the list, for example Asia/Kolkata. It replaces the choice above.",
   "featuredDone": "“{name}” is now featured.",
@@ -85,7 +85,7 @@
   "linkPage": "Address of this event’s page",
   "listTitle": "Shown on the site",
   "localTemplate": "{when}, your time",
-  "moreOptionsHint": "To add an end message, a description, a place or an image, click “Edit” next to your event.",
+  "moreOptionsHint": "End message, description, place and image: “Edit” next to your event.",
   "nextPage": "Next page",
   "notFound": "This event no longer exists. It may have been deleted.",
   "noteFold": "This time happens twice that day (clocks go back): the first one is used.",
@@ -118,7 +118,7 @@
   "unit_s": "second|seconds",
   "upcomingTitle": "Upcoming events",
   "whereLabel": "Where:",
-  "whereToShow": "To show a countdown on your home page: open “Home page” in the menu, then add the “Featured countdown” piece. For your stream, paste in OBS the address shown in the “My events” tab. The look, place and size below only apply to OBS.",
+  "whereToShow": "Home page: add the “Featured countdown” piece from “Home page” in the menu. Stream: paste in OBS the address of the “My events” tab. The look, place and size below only apply to OBS.",
   "overlayDemo": "Example: the big launch",
   "cleanupConfirm": "Delete these {n} hidden events? They are removed for good."
 }

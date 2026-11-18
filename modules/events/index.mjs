@@ -26,7 +26,7 @@ const L = await import(`./links.mjs${q}`);
 const EL = await import(`./element.mjs${q}`);
 
 /** Doit rester égale à `version` de module.json (vérifié par les tests). */
-export const VERSION = "1.5.0";
+export const VERSION = "1.5.1";
 
 const notFound = { notFound: true, blocks: [] };
 const readOnly = (request) => request.method === "GET" || request.method === "HEAD";

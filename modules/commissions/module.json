@@ -5,7 +5,7 @@
     "en": "Commissions",
     "fr": "Commandes"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "menuGroup": "community",
   "minCore": "0.2.5",
   "description": {
@@ -99,8 +99,8 @@
         "en": "Introduction"
       },
       "help": {
-        "fr": "Affiché en haut de la page : ce que vous créez, votre style, ce que vous refusez de faire. Vous pouvez mettre du gras avec **mot**.",
-        "en": "Shown at the top of the page: what you make, your style, what you do not do. You can make words bold with **word**."
+        "fr": "Affiché en haut. Par exemple : mon style. **mot** met en gras.",
+        "en": "Shown at the top. For example: my style. **word** makes bold."
       }
     },
     {
@@ -112,8 +112,8 @@
         "en": "E-mail me when a request arrives"
       },
       "help": {
-        "fr": "Un seul message par heure au plus, même s'il arrive plusieurs demandes. Demande l'envoi d'e-mails réglé dans les Réglages du site ; sans lui, la pastille du menu vous prévient.",
-        "en": "At most one message per hour, even if several requests arrive. Needs e-mail sending set up in the site settings; without it, the badge in the menu tells you."
+        "fr": "Au plus un e-mail par heure. Demande l'envoi d'e-mails réglé dans les Réglages du site.",
+        "en": "At most one e-mail per hour. Needs e-mail sending set up in the site settings."
       }
     },
     {
@@ -125,8 +125,8 @@
         "en": "Offer e-mails to customers"
       },
       "help": {
-        "fr": "Si le site sait envoyer des e-mails, la personne qui commande peut cocher « me prévenir » : une confirmation lui donne son lien de suivi, puis un court message arrive à chaque changement d'état. Sans e-mails réglés, rien ne change : le suivi se fait avec ce lien.",
-        "en": "If the site can send e-mails, the customer can tick \"let me know\": they get a confirmation with their tracking link, then a short message each time the state changes. Without e-mails set up, nothing changes: they follow their request with their link."
+        "fr": "La personne peut cocher « me prévenir » : elle reçoit son lien de suivi, puis un e-mail à chaque changement d'état. Demande l'envoi d'e-mails réglé dans les Réglages du site.",
+        "en": "The customer can tick \"let me know\": they get their tracking link, then an e-mail each time the state changes. Needs e-mail sending set up in the site settings."
       }
     },
     {
@@ -138,8 +138,8 @@
         "en": "Show each customer their place in the queue"
       },
       "help": {
-        "fr": "Sur sa page de suivi : « 2 commandes avant la vôtre ». Cela dit indirectement combien de commandes vous avez en cours.",
-        "en": "On their tracking page: \"2 requests before yours\". This tells indirectly how many requests you have in progress."
+        "fr": "Sur sa page de suivi : « 2 commandes avant la vôtre ».",
+        "en": "On their tracking page: \"2 requests before yours\"."
       }
     },
     {

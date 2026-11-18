@@ -5,7 +5,7 @@
     "fr": "Compte à rebours",
     "en": "Countdown"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "menuGroup": "content",
   "minCore": "0.11.0",
   "description": {
@@ -375,8 +375,8 @@
         "en": "My time zone"
       },
       "help": {
-        "fr": "C'est le fuseau des heures que vous écrivez. Le passage à l'heure d'été et d'hiver est géré tout seul. Vous pouvez choisir un autre fuseau pour un événement précis.",
-        "en": "This is the time zone of the times you write. Summer and winter time changes are handled for you. You can pick another zone for a single event."
+        "fr": "Fuseau des heures que vous écrivez. Chaque événement peut avoir le sien.",
+        "en": "Time zone of the times you write. Each event can have its own."
       }
     },
     {

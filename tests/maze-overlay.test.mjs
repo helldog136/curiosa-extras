@@ -460,7 +460,7 @@ test("tracé : panneau d'admin — un seul éditeur (aucun formulaire séparé) 
   const editor = some.find((b) => b.type === "gridEditor");
   assert.deepEqual([editor.action, editor.width, editor.height, editor.cells, editor.palette.map((p) => p.value)], ["saveMap", 5, 5, grid5, ["0", "1", "2", "3"]]);
   assert.deepEqual([editor.autoActive, editor.generateAction, editor.generateLabel, editor.autoLabel], [false, "generate", "Generate a new random layout", "Delete the layout and randomize at every display"]);
-  assert.match(editor.autoNotice, /Nothing changes until you save/);
+  assert.match(editor.autoNotice, /generated at random each time/);
   assert.ok(editor.labels.generateError);
   assert.equal(some.filter((b) => b.type === "markdown").length, 1);
   assert.match(some.find((b) => b.type === "markdown").text, /Custom layout in use/);
@@ -472,7 +472,7 @@ test("tracé : textes fr — libellés demandés par le propriétaire", () => {
   assert.equal(fr.generateAgain, "Générer un nouveau tracé au hasard");
   assert.equal(fr.generate, "Générer un tracé au hasard à retoucher");
   assert.equal(fr.clear, "Supprimer le tracé et randomiser à chaque affichage");
-  assert.equal(fr.autoNotice, "Le labyrinthe sera généré au hasard à chaque affichage. Rien n'est changé tant que vous n'avez pas enregistré.");
+  assert.equal(fr.autoNotice, "Le labyrinthe est généré au hasard à chaque affichage.");
   assert.equal(fr.saved, "Tracé enregistré.");
   assert.equal(fr.cleared, "Retour au tracé automatique.");
   assert.equal(fr.lblReset, "Annuler les modifications");
@@ -480,7 +480,7 @@ test("tracé : textes fr — libellés demandés par le propriétaire", () => {
 
 test("manifeste : le tracé dépend du bloc gridEditor (cœur 0.2.2) ; l'élément de page d'overlay demande le cœur 0.5.0 (1.2.0)", () => {
   assert.equal(manifestJson.minCore, "0.5.0");
-  assert.equal(manifestJson.version, "1.3.0");
+  assert.equal(manifestJson.version, "1.3.1");
 });
 
 test("tracé : la page de l'overlay le réclame au démarrage (route /map), main.js retombe sur un tracé automatique s'il est invalide", () => {

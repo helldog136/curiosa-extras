@@ -5,7 +5,7 @@
     "en": "Contact form",
     "fr": "Formulaire de contact"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "menuGroup": "community",
   "main": "index.mjs",
   "description": {
@@ -79,8 +79,8 @@
         "fr": "Me prévenir par e-mail à chaque message"
       },
       "help": {
-        "en": "Sent to the site's contact address. Needs the email server set in Settings; messages are always kept in your contacts.",
-        "fr": "Envoyé à l'adresse de contact du site. Demande le serveur d'e-mail réglé dans les Réglages ; les messages restent toujours dans vos contacts."
+        "fr": "Envoyé à l'adresse de contact du site. Demande l'envoi d'e-mails réglé dans les Réglages du site.",
+        "en": "Sent to the site's contact address. Needs e-mail sending set up in the site settings."
       }
     }
   ],

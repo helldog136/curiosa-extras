@@ -5,7 +5,7 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
   "menuGroup": "community",
   "minCore": "0.11.0",
   "description": {
@@ -253,8 +253,8 @@
         "en": "E-mail me for each new review"
       },
       "help": {
-        "fr": "Envoyé à l'adresse de contact du site. Demande le serveur d'e-mail réglé dans les Réglages ; les avis arrivent de toute façon ici.",
-        "en": "Sent to the site's contact address. Needs the e-mail server set in Settings; the reviews arrive here anyway."
+        "fr": "Envoyé à l'adresse de contact du site. Demande l'envoi d'e-mails réglé dans les Réglages du site.",
+        "en": "Sent to the site's contact address. Needs e-mail sending set up in the site settings."
       }
     },
     {

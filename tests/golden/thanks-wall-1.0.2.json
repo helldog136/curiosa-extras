@@ -803,7 +803,7 @@
   },
   {
    "type": "markdown",
-   "text": "Écrivez un petit message sous le nom d'une personne (160 caractères au plus). Il est gardé ici, rattaché à sa fiche : il suit la fiche si elle est fusionnée et disparaît si elle est supprimée. Messages écrits : 1 sur 5 personnes."
+   "text": "Un petit message sous le nom d'une personne (160 caractères au plus). Il suit sa fiche si elle est fusionnée et disparaît si elle est supprimée. Messages écrits : 1 sur 5 personnes."
   },
   {
    "type": "table",
@@ -853,7 +853,7 @@
   },
   {
    "type": "markdown",
-   "text": "Si une fiche a été fusionnée avec une autre dans Contacts, ou supprimée, ce bouton fait suivre vos messages et mises à l'honneur, ou retire ceux d'une fiche supprimée."
+   "text": "Après une fusion ou une suppression de fiches dans Contacts. Vos messages et mises à l'honneur suivent la fiche fusionnée ; ceux d'une fiche supprimée sont retirés."
   },
   {
    "type": "adminForm",

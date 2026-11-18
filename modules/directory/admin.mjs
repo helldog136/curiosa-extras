@@ -70,11 +70,11 @@ function statusBlocks(ctx, model, view, data, contactsPath) {
   const t = ctx.t, out = [];
   if (model.state === "slow") out.push({ type: "banner", tone: "warning", text: t("adminSlow") });
   else if (model.state === "absent") out.push({ type: "banner", tone: "warning", text: t("adminNoBook") }, { type: "suggestInstall", service: C.SERVICE, min: 2, reason: t("suggestReason") });
-  else if (model.state === "unready") out.push({ type: "banner", tone: "info", text: t(`adminUnready_${model.reason}`) });
+  else if (model.state === "unready") out.push({ type: "banner", tone: "warning", text: t(`adminUnready_${model.reason}`) });
   else {
     if (model.stale) out.push({ type: "banner", tone: "warning", text: t("adminStale") });
     if (model.partial) out.push({ type: "banner", tone: "warning", text: t("adminPartial") });
-    if (model.truncated) out.push({ type: "banner", tone: "info", text: t("adminTruncated", { max: LIMITS.perCategory, all: LIMITS.indexMax }) });
+    if (model.truncated) out.push({ type: "banner", tone: "warning", text: t("adminTruncated", { max: LIMITS.perCategory, all: LIMITS.indexMax }) });
     if (model.hideHow === "gone") out.push({ type: "banner", tone: "warning", text: t("adminHideGone"), href: "?tab=settings" });
     if (model.consentState === "gone") out.push({ type: "banner", tone: "warning", text: t("adminConsentGone"), href: "?tab=settings" });
     if (model.mapState === "gone") out.push({ type: "banner", tone: "warning", text: t("adminMapGone"), href: "?tab=settings" });

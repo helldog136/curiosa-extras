@@ -22,6 +22,6 @@
   "lblBorder": "Cadre",
   "lblReset": "Annuler les modifications",
   "lblHint": "Choisissez un pinceau puis cliquez ou glissez sur les cases.",
-  "autoNotice": "Le labyrinthe sera généré au hasard à chaque affichage. Rien n'est changé tant que vous n'avez pas enregistré.",
+  "autoNotice": "Le labyrinthe est généré au hasard à chaque affichage.",
   "generateError": "Impossible de générer un tracé."
 }

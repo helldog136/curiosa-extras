@@ -84,7 +84,7 @@
   "status_pending": "À valider",
   "status_approved": "Publié",
   "status_rejected": "Refusé",
-  "emptyAdmin": "Aucun avis pour l'instant. Partagez le lien « Laisser un avis » (onglet Partager) : les avis arriveront ici, dans « À valider ».",
+  "emptyAdmin": "Aucun avis. Partagez le lien « Laisser un avis » (onglet Partager) : les avis arrivent dans « À valider ».",
   "emptyFilter": "Aucun avis ne correspond à ce filtre.",
   "colDate": "Date",
   "colName": "Prénom ou pseudo",

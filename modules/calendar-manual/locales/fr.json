@@ -5,7 +5,7 @@
   "no": "Non",
   "intro": "Écrivez ici vos streams : ils s'affichent sur votre site (le planning, le bot du chat…) dès que vous enregistrez. Les heures sont celles du fuseau {tz}.",
   "listTitle": "Vos streams ({n})",
-  "none": "Aucun stream pour l'instant. Remplissez le formulaire ci-dessous.",
+  "none": "Aucun stream. Remplissez le formulaire ci-dessous.",
   "colWhen": "Quand",
   "colTitle": "Titre",
   "colGames": "Jeux",

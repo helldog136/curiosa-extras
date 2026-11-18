@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.100.1 — 2026-11-18
+
+*En bref : les pages d'administration de 26 extensions n'affichent plus que ce qui sert : plus de phrases de réassurance, de conditions du type « si ce n'est pas déjà fait » ni de lignes en double. Rien d'autre ne change.*
+
+*In short: the admin pages of 26 extensions now show only what is useful: no more reassurance sentences, no "if not already done" conditions and no duplicate lines. Nothing else changes.*
+
+### Améliorations
+
+- **Textes exacts, sans remplissage.** Participation, Calendrier manuel, Commandes, Formulaire de contact, Contacts, Cahier de contenu, Comptes à rebours, Jeu du jour, Annuaire, Événements, Questions fréquentes, Galeries, Suggestions de jeux, Boîte à idées, Mentions légales, Carte, Mascotte, Overlay labyrinthe, Partenaires, Planning, Liens de plateformes, Sondages, Story d'annonce, Témoignages, Mur des remerciements et Vidéothèque : chaque phrase affichée dit un état exact ou une action ; les « rien n'est perdu », « ce n'est pas grave », « tout seul » et les doublons sont retirés. Les avertissements qui évitent une perte restent.
+- **Planning** dit d'où viennent les streams quand la liste est vide, sans question « c'est déjà fait ? ».
+- **Avertissements au bon ton.** Les messages qui demandent une action (Contacts injoignable, maximum atteint, albums sans description…) sont des avertissements, et le rappel « idées à relire » de la Boîte à idées mène à la liste concernée.
+
+### Pour les développeurs
+
+- Correctif de texte seulement : `dataVersion`, `minCore` et `apiVersion` ne bougent pas. Version +0.0.1 pour chaque extension touchée.
+- `tests/banners-baseline.json` passe de 70 à 51 entrées, `tests/ergonomics-baseline.json` de 705 à 651 écarts connus.
+- Les tests de non-régression de `places` et de Planning comparent la structure des manifestes sans leurs textes.
+
+*(English)*
+
+- **Exact texts, no filler.** The extensions listed above show only an exact state or an action; reassurance, "that is fine", "by itself" and duplicate lines are gone. Warnings that prevent a loss stay.
+- **Planning** says where streams come from when the list is empty, without the "already done?" question.
+- **Warnings with the right tone.** Messages that ask for an action are warnings, and the "ideas to review" reminder of the Idea box links to the list.
+
 ## 1.100.0 — 2026-11-18
 
 *En bref : sur un site en Curiosa 0.31.0 ou plus récent, presque toutes les extensions rangent maintenant leurs réglages par tâche : « Communauté », « Agenda », « En direct », « Réseaux », « OBS » et « Contenu ». Les entrées une à une (Planning, Contacts, Sondages, Discord, Instagram…) disparaissent du menu, remplacées par une page par tâche. Sur un cœur plus ancien, rien ne change.*

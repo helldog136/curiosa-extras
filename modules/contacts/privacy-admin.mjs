@@ -25,7 +25,7 @@ export async function reportPage(ctx) {
   const t = ctx.t;
   const list = await P.reports(ctx);
   const blocks = [U.firstBlock(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a><h2 class="ct-name">${U.esc(t("privReportTitle"))}</h2><p class="ct-help">${U.esc(t("privReportHelp"))}</p>`)];
-  if (!list.length) { blocks.push({ type: "banner", tone: "info", text: t("privReportNone") }); return blocks; }
+  if (!list.length) { blocks.push({ type: "markdown", text: t("privReportNone") }); return blocks; }
   for (const [i, r] of list.slice(0, 5).entries()) {
     const date = new Date(r.at).toLocaleString(ctx.locale || "en", { dateStyle: "long", timeStyle: "short" });
     const lines = (r.modules ?? []).map((m) => `<li>${U.esc(m.text)}</li>`).join("");
