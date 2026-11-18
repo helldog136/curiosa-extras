@@ -6,7 +6,7 @@
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.4.1",
+  "version": "2.5.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 20,
   "platform": "twitch",
@@ -101,6 +101,36 @@
         "fr": "Ma chaîne",
         "en": "My channel"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.twitch",
+      "order": 200,
+      "fromTab": "settings",
+      "settings": [
+        "channel",
+        "liveEveryMinutes",
+        "rawDays",
+        "keepYears"
+      ],
+      "seeAlso": [
+        "networks.stats"
+      ]
+    },
+    {
+      "id": "stats",
+      "place": "networks.stats",
+      "order": 200,
+      "settings": [
+        "trackStats",
+        "statsFollowers",
+        "statsPaying"
+      ],
+      "seeAlso": [
+        "networks.twitch"
+      ]
     }
   ],
   "overlayElements": [

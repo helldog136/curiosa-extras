@@ -64,6 +64,22 @@ export function dataVersionProblems(current, previous) {
   return problems;
 }
 
+/**
+ * PLACES (core 0.31.0, docs/PLACES.md of the core): the PAGES where a module puts its settings and lists, as `group.page`, without duplicates, in declaration order
+ * (full form `places[]`, then `tabs[].place`, then the module's `place`). Copied into catalogue/index.json (`places`) so that a site and an assistant can ask
+ * "which extensions add something to Live › Alerts" without downloading anything. Invalid ids are left out (the core refuses them anyway).
+ */
+export function placesOf(manifest) {
+  const ids = [...(Array.isArray(manifest?.places) ? manifest.places.map((p) => p?.place) : []), ...(Array.isArray(manifest?.tabs) ? manifest.tabs.map((t) => t?.place) : []), manifest?.place];
+  const out = [];
+  for (const id of ids) {
+    if (typeof id !== "string" || !/^[a-z][a-z0-9-]{1,23}(\.[a-z][a-z0-9-]{1,23}){1,2}$/.test(id)) continue;
+    const page = id.split(".").slice(0, 2).join(".");
+    if (!out.includes(page)) out.push(page);
+  }
+  return out;
+}
+
 /** Manifestes de ce dépôt : { [id]: module.json lu } pour modules/* et examples/*. */
 export function readManifests(root) {
   const out = {};

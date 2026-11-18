@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.18.1",
+  "version": "1.19.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.15.0",
@@ -1067,6 +1067,83 @@
         "fr": "Médias"
       },
       "panel": true
+    }
+  ],
+  "places": [
+    {
+      "id": "events",
+      "place": "live.alerts.events",
+      "order": 200,
+      "fromTab": "twitch",
+      "settings": [
+        "visual",
+        "accentColor",
+        "durationSeconds",
+        "transitionIn",
+        "transitionOut",
+        "transitionSeconds"
+      ],
+      "title": {
+        "en": "Twitch events",
+        "fr": "Événements Twitch"
+      },
+      "seeAlso": [
+        "live.rewards"
+      ]
+    },
+    {
+      "id": "rules",
+      "place": "live.alerts.rules",
+      "order": 200,
+      "fromTab": "settings",
+      "settings": [
+        "minGapSeconds",
+        "youtubeText",
+        "soundVolume",
+        "pushToken",
+        "channel"
+      ],
+      "title": {
+        "en": "Journal and rules",
+        "fr": "Journal et règles"
+      }
+    },
+    {
+      "id": "voice",
+      "place": "live.alerts.voice",
+      "order": 200,
+      "fromTab": "viewers",
+      "title": {
+        "en": "Viewer texts and voice",
+        "fr": "Textes du public et voix"
+      }
+    },
+    {
+      "id": "media",
+      "place": "live.chat.media",
+      "order": 200,
+      "fromTab": "media",
+      "title": {
+        "en": "Pictures, sounds and videos",
+        "fr": "Images, sons et vidéos"
+      },
+      "seeAlso": [
+        "live.alerts"
+      ]
+    },
+    {
+      "id": "rewards",
+      "place": "live.rewards",
+      "order": 200,
+      "fromTab": "rewards",
+      "title": {
+        "en": "On-screen reactions",
+        "fr": "Réactions à l'écran"
+      },
+      "seeAlso": [
+        "live.alerts",
+        "live.chat"
+      ]
     }
   ],
   "offers": [
