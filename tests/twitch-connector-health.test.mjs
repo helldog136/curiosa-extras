@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeTwitch } from "./helpers/fakeTwitch.mjs";
 import { connector, connectorModule, connectorDef } from "./helpers/twitchConnector.mjs";
+import { assertConnectionStates } from "./helpers/ergonomics.mjs";
 
 const DIR = new URL("../modules/twitch-connector", import.meta.url).pathname;
 const fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8")), en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8"));
@@ -177,31 +178,51 @@ test("e-mails: never when the setting is off, and not when the site has no mail 
   assert.equal(flaky.ctx.calls.mail.length, 2);
 });
 
-test("admin page: a refused authorization shows an error banner and ONE primary button; an account that works shows neither", async () => {
+const block = (blocks) => blocks.find((b) => b.type === "connection");
+
+test("admin page: a refused authorization turns the block to degraded with ONE line, since when, and ONE primary button; an account that works shows neither", async () => {
   const C = mk(); await connect(C);
-  const html = (blocks) => blocks.filter((b) => b.type === "html" && b.html.includes("data-twitch-connect"));
-  let page = await connectorDef.adminPanel(C.ctx);
-  assert.equal(html(page).length, 0);
-  assert.ok(!page.some((b) => b.type === "banner" && b.tone === "warning"));
-  assert.ok(JSON.stringify(page).includes('"Connected"'));
+  let page = await connectorDef.adminPanel(C.ctx, { query: {} });
+  assert.equal(block(page).state, "configured");
+  assert.equal(block(page).primary, undefined);
+  assert.ok(!page.some((b) => b.type === "banner" || (b.type === "html" && b.html.includes("data-twitch-connect"))));
   await revokeAtTwitch(C);
-  page = await connectorDef.adminPanel(C.ctx);
-  const banner = page.find((b) => b.type === "banner" && b.tone === "warning");
-  assert.match(banner.text, /no longer accepts the authorization of etoile_nord/);
-  assert.equal(html(page).length, 1);
-  assert.match(html(page)[0].html, /Authorize again with Twitch/);
-  assert.match(html(page)[0].html, /href="https:\/\/id\.twitch\.tv\/oauth2\/authorize\?/);
-  assert.ok(!JSON.stringify(page).includes('"Connected"'), "no more green words for a refused authorization");
-  assert.ok(JSON.stringify(page).includes("To renew"));
+  page = await connectorDef.adminPanel(C.ctx, { query: {} });
+  const c = block(page);
+  assert.equal(c.state, "degraded");
+  assert.equal(c.reason, "Twitch no longer accepts the authorization of etoile_nord.");
+  assert.ok(Number.isFinite(Date.parse(c.since)));
+  assert.equal(c.primary.label, "Authorize again with Twitch");
+  assert.match(c.primary.href, /^https:\/\/id\.twitch\.tv\/oauth2\/authorize\?/);
+  assert.equal(page.filter((b) => b.type === "banner").length, 0, "the same state is not said twice");
+});
+
+test("admin page: several accounts to renew: one line for the block, one button per account in its row", async () => {
+  const C = mk(); await connect(C);
+  await revokeAtTwitch(C);
+  const e = await entry(C);
+  await C.ctx.api.store.add("twitchConnections", { ...e.data, slot: "bot", login: "lune_douce", userId: "55", channel: "etoile_nord" });
+  const c = block(await connectorDef.adminPanel(C.ctx, { query: {} }));
+  assert.equal(c.state, "degraded");
+  assert.equal(c.reason, "2 accounts must be authorized again.");
+  assert.deepEqual(c.rows.map((r) => r.text).sort(), ["etoile_nord", "lune_douce · bot of etoile_nord"]);
+  assert.ok(c.rows.every((r) => r.state === "degraded" && r.primary?.href.startsWith("https://id.twitch.tv/")));
+  assert.equal(c.primary, undefined);
 });
 
 test("admin page: missing permissions are listed in plain words", async () => {
   const C = mk(); await connect(C, [SUB]); await followers(C);
-  const page = await connectorDef.adminPanel(C.ctx);
-  const banner = page.find((b) => b.type === "banner" && b.tone === "warning");
-  assert.match(banner.text, /see your followers/);
-  assert.ok(!/moderator:read/.test(banner.text));
-  assert.ok(JSON.stringify(page).includes("Missing permissions"));
+  const c = block(await connectorDef.adminPanel(C.ctx, { query: {} }));
+  assert.equal(c.state, "degraded");
+  assert.match(c.reason, /see your followers/);
+  assert.ok(!/moderator:read/.test(c.reason));
+});
+
+test("the three states (R33): not configured, configured, degraded: one state word written by the core, the right content in each", async () => {
+  const ok = mk(); await connect(ok);
+  const bad = mk(); await connect(bad); await revokeAtTwitch(bad);
+  const page = (C) => connectorDef.adminPanel(C.ctx, { query: {} });
+  assertConnectionStates({ notConfigured: await page(mk({ settings: {} })), configured: await page(ok), degraded: await page(bad) });
 });
 
 test("MCP tool: states the truth and what to do", async () => {

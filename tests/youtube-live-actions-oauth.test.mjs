@@ -6,6 +6,7 @@ import { world, E, S, def } from "./helpers/ytLiveWorld.mjs";
 import { connectorApi, connectorMessages } from "./helpers/fakeYoutube.mjs";
 import { fakeGoogle, CLIENT_ID, CLIENT_SECRET, SCOPE_READ, SCOPE_MANAGE, SECRET_RE } from "./helpers/fakeGoogleAuth.mjs";
 import { messages } from "./helpers/ytLiveWorld.mjs";
+import { assertConnectionStates } from "./helpers/ergonomics.mjs";
 
 const SETTINGS = { oauthClientId: CLIENT_ID, oauthClientSecret: CLIENT_SECRET };
 const flat = (v) => JSON.stringify(v);
@@ -41,9 +42,9 @@ test("compte non connecté et chat refusé avec la clé : l'écran dit « Connec
   assert.equal(w.yt.calls.chat.length, calls, "rien ne repart tant que le compte n'est pas connecté");
   const panel = await w.panel();
   const first = panel[0];
-  assert.deepEqual([first.type, first.text], ["banner", text("st_connect")]);
-  assert.match(first.text, /^Connectez votre compte YouTube dans le Connecteur YouTube/);
-  assert.deepEqual(panel.find((b) => b.type === "links").items, [{ label: text("connect_link"), href: "/admin/instances/i1" }]);
+  assert.deepEqual([first.type, first.state, first.reason], ["connection", "degraded", text("st_connect")]);
+  assert.match(first.reason, /^Connectez votre compte YouTube dans le Connecteur YouTube/);
+  assert.deepEqual(first.primary, { label: text("connect_link"), href: "/admin/instances/i1" });
   assert.equal(g.calls.chatList.length, 0);
   w.done();
 });
@@ -159,4 +160,21 @@ test("sans Home Assistant : la clé seule est tentée d'abord ; refusée, l'écr
   const list = await def.exports["live.event"](w.ctx, {});
   assert.equal(list.length, 1); assert.equal(list[0].who, "Léa");
   w.done();
+});
+
+test("the three states (R33): not configured, configured, degraded: one state word written by the core per service, the right content in each", async () => {
+  const ha = { list: async () => [{ id: "i2", key: "ha", module: "home-assistant", adminPath: "/admin/instances/i2" }] };
+  const none = await world({ noConnector: true });
+  none.ctx.api.instances = ha;
+  const notConfigured = await none.panel(); none.done();
+  const ok = await world({});
+  ok.ctx.api.instances = ha;
+  const configured = await ok.panel(); ok.done();
+  const { w, g } = await site();
+  await w.read(); await w.read(20_000);
+  const degraded = await w.panel(); w.done();
+  assert.equal(g.calls.chatList.length, 0);
+  assert.deepEqual([notConfigured, configured, degraded].map((p) => p.find((b) => b.id === "chat").state), ["notConfigured", "configured", "degraded"]);
+  // The rule form (8 fields, R4/R10/R11) is an older gap of this page, not part of R33: it is not what this test is about.
+  assertConnectionStates({ notConfigured, configured, degraded }, { skip: ["R4", "R10", "R11"] });
 });

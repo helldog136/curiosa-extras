@@ -1,6 +1,8 @@
 // Connecteur YouTube — porte la clé YouTube du site, la connexion facultative au compte YouTube (lire/écrire dans le chat) et offre le service `youtube.api` (liste fermée d'appels, quota compté, cache daté).
 // La logique est dans api.mjs (appels) et oauth.mjs (connexion) ; ici : le service, et le panneau d'administration (sans aucun appel réseau à l'ouverture).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+const creds = await import(`./credentials.mjs${v}`);
+const { ID_RE, SECRET_RE } = await import(`./oauth.mjs${v}`);
 const { HOST, LIMITS, accountCancel, accountCheck, accountConnection, accountDisconnect, accountStart, adopt, channels, chatPost, request, status, within } = await import(`./api.mjs${v}`);
 
 const bounded = (fn) => (ctx, args) => within(fn(ctx, args ?? {}), LIMITS.callMs, () => ({ ok: false, error: "timeout" }));
@@ -16,13 +18,14 @@ export function resumeText(ctx, at, now = Date.now()) {
 }
 
 const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const form = (action, label, title) => ({ type: "adminForm", action, submitLabel: label, ...(title ? { title } : {}), fields: [{ name: "go", kind: "hidden", value: "1" }] });
-/** Le cœur ABANDONNE le message d'une action qui redirige : on ne redirige (pour redessiner l'écran) que si l'écran lui-même dit déjà la chose (code affiché, bandeau « dernière issue »). Un refus qui ne change rien reste sous le bouton. */
+const date = (ctx, at) => (at ? new Date(at).toLocaleDateString(ctx.locale) : "");
+/** Le cœur ABANDONNE le message d'une action qui redirige : on ne redirige (pour redessiner l'écran) que si l'écran lui-même dit déjà la chose (code affiché, état de la carte). Un refus qui ne change rien reste sous le bouton. */
 function connectResult(ctx, r, okKey) {
   if (r.ok) return { ok: ctx.t(okKey), redirect: "?" };
   return { error: ctx.t(`err_${r.error}`) };
 }
-const SHOWN_BY_SCREEN = new Set(["denied", "expired", "policy", "client", "google", "scope", "no_pending"]);   // l'écran garde la trace (bandeau) et le code en attente a disparu
+const SHOWN_BY_SCREEN = new Set(["denied", "expired", "policy", "client", "google", "scope", "no_pending"]);   // l'écran garde la trace (raison de la carte) et le code en attente a disparu
+const plain = (v) => (typeof v === "string" ? v.trim() : "");
 
 export default {
   services: {
@@ -34,6 +37,9 @@ export default {
       chatPost: bounded(chatPost),
     },
   },
+
+  // Données en version 2 : la clé, l'ID client et le secret des réglages passent dans le stockage (voir credentials.mjs).
+  migrations: { 2: async (ctx) => { await creds.migrateSettings(ctx); } },
 
   hooks: {
     // L'instance est supprimée : l'accès au compte YouTube est retiré chez Google aussi (au mieux ; les jetons partent de toute façon avec les données).
@@ -53,50 +59,105 @@ export default {
       const r = await accountDisconnect(ctx);
       return { ok: ctx.t(r.revoked === false ? "disconnect_local" : "disconnect_done"), redirect: "?" };
     },
+    /** The access code typed in the "Modify" window: an empty field keeps the current one. */
+    async saveKey(ctx, values) {
+      const key = plain(values?.apiKey);
+      const cur = await creds.read(ctx);
+      if (key && !/^[\x21-\x7e]{10,200}$/.test(key)) return { errors: { apiKey: ctx.t("err_key") } };
+      if (!key && !cur.apiKey) return { errors: { apiKey: ctx.t("err_key") } };
+      if (key) await creds.save(ctx, { apiKey: key });
+      return { ok: ctx.t("key_saved"), redirect: "?" };
+    },
+    /** The Google client (ID and secret) typed in the "Modify" window of the account: an empty field keeps the current value. */
+    async saveAccount(ctx, values) {
+      const id = plain(values?.oauthClientId), secret = plain(values?.oauthClientSecret);
+      const cur = await creds.read(ctx);
+      const errors = {};
+      if (id ? !ID_RE.test(id) : !cur.oauthClientId) errors.oauthClientId = ctx.t("err_client_id_field");
+      if (secret ? !SECRET_RE.test(secret) : !cur.oauthClientSecret) errors.oauthClientSecret = ctx.t("err_client_secret_field");
+      if (Object.keys(errors).length) return { errors };
+      await creds.save(ctx, { ...(id ? { oauthClientId: id } : {}), ...(secret ? { oauthClientSecret: secret } : {}) });
+      return { ok: ctx.t("account_saved"), redirect: "?" };
+    },
+    /** Forgets the access code carried over from another extension: only what was typed here stays. */
+    async forgetKey(ctx) { await creds.forgetCarried(ctx); return { ok: ctx.t("key_forgotten"), redirect: "?" }; },
   },
 
-  async adminPanel(ctx) {
+  async adminPanel(ctx, { query } = {}) {
     const s = await status(ctx);
-    const blocks = [];
-    if (s.key === "missing") blocks.push({ type: "banner", tone: "warning", text: ctx.t("key_missing") });
-    else if (s.key === "refused") blocks.push({ type: "banner", tone: "warning", text: ctx.t("key_refused") });
-    else blocks.push({ type: "banner", tone: "success", text: ctx.t("key_ok") });
-    blocks.push({ type: "markdown", text: ctx.t("key_help") });
-    if (s.quota.exhausted) blocks.push({ type: "banner", tone: "warning", text: ctx.t("quota_exhausted", { when: resumeText(ctx, Date.parse(s.quota.until)) }) });
-    blocks.push({ type: "markdown", text: ctx.t("quota_used", { used: s.quota.used.toLocaleString(ctx.locale), budget: s.quota.budget.toLocaleString(ctx.locale), when: resumeText(ctx, Date.parse(s.quota.resetAt)) }) });
-    blocks.push({ type: "netHealth", items: [{ host: HOST, label: "YouTube", ...(s.lastGoodAt ? { lastGoodAt: s.lastGoodAt } : {}) }] });
-    blocks.push(...(await accountBlocks(ctx)));
+    const cur = await creds.read(ctx);
+    const c = await accountConnection(ctx);
+    const blocks = [keyBlock(ctx, s), ...(await accountBlocks(ctx, c))];
+    if (query?.edit === "key") blocks.push(keyDialog(ctx, cur));
+    if (query?.edit === "account") blocks.push(accountDialog(ctx, cur));
     return blocks;
   },
 };
 
-/** Le compte YouTube : mise en route en 4 étapes, puis le bouton qui convient à l'état (aucun appel réseau, jamais un jeton ni un secret). */
-async function accountBlocks(ctx) {
-  const c = await accountConnection(ctx);
+/** The access code: one block (state, quota of the day on one line, "Modify"). The quota only becomes a problem when it is used up. */
+function keyBlock(ctx, s) {
+  const head = { type: "connection", id: "key", title: ctx.t("key_title"), summary: "" };
+  if (s.key === "missing") return { ...head, state: "notConfigured", reason: ctx.t("key_missing"), primary: { label: ctx.t("key_register"), href: "?edit=key" }, setup: [{ type: "markdown", text: ctx.t("key_help") }] };
+  const base = {
+    ...head, summary: ctx.t("quota_summary", { used: s.quota.used.toLocaleString(ctx.locale), budget: s.quota.budget.toLocaleString(ctx.locale) }), edit: { href: "?edit=key" },
+    net: [{ host: HOST, label: "YouTube", ...(s.lastGoodAt ? { lastGoodAt: s.lastGoodAt } : {}) }],
+  };
+  if (s.key === "refused") return { ...base, state: "degraded", reason: ctx.t("key_refused"), primary: { label: ctx.t("key_fix"), href: "?edit=key" } };
+  if (s.quota.exhausted) return { ...base, state: "degraded", reason: ctx.t("quota_exhausted", { when: resumeText(ctx, Date.parse(s.quota.until)) }) };
+  return { ...base, state: "configured" };
+}
+
+function keyDialog(ctx, cur) {
+  const has = !!cur.apiKey, carried = cur.carried.includes("apiKey");
+  return {
+    type: "adminForm", presentation: "dialog", action: "saveKey", cancelHref: "?", title: ctx.t("key_title"), submitLabel: ctx.t("key_save"),
+    fields: [{ name: "apiKey", label: ctx.t("f_key"), kind: "secret", help: ctx.t("f_key_help"), ...(has ? { value: "", valueHint: carried ? "carried" : "kept", ...(carried ? { valueSource: ctx.t("source_channel") } : {}) } : {}) }],
+    ...(carried ? { secondaryAction: { label: ctx.t("key_forget"), action: "forgetKey", confirm: ctx.t("key_forget_confirm") } } : {}),
+  };
+}
+
+function accountDialog(ctx, cur) {
+  return {
+    type: "adminForm", presentation: "dialog", action: "saveAccount", cancelHref: "?", title: ctx.t("acc_title"), submitLabel: ctx.t("acc_save"),
+    fields: [
+      { name: "oauthClientId", label: ctx.t("f_client_id"), kind: "text", example: ctx.t("f_client_id_example"), help: ctx.t("f_client_id_help"), ...(cur.oauthClientId ? { value: "", valueHint: "kept", valueTail: cur.oauthClientId.replace(/\.apps\.googleusercontent\.com$/i, "").slice(-4) } : {}) },
+      { name: "oauthClientSecret", label: ctx.t("f_client_secret"), kind: "secret", ...(cur.oauthClientSecret ? { value: "", valueHint: "kept" } : {}) },
+    ],
+  };
+}
+
+const form = (action, label) => ({ type: "adminForm", action, submitLabel: label, submitStyle: "secondary", fields: [{ name: "go", kind: "hidden", value: "1" }] });
+/** Failures of the last attempt are the reason of the card; "disconnected" is shown by the card itself (its state changed). */
+const lastReason = (ctx, c) => (c.last && c.last.code !== "disconnected" && c.last.code !== "write_missing" ? ctx.t(`last_${c.last.code}`) : "");
+
+/** The YouTube account (optional): one block, in the state that tells what the person can do now. No network call, never a token or a secret. */
+async function accountBlocks(ctx, c) {
   const wanted = ctx.setting("chatReply") === true;
-  const out = [{ type: "heading", text: ctx.t("acc_title") }, { type: "markdown", text: ctx.t("acc_intro") }];
+  const head = { type: "connection", id: "account", title: ctx.t("acc_title"), summary: "" };
   if (c.state === "connected") {
-    out.push({ type: "banner", tone: "success", text: ctx.t(c.write ? "acc_connected_write" : "acc_connected_read", { date: c.since ? new Date(c.since).toLocaleDateString(ctx.locale) : "" }) });
-    if (wanted && !c.write) out.push({ type: "banner", tone: "warning", text: ctx.t("acc_need_write") }, form("accountConnect", ctx.t("btn_reconnect_write")));
-    else if (!wanted && c.write) out.push({ type: "banner", tone: "info", text: ctx.t("acc_write_idle") });
-    out.push(form("accountDisconnect", ctx.t("btn_disconnect")), { type: "markdown", text: ctx.t("acc_disconnect_help") });
-    return out;
+    const summary = ctx.t(c.write ? (wanted ? "acc_summary_write" : "acc_summary_write_idle") : "acc_summary_read", { date: date(ctx, c.since) });
+    const base = { ...head, summary, edit: { href: "?edit=account" }, menu: [{ label: ctx.t("btn_disconnect"), action: "accountDisconnect", confirm: ctx.t("disconnect_confirm"), danger: true }] };
+    if (wanted && !c.write) return [{ ...base, state: "degraded", reason: ctx.t(c.last?.code === "write_missing" ? "last_write_missing" : "acc_need_write"), primary: { label: ctx.t("btn_reconnect_write"), action: "accountConnect" } }];
+    return [{ ...base, state: "configured" }];
   }
   if (c.state === "pending" && c.pending) {
-    out.push({ type: "banner", tone: "info", text: ctx.t(c.pending.wantWrite ? "acc_pending_write" : "acc_pending") }, { type: "html", html: await pendingHtml(ctx, c.pending) }, form("accountCheck", ctx.t("btn_check")), form("accountCancel", ctx.t("btn_cancel")));
-    return out;
+    return [{
+      ...head, state: "notConfigured", reason: ctx.t(c.pending.wantWrite ? "acc_pending_write" : "acc_pending"), primary: { label: ctx.t("btn_check"), action: "accountCheck" },
+      setup: [{ type: "html", html: await pendingHtml(ctx, c.pending) }, form("accountCancel", ctx.t("btn_cancel"))],
+    }];
   }
-  if (c.last) out.push({ type: "banner", tone: ["write_missing", "disconnected"].includes(c.last.code) ? "info" : "warning", text: ctx.t(`last_${c.last.code}`) });
-  if (c.state === "stale") out.push({ type: "banner", tone: "warning", text: ctx.t("acc_stale") });
+  if (c.state === "stale") {
+    return [{ ...head, state: "degraded", reason: ctx.t("acc_stale"), edit: { href: "?edit=account" }, primary: c.configured ? { label: ctx.t("btn_connect"), action: "accountConnect" } : { label: ctx.t("acc_fix"), href: "?edit=account" } }];
+  }
   if (!c.configured) {
-    if (c.idSet && !c.idOk) out.push({ type: "banner", tone: "warning", text: ctx.t("acc_bad_id") });
-    if (c.secretSet && !c.secretOk) out.push({ type: "banner", tone: "warning", text: ctx.t("acc_bad_secret") });
-    out.push({ type: "banner", tone: "info", text: ctx.t("acc_none") }, { type: "html", html: `<p style="margin:0 0 .25rem"><strong>${esc(ctx.t("acc_steps_title"))}</strong></p>${stepsHtml(ctx)}<p style="margin:.25rem 0 0;opacity:.85">${esc(ctx.t("acc_steps_note"))}</p>` });
-    return out;
+    const reason = c.idSet && !c.idOk ? ctx.t("acc_bad_id") : c.secretSet && !c.secretOk ? ctx.t("acc_bad_secret") : lastReason(ctx, c) || ctx.t("acc_none");
+    const primary = c.idSet || c.secretSet ? { label: ctx.t("acc_fix"), href: "?edit=account" } : { label: ctx.t("acc_register"), href: "?edit=account" };
+    return [{ ...head, state: "notConfigured", reason, primary, setup: [{ type: "html", html: stepsHtml(ctx) }] }];
   }
-  out.push({ type: "banner", tone: "info", text: ctx.t(wanted ? "acc_ready_write" : "acc_ready") }, form("accountConnect", ctx.t("btn_connect")));
-  out.push({ type: "html", html: `<details><summary>${esc(ctx.t("acc_steps_again"))}</summary><div style="margin-top:.5rem">${stepsHtml(ctx)}<p style="margin:.25rem 0 0;opacity:.85">${esc(ctx.t("acc_steps_note"))}</p></div></details>` });
-  return out;
+  return [
+    { ...head, state: "notConfigured", reason: lastReason(ctx, c) || ctx.t("acc_not_connected"), primary: { label: ctx.t("btn_connect"), action: "accountConnect" } },
+    { type: "links", items: [{ label: ctx.t("acc_edit_client"), href: "?edit=account" }] },
+  ];
 }
 /** Un texte du panneau avec **gras** et [liens](https://…) → HTML sûr (tout est échappé d'abord ; seuls les liens https sont gardés). */
 function inline(text) {

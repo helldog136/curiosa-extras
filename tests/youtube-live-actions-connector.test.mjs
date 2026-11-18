@@ -19,7 +19,7 @@ const done = () => { globalThis.fetch = realFetch; };
 test("connecteur : version 1.3.0 (1.2.0 + connexion au compte), manifeste valide, coûts anciens inchangés (search.list reste exclu), le chat coûte 5", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../modules/youtube-connector/module.json", import.meta.url), "utf8"));
   assert.ok(parseManifest(manifest).ok);
-  assert.equal(manifest.version, "1.4.0");
+  assert.equal(manifest.version, "1.5.0");
   assert.deepEqual(api.COSTS, { "channels.list": 1, "playlistItems.list": 1, "videos.list": 1 });
   assert.equal(api.LIVE_CHAT_COST, 5);
   assert.equal(api.normalize("search.list", { q: "x" }), null);

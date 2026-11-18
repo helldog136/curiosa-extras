@@ -98,41 +98,45 @@ function sessionRow(ctx, s) {
   return [`${head}\n${games}`, lines.join("\n")];
 }
 
+/**
+ * « Mes directs » : the state of the tracking on one line (a `connection` block: since when it measures, what is wrong, « Erase the measures » in its menu), then the lives,
+ * the game that wins the most followers and the most viewed videos. A section with nothing to show is not shown.
+ */
 export async function panel(ctx, creds, connected) {
   const t = ctx.t;
-  const out = [{ type: "heading", text: t("live_title") }];
   const st = await live.trackingState(ctx);
-  const every = live.intervalOf(ctx);
-  out.push({ type: "markdown", text: t("live_honest", { minutes: every }) });
-  if (st.since) out.push({ type: "banner", tone: "info", text: t("live_since", { date: day(ctx, st.since) }) });
-  else out.push({ type: "banner", tone: "info", text: t("live_starting") });
-  if (st.lastError && st.lastError.at > (st.lastOkAt ?? 0)) out.push({ type: "banner", tone: "warning", text: t("live_trouble") });
+  const kept = await ctx.api.store.count(live.COLLECTIONS.sessions);
+  const trouble = st.lastError && st.lastError.at > (st.lastOkAt ?? 0);
+  const out = [{
+    type: "connection", id: "tracking", title: t("live_title"), summary: st.since ? t("live_since", { date: day(ctx, st.since) }) : t("live_waiting"), edit: { href: "?tab=settings" }, state: trouble ? "degraded" : "configured",
+    ...(trouble ? { reason: t("live_trouble"), since: new Date(st.lastError.at).toISOString() } : {}),
+    ...(kept ? { menu: [{ label: t("live_erase"), action: "eraseLive", confirm: t("live_eraseConfirm", { n: kept }), danger: true }] } : {}),
+  }];
 
   const { sessions } = await live.listSessions(ctx, { limit: 8 });
-  const now = sessions.find((s) => s.open);
-  if (now) out.push({ type: "banner", tone: "success", text: t("live_now", { viewers: num(ctx, now.currentViewers), duration: duration(ctx, now.durationSec) }) });
-  if (!sessions.length) out.push({ type: "markdown", text: t("live_none") });
-  else out.push({ type: "table", columns: [t("col_live"), t("col_result")], rows: sessions.map((s) => sessionRow(ctx, s)) });
+  if (sessions.length) out.push({ type: "table", columns: [t("col_live"), t("col_result")], rows: sessions.map((s) => sessionRow(ctx, s)) });
 
-  out.push({ type: "heading", text: t("live_bestTitle") });
-  const recent = (await live.listSessions(ctx, { since: Date.now() - 90 * DAY, limit: 600 })).sessions;
-  const games = live.gamesOf(recent).filter((g) => g.followersPerHour != null).sort((a, b) => b.followersPerHour - a.followersPerHour).slice(0, 4);
-  if (games.length) out.push({ type: "table", columns: [t("col_game"), t("col_result")], rows: games.map((g) => [gameName(ctx, g.game), `${t("live_bestRate", { rate: signed(ctx, g.followersPerHour) })}\n${t("live_bestHours", { hours: num(ctx, g.hoursLive) })}`]) });
-  else out.push({ type: "markdown", text: t(connected ? "live_bestNone" : "live_needConnect") });
+  // the game that wins the most followers: only once the channel is connected (followers are counted through the connection)
+  if (connected) {
+    out.push({ type: "heading", text: t("live_bestTitle") });
+    const recent = (await live.listSessions(ctx, { since: Date.now() - 90 * DAY, limit: 600 })).sessions;
+    const games = live.gamesOf(recent).filter((g) => g.followersPerHour != null).sort((a, b) => b.followersPerHour - a.followersPerHour).slice(0, 4);
+    if (games.length) out.push({ type: "table", columns: [t("col_game"), t("col_result")], rows: games.map((g) => [gameName(ctx, g.game), `${t("live_bestRate", { rate: signed(ctx, g.followersPerHour) })}\n${t("live_bestHours", { hours: num(ctx, g.hoursLive) })}`]) });
+    else out.push({ type: "markdown", text: t("live_bestNone") });
+  }
 
-  out.push({ type: "heading", text: t("live_videosTitle") });
+  // the videos: read after the first measure; nothing is shown before that
   const lists = await live.readLists(ctx);
-  const vids = lists?.videos ?? { items: [], error: null };
-  const top = [...vids.items].sort((a, b) => b.views - a.views).slice(0, 8);
-  if (top.length) out.push({ type: "table", columns: [t("col_video"), t("col_views")], rows: top.map((v) => [`${v.title || "—"}\n${t(`type_${v.type}`)} · ${shortDay(ctx, Date.parse(v.publishedAt))}`, t("live_views", { n: num(ctx, v.views) })]) });
-  else out.push({ type: "markdown", text: t(!lists ? "live_videosPending" : vids.error ? "live_videosError" : "live_videosNone") });
-  if (top.length && vids.error) out.push({ type: "markdown", text: t("live_videosStale") });
-  const clips = (lists?.clips?.items ?? []).slice(0, 5);
-  if (clips.length) out.push({ type: "table", columns: [t("col_clip"), t("col_views")], rows: clips.map((c) => [`${c.title || "—"}\n${[c.game, shortDay(ctx, Date.parse(c.publishedAt))].filter(Boolean).join(" · ")}`, t("live_views", { n: num(ctx, c.views) })]) });
-
-  const kept = await ctx.api.store.count(live.COLLECTIONS.sessions);
-  out.push({ type: "heading", text: t("live_eraseTitle") });
-  out.push({ type: "markdown", text: t("live_eraseInfo", { n: kept, days: live.rawDaysOf(ctx), years: live.keepYearsOf(ctx) }) });
-  out.push({ type: "table", columns: [t("live_eraseCol")], rows: [[t("live_eraseRow", { n: kept })]], rowIds: ["live"], rowActions: [{ label: t("live_erase"), action: "eraseLive", confirm: t("live_eraseConfirm"), danger: true }] });
+  if (lists) {
+    out.push({ type: "heading", text: t("live_videosTitle") });
+    const vids = lists.videos ?? { items: [], error: null };
+    const top = [...vids.items].sort((a, b) => b.views - a.views).slice(0, 8);
+    if (top.length) {
+      if (vids.error) out.push({ type: "markdown", text: t("live_videosStale") });
+      out.push({ type: "table", columns: [t("col_video"), t("col_views")], rows: top.map((v) => [`${v.title || "—"}\n${t(`type_${v.type}`)} · ${shortDay(ctx, Date.parse(v.publishedAt))}`, t("live_views", { n: num(ctx, v.views) })]) });
+    } else out.push({ type: "markdown", text: t(vids.error ? "live_videosError" : "live_videosNone") });
+    const clips = (lists.clips?.items ?? []).slice(0, 5);
+    if (clips.length) out.push({ type: "table", columns: [t("col_clip"), t("col_views")], rows: clips.map((c) => [`${c.title || "—"}\n${[c.game, shortDay(ctx, Date.parse(c.publishedAt))].filter(Boolean).join(" · ")}`, t("live_views", { n: num(ctx, c.views) })]) });
+  }
   return out;
 }

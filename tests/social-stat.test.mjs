@@ -94,8 +94,7 @@ test("manifestes : valides, fournissent social.stat (libellé fr + en), version 
   assert.equal(mods.discord.manifest.settings.find((s) => s.key === "invite").type, "text");
   const connector = readJson("youtube-connector/module.json");
   assert.ok(!mods["youtube-channel"].manifest.settings.some((s) => s.key === "apiKey"), "la clé YouTube n'est plus réglée dans youtube-channel");
-  assert.equal(connector.settings.find((s) => s.key === "apiKey").type, "secret");
-  assert.ok(!connector.settings.find((s) => s.key === "apiKey").advanced, "la clé est saisissable en mode simple (dans le connecteur) : c'est elle qui active les chiffres");
+  assert.ok(!connector.settings.some((s) => s.key === "apiKey") && connector.legacySettings.some((s) => s.key === "apiKey" && s.secret), "since 1.5.0 the key is typed in the connector's \"Modify\" window (stored in its private storage), not in a setting");
 });
 
 test("textes : fr et en alignés, toutes les clés utilisées existent, libellés humains, aucun jargon (mode simple)", () => {

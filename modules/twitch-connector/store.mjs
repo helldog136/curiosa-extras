@@ -1,5 +1,5 @@
 // Ce que le Connecteur garde dans SON stockage privé (une instance ne lit jamais celui d'une autre) :
-//   twitchApp          l'application reprise (identifiant et secret) : UN document, jamais affiché ; les réglages saisis ont toujours le dessus ;
+//   twitchApp          l'application (identifiant et secret) : UN document, jamais affiché ; `carried` : les champs repris d'un autre module ;
 //   twitchConnections  un document par compte connecté : { slot: "main" | "bot", channel, login, userId, access, refresh, expiresAt, scopes, clientId, status, connectedAt } ;
 //   twitchChannels     les chaînes connues (déclarées par « Ma Chaîne Twitch » ou connectées ici) et, pour une installation reprise, SON adresse de retour ;
 //   twitchPending      les liens d'autorisation en cours (usage unique, 10 minutes) ; twitchResults : le dernier échec par chaîne et par emplacement ;
@@ -23,12 +23,32 @@ export async function put(ctx, col, doc, data) {
   return ctx.api.store.add(col, data);
 }
 
-/** Identifiants de l'application, champ par champ : le réglage saisi ici, sinon la valeur reprise. { clientId, secret, adopted: bool }. */
+/**
+ * Les identifiants de l'application : UN document (`twitchApp`), champ par champ. Une valeur saisie dans la fenêtre « Modifier » est « à vous » ; une valeur reprise d'un autre
+ * module est notée dans `carried` (liste de champs) : l'oublier n'efface que celles-là. { clientId, secret, carried: ["clientId" | "clientSecret"] }.
+ */
 export async function credsOf(ctx) {
-  const own = { clientId: text(ctx.setting("appClientId")), secret: text(ctx.setting("appSecret")) };
-  if (own.clientId && own.secret) return { ...own, adopted: false };
   const a = (await first(ctx, COL.app))?.data ?? {};
-  return { clientId: own.clientId || text(a.clientId), secret: own.secret || text(a.clientSecret), adopted: !!(a.clientId || a.clientSecret) };
+  const carried = (Array.isArray(a.carried) ? a.carried : []).filter((f) => f === "clientId" || f === "clientSecret");
+  return { clientId: text(a.clientId), secret: text(a.clientSecret), carried };
+}
+/**
+ * Migration (données en version 2) : avant la 1.8, le Client ID et le secret étaient des réglages du module (`appClientId`, `appSecret`, devenus `legacySettings`) et le document
+ * `twitchApp` ne contenait que des valeurs reprises d'un autre module. Les réglages passent dans le document (« à vous ») ; ce qu'il contenait déjà est noté « repris ».
+ * Rejouable : on n'efface un réglage qu'après l'écriture.
+ */
+export async function migrateSettings(ctx) {
+  const read = async (k) => { try { return text(await ctx.legacy?.get(k)); } catch { return ""; } };
+  const clientId = await read("appClientId"), secret = await read("appSecret");
+  const doc = await first(ctx, COL.app);
+  const had = doc?.data ?? {};
+  const carried = Array.isArray(had.carried) ? had.carried.filter((f) => f === "clientId" || f === "clientSecret") : ["clientId", "clientSecret"].filter((f) => text(had[f]));
+  const next = { ...had };
+  if (clientId) { next.clientId = clientId; const i = carried.indexOf("clientId"); if (i >= 0) carried.splice(i, 1); }
+  if (secret) { next.clientSecret = secret; const i = carried.indexOf("clientSecret"); if (i >= 0) carried.splice(i, 1); }
+  next.carried = carried.sort();
+  if (text(next.clientId) || text(next.clientSecret)) await put(ctx, COL.app, doc, next);
+  for (const k of ["appClientId", "appSecret"]) { try { if (ctx.legacy && (await ctx.legacy.get(k)) !== null) await ctx.legacy.clear(k); } catch { /* clé absente */ } }
 }
 export const hasCreds = (c) => !!(c.clientId && c.secret);
 
