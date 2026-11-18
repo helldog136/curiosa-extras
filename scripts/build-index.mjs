@@ -6,7 +6,7 @@
 // REF force une autre référence (étiquette ou commit) ; REPO : adresse de ce dépôt.
 import fs from "node:fs";
 import path from "node:path";
-import { entryTexts, optionalNeedsProblems, previewIndex, previewProblems, serviceList } from "./rules.mjs";
+import { entryTexts, optionalNeedsProblems, placesOf, previewIndex, previewProblems, serviceList } from "./rules.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const repo = process.env.REPO ?? "https://github.com/helldog136/curiosa-extras";
@@ -20,6 +20,8 @@ const readLocales = (dir) => {
   if (fs.existsSync(localesDir)) for (const f of fs.readdirSync(localesDir)) if (f.endsWith(".json")) out[f.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(localesDir, f), "utf8"));
   return out;
 };
+// Places (core 0.31.0): the admin pages where the module puts its settings (`places: ["live.alerts", "live.rewards"]`), read from the manifest (placesOf in scripts/rules.mjs).
+// The names, order and intros of those pages are in catalogue/places.json (the places vocabulary, read by the core with this index).
 // Services offerts / requis : le cœur choisit et annonce un fournisseur AVANT de télécharger le module (« installe aussi… »). Clé `needs` pour ne pas
 // la confondre avec `requires: { core }` (version minimale du cœur). Le manifeste du module fait toujours foi à l'installation.
 // Fonction partagée avec release-check.mjs et les tests : scripts/rules.mjs (elle recopie aussi `requires[].optional`, seulement la valeur true).
@@ -32,7 +34,7 @@ for (const group of ["modules", "examples"]) {
     // Visuels de la fiche (`previews`) : la déclaration est recopiée dans l'entrée (le cœur peut ainsi les annoncer sans télécharger le module) ; les images restent dans le dépôt.
     // Un visuel invalide ou absent fait échouer l'index (écriture comme --check) : mieux vaut le savoir ici que voir le cœur l'écarter en silence.
     for (const p of previewProblems(m.previews, path.join(root, group, id))) previewErrors.push(`${m.id} : ${p}`);
-    modules.push({ id: m.id, ...entryTexts(m, readLocales(path.join(root, group, id))), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}), ...(m.previews?.length ? { previews: previewIndex(m.previews) } : {}) });
+    modules.push({ id: m.id, ...entryTexts(m, readLocales(path.join(root, group, id))), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}), ...(m.previews?.length ? { previews: previewIndex(m.previews) } : {}), ...(placesOf(m).length ? { places: placesOf(m) } : {}) });
   }
 }
 if (previewErrors.length) { console.error("Visuels de fiche (previews) :\n- " + previewErrors.join("\n- ")); process.exit(1); }

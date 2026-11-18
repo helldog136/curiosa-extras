@@ -6,7 +6,7 @@
     "en": "Twitch connector",
     "fr": "Connecteur Twitch"
   },
-  "version": "1.6.0",
+  "version": "1.7.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 10,
   "platform": "twitch",
@@ -51,6 +51,14 @@
     {
       "id": "use",
       "hidden": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.twitch",
+      "order": 100,
+      "fromTab": "settings"
     }
   ],
   "settings": [
