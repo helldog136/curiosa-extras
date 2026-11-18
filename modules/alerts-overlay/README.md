@@ -48,6 +48,13 @@ the minute task (and the opening of its page) does, once:
 3. a document `handover` (`state: "done"`, `from`, `lines`, the old address). The next pass creates the subscriptions at `/m/<key>/webhook`; a subscription left at the old
    address (a removal without hand-over) is deleted, never reported as "taken"; the gap since the release is caught up (follows and subs, as after any gap).
 
+**(1.18.1) Do not remove Twitch activity before the site log says "Twitch activity taken over: N journal lines" with N greater than 0.** Version 1.18.0 refused the
+real ids of Twitch messages (base64, with `=`, `+`, `/`) and copied 0 lines while taking over everything else. 1.18.1 accepts them; a hand-over made by 1.18.0
+(document `handover` without `importVersion`) copies the journal again, once, with `export` only (no `release`, no state, no options), while Twitch activity is
+installed. Test and replay lines are never copied (a test always shows on screen); the lines received since the hand-over are written again after the copied ones,
+so the journal stays newest first; nothing is copied twice (keyed by the message id) and no copied line shows as an alert (older than the age limit of alerts:
+5 minutes, 60 for a line found after a gap).
+
 A line taken over keeps the address of its first journal (`from`): an alert already shown is never shown again. With Twitch activity 1.12.0 still installed, the overlay
 waits (mode `waiting`) and says to update it. Nothing of Twitch activity is deleted by the overlay: the owner removes it afterwards (its data is then set aside by the core).
 
