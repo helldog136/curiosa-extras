@@ -49,6 +49,8 @@ const U = (n, ext) => `/uploads/${String(n).padStart(8, "0")}-0123-4567-89ab-012
 const G = (n) => U(n, "gif");
 const HYD = "92af127c-7326-4483-a52b-b0da0be61c01";
 const SITE = "https://site.example.org";
+/** (1.18.1) A message id as Twitch really sends it: base64, with `=`, `+`, `/`, `-` or `_` (1.18.0 refused them all and copied 0 lines on a real site). */
+const RID = ["I3KaI0a8YcZaxOx9j2RcWpQqBSe7jwG8D1W1P1dJBFE=", "GCpS4i2XKeH6l6Y9Gz3VUBMUbVevqfI0-HloQ0wOG3Y=", "S1me+6UHV0Xn3LGxqy6sveqNZWN/GwREHWqcDi5y_bs=", "jf9PyuuxOHBFvXpKjIHg_LO1f9NjiZ343GMGF4LkZd4=", "Qm9uam91cg-YWxlcnRlcw_dHdpdGNoK2V2ZW50cw=="];
 
 /** A delivery signed like Twitch, to a webhook module (old or new): `W` its webhook file, `St` its state file, `E` its eventsub file. */
 async function deliverTo({ W, St, E }, ctx, type, event, { id, at = NOW, version = "1", now = NOW } = {}) {
@@ -90,7 +92,7 @@ async function oldSite() {
   const dockKey = await OLD.evD.dockSecret(evCtx);
   const files = { W: OLD.evW, St: OLD.evS, E: OLD.evEs };
   for (const [i, [type, event]] of [[TYPES.follow, EV.follow], [TYPES.sub, EV.sub], [TYPES.cheer, { ...EV.cheer, message: "Cheer500 see www.example.com" }], [TYPES.raid, EV.raid], ["channel.channel_points_custom_reward_redemption.add", EV.redeem()]].entries()) {
-    assert.equal(await deliverTo(files, evCtx, type, event, { id: `old-${i}`, at: Date.now() - 60_000 + i, now: Date.now() }), 204);
+    assert.equal(await deliverTo(files, evCtx, type, event, { id: RID[i], at: Date.now() - 60_000 + i, now: Date.now() }), 204);
   }
   // the overlay shows them (its seen-set remembers them under the key of Twitch activity); the cheer's link is hidden and the journal line marked
   const shown = [];
@@ -161,7 +163,8 @@ test("upgrade from the real 1.94.0: before the hand-over the new overlay keeps s
   const journalBefore = (await old.evCtx.api.store.list(OLD.evS.COL, { limit: 100 })).map((r) => r.data);
   await def.tasks.listen.run(ctx);
   const ho = await home.handoverOf(ctx);
-  assert.deepEqual([ho.state, ho.from, ho.lines], ["done", "twitch-events", journalBefore.length]);
+  assert.ok(journalBefore.length === 5 && journalBefore.every((l) => RID.includes(l.id)), "the old journal holds the five lines, with real Twitch ids");
+  assert.deepEqual([ho.state, ho.from, ho.lines, ho.importVersion], ["done", "twitch-events", journalBefore.length, 2]);
   const lines = await S.recent(ctx, 100);
   assert.deepEqual(lines.map((l) => l.id).sort(), journalBefore.map((l) => l.id).sort());
   for (const b of journalBefore) {
@@ -200,9 +203,9 @@ test("upgrade from the real 1.94.0: no alert shows twice across the hand-over, a
   assert.equal(await deliverTo({ W: (await import("../modules/alerts-overlay/twitch/webhook.mjs")), St: S, E: es }, ctx, TYPES.raid, { ...EV.raid, from_broadcaster_user_login: "camille", from_broadcaster_user_name: "Camille" }, { id: "new-raid", at: now, now }), 204);
   await pull(now + 1000);
   assert.deepEqual(shown.map((a) => a.message), ["Camille raids with 120 viewers"]);
-  await tw.decideText(ctx, "old-2", "accept", () => {});
+  await tw.decideText(ctx, RID[2], "accept", () => {});
   await new Promise((go) => setImmediate(go));
-  assert.equal((await S.byId(ctx, "old-2")).flag.state, "accepted", "the overlay marks its own journal");
+  assert.equal((await S.byId(ctx, RID[2])).flag.state, "accepted", "the overlay marks its own journal");
 });
 
 test("upgrade from the real 1.94.0: the old module is retired: no listening, its page says where to go, its dock address leads to the new dock with the same key", { skip }, async () => {
@@ -238,6 +241,63 @@ test("the hand-over after a removal without it: a subscription left at Twitch ac
   assert.equal((await L.ensureListening(ctx, { channel: "" })).code, "listening");
   assert.ok(!fake.subs.some((x) => x.id === "left")); assert.ok(fake.subs.some((x) => x.id === "bot"), "another module's subscription is never touched");
   assert.ok(fake.subs.some((x) => x.type === "channel.follow" && x.transport.callback === `${SITE}/m/alerts-overlay/webhook`));
+});
+
+test("1.18.1: the ids of the journal are Twitch's real message ids (base64 with = + / - _); test and replay lines are not copied", () => {
+  for (const id of RID) assert.ok(home.importLine({ id, kind: "follow", at: NOW, receivedAt: NOW, source: "twitch" }, "twitch-events"), id);
+  for (const id of ["", "a b", "x\u0000", "é", "a".repeat(101)]) assert.equal(home.importLine({ id, kind: "follow", at: NOW, source: "twitch" }, "x"), null, JSON.stringify(id));
+  for (const source of ["test", "replay"]) assert.equal(home.importLine({ id: "test-abc", kind: "follow", at: NOW, source }, "x"), null, source);
+  assert.equal(home.importLine({ id: RID[0], kind: "follow", at: NOW, source: "catchup", missed: true }, "x").missed, true);
+});
+
+test("1.18.1: a hand-over of 1.18.0 that copied 0 lines copies the journal again, once, without release; the lines received since stay, newest first; no duplicate, nothing shown again", { skip }, async (t) => {
+  const old = await oldSite();
+  // a test line in the old journal (it must not come back: a test always shows on screen)
+  await OLD.evP.sendTest(old.evCtx, "raid");
+  const ctx = await update(old);
+  await def.migrations[2](ctx);
+  await def.tasks.listen.run(ctx);   // the hand-over of 1.18.1 (copies the five lines)…
+  // …turned back into what 1.18.0 left on the site: the state taken over, the subscriptions moved, but NO journal line and no importVersion
+  for (const r of await ctx.api.store.list(S.COL, { limit: 100 })) await ctx.api.store.remove(r.id);
+  await S.updateState(ctx, (x) => { x.handover = { state: "done", from: "twitch-events", at: Date.now() - 3_600_000, lines: 0, releasedAt: Date.now() - 3_600_000, callback: `${SITE}/m/twitch-events/webhook` }; });
+  // two events received here since then (the 4 recent lines of the site, in short)
+  const W = await import("../modules/alerts-overlay/twitch/webhook.mjs");
+  const now = Date.now();
+  t.mock.method(Date, "now", () => now);
+  for (const [i, id] of ["bmV3LWZvbGxvdw==", "bmV3LXJlZGVlbQ=="].entries()) assert.equal(await deliverTo({ W, St: S, E: es }, ctx, i ? "channel.channel_points_custom_reward_redemption.add" : TYPES.follow, i ? EV.redeem() : EV.follow, { id, at: now - 1000 + i, now }), 204);
+  const recentBefore = (await S.recent(ctx, 10)).map((l) => l.id);
+  const shown = [];
+  const pull = async () => tw.pullTwitch(ctx, (a) => shown.push(a), { ...index.twitchEnv(ctx, Date.now()), items: await index.twitchItems(ctx), rewards: null });
+  await pull();
+  const shownBefore = shown.length;
+  const subs = old.twFake.subs.map((x) => `${x.id}:${x.transport.callback}`).sort();
+  const releasesBefore = (await OLD.evS.readState(old.evCtx)).retired.at;
+  // the update to 1.18.1: the next pass copies the journal again
+  await def.tasks.listen.run(ctx);
+  const lines = await S.recent(ctx, 100);
+  assert.deepEqual(lines.map((l) => l.id), [...recentBefore, ...RID.slice().reverse()], "the recent lines first (newest first), then the copied ones, each once");
+  assert.ok(lines.filter((l) => RID.includes(l.id)).every((l) => l.from === "twitch-events"));
+  assert.ok(!lines.some((l) => l.source === "test"), "the test line of the old journal is not copied");
+  const ho = await home.handoverOf(ctx);
+  assert.deepEqual([ho.lines, ho.importVersion], [5, 2]);
+  assert.equal((await OLD.evS.readState(old.evCtx)).retired.at, releasesBefore, "no second release");
+  assert.deepEqual(old.twFake.subs.map((x) => `${x.id}:${x.transport.callback}`).sort(), subs, "the subscriptions are untouched");
+  // nothing is shown again: the copied lines are older than the alerts' age limit
+  await pull();
+  assert.equal(shown.length, shownBefore, "no old line shows on screen");
+  // once: a third pass copies nothing, the page opens without copying
+  await def.tasks.listen.run(ctx);
+  await def.adminPanel(ctx, { query: {} });
+  assert.equal((await S.recent(ctx, 100)).length, 7);
+  const log = (ctx.calls.log ?? []).filter((l) => l.action === "twitch.handover").map((l) => Number(l.data.lines));
+  assert.deepEqual(log.slice(-1), [5], "the log says how many lines were copied again");
+});
+
+test("1.18.1: without Twitch activity any more, a hand-over of 1.18.0 stays as it is (nothing to copy, nothing fails)", async () => {
+  const w = world({ key: "alerts-overlay", locale: "en" });
+  await S.updateState(w.ctx, (x) => { x.handover = { state: "done", from: "twitch-events", at: NOW, lines: 0 }; });
+  assert.deepEqual(await home.takeOver(w.ctx), { done: true, lines: 0, already: true, reimport: "nothing" });
+  assert.equal(await home.mode(w.ctx), "on");
 });
 
 /* ───────────── A site without Twitch ───────────── */

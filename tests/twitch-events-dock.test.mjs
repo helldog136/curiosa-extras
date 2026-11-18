@@ -270,7 +270,7 @@ test("admin: the OBS dock tab says where to copy the address and how to add it i
   assert.match(blocks.find((b) => b.type === "markdown" && !b.tab && /Custom browser docks/.test(b.text)).text, /Custom browser docks/);
   const renew = blocks.find((b) => b.type === "table" && !b.tab && b.rowIds?.[0] === "dock");
   assert.ok(renew.rowActions[0].confirm.length > 20 && renew.rowActions[0].danger === true);
-  assert.equal(manifest.version, "1.18.0");
+  assert.equal(manifest.version, "1.18.1");
   const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   for (const locale of ["en", "fr"]) assertAdminPageErgonomics(await mod.adminPanel((await site({ locale })).ctx, { query: {} }));
 });
