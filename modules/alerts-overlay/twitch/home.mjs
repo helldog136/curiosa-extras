@@ -76,44 +76,93 @@ export async function canHandOver(ctx) {
   try { const p = await ctx.api.services.providers(HANDOVER); return Array.isArray(p) && p.length > 0; } catch { return false; }
 }
 const STATE_KEYS = ["enabled", "dockSecret", "liveSince", "lastEventAt", "okAt", "subLogins", "catchup", "last"];
-const LINE = /^[A-Za-z0-9._:-]{1,100}$/;
-/** A line of the old journal, made safe: the fields of a journal line only, the id checked, the address of its first journal kept (`from`). */
+// (1.18.1) The ids of the journal are Twitch's message ids as Twitch sends them: base64 strings with `=`, `+`, `/`, `-`, `_` (1.18.0 accepted none of `=+/`, so on a
+// real site every line was left out: "taken over: 0 journal lines"). Anything Twitch activity could store (any string of 1 to 100 characters, no control character).
+export const LINE = /^[A-Za-z0-9._:=+\/-]{1,100}$/;
+/** The version of the copy of the journal: 2 since 1.18.1 (a hand-over of 1.18.0 is copied again, once, see `reimport`). */
+export const IMPORT_VERSION = 2;
+/**
+ * A line of the old journal, made safe: the fields of a journal line only, the id checked, the address of its first journal kept (`from`). Test and replay lines
+ * are left out (null): they are short-lived, and a test or a replay always shows on screen, whatever its age (a copied one would show again).
+ */
 export function importLine(d, from) {
   if (!d || typeof d !== "object" || !LINE.test(String(d.id ?? ""))) return null;
-  const out = st.toDoc(String(d.id), d, { source: ["twitch", "test", "replay", "catchup"].includes(d.source) ? d.source : "twitch", of: d.of ?? null, now: Number.isFinite(d.receivedAt) ? d.receivedAt : Date.now(), missed: d.missed === true });
+  if (d.source === "test" || d.source === "replay") return null;
+  const out = st.toDoc(String(d.id), d, { source: ["twitch", "catchup"].includes(d.source) ? d.source : "twitch", of: d.of ?? null, now: Number.isFinite(d.receivedAt) ? d.receivedAt : Date.now(), missed: d.missed === true });
   if (Number.isFinite(d.at)) out.at = d.at;
   if (d.flag && typeof d.flag === "object") out.flag = { reason: String(d.flag.reason ?? "").slice(0, 20), state: String(d.flag.state ?? "").slice(0, 20), at: Number(d.flag.at) || 0 };
   out.from = String(from).slice(0, 60);
   return out;
 }
 /**
- * Takes over Twitch activity once (the home only, mode "waiting"). { done: true, lines } or { done: false, code: "not_home" | "nothing" | "old" (no hand-over service yet) | "failed" }.
+ * Copies the journal of Twitch activity (`export`, page by page), keyed by the message id: a line already here is never copied twice. With `reorder`, the lines
+ * already in this journal (received here since the hand-over) are written again AFTER the copied ones, so the journal stays newest first (it is read in the order
+ * the lines were written). One step for the journal: a webhook delivery waits for it. { ok: true, lines, first } or { ok: false }.
+ */
+async function copyJournal(ctx, oldKey, { reorder = false } = {}) {
+  return st.serial(ctx, "journal", async () => {
+    const pages = [];
+    let after = null;
+    for (let page = 0; page < LIMITS.exportPages; page++) {
+      const r = await call(ctx, "export", { after, limit: LIMITS.exportPage });
+      if (!r?.ok) return { ok: false };
+      pages.push(r);
+      if (!r.next) break;
+      after = r.next;
+    }
+    const from = String(pages[0]?.key ?? oldKey);
+    const docs = [];
+    for (const r of pages) for (const d of Array.isArray(r.lines) ? r.lines : []) { const doc = importLine(d, from); if (doc) docs.push(doc); }
+    const here = [];
+    if (reorder) { let cursor; do { const p = await ctx.api.store.page(st.COL, { limit: 200, order: "asc", ...(cursor ? { cursor } : {}) }); here.push(...p.items); cursor = p.next; } while (cursor); }
+    const known = new Set(here.map((r) => r.data?.id ?? r.key));
+    const fresh = docs.filter((d) => !known.has(d.id));
+    let lines = 0;
+    for (const doc of fresh) {
+      if (!reorder && (await ctx.api.store.getByKey(st.COL, doc.id))) continue;
+      await ctx.api.store.add(st.COL, doc, { key: doc.id });
+      lines++;
+    }
+    // each line received here is written again after the copied ones, THEN its first copy goes: a stop half way leaves a line twice, never none
+    if (reorder && fresh.length) for (const r of here) { await ctx.api.store.add(st.COL, r.data, { key: r.key ?? r.data?.id }); await ctx.api.store.remove(r.id); }
+    st.memoryOf(ctx).rev = (st.memoryOf(ctx).rev ?? 0) + 1;
+    return { ok: true, lines, first: pages[0] ?? null, from };
+  });
+}
+/**
+ * (1.18.1) A hand-over made by 1.18.0 left the journal out (see LINE): it is copied again, once, while Twitch activity is still installed. Only `export` runs:
+ * no `release`, no state, no options (they were taken over). The lines received here since then stay, after the copied ones. { done, lines } or { done: false, code }.
+ */
+export async function reimport(ctx, ho, { now = Date.now() } = {}) {
+  const old = await oldOne(ctx);
+  if (!old || !(await canHandOver(ctx))) return { done: false, code: old ? "old" : "nothing" };
+  const r = await copyJournal(ctx, ho.from ?? old.key, { reorder: true });
+  if (!r.ok) return { done: false, code: "failed" };
+  await st.updateState(ctx, (x) => { x[DOC] = { ...(x[DOC] ?? {}), lines: (Number(x[DOC]?.lines) || 0) + r.lines, importVersion: IMPORT_VERSION, reimportedAt: now }; });
+  try { await ctx.api.log?.write?.({ action: "twitch.handover", target: r.from, data: { from: r.from, lines: r.lines } }); } catch { /* the log never breaks the copy */ }
+  return { done: true, lines: r.lines, reimported: true };
+}
+/**
+ * Takes over Twitch activity once (the home only). { done: true, lines } or { done: false, code: "not_home" | "nothing" | "old" (no hand-over service yet) | "failed" }.
  * Safe to call at every pass: once done, it returns at once; a failure half way is taken up again at the next pass (nothing is lost, nothing is copied twice).
+ * (1.18.1) A hand-over of 1.18.0 (no `importVersion`) copies the journal again, once (`reimport`).
  */
 export async function takeOver(ctx, { now = Date.now() } = {}) {
   if (!(await isHome(ctx))) return { done: false, code: "not_home" };
   const ho = await handoverOf(ctx);
-  if (ho?.state === "done") return { done: true, lines: ho.lines ?? 0, already: true };
+  if (ho?.state === "done") {
+    if (Number(ho.importVersion) >= IMPORT_VERSION) return { done: true, lines: ho.lines ?? 0, already: true };
+    const r = await reimport(ctx, ho, { now });
+    return r.done ? r : { done: true, lines: ho.lines ?? 0, already: true, reimport: r.code };
+  }
   const old = await oldOne(ctx);
   if (!old) return { done: false, code: "nothing" };
   if (!(await canHandOver(ctx))) return { done: false, code: "old" };
   const rel = await call(ctx, "release", { by: ctx.instance.key });
   if (!rel?.ok) return { done: false, code: "failed" };
-  let after = null, lines = 0, first = null;
-  for (let page = 0; page < LIMITS.exportPages; page++) {
-    const r = await call(ctx, "export", { after, limit: LIMITS.exportPage });
-    if (!r?.ok) return { done: false, code: "failed" };
-    if (!first) first = r;
-    for (const d of Array.isArray(r.lines) ? r.lines : []) {
-      const doc = importLine(d, r.key ?? old.key);
-      if (!doc) continue;
-      if (await ctx.api.store.getByKey(st.COL, doc.id)) continue;
-      await ctx.api.store.add(st.COL, doc, { key: doc.id });
-      lines++;
-    }
-    if (!r.next) break;
-    after = r.next;
-  }
+  const copied = await copyJournal(ctx, old.key);
+  if (!copied.ok) return { done: false, code: "failed" };
+  const lines = copied.lines, first = copied.first;
   const from = String(first?.key ?? old.key);
   const released = Number(rel.at) || now;
   await st.updateState(ctx, (x) => {
@@ -128,9 +177,8 @@ export async function takeOver(ctx, { now = Date.now() } = {}) {
     x.options = { ...keep, ...(x.options ?? {}) };
     // the listening stopped there at `released`: the next pass catches up what Twitch lets us read since then
     if (s.okAt || x.okAt) x.gapSince = Math.min(released, x.gapSince ?? released);
-    x[DOC] = { state: "done", from, at: now, lines, releasedAt: released, callback: typeof rel.callback === "string" ? rel.callback.slice(0, 300) : null };
+    x[DOC] = { state: "done", from, at: now, lines, importVersion: IMPORT_VERSION, releasedAt: released, callback: typeof rel.callback === "string" ? rel.callback.slice(0, 300) : null };
   });
-  st.memoryOf(ctx).rev = (st.memoryOf(ctx).rev ?? 0) + 1;
   await opt.loadOptions(ctx);
   try { await ctx.api.log?.write?.({ action: "twitch.handover", target: from, data: { from, lines } }); } catch { /* the log never breaks the hand-over */ }
   return { done: true, lines };

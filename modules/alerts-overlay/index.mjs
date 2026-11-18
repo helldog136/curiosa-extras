@@ -412,6 +412,7 @@ export default {
     listen: { everyMinutes: 1, run: async (ctx) => {
       const m = await home.mode(ctx);
       if (m === "waiting") { const r = await home.takeOver(ctx); if (!r.done) return; if ((await home.mode(ctx)) !== "on") return; } else if (m !== "on") return;
+      else await home.takeOver(ctx).catch(() => null);   // (1.18.1) a hand-over of 1.18.0 copies the journal again, once; afterwards one read of the state
       await evOpt.loadOptions(ctx);
       await evCycle.check(ctx, evOpt.settingsOf(ctx));
     } },
@@ -552,6 +553,7 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
     let m = await home.mode(ctx);
     const waiting = m === "waiting" ? await waitingBlocks(ctx) : null;
     if (m === "waiting" && !waiting) m = await home.mode(ctx);
+    else if (m === "on") await home.takeOver(ctx).catch(() => null);   // (1.18.1) the copy of the journal again, at once when the page opens
     const shown = await home.twitchShown(ctx, m);
     const ev = m === "on" ? await evAdmin.panel(ctx, { query: query ?? {} }) : [];
     return [
