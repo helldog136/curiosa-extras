@@ -251,7 +251,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-ical",
       "ref": "v1.101.1",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗓️",
@@ -259,7 +259,7 @@
         "planning.slot"
       ],
       "requires": {
-        "core": "0.2.5"
+        "core": "0.36.0"
       },
       "places": [
         "calendar.schedule"
@@ -412,7 +412,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/community-stats",
       "ref": "v1.101.1",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
@@ -746,13 +746,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
       "ref": "v1.101.1",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📣",
       "requires": {
-        "core": "0.6.0"
+        "core": "0.36.0"
       },
       "needs": [
         {
@@ -1047,12 +1047,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
       "ref": "v1.101.1",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
       "requires": {
-        "core": "0.6.0"
+        "core": "0.36.0"
       },
       "offers": [
         "game.cover"
@@ -1524,13 +1524,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
       "ref": "v1.101.1",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔴",
       "requires": {
-        "core": "0.2.2"
+        "core": "0.36.0"
       },
       "needs": [
         {
@@ -2528,12 +2528,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/supporters",
       "ref": "v1.101.1",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤝",
       "requires": {
-        "core": "0.6.0"
+        "core": "0.36.0"
       },
       "offers": [
         {
@@ -3091,7 +3091,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
       "ref": "v1.101.1",
-      "version": "2.6.1",
+      "version": "2.6.2",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
