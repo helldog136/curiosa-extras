@@ -45,7 +45,7 @@ beforeEach(() => { mock.timers.setTime(Date.parse("2026-10-14T10:00:00Z")); over
 
 test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec taille minimale, plage de ratios, style suivi, options minimales", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.9.0"); assert.equal(manifest.minCore, "0.11.0");
+  assert.equal(manifest.version, "2.9.1"); assert.equal(manifest.minCore, "0.11.0");
   assert.deepEqual(manifest.overlayElements.map((e) => e.id), ["week", "next"]);
   for (const e of manifest.overlayElements) {
     assert.equal(e.fit, "fluid", e.id); assert.equal(e.followsStyle, true, e.id); assert.equal(e.demo, true, e.id);
@@ -277,10 +277,13 @@ test("une lecture en échec est retentée vite mais pas à chaque lecteur ; le c
 
 /* ───────────────────────────── Non-régression ───────────────────────────── */
 
+/** Texts (objects with fr and en) are left out of the comparison: a text-only patch (R33 wording) is not a change of structure. */
+const noTexts = (v) => (Array.isArray(v) ? v.map(noTexts) : v && typeof v === "object" ? (typeof v.fr === "string" && typeof v.en === "string" ? "<text>" : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, noTexts(x)]))) : v);
+
 test("rien ne change pour l'existant : page, accueil, image, admin, MCP, réglages et routes identiques à ceux de la 1.25.0 (octet pour octet)", async () => {
   const golden = planningGolden(JSON.parse(fs.readFileSync(path.join(here, "golden/planning-1.25.0.json"), "utf8")));
   const now = await planningSnapshot(ROOT);
-  assert.deepEqual(now.manifest, golden.manifest, "le manifeste n'a changé que par version, minCore et overlayElements");
+  assert.deepEqual(noTexts(now.manifest), noTexts(golden.manifest), "le manifeste n'a changé que par version, minCore et overlayElements");
   assert.deepEqual(now.keys, golden.keys);
   assert.deepEqual(now.scenes, golden.scenes, "page publique et sections d'accueil, dans chaque apparence");
   assert.deepEqual(now.mcp, golden.mcp);

@@ -6,7 +6,7 @@
     "fr": "Annuaire",
     "en": "Directory"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "menuGroup": "content",
   "description": {
     "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
@@ -135,8 +135,8 @@
         "en": "A few words under the title"
       },
       "help": {
-        "fr": "Facultatif. Une ou deux phrases pour présenter l'annuaire.",
-        "en": "Optional. One or two sentences to introduce the directory."
+        "fr": "Par exemple : Les membres de notre collectif.",
+        "en": "For example: The members of our collective."
       }
     },
     {

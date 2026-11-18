@@ -42,8 +42,8 @@ test("panneau : un annuaire vide propose un gabarit ; les sections catégories, 
   assert.ok(t.includes("Commencer avec un modèle"));
   const form = byType(blocks, "adminForm").find((f) => f.action === "template");
   assert.deepEqual(form.fields[0].options.map((o) => o.value), ["association", "collective", "empty"]);
-  assert.ok(t.includes("Aucune catégorie publique pour l'instant") && t.includes("Personne dans l'équipe pour l'instant"));
-  assert.ok(t.includes("Choisissez d'abord une catégorie à rendre publique"));
+  assert.ok(t.includes("Aucune catégorie publique") && t.includes("Personne dans l'équipe"));
+  assert.ok(t.includes("Choisissez une catégorie à rendre publique"));
 });
 
 test("panneau : sans droit d'écriture, on voit tout mais aucun formulaire ni bouton de changement", async () => {

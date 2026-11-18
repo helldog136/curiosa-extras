@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.9.0",
+  "version": "2.9.1",
   "menuGroup": "tools",
   "minCore": "0.11.0",
   "description": {
@@ -349,8 +349,8 @@
         "fr": "Fuseau horaire d'affichage (facultatif)"
       },
       "help": {
-        "en": "IANA name, e.g. Europe/Paris, America/Montreal. Left empty, the time zone of your calendars is used.",
-        "fr": "Nom IANA, ex. Europe/Paris, America/Montreal. Laissé vide, c'est le fuseau de vos agendas qui est utilisé."
+        "fr": "Par exemple Europe/Paris. Vide : le fuseau de vos agendas.",
+        "en": "For example Europe/Paris. Empty: the time zone of your calendars."
       },
       "optional": true
     },

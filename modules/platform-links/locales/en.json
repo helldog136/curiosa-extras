@@ -8,7 +8,7 @@
   "colLink": "Link",
   "editHeading": "Edit: {name}",
   "editPlace": "This link is at position {n} of {total}. Below the form, the Move up and Move down buttons change the order of the icons on the site.",
-  "empty": "No links yet. Add the first one with the form below: just paste the address of your page.",
+  "empty": "No links. Paste the address of your page in the form below.",
   "err_choice": "Pick one of the options in the list.",
   "err_confirm": "Tick the box to confirm the removal.",
   "err_label_needed": "Give this link a name, for example “My shop”.",

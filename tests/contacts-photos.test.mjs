@@ -149,7 +149,7 @@ test("bouton « Actualiser la photo » : visible seulement s'il y a un compte Tw
   const only = await svc.create(down, { name: "Seule Bluesky" });
   await B.addAccount(down, { id: only.id, network: "bluesky", handle: "seule.example.test" });
   await withFakeFetch({ [BSKY]: netReplies.down() }, async () => {
-    assert.equal((await def.adminActions.refreshPhoto(down, { id: only.id })).error, "Impossible de joindre Bluesky pour l'instant. La fiche garde ses dernières données ; réessayez dans quelques minutes.");
+    assert.equal((await def.adminActions.refreshPhoto(down, { id: only.id })).error, "Impossible de joindre Bluesky. La fiche garde ses dernières données ; réessayez dans quelques minutes.");
   });
 });
 

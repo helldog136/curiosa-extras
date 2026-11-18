@@ -48,7 +48,7 @@ function framesBlocks(ctx, config, which) {
   });
   if (a.frames.length < M.ANIM.frames) {
     out.push({ type: "adminForm", action: "addFrame", tab: "animation", title: ctx.t("anAddTitle"), submitLabel: ctx.t("anAdd"), fields: [{ name: "which", kind: "hidden", label: "which", value: which }, { name: "image", kind: "image", label: ctx.t("anFrameLabel"), value: "", help: ctx.t("anFrameHelp", { max: M.ANIM.frames }) }] });
-  } else out.push({ type: "banner", tone: "info", text: ctx.t("anFull", { max: M.ANIM.frames }), tab: "animation" });
+  } else out.push({ type: "banner", tone: "warning", text: ctx.t("anFull", { max: M.ANIM.frames }), tab: "animation" });
   return out;
 }
 

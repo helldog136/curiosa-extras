@@ -62,7 +62,7 @@ function statusBlocks(ctx, wall, contactsPath) {
     if (wall.hideHow === "gone") out.push({ type: "banner", tone: "warning", text: t("adminHideGone"), href: `?tab=settings` });
   }
   for (const p of wall.problems ?? []) if (["gone", "duplicate"].includes(p.problem) && p.n > 1) out.push({ type: "banner", tone: "warning", text: t(`adminGroup_${p.problem}`, { n: p.n }), href: `?tab=settings` });
-  if (wall.state === "ok" && wall.groups.some((g) => g.truncated)) out.push({ type: "banner", tone: "info", text: t("adminTruncated", { max: LIMITS.perGroup }) });
+  if (wall.state === "ok" && wall.groups.some((g) => g.truncated)) out.push({ type: "banner", tone: "warning", text: t("adminTruncated", { max: LIMITS.perGroup }) });
   void contactsPath;
   return out;
 }

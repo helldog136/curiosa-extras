@@ -262,7 +262,7 @@ async function albumView(ctx, a, q, rights, blocks) {
 
   if (photos.length) {
     const missing = photos.filter((p) => !p.alt).length;
-    if (missing) blocks.push({ type: "banner", tone: "info", text: ctx.t("altMissing", { count: missing }) });
+    if (missing) blocks.push({ type: "banner", tone: "warning", text: ctx.t("altMissing", { count: missing }) });
     blocks.push(photoGrid(ctx, a, part, offset));
     blocks.push({
       type: "table", columns: [ctx.t("colPhoto")],

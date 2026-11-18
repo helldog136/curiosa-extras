@@ -212,7 +212,7 @@ test("recherche : sans tenir compte des accents ni des majuscules, dans tous les
   assert.match(found, /Archivées/, "le résultat dit où se trouve l'idée");
   const redirect = await def.adminActions.search(ctx, { q: "  éléphant  rose " });
   assert.equal(redirect.redirect, "?q=%C3%A9l%C3%A9phant+rose");
-  assert.match(html(await def.adminPanel(ctx, { query: { q: "zzz-introuvable" } })), /Rien ne correspond/);
+  assert.match(html(await def.adminPanel(ctx, { query: { q: "zzz-introuvable" } })), /Aucun résultat/);
   assert.equal((await def.adminActions.search(ctx, { q: "" })).redirect, "?");
 });
 
@@ -356,7 +356,7 @@ test("rythme : une par semaine — dans les temps, en retard (message doux), lon
   assert.match(lines([published("2026-10-15")])[0], /dans votre rythme/, "7 jours : encore dans les temps");
   const late = lines([published("2026-10-13")])[0];
   assert.match(late, /9 jours/);
-  assert.match(late, /Ce n'est pas grave/);
+  assert.match(late, /Dernière publication il y a/);
   assert.ok(!/retard|oubli|honte|manqu|échec|paresse/i.test(late), "jamais culpabilisant");
   const pause = lines([published("2026-08-01")])[0];
   assert.match(pause, /pause/);
@@ -387,7 +387,7 @@ test("dates visées passées : une phrase douce et une pastille, jamais pour une
   assert.match(page, /Une idée a une date visée passée\. Aucune urgence/);
   assert.equal((page.match(/class="cp-chip cp-late"/g) ?? []).length, 1);
   const idea = ideas(ctx).find((r) => r.data.title === "Passée");
-  assert.match(html(await def.adminPanel(ctx, { query: { idea: idea.id } })), /Ce n&#39;est pas grave/);
+  assert.match(html(await def.adminPanel(ctx, { query: { idea: idea.id } })), /Changez-la/);
 });
 
 // ── Vie privée et sécurité ─────────────────────────────────────────────────────────────────────────────────────

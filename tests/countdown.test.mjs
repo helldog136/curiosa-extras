@@ -37,7 +37,7 @@ test("manifeste : valide, widget avec page, droits, outils pour les assistants, 
   assert.ok(r.ok, r.ok ? "" : r.error);
   const m = r.manifest;
   assert.equal(m.id, "countdown");
-  assert.equal(m.version, "1.4.0");
+  assert.equal(m.version, "1.4.1");
   assert.equal(m.minCore, "0.11.0");
   assert.equal(m.apiVersion, 2);
   assert.equal(m.type, "widget");
@@ -370,7 +370,7 @@ test("panneau : sans événement, une phrase d'accueil et un formulaire ; sans b
 test("panneau : réglages — l'explication « où l'afficher » est dans l'onglet des réglages", async () => {
   const panel = await mod.adminPanel(ctxFor(), { query: {} });
   const hint = panel.find((b) => b.tab === "settings");
-  assert.match(hint.text, /Page d’accueil/);
+  assert.match(hint.text, /Page d.accueil/);
   assert.match(hint.text, /OBS/);
 });
 

@@ -5,7 +5,7 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
   "menuGroup": "content",
   "minCore": "0.11.0",
   "description": {
@@ -422,8 +422,8 @@
         "en": "Time zone of the site"
       },
       "help": {
-        "fr": "Les heures que vous écrivez sont celles de ce fuseau, sauf indication contraire sur un événement. Une personne d'un autre fuseau voit aussi l'heure chez lui.",
-        "en": "The times you write are in this time zone unless an event says otherwise. A visitor in another time zone also sees the time where they live."
+        "fr": "Les heures que vous écrivez sont celles de ce fuseau, sauf indication contraire sur un événement. Une personne d'un autre fuseau voit l'heure chez elle.",
+        "en": "The times you write are in this time zone unless an event says otherwise. Someone in another time zone sees the time where they live."
       }
     },
     {
