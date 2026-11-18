@@ -11,7 +11,7 @@
   "statusDraft": "Votre mascotte est en brouillon : le public ne la voit pas encore. Vérifiez l'aperçu et les phrases, puis cliquez sur « Publier ».",
   "statusSilent": "Elle est publiée mais n'a aucune phrase publiée : elle ne dira rien. Ajoutez une phrase dans l'onglet « Phrases ».",
   "statusNoPage": "Elle est publiée mais aucune page n'est listée : elle ne se montrera nulle part. Complétez la liste dans l'onglet « Quand et où ».",
-  "statusLive": "Votre mascotte est publiée : le public peut la croiser, une fois par visite, après quelques secondes.",
+  "statusLive": "Votre mascotte est publiée.",
   "publishButton": "Publier la mascotte",
   "unpublishButton": "Remettre en brouillon",
   "publishedOk": "Votre mascotte est publiée.",

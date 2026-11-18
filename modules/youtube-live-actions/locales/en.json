@@ -7,7 +7,7 @@
   "st_unverified": "I cannot check your YouTube channel right now. I keep trying by myself while the page is open.",
   "st_budget": "Paused: the share of YouTube's limit planned for today ({percent}%) is used up. Reading resumes {when}.",
   "st_no_chat": "Your live {title} has no chat: there is nothing to read.",
-  "st_idle": "No YouTube live right now. I check again every minute while this page stays open.",
+  "st_idle": "No YouTube live right now.",
   "st_reading": "I am reading the chat of your live {title}. Last read: {when}.",
   "st_just_now": "just now",
   "st_starting": "Checking your live…",
@@ -164,5 +164,7 @@
   "chat_started": "Everything is resumed.",
   "st_connect": "Connect your YouTube account in the YouTube connector. YouTube does not let this chat be read with the site's access code alone.",
   "connect_link": "Open the YouTube connector",
-  "res_alert_only": "Shown as an alert only (no Home Assistant)"
+  "res_alert_only": "Shown as an alert only (no Home Assistant)",
+  "jr_col": "Log",
+  "jr_clear_confirm": "Clear the log? Its {n} events are deleted."
 }

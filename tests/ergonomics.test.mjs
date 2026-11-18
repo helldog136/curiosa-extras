@@ -189,3 +189,28 @@ test("les 70 modules du dépôt : le tableau --report est cohérent avec la base
   assert.equal(total, Object.values(baseline.modules).reduce((n, l) => n + l.length, 0), "la base contient exactement les écarts constatés");
   assert.match(formatReport(rows, { top: 10 }), /TOUS/);
 });
+
+/* ───────────── R32 : une bannière qui ne demande rien ───────────── */
+import { bannersWithoutAction, readBannerBaseline, compareBanners } from "./helpers/banners.mjs";
+
+test("R32 : une bannière « info » ou « succès » sans lien ne dit rien à faire : état en un mot + info-bulle, ou rien (liste connue qui ne fait que rétrécir)", (t) => {
+  const known = readBannerBaseline();
+  assert.ok(known, "tests/banners-baseline.json is missing: node tests/helpers/banners.mjs --write");
+  const found = bannersWithoutAction();
+  const { fresh, gone } = compareBanners(found, known.known);
+  t.diagnostic(`⚠ ${known.known.length - gone.length} known banner(s) without an action to resolve`);
+  assert.deepEqual(fresh, [], `NEW banner without an action (R32): give it a link (href), turn it into a status badge with a tooltip, or remove it.\n${fresh.join("\n")}`);
+  assert.deepEqual(gone, [], `Banner fixed or gone: remove it from the baseline with node tests/helpers/banners.mjs --write\n${gone.join("\n")}`);
+});
+
+test("R32 : le détecteur voit une bannière sans lien et ignore avertissements et bannières avec lien", () => {
+  const dir = makeTempDir("banners-");
+  fs.mkdirSync(path.join(dir, "modules/demo"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "modules/demo/admin.mjs"), [
+    'export const a = (ctx) => [{ type: "banner", tone: "info", text: ctx.t("fine") }];',
+    'export const b = (ctx) => [{ type: "banner", tone: "warning", text: ctx.t("problem") }];',
+    'export const c = (ctx) => [{ type: "banner", tone: "info", text: ctx.t("pointer"), href: "/x" }];',
+    'export const d = (ctx) => [{ type: "banner", tone: "success", text: ctx.t("ok") }];',
+  ].join("\n"));
+  assert.deepEqual(bannersWithoutAction(dir).map((b) => b.id), ["demo/admin.mjs fine", "demo/admin.mjs ok"]);
+});

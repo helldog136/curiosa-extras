@@ -136,7 +136,6 @@ const OVERLAY_POSITIONS = {
   "bottom-center": "bottom:2.5vmin;left:50%;transform:translateX(-50%)",
   "bottom-right": "bottom:2.5vmin;right:2.5vmin",
 };
-export const OVERLAY_POSITION_KEYS = Object.keys(OVERLAY_POSITIONS);
 
 /** Ce que la source OBS reçoit pour un événement : de quoi compter, le message de fin et le moment où elle s'efface. */
 export function overlayEvent(ctx, v, endMs) {

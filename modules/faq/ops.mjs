@@ -61,5 +61,3 @@ export async function deleteRow(ctx, id) {
   }
 }
 
-/** Les thèmes dans l'ordre, pour un menu. */
-export const themeList = (ctx) => loadThemes(ctx);

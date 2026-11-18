@@ -125,7 +125,7 @@
   "q_pause_btn": "Pause the alerts",
   "q_resume_btn": "Resume the alerts",
   "q_clear_btn": "Empty the queue",
-  "q_pause_ok": "Paused: new alerts are held, nothing is lost.",
+  "q_pause_ok": "Paused: new alerts are held.",
   "q_resume_ok": "Resumed: {n} held alerts come out.",
   "q_clear_ok": "Queue emptied: {n} alerts dropped.",
   "ytTestSubmit": "Send the fake Super Chat",
@@ -437,7 +437,7 @@
   "dock_paused_note": "Alerts paused, {n} held until you resume.",
   "dock_held": "{n} held",
   "dock_cleared": "Queue emptied: {n} dropped.",
-  "dock_paused_ok": "Alerts paused. Nothing is lost.",
+  "dock_paused_ok": "Alerts paused.",
   "dock_resumed_ok": "Alerts resumed: {n} released.",
   "dock_tested": "Test sent.",
   "dock_err_rate": "Too many tries. Wait a little.",
@@ -704,5 +704,7 @@
   "gauge_session_label_subs": "Subs of the live",
   "gauge_session_label_bits": "Bits of the live",
   "gauge_session_label_follows": "Follows of the live",
-  "gauge_update_core": "Update Curiosa to show this element"
+  "gauge_update_core": "Update Curiosa to show this element",
+  "q_col": "Alerts waiting",
+  "q_clear_confirm": "Empty the queue? The {n} alerts still waiting are dropped and never shown."
 }

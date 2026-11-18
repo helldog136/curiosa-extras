@@ -112,7 +112,6 @@ export const STEPS = [
   },
 ];
 
-export const stepIds = STEPS.map((s) => s.id);
 export const stepById = (id) => STEPS.find((s) => s.id === id) ?? null;
 export const appliedSteps = (a) => STEPS.filter((s) => s.applies(a));
 

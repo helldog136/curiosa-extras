@@ -1,6 +1,6 @@
 {
   "guide": "Les jaquettes sont cherchées chez Rawg, puis chez Steam, puis chez Twitch. Un code Rawg est facultatif, mais il élargit les résultats.\n\n1. Créez un compte gratuit sur [rawg.io/apidocs](https://rawg.io/apidocs) et copiez votre code d'accès.\n2. Ouvrez l'onglet « Réglages » de cette page et collez-le dans « Code d'accès gratuit Rawg ».\n3. Revenez ici et cliquez sur « Tester le code ».",
-  "key_adopted": "Le code d'accès de votre site a été repris tout seul : vous n'avez rien à refaire. Pour le remplacer, collez-en un autre dans l'onglet « Réglages ».",
+  "key_adopted": "Repris de votre site. Le code de l'onglet « Réglages » a le dessus.",
   "forget_key": "Oublier le code repris",
   "forgot_key": "C'est fait : le code repris est oublié.",
   "test_key": "Tester le code",
@@ -118,5 +118,8 @@
   "copy_why_size": "l'image est trop lourde (300 Ko au plus)",
   "copy_why_format": "le fichier n'est pas une image PNG, JPEG ou WebP",
   "copy_why_network": "le site des images n'a pas répondu",
-  "copy_retry": "Copier l'image maintenant"
+  "copy_retry": "Copier l'image maintenant",
+  "key_col": "Code d'accès",
+  "key_state": "Repris",
+  "forget_key_confirm": "Oublier le code repris ? Les jaquettes en ligne s'arrêtent jusqu'à ce que vous colliez le vôtre dans l'onglet « Réglages »."
 }

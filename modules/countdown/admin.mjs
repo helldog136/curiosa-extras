@@ -175,7 +175,7 @@ export async function panel(ctx, { query } = {}) {
       rowIds: gone.map((v) => v.id),
       rowActions: [...(canEdit ? [{ label: ctx.t("btnReuse"), href: "?copy={id}" }] : []), ...(canDelete ? [{ label: ctx.t("btnDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }] : [])],
     });
-    if (canDelete) blocks.push({ type: "adminForm", action: "cleanup", title: ctx.t("cleanupTitle"), submitLabel: ctx.t("btnCleanup", { n: gone.length }), fields: [] });
+    if (canDelete) blocks.push({ type: "table", columns: [ctx.t("cleanupTitle")], pageSize: 0, rows: [[String(gone.length)]], rowIds: ["cleanup"], rowActions: [{ label: ctx.t("btnCleanup", { n: gone.length }), action: "cleanup", confirm: ctx.t("cleanupConfirm", { n: gone.length }), danger: true }] });
   }
   if (all.length) blocks.push({ type: "download", name: "calendar", label: ctx.t("downloadAll") });
   blocks.push({ type: "markdown", text: ctx.t("whereToShow"), tab: "settings" });

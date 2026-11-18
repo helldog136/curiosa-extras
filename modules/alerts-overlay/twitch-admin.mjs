@@ -51,7 +51,7 @@ export async function panel(ctx, { query = {}, twitch = "editor" } = {}) {
   const queueBlocks = [
     { type: "banner", tone: q.paused ? "warning" : "info", text: q.paused ? t("q_paused", { n: q.held }) : t("q_running", { n: q.staged }) },
     { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
-    { type: "adminForm", action: "clearQueue", submitLabel: t("q_clear_btn"), fields: [] },
+    { type: "table", columns: [t("q_col")], pageSize: 0, rows: [[String(q.held + q.staged)]], rowIds: ["queue"], rowActions: [{ label: t("q_clear_btn"), action: "clearQueue", confirm: t("q_clear_confirm", { n: q.held + q.staged }), danger: true }] },
   ];
   if (twitch === "none") return queueBlocks;
   const cfg = await tw.loadConfig(ctx), o = await opts.load(ctx);

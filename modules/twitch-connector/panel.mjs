@@ -15,6 +15,12 @@ const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
 const twitchLink = (u) => typeof u === "string" && /^https:\/\/id\.twitch\.tv\/oauth2\/authorize\?/.test(u);
 const since = (ctx, at) => { try { return new Date(at).toLocaleString(ctx.locale, { dateStyle: "long", timeStyle: "short", timeZone: ctx.timezone }); } catch { return ""; } };
+/** The state of the application in one word (the detail is in the tooltip). A carried-over application is forgotten from a discreet menu, after a confirmation that says what is lost. */
+const appStatus = (ctx, ready, carried) => ({
+  type: "table", columns: [ctx.t("col_state")], pageSize: 0,
+  rows: [[{ text: ctx.t(ready ? (carried ? "app_state_adopted" : "app_state_ready") : "app_state_incomplete"), badge: ready ? "success" : "warning", ...(carried ? { title: ctx.t("app_state_adopted_tip") } : { title: ctx.t("app_state_ready_tip") }) }]],
+  ...(carried ? { rowIds: ["app"], rowActions: [{ label: ctx.t("forget"), action: "forgetApp", confirm: ctx.t("forget_confirm"), danger: true }] } : {}),
+});
 /** What is wrong with an account, in plain words. */
 export const problemText = (ctx, c) => ctx.t(`health_${c.health.state}`, { account: c.login, list: hl.scopeWords(ctx, c.health.missing) });
 
@@ -47,8 +53,9 @@ export async function render(ctx) {
   const out = await attention(ctx, list);
   out.push({ type: "heading", text: ctx.t("app_title") });
   if (!conn.secure(own)) out.push({ type: "banner", tone: "warning", text: ctx.t("needHttps") });
-  if (ready) out.push({ type: "banner", tone: "success", text: ctx.t("app_ready") });
-  else out.push({ type: "markdown", text: [ctx.t("guide_intro"), ctx.t("guide_1"), ctx.t("guide_2")].join("\n\n") });
+  const carried = !!(await store.first(ctx, COL.app)) && (!store.text(ctx.setting("appClientId")) || !store.text(ctx.setting("appSecret")));
+  if (ready || carried) out.push(appStatus(ctx, ready, carried));
+  if (!ready) out.push({ type: "markdown", text: [ctx.t("guide_intro"), ctx.t("guide_1"), ctx.t("guide_2")].join("\n\n") });
   out.push({ type: "copy", label: ctx.t("copy_label"), text: own });
   if (!ready) out.push({ type: "markdown", text: [ctx.t("guide_3"), ctx.t("guide_4")].join("\n\n") });
   else out.push({ type: "markdown", text: ctx.t("redirect_keep") });
@@ -56,10 +63,6 @@ export async function render(ctx) {
   if (kept.length) {
     out.push({ type: "markdown", text: ctx.t("redirect_adopted") });
     out.push({ type: "table", columns: [ctx.t("col_channel"), ctx.t("col_address")], rows: kept.map((d) => [d.data.channel, d.data.redirectUri]) });
-  }
-  if ((await store.first(ctx, COL.app)) && (!store.text(ctx.setting("appClientId")) || !store.text(ctx.setting("appSecret")))) {
-    out.push({ type: "banner", tone: "info", text: ctx.t("adopted_note") });
-    out.push({ type: "adminForm", action: "forgetApp", submitLabel: ctx.t("forget"), fields: [] });
   }
 
   out.push({ type: "heading", text: ctx.t("accounts_title") });

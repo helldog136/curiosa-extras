@@ -61,7 +61,6 @@ export async function listRules(ctx) {
   const rows = await ctx.api.store.list(COLLECTION.rules, { limit: LIMITS.rules + 5 });
   return rows.map((r) => ({ id: r.id, ...rec(r.data) })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || (String(a.id) < String(b.id) ? -1 : 1)).slice(0, LIMITS.rules);
 }
-export const countRules = (ctx) => ctx.api.store.count(COLLECTION.rules);
 export function saveRule(ctx, id, data) {
   return serial(ctx, "rules", async () => {
     if (id) { const ok = await ctx.api.store.update(id, data); if (ok) return id; }

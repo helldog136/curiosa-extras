@@ -121,5 +121,7 @@
   "res_points_back": ", points given back",
   "live_yes_youtube": "**Live:** YouTube says you are live. Viewers can trigger actions.",
   "live_yes_both": "**Live:** Twitch and YouTube both say you are live. Viewers can trigger actions.",
-  "live_reason_youtube": "tells whether you are live on YouTube"
+  "live_reason_youtube": "tells whether you are live on YouTube",
+  "jr_col": "Log",
+  "jr_clear_confirm": "Clear the log? Its {n} lines are deleted."
 }
