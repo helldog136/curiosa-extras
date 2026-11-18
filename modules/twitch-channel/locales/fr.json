@@ -1,5 +1,4 @@
 {
-  "adoptedNote": "Votre chaîne a été reprise depuis un autre module Twitch ({fields}). Ce que vous saisissez dans les réglages a toujours le dessus.",
   "forget": "Oublier la chaîne reprise",
   "forgotten": "Chaîne reprise oubliée. Seul le réglage de cette page compte maintenant.",
   "field_channel": "chaîne",
@@ -46,7 +45,7 @@
   "live_title": "Mes directs",
   "live_honest": "Mesuré par votre site toutes les {minutes} minutes quand vous êtes en direct, à partir du jour où ce suivi a été activé : Twitch ne fournit pas l'historique.",
   "live_since": "Suivi actif depuis le {date}.",
-  "live_starting": "Le suivi vient d'être activé : votre site vérifie régulièrement si vous êtes en direct. Rien n'est encore mesuré.",
+  "live_starting": "Le suivi vient d'être activé. Rien n'est encore mesuré.",
   "live_trouble": "Twitch ne répond pas pour le moment. Votre site réessaie tout seul ; aucun chiffre n'est inventé pendant ce temps.",
   "live_now": "Vous êtes en direct : {viewers} personnes qui regardent, depuis {duration}.",
   "live_none": "Aucun direct mesuré pour l'instant. Votre prochain direct apparaîtra ici.",
@@ -103,5 +102,11 @@
   "err_auth_scope": "Il manque une autorisation Twitch : cliquez sur « Autoriser de nouveau avec Twitch ».",
   "err_auth_denied": "Twitch a refusé cette demande : cliquez sur « Autoriser de nouveau avec Twitch ».",
   "frozen": "Certains chiffres sont figés car Twitch refuse l'autorisation actuelle.",
-  "authorizeAgain": "Autoriser de nouveau avec Twitch"
+  "authorizeAgain": "Autoriser de nouveau avec Twitch",
+  "adopted_col": "Chaîne",
+  "adopted_state": "Reprise",
+  "adopted_tip": "Reprise d'un autre module Twitch. Votre propre réglage a le dessus.",
+  "forget_confirm": "Oublier la chaîne reprise ? Ce module ne connaît plus votre chaîne tant que vous ne la saisissez pas dans les réglages.",
+  "col_account": "Compte connecté",
+  "disconnect_confirm": "Déconnecter votre chaîne ? Vos chiffres de Twitch s'arrêtent jusqu'à ce que vous la reconnectiez."
 }

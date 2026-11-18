@@ -205,7 +205,7 @@
   "okDeleted": "Request deleted.",
   "bookNote": "Commission \"{formula}\" requested through the site form.",
   "formulasHelp": "Your packages are shown on the commissions page, in this order. Prices are indicative: the module never handles money.",
-  "formulasNone": "You have no package yet. It is not required: without a package, the form offers no choice.",
+  "formulasNone": "You have no package yet.",
   "colName": "Name",
   "formulaDeleteConfirm": "Delete this package? Requests already received keep its name.",
   "formulasMax": "You already have {n} packages, which is the maximum. Delete one to add another.",

@@ -21,4 +21,3 @@ export function drawFace(mood) {
     + '<g' + tilt + '><ellipse class="mc-s" cx="32" cy="36" rx="17.5" ry="14"/>' + eyes[m] + "</g></svg>";
 }
 
-export const MOODS = ["happy", "curious", "sleepy"];

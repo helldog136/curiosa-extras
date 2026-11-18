@@ -275,7 +275,8 @@ test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; cl
   await svc.adopt(adopted, { key: KEY });
   const shown = await mod.adminPanel(adopted, { query: {} });
   assert.ok(!JSON.stringify(shown).includes(KEY));
-  assert.ok(shown.some((b) => b.type === "adminForm" && b.action === "forgetKey"));
+  const keyRow = shown.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "forgetKey"));
+  assert.ok(keyRow && keyRow.rowActions[0].danger && keyRow.rowActions[0].confirm && !shown.some((b) => b.type === "adminForm" && b.action === "forgetKey"), "discreet confirmed action, no big button");
   assert.match((await mod.adminActions.forgetKey(adopted)).ok, /oublié/);
   assert.equal((await svc.status(adopted)).configured, false);
 });

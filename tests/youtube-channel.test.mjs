@@ -224,7 +224,7 @@ test("clé gardée sans fournisseur : le panneau le dit et propose l'installatio
   const before = fakeCtx({ key: "yt", locale: "fr", messages: readJson("locales/fr.json"), legacy, settings: { channelId: CH } });
   const panel = await def.adminPanel(before);
   assert.ok(panel.some((b) => b.type === "suggestInstall"));
-  assert.match(panel.find((b) => b.type === "banner").text, /gardé en sécurité/);
+  assert.ok(!panel.some((b) => b.type === "banner"), "no reassurance banner: the install suggestion is the only message");
   assert.deepEqual(before.calls.legacyCleared, []);
   const c = makeConnector({ apiKey: null });
   const after = fakeCtx({ key: "yt", locale: "fr", messages: readJson("locales/fr.json"), legacy, settings: { channelId: CH }, services: c.services });

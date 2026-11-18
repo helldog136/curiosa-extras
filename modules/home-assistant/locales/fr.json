@@ -121,5 +121,7 @@
   "res_points_back": ", points rendus",
   "live_yes_youtube": "**Direct :** YouTube dit que vous êtes en direct. Les viewers peuvent déclencher des actions.",
   "live_yes_both": "**Direct :** Twitch et YouTube disent que vous êtes en direct. Les viewers peuvent déclencher des actions.",
-  "live_reason_youtube": "dit si vous êtes en direct sur YouTube"
+  "live_reason_youtube": "dit si vous êtes en direct sur YouTube",
+  "jr_col": "Journal",
+  "jr_clear_confirm": "Vider le journal ? Ses {n} lignes sont effacées."
 }

@@ -1,6 +1,5 @@
 {
   "app_title": "Votre application Twitch",
-  "app_ready": "Votre application Twitch est prête : vos modules Twitch peuvent parler à Twitch.",
   "guide_intro": "Pour que votre site puisse parler à Twitch, Twitch demande une « application » à votre nom. Cela se fait une seule fois, en 5 minutes, et c'est gratuit.",
   "guide_1": "**1.** Ouvrez [dev.twitch.tv/console](https://dev.twitch.tv/console) et connectez-vous avec votre compte Twitch. Cliquez sur « Register Your Application » (enregistrer une application).",
   "guide_2": "**2.** Donnez-lui un nom (par exemple le nom de votre site). Dans la case « Redirect URLs », collez l'adresse ci-dessous (bouton « Copier »), puis cliquez sur « Add ».",
@@ -13,9 +12,8 @@
   "col_address": "Adresse",
   "col_account": "Compte connecté",
   "col_state": "État",
-  "adopted_note": "Le Client ID et le secret de votre application Twitch ont été repris de « Ma Chaîne Twitch », sans les ressaisir. Ils ne sont jamais affichés. Ce que vous saisissez dans les réglages a toujours le dessus.",
   "forget": "Oublier l'application reprise",
-  "forgotten": "Application reprise oubliée. Seuls les réglages de cette page comptent maintenant.",
+  "forgotten": "Application reprise oubliée.",
   "accounts_title": "Comptes Twitch connectés",
   "accounts_none": "Aucun compte connecté pour l'instant. Le bouton « Connecter ma chaîne Twitch » se trouve dans « Ma Chaîne Twitch » (et, pour le compte qui répond dans le chat, dans le Bot Twitch).",
   "slot_main": "la chaîne",
@@ -51,5 +49,11 @@
   "mail_subject_problem": "Votre site ne peut plus lire votre compte Twitch",
   "mail_subject_back": "Votre site lit de nouveau votre compte Twitch",
   "mail_body_problem": "{what}\n\nCela a commencé le {since}. Tant que ce n'est pas réglé, les chiffres venant de Twitch restent figés.\n\nAutorisez de nouveau ici : {link}",
-  "mail_body_back": "L'autorisation Twitch fonctionne de nouveau (problème depuis le {since}). Rien d'autre à faire.\n\n{link}"
+  "mail_body_back": "L'autorisation Twitch fonctionne de nouveau (problème depuis le {since}). Rien d'autre à faire.\n\n{link}",
+  "app_state_ready": "Prête",
+  "app_state_ready_tip": "Vos modules Twitch peuvent parler à Twitch.",
+  "app_state_adopted": "Reprise",
+  "app_state_adopted_tip": "Reprise de « Ma Chaîne Twitch ». Vos propres réglages ont le dessus.",
+  "app_state_incomplete": "Incomplète",
+  "forget_confirm": "Oublier l'application reprise ? Son Client ID et son secret sont effacés ici. Vos modules Twitch s'arrêtent jusqu'à ce que vous saisissiez les vôtres dans les réglages."
 }

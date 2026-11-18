@@ -11,7 +11,7 @@
   "statusDraft": "Your mascot is a draft: visitors cannot see it yet. Check the preview and the sentences, then click “Publish”.",
   "statusSilent": "It is published but has no published sentence: it will say nothing. Add a sentence in the “Sentences” tab.",
   "statusNoPage": "It is published but no page is listed: it will show up nowhere. Complete the list in the “When and where” tab.",
-  "statusLive": "Your mascot is published: visitors can meet it, once per visit, after a few seconds.",
+  "statusLive": "Your mascot is published.",
   "publishButton": "Publish the mascot",
   "unpublishButton": "Put back to draft",
   "publishedOk": "Your mascot is published.",

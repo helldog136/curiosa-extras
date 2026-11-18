@@ -218,11 +218,10 @@ export default {
   async adminPanel(ctx) {
     const blocks = [];
     const provider = await hasProvider(ctx);
-    const { pending } = provider ? await handOverKey(ctx) : { pending: !!(await Promise.resolve(ctx.legacy?.get("apiKey")).catch(() => null)) };
+    if (provider) await handOverKey(ctx);
     if (!provider) {
       // Proposer d'installer un fournisseur du SERVICE (jamais un module nommé) : le cœur cherche lui-même dans le catalogue.
       blocks.push({ type: "suggestInstall", service: API, min: 1, reason: ctx.t("suggest_reason") });
-      if (pending) blocks.push({ type: "banner", tone: "info", text: ctx.t("key_waiting") });
     }
     if (ctx.setting("trackStats") !== true) return blocks;
     const channelId = channelOf(ctx);

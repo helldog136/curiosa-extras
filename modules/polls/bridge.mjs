@@ -2,7 +2,6 @@
 // Toutes les fonctions rendent `null` quand la base n'est pas là (ou ne répond pas à temps) : l'appelant retombe alors sur son mode autonome.
 // Une réponse de la base qui dit « non » ({ ok: false, error }) est, elle, une vraie réponse : on la respecte.
 export const SERVICE = "audience.session";
-export const REMOTE = "audience.remote";
 
 /** Attente bornée d'une promesse : `fallback` si elle ne répond pas à temps (le délai est toujours libéré). */
 export const within = (promise, ms, fallback = null) => new Promise((resolve) => {

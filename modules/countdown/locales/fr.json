@@ -119,5 +119,6 @@
   "upcomingTitle": "Prochains événements",
   "whereLabel": "Lieu :",
   "whereToShow": "Pour montrer un compte à rebours sur votre page d’accueil : ouvrez « Page d’accueil » dans le menu, puis ajoutez le morceau « Compte à rebours à la une ». Pour votre stream, collez dans OBS l’adresse affichée dans l’onglet « Mes événements ». Le style, la place et la taille ci-dessous ne concernent que OBS.",
-  "overlayDemo": "Exemple : le grand lancement"
+  "overlayDemo": "Exemple : le grand lancement",
+  "cleanupConfirm": "Supprimer ces {n} événements masqués ? Ils sont supprimés définitivement."
 }

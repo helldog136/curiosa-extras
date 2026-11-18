@@ -16,7 +16,6 @@
   "err_config_channel": "YouTube cannot find this channel: check the channel code in Settings (it starts with UC).",
   "err_config_connector": "To follow your statistics, the site needs a YouTube access code. Install what is suggested above, then add your code to it.",
   "suggest_reason": "keeps the site's YouTube access code and adds your counts, exact durations and Shorts detection",
-  "key_waiting": "Your YouTube access code is kept safe. As soon as this is installed, it will be carried over on its own, nothing to type again.",
   "events_note": "Only public live streams and premieres are visible. A private scheduled video cannot be seen with the site's access code: to announce it, write the event yourself.",
   "events_setup_channel": "To see your scheduled videos, enter your channel code (it starts with UC) in its settings.",
   "events_setup_connector": "To see your scheduled videos and live streams, the site needs a YouTube access code. Install what the YouTube channel page offers, then add your code there.",

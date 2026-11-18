@@ -261,7 +261,7 @@ function journalBlocks(ctx, o) {
   if (!o.lines.length) { out.push({ type: "markdown", text: t("jr_empty") }, ...history); return out; }
   out.push({ type: "html", html: journalHtml(ctx, o) });
   out.push({ type: "markdown", text: t("jr_note") }, ...history);
-  if (can(ctx, "ha.manage")) out.push({ type: "adminForm", action: "clearLog", submitLabel: t("jr_clear"), fields: [] });
+  if (can(ctx, "ha.manage")) out.push({ type: "table", columns: [t("jr_col")], pageSize: 0, rows: [[String(o.lines.length)]], rowIds: ["log"], rowActions: [{ label: t("jr_clear"), action: "clearLog", confirm: t("jr_clear_confirm", { n: o.lines.length }), danger: true }] });
   return out;
 }
 

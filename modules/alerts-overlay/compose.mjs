@@ -5,7 +5,6 @@
 // The checker, the filling of the texts and the engine of the page come from the core (`ctx.overlay`, core 0.19.0): an older core has none, and nothing here
 // does anything (the alert stays "media alone").
 export const COLLECTION = "compositions";
-export const PLACE_RE = /^(event:[a-z]{2,12}|event:redeem:[A-Za-z0-9-]{8,64}|show:[a-z0-9-]{1,40}:[a-z]{2,10}:[A-Za-z0-9_-]{1,40})$/;
 /** (1.16.0) The place of a media another module shows (`alerts.show`): "<its instance key>:<its kind>:<its id>", e.g. "twitch-bot:custom:k3x9". */
 export const SHOW_RE = /^[a-z0-9-]{1,40}:[a-z]{2,10}:[A-Za-z0-9_-]{1,40}$/;
 /** (1.16.0) The places other modules declared (`alerts.show.place`, or the first `show` of a command): { place, label, files, variables, phrase }. */

@@ -78,6 +78,13 @@ export async function declare(ctx, channel) {
   return call(ctx, "wantScopes", { channel, consumer: ctx.instance.key, slot: "main", scopes, returnTo: adminPage(ctx) });
 }
 
+/** The connected account and, in a discreet menu, « Disconnect » (confirmed: it says what stops). Never a big button. */
+const accountRow = (ctx, acc, channel, badge) => ({
+  type: "table", columns: [ctx.t("col_account")], pageSize: 0, rowIds: ["main"],
+  rows: [[{ text: acc.login ?? channel, badge, ...(acc.connectedAt ? { title: ctx.t("connected", { login: acc.login ?? channel, date: sameDay(acc.connectedAt, ctx) }) } : {}) }]],
+  rowActions: [{ label: ctx.t("disconnect"), action: "disconnect", confirm: ctx.t("disconnect_confirm"), danger: true }],
+});
+
 /**
  * Blocs de connexion ; `getStats` : [{ metric, result }] (cache) pour la liste des chiffres, appelée seulement une fois connecté.
  * Rend [] quand il n'y a rien à connecter (ni statistiques suivies, ni autorisation demandée par un autre module).
@@ -95,7 +102,6 @@ export async function panel(ctx, channel, getStats) {
   const st = acc.status;
   if (st === "ok") {
     const stats = await getStats();
-    out.push({ type: "banner", tone: "success", text: ctx.t("connected", { login: acc.login ?? channel, date: sameDay(acc.connectedAt ?? new Date().toISOString(), ctx) }) });
     if (extras.length) out.push({ type: "markdown", text: ctx.t("extras_note") });
     if (stats.length) out.push({ type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows: stats.map(({ metric, result: x }) => [ctx.t(`stat_${metric}`), x.error ? statMessage(ctx, x) : x.value.toLocaleString(ctx.locale)]) });
     // Twitch refuses what the connector believed fine (a permission lost, an authorization withdrawn): the way out is right here, not "somewhere else".
@@ -104,7 +110,7 @@ export async function panel(ctx, channel, getStats) {
       const again = await call(ctx, "connectLink", { channel, slot: "main", force: true, returnTo: adminPage(ctx) });
       if (twitchLink(again.ok ? again.value?.url : null)) out.push(button(ctx.t("authorizeAgain"), again.value.url));
     }
-    out.push({ type: "adminForm", action: "disconnect", submitLabel: ctx.t("disconnect"), fields: [] });
+    out.push(accountRow(ctx, acc, channel, "success"));
     return out;
   }
   if (st === "reconnect") out.push({ type: "banner", tone: "warning", text: ctx.t("reconnect") });
@@ -117,7 +123,7 @@ export async function panel(ctx, channel, getStats) {
   else if (v.reason === "https") out.push({ type: "banner", tone: "warning", text: ctx.t("needHttps") });
   else if (v.reason === "not_ready") out.push({ type: "banner", tone: "warning", text: ctx.t("notReadyConnector"), ...(RETURN_TO.test(acc.adminPath ?? "") ? { href: acc.adminPath } : {}) });
   else if (v.reason === "nothing") out.push({ type: "banner", tone: "warning", text: ctx.t("chooseOne") });
-  if (st !== "none") out.push({ type: "adminForm", action: "disconnect", submitLabel: ctx.t("disconnect"), fields: [] });
+  if (st !== "none") out.push(accountRow(ctx, acc, channel, "warning"));
   return out;
 }
 

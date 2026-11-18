@@ -1,6 +1,5 @@
 {
   "app_title": "Your Twitch application",
-  "app_ready": "Your Twitch application is ready: your Twitch modules can talk to Twitch.",
   "guide_intro": "For your site to talk to Twitch, Twitch asks for an “application” in your name. It is done once, takes 5 minutes, and is free.",
   "guide_1": "**1.** Open [dev.twitch.tv/console](https://dev.twitch.tv/console) and log in with your Twitch account. Click “Register Your Application”.",
   "guide_2": "**2.** Give it a name (for example your site's name). In the “Redirect URLs” box, paste the address below (“Copy” button), then click “Add”.",
@@ -13,9 +12,8 @@
   "col_address": "Address",
   "col_account": "Connected account",
   "col_state": "Status",
-  "adopted_note": "The ID and secret of your Twitch application were carried over from “My Twitch channel”, without typing them again. They are never shown. What you type in the settings always wins.",
   "forget": "Forget the carried-over application",
-  "forgotten": "Carried-over application forgotten. Only the settings of this page count now.",
+  "forgotten": "Carried-over application forgotten.",
   "accounts_title": "Connected Twitch accounts",
   "accounts_none": "No account connected yet. The “Connect my Twitch channel” button is in “My Twitch channel” (and, for the account that answers in the chat, in the Twitch bot).",
   "slot_main": "the channel",
@@ -51,5 +49,11 @@
   "mail_subject_problem": "Your site can no longer read your Twitch account",
   "mail_subject_back": "Your site reads your Twitch account again",
   "mail_body_problem": "{what}\n\nThis started on {since}. Until you fix it, figures from Twitch stay frozen.\n\nAuthorize again here: {link}",
-  "mail_body_back": "The Twitch authorization works again (problem since {since}). Nothing else to do.\n\n{link}"
+  "mail_body_back": "The Twitch authorization works again (problem since {since}). Nothing else to do.\n\n{link}",
+  "app_state_ready": "Ready",
+  "app_state_ready_tip": "Your Twitch modules can talk to Twitch.",
+  "app_state_adopted": "Carried over",
+  "app_state_adopted_tip": "Carried over from “My Twitch channel”. Your own settings win.",
+  "app_state_incomplete": "Incomplete",
+  "forget_confirm": "Forget the carried-over application? Its ID and secret are deleted here. Your Twitch modules stop until you type your own in the settings."
 }

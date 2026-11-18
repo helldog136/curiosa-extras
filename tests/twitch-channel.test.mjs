@@ -34,7 +34,7 @@ test("manifeste : valide ; « Ma Chaîne Twitch », identifiant conservé ; 2.0.
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifestJson.id, "twitch-channel");
   assert.deepEqual(manifestJson.name, { en: "My Twitch channel", fr: "Ma Chaîne Twitch" });
-  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.5.0", "0.11.0", 2]);
+  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.5.1", "0.11.0", 2]);
   assert.deepEqual(manifestJson.offers.map((o) => [o.service, o.each]), [["twitch.live", true], ["event.source", true]]);
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional ?? false]), [["twitch.api", 3, false]]);
   assert.deepEqual(manifestJson.legacySettings, [{ key: "clientId" }, { key: "clientSecret", secret: true }, { key: "useCredentialsOf" }]);
@@ -181,7 +181,8 @@ test("admin : une chaîne reprise est signalée ; « oublier » rend la main au 
   const c = ctx({ channel: "" });
   await svc.adopt(c, { channel: "ma_chaine" });
   const blocks = await def.adminPanel(c);
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "forgetAdopted"));
+  const row = blocks.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "forgetAdopted"));
+  assert.ok(row && row.rowActions[0].danger && row.rowActions[0].confirm && !blocks.some((b) => b.type === "banner" && b.tone === "info"), "one word + discreet confirmed action, no banner, no big button");
   assert.equal((await def.adminActions.forgetAdopted(c)).redirect, "?");
   assert.equal((await svc.channel(c)).channel, null);
 });

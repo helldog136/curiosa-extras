@@ -157,7 +157,7 @@
   "dock_paused_note": "Alerts paused, {n} held until you resume.",
   "dock_held": "{n} held",
   "dock_cleared": "Queue emptied: {n} dropped.",
-  "dock_paused_ok": "Alerts paused. Nothing is lost.",
+  "dock_paused_ok": "Alerts paused.",
   "dock_resumed_ok": "Alerts resumed: {n} released.",
   "dock_tested": "Test sent.",
   "dock_err_rate": "Too many tries. Wait a little.",

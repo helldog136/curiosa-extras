@@ -80,7 +80,7 @@
   "tab_pending": "To check ({count})",
   "tab_approved": "Published ({count})",
   "tab_rejected": "Refused ({count})",
-  "bannerPending": "{count} reviews are waiting for you to read them. Nothing is published until you decide.",
+  "bannerPending": "Reviews to read: {count}.",
   "status_pending": "To check",
   "status_approved": "Published",
   "status_rejected": "Refused",

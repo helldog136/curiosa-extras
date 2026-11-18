@@ -5,7 +5,7 @@
     "en": "Legal pages",
     "fr": "Mentions légales"
   },
-  "version": "1.0.3",
+  "version": "1.0.4",
   "menuGroup": "content",
   "main": "index.mjs",
   "description": {
