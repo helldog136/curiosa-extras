@@ -5,7 +5,7 @@
     "en": "X (Twitter)",
     "fr": "X (Twitter)"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "x",
   "description": {
     "en": "Shows your X button in the site header.",
@@ -43,10 +43,6 @@
       "label": {
         "en": "Your profile address",
         "fr": "Adresse de votre profil"
-      },
-      "help": {
-        "en": "Paste the link to your page.",
-        "fr": "Collez le lien de votre page."
       },
       "example": {
         "en": "https://x.com/myname",

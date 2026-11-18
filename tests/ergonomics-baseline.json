@@ -683,10 +683,6 @@
       "R13 locale:fr:welcomeTitle #dc148f",
       "R13 setting:structured.help[fr] #fe5c8f"
     ],
-    "youtube-channel": [
-      "R13 locale:fr:events_setup_update #9b2dc8",
-      "R9 locale:fr:err_hidden #63044b"
-    ],
     "youtube-connector": [
       "R10 locale:en:pend_3 #159242",
       "R10 locale:fr:pend_3 #cda66c",

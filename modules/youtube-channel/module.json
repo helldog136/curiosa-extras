@@ -5,7 +5,7 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
   "adminMenu": "Réseaux.YouTube",
   "adminMenuOrder": 20,
   "platform": "youtube",
@@ -158,8 +158,8 @@
         "fr": "Code de la chaîne YouTube"
       },
       "help": {
-        "en": "Starts with UC, for example UCabc123. Find it in YouTube Studio: Settings, Channel, Advanced settings.",
-        "fr": "Commence par UC, par exemple UCabc123. Dans YouTube Studio : Paramètres, Chaîne, Paramètres avancés."
+        "en": "For example UCabc123 (YouTube Studio: Advanced settings)",
+        "fr": "Par exemple UCabc123 (YouTube Studio : Paramètres avancés)"
       },
       "refersTo": "external"
     },
@@ -172,8 +172,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your subscribers, videos and views for the site's statistics. Needs the site's YouTube access code; the subscriber count must be public.",
-        "fr": "Compte vos followers, vos vidéos et vos vues pour les statistiques du site. Demande le code d'accès YouTube du site ; le nombre de followers doit être public."
+        "en": "Counts your subscribers, videos and views. YouTube rounds the subscriber count.",
+        "fr": "Compte vos followers, vos vidéos et vos vues. YouTube arrondit le nombre de followers."
       }
     },
     {

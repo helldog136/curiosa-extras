@@ -37,12 +37,14 @@ test("anti-copie : une seule définition de profile() par module, dans le bloc g
   }
 });
 
-test("textes : même libellé, même aide courte avec exemple, aucun « identifiant », pour les 20 réseaux (FR et EN à parité)", () => {
+test("textes : même libellé, aide seulement si elle apprend quelque chose, exemple, aucun « identifiant », pour les 20 réseaux (FR et EN à parité)", () => {
   for (const n of NETWORKS) {
     const m = json(n.id, "module.json");
     const f = m.settings.find((s) => s.key === "profile");
-    assert.deepEqual(f.label, { en: "Your profile address", fr: "Adresse de votre profil" }, n.id);
-    assert.ok(f.help.fr.length <= 60 && f.help.en.length <= 60, `${n.id} : aide courte`);
+    assert.deepEqual(f.label, n.label ? { en: n.label[1], fr: n.label[0] } : { en: "Your profile address", fr: "Adresse de votre profil" }, n.id);
+    // R33 : une aide qui répète le libellé est supprimée ; celle qui reste apprend quelque chose (une autre forme acceptée) et tient sur une ligne
+    assert.ok(!f.help || (f.help.fr.length <= 60 && f.help.en.length <= 60), `${n.id} : aide courte`);
+    assert.ok(!f.help || !/^(Collez|Paste)/.test(f.help.fr + f.help.en), `${n.id} : l'aide ne répète pas le libellé`);
     assert.match(f.example.fr, /^https:\/\//, n.id);
     assert.ok(f.example.en, n.id);
     assert.equal(m.minCore, "0.6.0", `${n.id} : l'exemple sous le champ est une fonction du cœur 0.6.0`);
