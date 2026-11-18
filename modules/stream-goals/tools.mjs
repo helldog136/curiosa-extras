@@ -23,7 +23,7 @@ async function subathonInfo(ctx) {
   return {
     start: iso(x.startAt), started: f.started, ended: f.ended, paused: f.pausedAt !== null, remainingSeconds: f.remainingS, addedSeconds: f.addedS,
     endsAt: f.started && f.pausedAt === null ? iso(f.endsAt) : null, cappedSeconds: f.capped,
-    rules: { startLengthSeconds: x.rules.lengthS, capSeconds: x.rules.capS, secondsPerSub: x.rules.perSubS, secondsPerHundredBits: x.rules.perHundredBitsS, secondsPerFollow: x.rules.perFollowS, tierFactors: { 1: 1, 2: 2, 3: 5 } },
+    rules: { startLengthSeconds: x.rules.lengthS, capSeconds: x.rules.capS, secondsPerSub: x.rules.perSubS, secondsPerHundredBits: x.rules.perHundredBitsS, secondsPerFollow: x.rules.perFollowS, tierFactors: x.rules.tiers },
     summary: A.subathonLine(ctx, x),
   };
 }

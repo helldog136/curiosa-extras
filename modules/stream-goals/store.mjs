@@ -35,7 +35,7 @@ export function settingsOf(ctx) {
     goalLabel: String(s("goalLabel") ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 60),
     subathonLabel: String(s("subathonLabel") ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 60),
     start: M.siteTime(s("subathonStart"), ctx.timezone ?? "UTC"),
-    rules: M.rulesOf({ subathonLength: s("subathonLength"), subathonCap: s("subathonCap"), secondsPerSub: s("secondsPerSub"), secondsPerHundredBits: s("secondsPerHundredBits"), secondsPerFollow: s("secondsPerFollow") }),
+    rules: M.rulesOf({ subathonLength: s("subathonLength"), subathonCap: s("subathonCap"), secondsPerSub: s("secondsPerSub"), secondsPerHundredBits: s("secondsPerHundredBits"), secondsPerFollow: s("secondsPerFollow"), tierFactor1: s("tierFactor1"), tierFactor2: s("tierFactor2"), tierFactor3: s("tierFactor3") }),
   };
 }
 
