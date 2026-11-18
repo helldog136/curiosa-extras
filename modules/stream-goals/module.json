@@ -1,0 +1,633 @@
+{
+  "apiVersion": 2,
+  "id": "stream-goals",
+  "name": {
+    "en": "Live goals",
+    "fr": "Objectifs du live"
+  },
+  "version": "1.0.0",
+  "minCore": "0.30.0",
+  "description": {
+    "en": "A goal bar and a subathon whose time grows with each sub, bits or follow. Both follow the skin of your overlay pages.",
+    "fr": "Une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow. Les deux suivent le skin de vos pages d'overlay."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎯",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "multiple",
+  "permissions": [
+    "routes",
+    "storage",
+    "admin",
+    "mcp",
+    "topics"
+  ],
+  "privacy": {
+    "en": "To count each person once, the module keeps the public Twitch login, the kind and the amount of the events it counted (follows, subs, bits) for 60 days. Only your team reads it, through the admin and the assistant. Nothing is collected from visitors.",
+    "fr": "Pour compter chaque personne une fois, le module garde le pseudo Twitch public, la nature et le montant des événements comptés (follows, subs, bits) pendant 60 jours. Seule votre équipe y a accès, par l'administration et l'assistant. Rien n'est collecté sur les visites."
+  },
+  "requires": [
+    {
+      "service": "alerts.queue",
+      "min": 2,
+      "optional": true,
+      "label": {
+        "en": "Move the bar and the countdown at each follow, sub or bits (Alerts overlay, which listens to Twitch)",
+        "fr": "Faire avancer la barre et le compte à rebours à chaque follow, sub ou bits (Overlay alertes, qui écoute Twitch)"
+      }
+    },
+    {
+      "service": "twitch.live",
+      "optional": true,
+      "label": {
+        "en": "Start from the real number of followers or paid subs (My Twitch channel)",
+        "fr": "Partir du vrai nombre de followers ou d'abonnements payants (Ma chaîne Twitch)"
+      }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "twitch.event",
+      "label": {
+        "en": "Your Twitch events: follows, subs, gifts, bits",
+        "fr": "Vos événements Twitch : follows, abonnements, cadeaux, bits"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "at",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "test",
+          "type": "boolean"
+        },
+        {
+          "key": "replay",
+          "type": "boolean"
+        },
+        {
+          "key": "missed",
+          "type": "boolean"
+        },
+        {
+          "key": "login",
+          "type": "string"
+        },
+        {
+          "key": "tier",
+          "type": "string"
+        },
+        {
+          "key": "gifted",
+          "type": "boolean"
+        },
+        {
+          "key": "count",
+          "type": "number"
+        },
+        {
+          "key": "amount",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "The figures of your Twitch channel",
+        "fr": "Les chiffres de votre chaîne Twitch"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "platform",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "account",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "accountKey",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "metric",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "label",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "value",
+          "type": "number"
+        },
+        {
+          "key": "asOf",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "error",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "goal",
+      "label": {
+        "en": "Goal",
+        "fr": "Objectif"
+      }
+    },
+    {
+      "id": "subathon",
+      "label": {
+        "en": "Subathon",
+        "fr": "Subathon"
+      }
+    }
+  ],
+  "places": [
+    {
+      "id": "goal",
+      "place": "live.goals.goal",
+      "order": 200,
+      "fromTab": "goal",
+      "title": {
+        "en": "Goal bar",
+        "fr": "Barre d'objectif"
+      }
+    },
+    {
+      "id": "subathon",
+      "place": "live.goals.subathon",
+      "order": 200,
+      "fromTab": "subathon",
+      "title": {
+        "en": "Subathon",
+        "fr": "Subathon"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "goalMetric",
+      "type": "select",
+      "display": "segmented",
+      "tab": "goal",
+      "default": "followers",
+      "label": {
+        "en": "What counts",
+        "fr": "Ce qui compte"
+      },
+      "options": [
+        {
+          "value": "followers",
+          "label": {
+            "en": "Followers",
+            "fr": "Followers"
+          }
+        },
+        {
+          "value": "subs",
+          "label": {
+            "en": "Paid subs",
+            "fr": "Abonnements payants"
+          }
+        },
+        {
+          "value": "manual",
+          "label": {
+            "en": "By hand",
+            "fr": "À la main"
+          }
+        }
+      ]
+    },
+    {
+      "key": "goalTarget",
+      "type": "number",
+      "tab": "goal",
+      "min": 1,
+      "max": 1000000000,
+      "step": 1,
+      "optional": true,
+      "example": "500",
+      "label": {
+        "en": "Target",
+        "fr": "Objectif"
+      },
+      "help": {
+        "en": "Empty: the next round number",
+        "fr": "Vide : le prochain chiffre rond"
+      }
+    },
+    {
+      "key": "goalLabel",
+      "type": "text",
+      "tab": "goal",
+      "rare": true,
+      "optional": true,
+      "example": "Objectif followers",
+      "label": {
+        "en": "Title of the bar",
+        "fr": "Titre de la barre"
+      },
+      "help": {
+        "en": "Empty: what is counted",
+        "fr": "Vide : ce qui est compté"
+      }
+    },
+    {
+      "key": "subathonStart",
+      "type": "datetime",
+      "tab": "subathon",
+      "optional": true,
+      "label": {
+        "en": "Start",
+        "fr": "Début"
+      },
+      "help": {
+        "en": "Empty: no subathon planned",
+        "fr": "Vide : pas de subathon prévu"
+      }
+    },
+    {
+      "key": "subathonLength",
+      "type": "duration",
+      "tab": "subathon",
+      "min": 60,
+      "max": 2592000,
+      "default": 14400,
+      "label": {
+        "en": "Starting length",
+        "fr": "Durée de départ"
+      }
+    },
+    {
+      "key": "secondsPerSub",
+      "type": "duration",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 86400,
+      "default": 300,
+      "label": {
+        "en": "Time added per sub",
+        "fr": "Temps ajouté par sub"
+      },
+      "help": {
+        "en": "Tier 2: twice, tier 3: five times",
+        "fr": "Palier 2 : double, palier 3 : cinq fois"
+      }
+    },
+    {
+      "key": "secondsPerHundredBits",
+      "type": "duration",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 86400,
+      "default": 60,
+      "label": {
+        "en": "Time added per 100 bits",
+        "fr": "Temps ajouté pour 100 bits"
+      }
+    },
+    {
+      "key": "secondsPerFollow",
+      "type": "duration",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 86400,
+      "default": 0,
+      "label": {
+        "en": "Time added per new follower",
+        "fr": "Temps ajouté par nouveau follower"
+      },
+      "help": {
+        "en": "0: nothing",
+        "fr": "0 : rien"
+      }
+    },
+    {
+      "key": "subathonCap",
+      "type": "duration",
+      "tab": "subathon",
+      "rare": true,
+      "min": 0,
+      "max": 5184000,
+      "default": 0,
+      "label": {
+        "en": "Longest total length",
+        "fr": "Durée totale maximale"
+      },
+      "help": {
+        "en": "0: no limit",
+        "fr": "0 : sans limite"
+      }
+    },
+    {
+      "key": "subathonLabel",
+      "type": "text",
+      "tab": "subathon",
+      "rare": true,
+      "optional": true,
+      "example": "Subathon d'hiver",
+      "label": {
+        "en": "Title of the countdown",
+        "fr": "Titre du compte à rebours"
+      },
+      "help": {
+        "en": "Empty: Subathon",
+        "fr": "Vide : Subathon"
+      }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "goal",
+      "label": {
+        "en": "Goal bar",
+        "fr": "Barre d'objectif"
+      },
+      "description": {
+        "en": "A bar towards your goal. It moves at each follow or sub and celebrates each quarter.",
+        "fr": "Une barre vers votre objectif. Elle avance à chaque follow ou sub et fête chaque quart."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 320,
+        "height": 100
+      },
+      "followsStyle": true,
+      "tvScale": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "animQuality",
+          "type": "choice",
+          "label": {
+            "en": "Effects",
+            "fr": "Effets"
+          },
+          "help": {
+            "en": "Lighter effects for a slower computer.",
+            "fr": "Des effets plus légers pour un ordinateur lent."
+          },
+          "default": "auto",
+          "choices": [
+            {
+              "value": "auto",
+              "label": {
+                "en": "Automatic",
+                "fr": "Automatiques"
+              }
+            },
+            {
+              "value": "full",
+              "label": {
+                "en": "All",
+                "fr": "Tous"
+              }
+            },
+            {
+              "value": "light",
+              "label": {
+                "en": "Light",
+                "fr": "Légers"
+              }
+            },
+            {
+              "value": "minimal",
+              "label": {
+                "en": "None",
+                "fr": "Aucun"
+              }
+            }
+          ]
+        },
+        {
+          "id": "animCalm",
+          "type": "boolean",
+          "label": {
+            "en": "Calm motion",
+            "fr": "Mouvements calmes"
+          },
+          "help": {
+            "en": "No flashes, shakes or flying pieces.",
+            "fr": "Sans éclairs, secousses ni éclats qui volent."
+          },
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "subathon",
+      "label": {
+        "en": "Subathon",
+        "fr": "Subathon"
+      },
+      "description": {
+        "en": "The time left of your subathon, which grows with each sub, bits or follow, with the time added written.",
+        "fr": "Le temps qui reste de votre subathon, qui grandit à chaque sub, bits ou follow, avec le temps ajouté écrit."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 320,
+        "height": 100
+      },
+      "followsStyle": true,
+      "tvScale": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "animQuality",
+          "type": "choice",
+          "label": {
+            "en": "Effects",
+            "fr": "Effets"
+          },
+          "help": {
+            "en": "Lighter effects for a slower computer.",
+            "fr": "Des effets plus légers pour un ordinateur lent."
+          },
+          "default": "auto",
+          "choices": [
+            {
+              "value": "auto",
+              "label": {
+                "en": "Automatic",
+                "fr": "Automatiques"
+              }
+            },
+            {
+              "value": "full",
+              "label": {
+                "en": "All",
+                "fr": "Tous"
+              }
+            },
+            {
+              "value": "light",
+              "label": {
+                "en": "Light",
+                "fr": "Légers"
+              }
+            },
+            {
+              "value": "minimal",
+              "label": {
+                "en": "None",
+                "fr": "Aucun"
+              }
+            }
+          ]
+        },
+        {
+          "id": "animCalm",
+          "type": "boolean",
+          "label": {
+            "en": "Calm motion",
+            "fr": "Mouvements calmes"
+          },
+          "help": {
+            "en": "No flashes, shakes or flying pieces.",
+            "fr": "Sans éclairs, secousses ni éclats qui volent."
+          },
+          "default": false
+        }
+      ]
+    }
+  ],
+  "mcp": [
+    {
+      "name": "goal_get",
+      "readOnly": true,
+      "description": "Read the goal bar: what counts (followers, paid subs or a number kept by hand), the value shown, the target (automatic or set), the reference value and when it was read, how many events were counted since, and which sources are present.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "goal_set",
+      "default": false,
+      "description": "Set the value of the goal bar by hand (the reference value of what is counted now, dated now). Use it for a goal counted by hand, or when no Twitch figure is available. The target, what counts and the title are settings: change them with maintenance_module_configure (goalTarget, goalMetric, goalLabel).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000,
+            "description": "The current value, e.g. 120."
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "goal_test",
+      "default": false,
+      "description": "Play a rehearsal on the overlay pages: the goal bar gains one step, or the subathon gains time, and goes back after 8 seconds. Nothing is counted.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "gauge": {
+            "type": "string",
+            "enum": [
+              "goal",
+              "subathon"
+            ],
+            "description": "Which gauge: goal (default) or subathon."
+          }
+        }
+      }
+    },
+    {
+      "name": "subathon_get",
+      "readOnly": true,
+      "description": "Read the subathon: start, whether it runs, is paused or ended, the time left, the time added so far, what went beyond the cap, and the rules (seconds per sub with tier factors 1, 2 and 5, per 100 bits, per new follower, starting length, cap).",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "subathon_add_time",
+      "default": false,
+      "description": "Add time to the running subathon by hand (a donation received elsewhere, a correction), or remove some with a negative number; never below 'ends now'. Shown on screen like an event. The start and the rules are settings (subathonStart, subathonLength, secondsPerSub, secondsPerHundredBits, secondsPerFollow, subathonCap).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "minutes": {
+            "type": "integer",
+            "minimum": -600,
+            "maximum": 600,
+            "description": "Minutes to add (negative to remove), e.g. 5."
+          }
+        },
+        "required": [
+          "minutes"
+        ]
+      }
+    },
+    {
+      "name": "subathon_pause",
+      "default": false,
+      "description": "Pause the subathon (the time left stands still, events still add time) or resume it.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "description": "true to pause, false to resume."
+          }
+        },
+        "required": [
+          "paused"
+        ]
+      }
+    }
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.goal_get": "Lit la barre d'objectif : ce qui compte, la valeur affichée, l'objectif, la valeur de référence et sa date, les sources présentes.",
+      "mcp.goal_set": "Règle à la main la valeur de la barre d'objectif. L'objectif et ce qui compte sont des réglages.",
+      "mcp.goal_test": "Joue une répétition sur les pages d'overlay : un pas de la barre ou du temps ajouté, qui revient après 8 secondes. Rien n'est compté.",
+      "mcp.subathon_get": "Lit le subathon : début, temps restant, temps ajouté, pause, fin, plafond et règles.",
+      "mcp.subathon_add_time": "Ajoute du temps au subathon à la main (ou en retire), montré à l'écran comme un événement.",
+      "mcp.subathon_pause": "Met le subathon en pause (le temps restant ne bouge plus) ou le reprend."
+    }
+  }
+}

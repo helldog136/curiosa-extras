@@ -208,15 +208,15 @@ test("listening: switching a type off removes its subscription; renew starts aga
   tw.autoEnable = true;
   assert.equal((await L.ensureListening(ctx, s)).code, "pending", "just created: Twitch has not verified the address yet");
   assert.equal((await L.ensureListening(ctx, s)).code, "listening");
-  assert.equal(tw.subs.length, 11);
+  assert.equal(tw.subs.length, 12);   // (1.20.0) the end of a subscription rides with "sub"
   await S.updateState(ctx, (d) => { d.enabled = { hype: false, redeem: false }; });
   await L.ensureListening(ctx, s);
-  assert.equal(tw.subs.length, 8);
+  assert.equal(tw.subs.length, 9);
   const before = (await S.readState(ctx)).secret;
   await L.ensureListening(ctx, s, { renew: true });
   assert.notEqual((await S.readState(ctx)).secret, before);
   assert.equal(tw.lastSecret, (await S.readState(ctx)).secret, "Twitch got the new secret");
-  assert.equal(tw.subs.length, 8);
+  assert.equal(tw.subs.length, 9);
 });
 
 test("listening: private site, expired token, Twitch down, refusal, nothing switched on", async () => {

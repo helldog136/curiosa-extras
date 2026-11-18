@@ -323,7 +323,19 @@
       "intro": {
         "en": "The goals and timers shown during the live.",
         "fr": "Les objectifs et minuteurs affichés pendant le live."
-      }
+      },
+      "tabs": [
+        {
+          "id": "goal",
+          "en": "Goal",
+          "fr": "Objectif"
+        },
+        {
+          "id": "subathon",
+          "en": "Subathon",
+          "fr": "Subathon"
+        }
+      ]
     },
     {
       "id": "calendar.schedule",

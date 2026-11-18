@@ -19,8 +19,8 @@ export function samples(kind, now = Date.now()) {
     raid: { kind: "raid", name: "lune_douce", login: "lune_douce", viewers: 42 },
     online: { kind: "online", name: "Camille", login: "camille", streamType: "live" },
     offline: { kind: "offline", name: "Camille", login: "camille" },
-    hype_begin: { kind: "hype_begin", level: 1, total: 600, goal: 1800, progress: 600, trainType: "regular", shared: false, top: [{ name: "etoile_nord", kind: "bits", total: 300 }, { name: "lune_douce", kind: "subscription", total: 300 }] },
-    hype_progress: { kind: "hype_progress", level: 3, total: 4200, goal: 5400, progress: 1400, trainType: "regular", shared: false },
+    hype_begin: { kind: "hype_begin", level: 1, total: 600, goal: 1800, progress: 600, expiresAt: now + 300_000, trainType: "regular", shared: false, top: [{ name: "etoile_nord", kind: "bits", total: 300 }, { name: "lune_douce", kind: "subscription", total: 300 }] },
+    hype_progress: { kind: "hype_progress", level: 3, total: 4200, goal: 5400, progress: 1400, expiresAt: now + 300_000, trainType: "regular", shared: false },
     hype_end: { kind: "hype_end", level: 4, total: 9100, trainType: "regular", shared: false, top: [{ name: "etoile_nord", kind: "bits", total: 3000 }, { name: "lune_douce", kind: "subscription", total: 2500 }, { name: "Camille", kind: "other", total: 900 }] },
     redeem: { kind: "redeem", name: "lune_douce", login: "lune_douce", title: "Hydrate", amount: 500, text: "" },
   };
@@ -35,7 +35,8 @@ export async function sendRewardTest(ctx, reward, { now = Date.now() } = {}) {
   return { ok: true, ids: [id] };
 }
 /** The kinds a "Test" button of a type sends. */
-export const testKinds = (typeId) => (typeId === "hype" ? ["hype_begin", "hype_end"] : es.typeOf(typeId)?.kinds ?? []);
+// (1.20.0) the end of a subscription rides with "sub" but has no alert: the test of "sub" stays one new sub
+export const testKinds = (typeId) => (typeId === "hype" ? ["hype_begin", "hype_end"] : typeId === "sub" ? ["sub"] : es.typeOf(typeId)?.kinds ?? []);
 
 const rid = (p) => `${p}-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
 
@@ -81,7 +82,7 @@ export function toItem(d) {
     test: d.source === "test", replay: d.source === "replay", missed: d.missed === true,
   };
   for (const k of ["name", "login", "tier", "text", "title", "trainType", "streamType", "rewardId"]) if (typeof d[k] === "string" && d[k]) o[k] = d[k];
-  for (const k of ["months", "streak", "count", "cumulative", "amount", "viewers", "level", "total", "goal", "progress", "bestLevel"]) if (num(d[k]) !== undefined) o[k] = d[k];
+  for (const k of ["months", "streak", "count", "cumulative", "amount", "viewers", "level", "total", "goal", "progress", "bestLevel", "expiresAt"]) if (num(d[k]) !== undefined) o[k] = d[k];
   for (const k of ["anonymous", "gifted", "shared"]) if (d[k] === true) o[k] = true;
   if (Array.isArray(d.top) && d.top.length) o.contributors = d.top.map((c) => c.name).filter(Boolean).slice(0, 3);
   if (d.of) o.of = String(d.of);

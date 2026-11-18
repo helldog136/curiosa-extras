@@ -393,7 +393,8 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
   for (const s of ["alerts.show", "alerts.queue"]) assert.deepEqual(offer(manifest, s), offer(OLD.alMan, s), s);
   assert.deepEqual(offer(manifest, "twitch.journal"), offer(OLD.evMan, "twitch.journal"));
   assert.deepEqual(manifest.provides, OLD.evMan.provides);
-  assert.deepEqual(manifest.overlayElements, OLD.alMan.overlayElements, "the elements placed on the overlay pages are unchanged");
+  // (1.20.0) two animated elements are added after them; the ones already placed are unchanged
+  assert.deepEqual(manifest.overlayElements.slice(0, OLD.alMan.overlayElements.length), OLD.alMan.overlayElements, "the elements placed on the overlay pages are unchanged");
   // who still needs what: the Twitch bot (alerts.show, optional) and live status (twitch.live, from My Twitch channel) are untouched; nobody needs the old protocol
   const all = fs.readdirSync(path.join(REPO, "modules")).map((id) => json(path.join(REPO, "modules", id, "module.json")));
   const needs = all.flatMap((m) => (m.requires ?? []).map((r) => [m.id, r.service]));
