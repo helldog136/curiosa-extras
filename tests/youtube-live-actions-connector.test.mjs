@@ -144,7 +144,7 @@ const channel = (c, channelId = CHANNEL) => {
 
 test("chaîne : version 1.4.0, service youtube.live (chaque chaîne répond pour elle-même, lecture seule), les anciens services intacts", () => {
   assert.ok(parseManifest(chanManifest).ok);
-  assert.equal(chanManifest.version, "1.5.0");
+  assert.match(chanManifest.version, /^1\.5\.\d+$/);   // 1.5.0 added the service; later patches (texts) keep it
   const o = chanManifest.offers.find((x) => x.service === "youtube.live");
   assert.deepEqual([o.version, o.each, o.readOnly], [1, true, ["current"]]);
   assert.ok(chanManifest.offers.some((x) => x.service === "event.source"));

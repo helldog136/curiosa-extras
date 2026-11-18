@@ -1,12 +1,9 @@
 {
-  "stats_title": "Vos statistiques",
-  "col_stat": "Chiffre suivi",
-  "col_value": "Actuellement",
   "stat_followers": "Membres Discord",
-  "stats_note": "Discord donne un nombre de membres approximatif.",
+  "stat_line": "**{label}** : {value}",
   "err_hidden": "Discord ne donne pas les membres de cette invitation : créez-en une sans date de fin.",
-  "err_rate": "Discord limite les demandes pour le moment : rien à faire, cela reprendra tout seul.",
-  "err_network": "Discord ne répond pas pour le moment : rien à faire, on réessaie automatiquement.",
+  "err_rate": "Discord limite les demandes.",
+  "err_network": "Discord ne répond pas.",
   "err_config_invite": "Ajoutez le lien d'invitation de votre Discord dans Réglages pour compter vos membres.",
   "err_config_expired": "Cette invitation n'existe plus : créez-en une sans date de fin, puis collez-la dans Réglages."
 }

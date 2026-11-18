@@ -6,6 +6,9 @@ import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { makeConnector, connectorApi, yt } from "./helpers/fakeYoutube.mjs";
 import { parseManifest } from "@/core/modules/manifest";
+/** R33 : le panneau des chiffres est un texte « **libellé** : valeur » par ligne (ou le seul message quand tous les chiffres disent la même chose) (plus de tableau à deux colonnes pour un ou deux chiffres) ; on le relit comme un tableau. */
+const asTable = (blocks) => { const b = blocks.find((x) => x.type === "markdown"); return b && { rows: b.text.split("\n\n").map((l) => { const m = /^\*\*(.+?)\*\* : (.*)$/s.exec(l); return m ? [m[1], m[2]] : [null, l]; }) }; };
+
 
 const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
 const { fakeFetch, netReplies } = kit;
@@ -168,7 +171,7 @@ test("sans fournisseur de youtube.api : le panneau propose d'installer un module
   const c = makeConnector();
   assert.ok(!(await def.adminPanel(frCtx({}, { services: c.services }))).some((b) => b.type === "suggestInstall"));
   const stats = await def.adminPanel(frCtx({ trackStats: true }));
-  assert.match(stats.find((b) => b.type === "table").rows[0][1], /il faut le code d'accès YouTube du site/);
+  assert.match(asTable(stats).rows[0][1], /il faut le code d'accès YouTube du site/);
 });
 
 // ── Reprise de la clé vers le fournisseur de youtube.api ───────────────────────────────────────────────────────────────

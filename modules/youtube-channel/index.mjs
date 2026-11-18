@@ -214,6 +214,16 @@ const CONFIG_REASONS = { key: "err_config_key", connector: "err_config_connector
 /** Le message de l'état d'un chiffre, pour la personne qui gère le site : ce qui se passe et quoi faire. */
 const whyNot = (ctx, item, r) => ctx.t(item.error === "config" ? CONFIG_REASONS[r.reason] ?? CONFIG_REASONS.channel : `err_${item.error}`);
 
+/**
+ * Les lignes du panneau des chiffres (R33) : « libellé : valeur » ; un chiffre qui ne vient pas dit pourquoi. Si TOUS les chiffres disent la même chose, elle n'est écrite qu'une fois, sans libellé
+ * (le message nomme déjà la plateforme).
+ */
+function statLines(ctx, items, why) {
+  const texts = items.map((i) => (i.error ? why(i) : null));
+  if (items.length && texts.every((t) => t !== null && t === texts[0])) return [texts[0]];
+  return items.map((i, n) => ctx.t("stat_line", { label: i.label, value: texts[n] ?? i.value.toLocaleString(ctx.locale) }));
+}
+
 export default {
   async adminPanel(ctx) {
     const blocks = [];
@@ -227,8 +237,9 @@ export default {
     const channelId = channelOf(ctx);
     if (!CHANNEL_RE.test(channelId)) return [...blocks, { type: "banner", tone: "warning", text: ctx.t("err_config_channel") }];
     const r = await channelStats(ctx, channelId, { priority: "interactive" });
-    const rows = statItems(ctx, r).map((i) => [i.label, i.error ? whyNot(ctx, i, r) : i.value.toLocaleString(ctx.locale)]);
-    return [...blocks, { type: "heading", text: ctx.t("stats_title") }, { type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows }, { type: "markdown", text: ctx.t("stats_note") }];
+    const items = statItems(ctx, r);
+    const lines = statLines(ctx, items, (i) => whyNot(ctx, i, r));
+    return lines.length ? [...blocks, { type: "markdown", text: lines.join("\n\n") }] : blocks;
   },
   migrations: {
     // 2 : la clé YouTube quitte ce module (réglage hérité `apiKey`) pour le fournisseur de `youtube.api`. Rejouable : sans clé, ou déjà remise, rien à faire ;

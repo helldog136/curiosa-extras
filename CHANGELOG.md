@@ -4,6 +4,35 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.101.0 — 2026-11-18
+
+*En bref : les pages des 20 extensions de réseaux et de statistiques (Instagram, GitHub, Discord, YouTube, Bluesky, Mastodon, Reddit et les autres) n'affichent plus que ce qui sert : plus d'aide qui répète le libellé, plus de tableau pour un seul chiffre, plus de « rien à faire ». Rien d'autre ne change.*
+
+*In short: the pages of the 20 network and statistics extensions (Instagram, GitHub, Discord, YouTube, Bluesky, Mastodon, Reddit and the others) now show only what is useful: no more help that repeats the label, no table for a single figure, no "nothing to do". Nothing else changes.*
+
+### Améliorations
+
+- **Adresse du profil.** Bandcamp, Facebook, Instagram, Kick, Ko-fi, Patreon, Pinterest, Snapchat, SoundCloud, Steam, Telegram, Threads, TikTok, X, GitHub et Bluesky n'ajoutent plus « Collez le lien de votre page » sous le champ : l'exemple suffit. Mastodon et Reddit gardent seulement ce que le libellé ne dit pas (« Ou @nom@serveur », « Une communauté convient aussi »).
+- **Discord** : le champ s'appelle « Votre lien d'invitation » ; l'invitation facultative devient « Invitation pour compter les membres », sans phrase conditionnelle.
+- **Chiffres suivis** (Bluesky, GitHub, Mastodon, Reddit, Discord, chaîne YouTube) : une ligne par chiffre (« Followers GitHub : 1 234 ») au lieu d'un titre et d'un tableau à deux colonnes. Quand rien ne peut être lu, la raison n'est écrite qu'une fois (trois lignes identiques pour YouTube deviennent une).
+- **Messages d'état** : « GitHub ne répond pas. », « GitHub limite les demandes anonymes. » : l'état, sans « rien à faire » ni « on réessaie automatiquement ». Les remarques « nombre approximatif » (Discord) et « YouTube arrondit le nombre de followers » passent dans l'info-bulle de « Suivre mes statistiques ».
+- **Chaîne YouTube** : l'aide du code de la chaîne tient sur une ligne, avec l'exemple et l'endroit où le trouver.
+
+### Pour les développeurs
+
+- Correctif de texte seulement : `dataVersion`, `minCore` et `apiVersion` ne bougent pas. Version +0.0.1 pour chacune des 20 extensions.
+- `scripts/social-networks.mjs` : l'aide du réglage du profil devient facultative (`help`), le libellé peut être propre à un réseau (`label`) ; `node scripts/gen-social.mjs` réécrit les 20 modules.
+- Le panneau des chiffres est un bloc `markdown` (`stat_line`) : les clés `stats_title`, `col_stat`, `col_value`, `stats_note` disparaissent des 6 modules.
+- `tests/ergonomics-baseline.json` perd 2 lignes (chaîne YouTube) ; la base des encadrés n'a aucune ligne pour ces modules. `docs/ERGONOMIE-ADMIN.md` reprend la règle R33 du cœur.
+
+*(English)*
+
+- **Profile address.** Bandcamp, Facebook, Instagram, Kick, Ko-fi, Patreon, Pinterest, Snapchat, SoundCloud, Steam, Telegram, Threads, TikTok, X, GitHub and Bluesky no longer add "Paste the link to your page" under the field: the example is enough. Mastodon and Reddit keep only what the label does not say ("Or @name@server", "A community works too").
+- **Discord**: the field is called "Your invitation link"; the optional invitation becomes "Invitation used to count members", without a conditional sentence.
+- **Tracked figures** (Bluesky, GitHub, Mastodon, Reddit, Discord, YouTube channel): one line per figure ("GitHub followers: 1,234") instead of a title and a two-column table. When nothing can be read, the reason is written once (three identical YouTube lines become one).
+- **Status messages**: "GitHub is not answering.", "GitHub is limiting anonymous requests.": the state, without "nothing to do" or "we try again automatically". The notes "approximate number" (Discord) and "YouTube rounds the follower count" move into the tooltip of "Follow my statistics".
+- **YouTube channel**: the help of the channel code fits on one line, with the example and where to find it.
+
 ## 1.100.1 — 2026-11-18
 
 *En bref : les pages d'administration de 26 extensions n'affichent plus que ce qui sert : plus de phrases de réassurance, de conditions du type « si ce n'est pas déjà fait » ni de lignes en double. Rien d'autre ne change.*

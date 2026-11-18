@@ -22,7 +22,8 @@ const single = (reserved = [], chars = "A-Za-z0-9._-", { at = false, max = 60 } 
  * shapes        façons dont une adresse désigne un compte : { re (chemin), host, fromHost, handle, prefix, withHost, template }
  * fediverse     accepte @nom@serveur
  * example       exemple d'adresse (fr, en)
- * help          aide courte (fr, en) ; défaut : « Collez le lien de votre page. »
+ * help          aide courte (fr, en) ; défaut : aucune (le libellé et l'exemple suffisent, R33)
+ * label         libellé du réglage (fr, en) ; défaut : LABEL
  * stats         ce que le module partage en plus de son bouton (fr, en), ou absent
  */
 export const NETWORKS = [
@@ -36,7 +37,7 @@ export const NETWORKS = [
   { id: "discord", name: "Discord", template: "https://discord.gg/{h}", hosts: ["discord.gg", "discord.com", "discordapp.com"],
     shapes: [{ host: "^discord\\.gg$", re: "^/([A-Za-z0-9-]{2,32})/?$", handle: true }, { host: "^discord(?:app)?\\.com$", re: "^/invite/([A-Za-z0-9-]{2,32})/?$", handle: true }],
     example: ["https://discord.gg/abcDEF", "https://discord.gg/abcDEF"],
-    help: ["Collez votre lien d'invitation.", "Paste your invitation link."],
+    label: ["Votre lien d'invitation", "Your invitation link"],
     stats: ["et partage le nombre de vos membres", "and shares your member count"] },
   { id: "facebook", name: "Facebook", template: "https://www.facebook.com/{h}", hosts: ["facebook.com"], aliases: [["fb.me", "www.facebook.com"], ["fb.com", "www.facebook.com"]],
     shapes: [single(["profile\\.php", "people", "pages", "groups", "watch", "share", "p", "events", "marketplace", "gaming", "stories", "reel", "photo", "photos", "public", "login", "help", "policies"], "A-Za-z0-9.-")],
@@ -57,7 +58,7 @@ export const NETWORKS = [
   { id: "mastodon", name: "Mastodon", template: null, hosts: null, fediverse: true,
     shapes: [{ re: "^/@([A-Za-z0-9_.-]{1,60})/?$", withHost: true }, { re: "^/users/([A-Za-z0-9_.-]{1,60})/?$", withHost: true }, { re: "^/@([A-Za-z0-9_.-]{1,60}@[A-Za-z0-9.-]{1,200})/?$" }],
     example: ["https://mastodon.social/@nom", "https://mastodon.social/@name"],
-    help: ["Collez le lien de votre profil, ou @nom@serveur.", "Paste your profile link, or @name@server."],
+    help: ["Ou @nom@serveur.", "Or @name@server."],
     stats: ["et partage vos followers et vos publications", "and shares your follower and post counts"] },
   { id: "patreon", name: "Patreon", template: "https://www.patreon.com/{h}", hosts: ["patreon.com"],
     shapes: [single(["c", "user", "join", "posts", "home", "login", "explore", "settings"])],
@@ -69,7 +70,7 @@ export const NETWORKS = [
     forms: [["^/?r/([A-Za-z0-9_]{2,21})/?$", "https://www.reddit.com/r/{1}"], ["^/?(?:u|user)/([A-Za-z0-9_-]{2,21})/?$", "https://www.reddit.com/user/{1}"]],
     shapes: [{ re: "^/(?:u|user)/([A-Za-z0-9_-]{2,21})/?$", handle: true }, { re: "^/r/([A-Za-z0-9_]{2,21})/?$", prefix: "r/", template: "https://www.reddit.com/r/{h}" }],
     example: ["https://www.reddit.com/user/monpseudo", "https://www.reddit.com/user/myname"],
-    help: ["Collez le lien de votre profil ou de votre communauté.", "Paste the link to your profile or community."],
+    help: ["Une communauté convient aussi.", "A community works too."],
     stats: ["et partage vos followers", "and shares your follower count"] },
   { id: "snapchat", name: "Snapchat", template: "https://www.snapchat.com/add/{h}", hosts: ["snapchat.com"],
     shapes: [{ re: "^/add/([A-Za-z0-9._-]{1,60})/?$", handle: true }, { re: "^/@([A-Za-z0-9._-]{1,60})/?$", handle: true }],
@@ -98,7 +99,6 @@ export const NETWORKS = [
     example: ["https://x.com/monpseudo", "https://x.com/myname"] },
 ];
 
-export const DEFAULT_HELP = ["Collez le lien de votre page.", "Paste the link to your page."];
 export const LABEL = ["Adresse de votre profil", "Your profile address"];
 export const MIN_CORE = "0.6.0";
 const DEFAULT_HANDLE = "^@?[A-Za-z0-9._-]{1,60}$";
@@ -196,11 +196,11 @@ export const hasStats = (n) => Boolean(n.stats);
 
 /** Le réglage « profile » de module.json. */
 export function profileSetting(n) {
-  const help = n.help ?? DEFAULT_HELP;
+  const label = n.label ?? LABEL;
   return {
     key: "profile", type: "text",
-    label: { en: LABEL[1], fr: LABEL[0] },
-    help: { en: help[1], fr: help[0] },
+    label: { en: label[1], fr: label[0] },
+    ...(n.help ? { help: { en: n.help[1], fr: n.help[0] } } : {}),
     example: { en: n.example[1], fr: n.example[0] },
   };
 }
@@ -232,6 +232,5 @@ export function description(n) {
 
 /** La ligne « Réglage » du README. */
 export function readmeSetting(n) {
-  const help = n.help ?? DEFAULT_HELP;
-  return `- **Réglage** : l'adresse de votre profil. ${help[0]} Par exemple : ${n.example[0]}. Le nom seul, l'adresse sans https:// ou sans www. et les adresses courtes sont reconnus ; les paramètres de suivi sont retirés.`;
+  return `- **Réglage** : ${n.label ? n.label[0].replace(/^Votre/, "votre") : "l'adresse de votre profil"}. ${n.help ? `${n.help[0]} ` : ""}Par exemple : ${n.example[0]}. Le nom seul, l'adresse sans https:// ou sans www. et les adresses courtes sont reconnus ; les paramètres de suivi sont retirés.`;
 }

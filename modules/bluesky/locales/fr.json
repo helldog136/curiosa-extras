@@ -1,11 +1,9 @@
 {
-  "stats_title": "Vos statistiques",
-  "col_stat": "Chiffre suivi",
-  "col_value": "Actuellement",
   "stat_followers": "Followers Bluesky",
   "stat_content": "Publications Bluesky",
+  "stat_line": "**{label}** : {value}",
   "err_hidden": "Bluesky ne donne pas ce chiffre pour ce compte.",
-  "err_rate": "Bluesky limite les demandes pour le moment : rien à faire, cela reprendra tout seul.",
-  "err_network": "Bluesky ne répond pas pour le moment : rien à faire, on réessaie automatiquement.",
+  "err_rate": "Bluesky limite les demandes.",
+  "err_network": "Bluesky ne répond pas.",
   "err_config_account": "Bluesky ne trouve pas ce compte : vérifiez l'adresse de votre profil dans Réglages."
 }
