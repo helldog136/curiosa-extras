@@ -34,7 +34,7 @@
   "test_done": "Rehearsal sent to your overlay pages.",
   "pause_done": "Subathon paused.",
   "resume_done": "Subathon resumed.",
-  "err_minutes": "Write a whole number of minutes from -600 to 600, for example 5.",
+  "err_minutes": "Write a whole number of minutes from -600 to 600, not 0, for example 5.",
   "err_nostart": "Choose a start in the settings first.",
   "add_time_done": "{minutes} minutes added.",
   "remove_time_done": "{minutes} minutes removed.",
