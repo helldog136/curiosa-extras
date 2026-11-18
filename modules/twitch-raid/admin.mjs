@@ -10,6 +10,7 @@ const source = await import(`./source.mjs${v}`);
 const migrate = await import(`./migrate.mjs${v}`);
 const addAdmin = await import(`./add-admin.mjs${v}`);
 const momentAdmin = await import(`./moment-admin.mjs${v}`);
+const { obsSteps } = await import(`./steps.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 export { settingsOf };
 const { FULL_VIEW_MAX, MAX_TARGETS, oneLine, modeFor, fold } = await import(`./pure.mjs${v}`);
@@ -35,7 +36,7 @@ export async function panel(ctx, { query = {} } = {}) {
   ]);
   const contactsPath = src.problem !== "contacts_missing" ? await source.contactsAdminPath(ctx, src.category?.id) : null;
   const address = dockUrl(ctx, secret);
-  const blocks = [];
+  const blocks = [{ type: "markdown", text: t("admin_intro") }];
   if (tw.problem && tw.problem !== "slow") blocks.push({ type: "banner", tone: "warning", text: t(`dock_nr_${tw.problem}`), ...(tw.adminPath ? { href: tw.adminPath } : {}) });
 
   // Contacts : absent (proposer de l'installer, par SERVICE), trop ancien, muet ; catégorie disparue, à choisir, à créer.
@@ -67,23 +68,22 @@ export async function panel(ctx, { query = {} } = {}) {
   if (src.state === "ok") {
     const n = src.partners.length;
     if (src.category) {
-      if (src.category.how === "moved") blocks.push({ type: "banner", tone: "info", text: t("list_moved", { label: src.category.label }) });
+      if (src.category.how === "moved") blocks.push({ type: "markdown", text: t("list_moved", { label: src.category.label }) });
       if (src.category.how === "only" && !source.defaultLabels(ctx).some((l) => fold(l) === fold(src.category.label))) blocks.push({ type: "markdown", text: t("list_only", { label: src.category.label, default: label0 }) });
       blocks.push({ type: "markdown", text: n ? t(n === 1 ? "list_count_one" : "list_count", { n, label: src.category.label }) : t("list_empty", { label: src.category.label }) });
     } else blocks.push({ type: "markdown", text: t(n === 1 ? "list_count_awaiting_one" : "list_count_awaiting", { n }) });
-    if (n) blocks.push({ type: "banner", tone: "info", text: t(modeFor(n) === "random" ? "mode_random" : n === 1 ? "mode_full_one" : "mode_full", { n, max: FULL_VIEW_MAX }) });
+    if (modeFor(n) === "random") blocks.push({ type: "markdown", text: t("mode_random", { max: FULL_VIEW_MAX }) });   // le dock montre toute la liste en direct : seul le passage au tirage au hasard est dit
     if (src.truncated) blocks.push({ type: "banner", tone: "warning", text: t("list_truncated", { max: MAX_TARGETS }) });
   }
   if (contactsPath) blocks.push({ type: "links", items: [{ label: t("manage_link"), href: contactsPath }] });
   blocks.push(...await within(addAdmin.listBlocks(ctx, src, query), source.timing.readMs + 1000, []));
 
-  blocks.push({ type: "markdown", text: t("admin_intro", { label: label0 }) });
-
   blocks.push({ type: "heading", text: t("addr_title") });
-  blocks.push({ type: "markdown", text: t("addr_steps") });
   blocks.push({ type: "copy", label: t("addr_label"), text: address });
+  blocks.push({ type: "markdown", text: t("addr_warn") });
+  blocks.push({ type: "html", html: obsSteps(ctx, ["addr_step1", "addr_step2", "addr_step3"]) });
   blocks.push({ type: "links", items: [{ label: t("addr_open"), href: address }] });
-  blocks.push({ type: "adminForm", action: "check", title: t("check_title"), submitLabel: t("check_btn"), fields: [] });
+  blocks.push({ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] });
   blocks.push({ type: "table", columns: [t("renew_title")], rows: [[t("renew_help")]], rowIds: ["dock"], rowActions: [{ label: t("renew_btn"), action: "renew", confirm: t("renew_confirm"), danger: true }] });
   // 2.2 : l'onglet « Sélection du moment » (ses blocs portent `tab: "moment"`).
   blocks.push(...await within(momentAdmin.blocks(ctx), source.timing.readMs + 3000, []));

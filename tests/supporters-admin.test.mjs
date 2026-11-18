@@ -14,45 +14,60 @@ const find = (blocks, type, pred = () => true) => blocks.filter((b) => b.type ==
 
 /* ───────────── L'assistant de connexion ───────────── */
 
-test("assistant : Patreon → étapes numérotées en mots simples, état de la clé (jamais sa valeur), bouton « Vérifier et actualiser », santé du service", async () => {
+const card = (blocks) => find(blocks, "connection")[0];
+
+test("assistant : Patreon réglé → UNE carte « Configuré » d'une ligne (jamais la clé, aucune étape), « Vérifier et actualiser » dans le menu, santé du service dans la carte ; sans clé : étapes numérotées", async () => {
   const { ctx } = makeWorld();
   const blocks = await Admin.panel(ctx, { query: {} });
-  const steps = find(blocks, "markdown", (b) => /^\*\*\d\.\*\*/.test(b.text));
+  assert.equal(find(blocks, "connection").length, 1);
+  assert.equal(card(blocks).state, "configured");
+  assert.equal(card(blocks).summary, "Patreon · pas encore actualisé");
+  assert.equal(card(blocks).setup, undefined, "réglé : plus aucune étape");
+  assert.equal(find(blocks, "markdown", (b) => /^\*\*\d\.\*\*/.test(b.text)).length, 0);
+  assert.ok(!text(blocks).includes("tok-creator"), "la clé secrète n'est jamais affichée");
+  assert.deepEqual(card(blocks).menu, [{ label: "Vérifier et actualiser", action: "refresh" }]);
+  assert.equal(find(blocks, "adminForm", (b) => b.action === "refresh").length, 0, "plus de bouton à côté de la carte");
+  assert.deepEqual(card(blocks).net[0].host, "www.patreon.com");
+  assert.equal(find(blocks, "netHealth").length, 0);
+  const none = makeWorld({ settings: { accessToken: "" } });
+  const setupCard = card(await Admin.panel(none.ctx, { query: {} }));
+  assert.equal(setupCard.state, "notConfigured");
+  const steps = setupCard.setup.filter((b) => b.type === "markdown" && /^\*\*\d\.\*\*/.test(b.text));
   assert.equal(steps.length, R.PROVIDERS.patreon.steps.fr.length);
   assert.ok(steps[0].text.startsWith("**1.**"));
-  assert.ok(text(blocks).includes(fr.tokenSaved));
-  assert.ok(!text(blocks).includes("tok-creator"), "la clé secrète n'est jamais affichée");
-  assert.ok(find(blocks, "adminForm", (b) => b.action === "refresh").length === 1);
-  assert.deepEqual(find(blocks, "netHealth")[0].items[0].host, "www.patreon.com");
-  const en_ = makeWorld({ locale: "en" });
+  assert.deepEqual(setupCard.primary, { label: "Saisir le code d'accès", href: "?tab=settings" });
+  const en_ = makeWorld({ locale: "en", settings: { accessToken: "" } });
   assert.ok(text(await Admin.panel(en_.ctx, { query: {} })).includes("Creator's Access Token"));
 });
 
-test("assistant : Ko-fi → l'adresse à coller s'affiche sous la bonne étape (bouton copier) ; aucun bouton d'actualisation (la plateforme prévient seule)", async () => {
+test("assistant : Ko-fi → tant qu'aucune notification n'est arrivée, la mise en place (adresse à coller sous la bonne étape) ; après la première, une ligne ; aucune actualisation", async () => {
   const { ctx } = makeWorld({ settings: { provider: "kofi", accessToken: "kofi-verify-token" } });
   const blocks = await Admin.panel(ctx, { query: {} });
-  const copy = find(blocks, "copy")[0];
+  assert.equal(card(blocks).state, "notConfigured");
+  assert.equal(card(blocks).reason, "Ko-fi n'a encore envoyé aucune notification.");
+  const setup = card(blocks).setup;
+  const copy = setup.find((b) => b.type === "copy");
   assert.equal(copy.text, "https://site.example.test/m/soutiens/kofi");
-  const idx = blocks.indexOf(copy);
-  assert.match(blocks[idx - 1].text, /^\*\*2\./, "juste sous l'étape 2");
+  assert.match(setup[setup.indexOf(copy) - 1].text, /^\*\*2\./, "juste sous l'étape 2");
   assert.equal(find(blocks, "adminForm", (b) => b.action === "refresh").length, 0);
-  assert.ok(text(blocks).includes(fr.noEventYet));
   await def.routes.kofi(kofiRequest(), ctx);
   D.forget(ctx);
-  assert.ok(!text(await Admin.panel(ctx, { query: {} })).includes(fr.noEventYet));
+  const after = card(await Admin.panel(ctx, { query: {} }));
+  assert.equal(after.state, "configured"); assert.match(after.summary, /^Ko-fi · dernière notification le /);
+  assert.equal(after.setup, undefined, "la première notification est arrivée : l'adresse n'est plus montrée");
+  assert.equal((after.menu ?? []).length, 0, "aucune actualisation : la plateforme prévient seule");
 });
 
-test("assistant : fichier → étapes du fichier ; sans clé la bannière dit quoi faire et mène aux réglages ; page éteinte dite", async () => {
+test("assistant : fichier → pas de carte de connexion ; pas de bandeau « page éteinte » ; sans clé, la carte mène aux réglages", async () => {
   const f = makeWorld({ settings: { provider: "csv", accessToken: "", publicPage: false } });
   const blocks = await Admin.panel(f.ctx, { query: {} });
-  assert.ok(!find(blocks, "banner").some((b) => b.text === fr.needToken), "un import n'a pas besoin de clé");
-  assert.ok(find(blocks, "banner").some((b) => b.text === fr.pageOff));
+  assert.equal(find(blocks, "connection").length, 0, "un import n'a pas besoin de clé");
+  assert.ok(!find(blocks, "banner").some((b) => /page publique/.test(b.text)), "la page publique éteinte est le réglage par défaut : aucune phrase pour le dire");
   const p = makeWorld({ settings: { accessToken: "" } });
-  const ban = find(await Admin.panel(p.ctx, { query: {} }), "banner").find((b) => b.text === fr.needToken);
-  assert.equal(ban.href, "?tab=settings");
+  assert.equal(card(await Admin.panel(p.ctx, { query: {} })).primary.href, "?tab=settings");
 });
 
-test("assistant : « Vérifier et actualiser » avec une erreur volontaire (mauvaise clé) → message en mots simples ; puis avec la bonne clé → succès chiffré", async () => {
+test("assistant : « Vérifier et actualiser » avec une erreur volontaire (mauvaise clé) → message en mots simples, carte « Dégradé » ; puis avec la bonne clé → succès chiffré", async () => {
   const { ctx, settings } = makeWorld();
   const pat = fakePatreon({ tiers: [{ id: 1, title: "A", cents: 100 }], members: [{ id: 1, name: "Ada", status: "active_patron", since: "2025-01-01", tiers: [1] }] });
   settings.accessToken = "mauvaise-cle";
@@ -61,16 +76,30 @@ test("assistant : « Vérifier et actualiser » avec une erreur volontaire (mauv
     assert.equal(bad.error, fr.sync_token);
     assert.ok(!JSON.stringify(bad).includes("mauvaise-cle"), "la clé n'est jamais renvoyée");
     D.forget(ctx);
-    const blocks = await Admin.panel(ctx, { query: {} });
-    assert.ok(find(blocks, "banner").some((b) => b.text === fr.sync_token), "l'erreur reste visible dans l'assistant");
+    const degraded = card(await Admin.panel(ctx, { query: {} }));
+    assert.equal(degraded.state, "degraded"); assert.equal(degraded.reason, fr.sync_token);
+    assert.deepEqual(degraded.primary, { label: "Corriger le code d'accès", href: "?tab=settings" }, "un code refusé se corrige dans les réglages");
     settings.accessToken = "tok-creator";
     const good = await Admin.actions.refresh.run(ctx, {});
     assert.match(good.ok, /1 soutiens lus \(1 nouveaux, 0 arrêtés\)/);
     D.forget(ctx);
-    assert.ok(!find(await Admin.panel(ctx, { query: {} }), "banner").some((b) => b.text === fr.sync_token));
+    const fine = card(await Admin.panel(ctx, { query: {} }));
+    assert.equal(fine.state, "configured"); assert.match(fine.summary, /^Patreon · 1 soutiens lus le /);
   });
   const enCtx = makeWorld({ locale: "en", settings: { accessToken: "x" } });
   await kit.withFakeFetch({ "*": pat.reply }, async () => { assert.equal((await Admin.actions.refresh.run(enCtx.ctx, {})).error, en.sync_token); });
+});
+
+test("connexion en trois états (R33) : à configurer, configurée, dégradée", async () => {
+  const { assertConnectionStates } = await import((await import("node:url")).pathToFileURL((await import("node:path")).join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/ergonomics.mjs")).href);
+  const notConfigured = await Admin.panel(makeWorld({ settings: { accessToken: "" } }).ctx, { query: {} });
+  const configured = await Admin.panel(makeWorld().ctx, { query: {} });
+  const { ctx, settings } = makeWorld();
+  settings.accessToken = "mauvaise-cle";
+  await kit.withFakeFetch({ "*": fakePatreon({ tiers: [], members: [] }).reply }, async () => { await Admin.actions.refresh.run(ctx, {}); });
+  D.forget(ctx);
+  const degraded = await Admin.panel(ctx, { query: {} });
+  assertConnectionStates({ notConfigured, configured, degraded }, { skip: ["R15"] });
 });
 
 test("assistant : toutes les erreurs de plateforme ont une phrase simple dans les deux langues, et aucune ne contient de jargon ni d'identifiant", () => {

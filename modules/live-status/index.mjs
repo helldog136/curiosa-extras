@@ -70,29 +70,37 @@ export default ({
         // The hand-over of the old Twitch settings runs at the data update; if the Twitch channel did not answer then, it is tried again here, when the page is opened
         // (it never throws, and with nothing left to hand over it only reads three empty values). No hourly task any more.
         await adoptLegacy(ctx);
-        const blocks = [];
-        // Sans application Twitch (Connecteur Twitch) ou sans chaîne (Ma Chaîne Twitch), le lecteur ne peut jamais s'afficher (sauf réglage « toujours ») :
-        // on le dit en clair, avec le lien vers l'endroit où cela se règle.
+        const t = ctx.t, edit = { href: "?tab=settings" };
+        // Une carte par source (R33) : Twitch (application du site + chaîne) et YouTube (clé + chaîne). Une source absente (module non installé) n'a pas de carte ;
+        // sans aucune source, une seule carte « à configurer » propose de les installer. Sans application Twitch ou sans chaîne, le lecteur ne peut jamais s'afficher
+        // (sauf réglage « toujours »), avec le lien vers l'endroit où cela se règle.
         const twitchGap = await setupGap(ctx);   // null : Ma Chaîne Twitch n'est pas installée
-        const gap = ctx.setting("playerWhen") !== "always" ? twitchGap : null;
-        if (gap === "app") blocks.push({ type: "banner", tone: "warning", text: ctx.t("needCredentials") }, { type: "markdown", text: `[${ctx.t("openConnector")}](/admin/modules/twitch-connector)` });
-        else if (gap === "channel") blocks.push({ type: "banner", tone: "warning", text: ctx.t("needChannel") }, { type: "markdown", text: `[${ctx.t("openTwitch")}](/admin/modules/twitch-channel)` });
+        const always = ctx.setting("playerWhen") === "always";
         // YouTube : la réponse est celle que les visiteurs voient (gardée quelques minutes) ; ouvrir cette page ne coûte donc presque rien.
         const yt = await youtubeLives(ctx);
         // Une source « absente » = aucun fournisseur du tout (un fournisseur présent mais muet ou en panne n'est pas absent).
         const hasProvider = async (service) => { try { const l = typeof ctx.api.services?.providers === "function" ? await ctx.api.services.providers(service) : []; return Array.isArray(l) && l.length > 0; } catch { return false; } };
+        const blocks = [];
         if (twitchGap === null && yt.state === "none" && !(await hasProvider("twitch.live")) && !(await hasProvider("youtube.live"))) {
-            blocks.push({ type: "banner", tone: "info", text: ctx.t("needSource") },
-                { type: "suggestInstall", service: "twitch.live", reason: ctx.t("suggestTwitch") },
-                { type: "suggestInstall", service: "youtube.live", reason: ctx.t("suggestYoutube") });
-        } else if (yt.state === "unknown") {
-            const g = yt.gap;
-            const [text, link, label] = g === "channel" ? ["ytNeedChannel", "youtube-channel", "openYoutube"]
-                : ["config", "auth", "unavailable"].includes(g) ? ["ytNeedKey", "youtube-connector", "openYoutubeConnector"]
-                : ["quota", "rate"].includes(g) ? ["ytQuota"] : ["ytDown"];
-            blocks.push({ type: "banner", tone: "warning", text: ctx.t(text) });
-            if (link) blocks.push({ type: "markdown", text: `[${ctx.t(label)}](/admin/modules/${link})` });
+            return [{ type: "connection", id: "sources", title: t("sourcesTitle"), state: "notConfigured", reason: t("needSource"),
+                setup: [{ type: "suggestInstall", service: "twitch.live", reason: t("suggestTwitch") }, { type: "suggestInstall", service: "youtube.live", reason: t("suggestYoutube") }] }];
         }
+        if (twitchGap !== null) {
+            const gap = always ? false : twitchGap;
+            if (gap === "app") blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "notConfigured", reason: t("twitchApp"), primary: { label: t("openConnector"), href: "/admin/modules/twitch-connector" } });
+            else if (gap === "channel") blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "notConfigured", reason: t("twitchChannel"), primary: { label: t("openTwitch"), href: "/admin/modules/twitch-channel" } });
+            else {
+                const channels = (await liveSources(ctx, { status: false })).map((x) => x.channel);
+                blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "configured", summary: channels.length ? t("sumTwitch", { list: channels.join(", ") }) : t("sumAlways"), edit });
+            }
+        }
+        if (yt.state === "unknown") {
+            const g = yt.gap;
+            const [state, text, label, link] = g === "channel" ? ["notConfigured", "ytNeedChannel", "openYoutube", "youtube-channel"]
+                : ["config", "auth", "unavailable"].includes(g) ? ["notConfigured", "ytNeedKey", "openYoutubeConnector", "youtube-connector"]
+                : ["degraded", ["quota", "rate"].includes(g) ? "ytQuota" : "ytDown", "openYoutubeConnector", "youtube-connector"];
+            blocks.push({ type: "connection", id: "youtube", title: t("youtubeTitle"), state, reason: t(text), primary: { label: t(label), href: `/admin/modules/${link}` }, ...(state === "degraded" ? { edit } : {}) });
+        } else if (yt.state !== "none") blocks.push({ type: "connection", id: "youtube", title: t("youtubeTitle"), state: "configured", summary: t("sumYoutube"), edit });
         return blocks;
     },
     // Reprise automatique des anciens identifiants Twitch (voir adopt.mjs) : à la mise à jour des données, puis réessayée à l'ouverture de cette page tant qu'il en reste

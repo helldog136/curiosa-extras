@@ -101,8 +101,8 @@
      "en": "How often should your numbers be noted?"
     },
     "help": {
-     "fr": "Une fois par jour convient très bien : vous n'avez rien à régler. Plus c'est fréquent, plus l'historique est détaillé (et plus il prend de place).",
-     "en": "Once a day is just fine: there is nothing to set. The more often, the more detailed the history (and the more room it takes)."
+     "fr": "Plus c'est fréquent, plus l'historique est détaillé, et plus il prend de place.",
+     "en": "The more often, the more detailed the history, and the more room it takes."
     },
     "options": [
      {
@@ -352,7 +352,7 @@
   },
   {
    "type": "markdown",
-   "text": "Votre site note régulièrement vos followers, vos publications et vos vues, et garde leur historique. Votre IA peut les consulter pour vous répondre (« combien de followers ai-je gagnés ce mois-ci ? »). Rien n'apparaît sur votre site tant que vous ne l'avez pas choisi."
+   "text": "Votre site note vos followers, vos publications et vos vues, et garde leur historique."
   },
   {
    "type": "markdown",
@@ -376,27 +376,27 @@
    ],
    "rows": [
     [
-     "Instagram · @emma\nFollowers : 7\nMontré sur mon site",
+     "Instagram · @emma\nFollowers : 7",
      "Pas encore assez d'historique pour comparer.\nSaisi à la main : maintenant"
     ],
     [
-     "Twitch · emma_live\nFollowers : 1 120\nMontré sur mon site",
+     "Twitch · emma_live\nFollowers : 1 120",
      "+21 followers cette semaine (+1,9 %)\n+90 followers ce mois-ci (+8,7 %)\nMise à jour automatique : maintenant"
     ],
     [
-     "Twitch · emma_live\nAbonnements payants : 12\nGardé pour vous",
+     "Twitch · emma_live\nAbonnements payants : 12",
      "Pas de changement cette semaine\nPas de changement ce mois-ci\nMise à jour automatique : maintenant"
     ],
     [
-     "Twitch · emma_live\nAudience moyenne (30 jours) : 42\nGardé pour vous",
-     "Calculé sur vos directs des 30 derniers jours, mesurés par votre site.\nMise à jour automatique : maintenant"
+     "Twitch · emma_live\nAudience moyenne (30 jours) : 42",
+     "Mise à jour automatique : maintenant"
     ],
     [
-     "YouTube · Emma TV\nPublications : 80\nMontré sur mon site",
+     "YouTube · Emma TV\nPublications : 80",
      "Pas de changement cette semaine\nPas de changement ce mois-ci\nMise à jour automatique : maintenant"
     ],
     [
-     "YouTube · Emma TV\nVues : 54 000\nGardé pour vous",
+     "YouTube · Emma TV\nVues : 54 000",
      "+700 vues cette semaine (+1,3 %)\n+3 000 vues ce mois-ci (+5,9 %)\nMise à jour automatique : maintenant"
     ]
    ]
@@ -404,10 +404,6 @@
   {
    "type": "heading",
    "text": "Ce que vous montrez sur votre site"
-  },
-  {
-   "type": "markdown",
-   "text": "« Montrer sur mon site » autorise l'affichage d'un chiffre au public ; sans votre accord, il reste visible de vous uniquement. L'affichage sur le site arrive bientôt : vos choix sont déjà gardés."
   },
   {
    "type": "adminForm",
@@ -518,7 +514,7 @@
   },
   {
    "type": "markdown",
-   "text": "Certains réseaux (Instagram, TikTok, X, Facebook…) ne donnent pas leurs chiffres tout seuls. Notez ici votre nombre de followers de temps en temps : le site en garde l'historique et vous rappelle quand le chiffre devient ancien."
+   "text": "Notez ici les chiffres des réseaux qui ne les donnent pas (Instagram, TikTok, X, Facebook…). Le site garde l'historique et signale quand un chiffre devient ancien."
   },
   {
    "type": "table",

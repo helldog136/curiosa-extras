@@ -1,9 +1,6 @@
 {
-  "adminTitle": "Annonces Discord",
-  "notConfigured": "Aucune adresse d'envoi n'est réglée : rien n'est envoyé. Collez-la dans l'onglet « Réglages ».",
-  "configured": "Adresse d'envoi réglée. Les nouveautés sont annoncées automatiquement, avec une vérification par minute.",
-  "testTitle": "Envoyer un message de test",
-  "testSubmit": "Envoyer le test",
+  "adminTitle": "Salon Discord",
+  "testSubmit": "Envoyer un message de test",
   "testMessage": "✅ Test de {site} : les annonces Discord fonctionnent.",
   "okTest": "Message de test envoyé.",
   "errTest": "L'envoi a échoué : {error}. Vérifiez l'adresse d'envoi dans l'onglet « Réglages ».",
@@ -14,12 +11,17 @@
   "colResult": "Résultat",
   "resultOk": "envoyé",
   "resultFailed": "échec ({status}) après {attempts} essai(s) : {error}",
-  "noLog": "Aucune annonce envoyée pour l'instant.",
   "platformTwitch": "Twitch",
   "platformYoutube": "YouTube",
   "platformBoth": "Twitch et YouTube",
   "linkLine": "{platform} : {url}",
   "liveDefault": "🔴 En direct sur {platform} : {title}",
-  "ytOn": "Vos directs YouTube sont annoncés aussi (vérification toutes les {minutes} minutes au plus, un seul message par direct).",
-  "ytOff": "Vos directs YouTube ne sont pas annoncés. Pour le faire, cochez « Annoncer aussi mes directs YouTube » dans les réglages."
+  "notSet": "Aucune adresse d'envoi n'est réglée : rien n'est envoyé.",
+  "badAddress": "L'adresse d'envoi n'est pas une adresse Discord valable.",
+  "setAddress": "Régler l'adresse d'envoi",
+  "setupSteps": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Collez-la dans « Adresse d'envoi du salon Discord » (onglet Réglages).",
+  "sumBase": "Nouveautés du site et directs Twitch",
+  "sumYoutube": "Nouveautés du site, directs Twitch et YouTube",
+  "lastFailed": "Le dernier envoi a échoué.",
+  "lastFailedCode": "Le dernier envoi a échoué (code {status})."
 }

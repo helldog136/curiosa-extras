@@ -6,7 +6,7 @@
     "en": "Online calendar",
     "fr": "Agenda en ligne"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": {
     "en": "Reads your Google Calendar (or any online calendar) so your site can show your streams: schedule, chat bot… Nothing to retype.",
     "fr": "Lit votre Google Agenda (ou tout agenda en ligne) pour que votre site montre vos streams : planning, bot du chat… Rien à recopier."
@@ -49,8 +49,8 @@
         "fr": "Adresse de votre agenda"
       },
       "help": {
-        "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Never shown again once saved: whoever has it can read your calendar. Use a calendar dedicated to your streams: everything in it becomes visible on your site.",
-        "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Jamais réaffichée une fois enregistrée : qui la possède peut lire votre agenda. Utilisez un agenda dédié à vos streams : tout ce qu'il contient devient visible sur votre site."
+        "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Whoever has it can read your calendar.",
+        "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Qui la possède peut lire votre agenda."
       }
     },
     {
@@ -63,8 +63,8 @@
         "fr": "Fuseau horaire de l'agenda (facultatif)"
       },
       "help": {
-        "en": "IANA name, e.g. Europe/Paris. Only needed if times look shifted. Left empty, the time zone your calendar announces is used.",
-        "fr": "Nom IANA, ex. Europe/Paris. Utile seulement si les heures semblent décalées. Laissé vide, c'est le fuseau que votre agenda annonce qui est utilisé."
+        "en": "For example Europe/Paris. Empty: the time zone your calendar announces.",
+        "fr": "Par exemple Europe/Paris. Vide : le fuseau annoncé par votre agenda."
       }
     },
     {

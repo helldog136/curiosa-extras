@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.36.0",
   "id": "supporters",
   "name": {
     "en": "Supporters",
     "fr": "Soutiens"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "menuGroup": "community",
   "description": {
     "en": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted.",
@@ -185,8 +185,8 @@
         "fr": "Code d'accès de la plateforme"
       },
       "help": {
-        "en": "Patreon: your creator access code. Ko-fi: your verification code. Entered once, never shown again. Not needed for a file import.",
-        "fr": "Patreon : le code d'accès de votre page. Ko-fi : votre code de vérification. Saisi une fois, jamais réaffiché. Inutile pour un import de fichier."
+        "en": "Patreon: your creator access code. Ko-fi: your verification code.",
+        "fr": "Patreon : le code d'accès de votre page. Ko-fi : votre code de vérification."
       }
     },
     {
@@ -198,8 +198,8 @@
         "fr": "Montrer une page publique des soutiens"
       },
       "help": {
-        "en": "Off by default. Even when on, the page only shows nicknames that people agreed to show.",
-        "fr": "Désactivé par défaut. Même activée, la page ne montre que les pseudos que les personnes ont accepté de montrer."
+        "en": "The page only shows nicknames that people agreed to show.",
+        "fr": "La page ne montre que les pseudos que les personnes ont accepté de montrer."
       }
     },
     {
@@ -263,8 +263,8 @@
         "fr": "Catégorie de Contacts pour les soutiens"
       },
       "help": {
-        "en": "Only used if you file supporters in Contacts. Starting suggestion: type “Supporters” and click “Create”. Nobody is filed until you click the button.",
-        "fr": "Seulement si vous rangez les soutiens dans Contacts. Suggestion de départ : tapez « Soutiens » et cliquez sur « Créer ». Personne n'est rangé avant que vous cliquiez sur le bouton."
+        "en": "Starting suggestion: type “Supporters” and click “Create”.",
+        "fr": "Suggestion de départ : tapez « Soutiens » et cliquez sur « Créer »."
       }
     },
     {
@@ -330,8 +330,8 @@
         "fr": "Catégorie pour le mur des remerciements"
       },
       "help": {
-        "en": "Optional. People whose card name is exactly the nickname they agreed to show are also put in this category, so the thank-you wall can display them. Others are never put in it.",
-        "fr": "Facultatif. Les personnes dont le nom de fiche est exactement le pseudo qu'elles ont accepté de montrer sont aussi rangées dans cette catégorie, pour que le mur des remerciements puisse les afficher. Les autres n'y sont jamais rangées."
+        "en": "People whose card name is their shown nickname are also put here, for the thank-you wall.",
+        "fr": "Les personnes dont le nom de fiche est leur pseudo montré y sont aussi rangées, pour le mur des remerciements."
       }
     },
     {
@@ -358,8 +358,8 @@
         "fr": "Jours avant d'oublier un soutien arrêté"
       },
       "help": {
-        "en": "Between 30 and 1100. The card in Contacts, if any, is never touched.",
-        "fr": "Entre 30 et 1100. La fiche dans Contacts, s'il y en a une, n'est jamais touchée."
+        "en": "Between 30 and 1100.",
+        "fr": "Entre 30 et 1100."
       }
     },
     {
