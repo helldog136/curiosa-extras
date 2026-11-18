@@ -26,7 +26,7 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 
 /** The Twitch cluster (places rollout, step 4): version after migration, and the sections each one declares (id → place). */
 const MIGRATED = {
-  "alerts-overlay": ["1.19.0", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
+  "alerts-overlay": ["1.20.0", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.23.0", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.3.0", { main: "live.rewards.home" }],
   "twitch-connector": ["1.7.0", { main: "networks.twitch" }],
@@ -175,6 +175,8 @@ test(`upgrade from the real ${BEFORE} manifests: an older core sees the same mod
     assert.ok(old, `${id} exists at ${BEFORE}`);
     const { places, version, ...rest } = now;
     const { version: oldVersion, ...oldRest } = old;
+    // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
+    if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
     assert.deepEqual(rest, oldRest, `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
     assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);
     // What an older core needs to keep showing the module in the same place.

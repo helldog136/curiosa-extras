@@ -698,5 +698,11 @@
   "two_group_help": "Cadeaux et follows rapprochés deviennent une seule alerte.",
   "two_err_group": "Écrivez un nombre entier entre {min} et {max}, par exemple 5.",
   "two_err_ignore": "La liste est trop longue : 2000 caractères au plus.",
-  "two_saved": "Options Twitch enregistrées."
+  "two_saved": "Options Twitch enregistrées.",
+  "ev_kind_sub_end": "Fin d'abonnement",
+  "gauge_hype_label": "Train de la hype",
+  "gauge_session_label_subs": "Subs du live",
+  "gauge_session_label_bits": "Bits du live",
+  "gauge_session_label_follows": "Follows du live",
+  "gauge_update_core": "Mettez Curiosa à jour pour afficher cet élément"
 }

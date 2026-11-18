@@ -90,6 +90,11 @@ const EXEMPT = {
   "countdown/countdown": "hidden until an event is chosen and hidden again after its end message (hideAt); starts with `hidden` (countdown-client.test.mjs)",
   "polls/poll": "the box is empty when there is no poll (`empty` answer); a finished poll shows its final results on purpose (polls-overlay-element.test.mjs)",
   "maze-overlay/maze": "a generative scene that always plays: it has no data to wait for, so no idle state",
+  // (1.97.0) animated elements drawn by the core's engine on a canvas: the page has no text of its own and its stage starts hidden until the state arrives
+  "alerts-overlay/hype-train": "hidden while no train is on (state route answers visible: false; the stage starts hidden): alerts-gauges.test.mjs",
+  "alerts-overlay/session-counter": "a total of the session is always something to say (0 at the start of a live); drawn by the engine, no placeholder text",
+  "stream-goals/goal": "a goal is always something to say (the value towards the target); drawn by the engine, no placeholder text",
+  "stream-goals/subathon": "hidden while no start is chosen (state route answers visible: false; the stage starts hidden): stream-goals.test.mjs",
 };
 
 async function planning(slug) {

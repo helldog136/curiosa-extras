@@ -1,0 +1,61 @@
+{
+  "id": "stream-goals",
+  "category": "looks",
+  "tags": [
+    "goal",
+    "subathon",
+    "overlay",
+    "twitch"
+  ],
+  "order": 40,
+  "title": {
+    "en": "Live goals",
+    "fr": "Objectifs du live"
+  },
+  "summary": {
+    "en": "A goal bar and a subathon whose time grows with each sub, bits or follow.",
+    "fr": "Une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow."
+  },
+  "pitch": {
+    "en": "A goal bar and a subathon whose time grows with each sub, bits or follow.",
+    "fr": "Une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "alerts-overlay",
+    "twitch-channel"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "overlay-goal.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "A follower goal bar drawn as a stained glass window, with demo data",
+        "fr": "Une barre d'objectif followers dessinée comme un vitrail, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The goal bar with a stained glass skin, during a celebration.",
+        "fr": "La barre d'objectif avec un skin vitrail, pendant une fête."
+      }
+    },
+    {
+      "file": "overlay-subathon.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "A subathon countdown drawn as a neon tube, five minutes just added",
+        "fr": "Un compte à rebours de subathon dessiné en néon, cinq minutes viennent d'être ajoutées"
+      },
+      "caption": {
+        "en": "The subathon with a neon skin: a sub has just added five minutes.",
+        "fr": "Le subathon avec un skin néon : un sub vient d'ajouter cinq minutes."
+      }
+    }
+  ],
+  "sources": [
+    "modules/stream-goals/module.json",
+    "modules/stream-goals/README.md"
+  ]
+}

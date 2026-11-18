@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.19.0",
+  "version": "1.20.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.15.0",
@@ -1031,6 +1031,222 @@
             }
           ],
           "default": "module"
+        }
+      ]
+    },
+    {
+      "id": "hype-train",
+      "label": {
+        "en": "Hype train",
+        "fr": "Train de la hype"
+      },
+      "description": {
+        "en": "The level of the hype train, its progress and its time left. Hidden when no train is on.",
+        "fr": "Le niveau du train de la hype, sa progression et son temps restant. Caché sans train en cours."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 320,
+        "height": 120
+      },
+      "followsStyle": true,
+      "tvScale": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "label",
+          "type": "text",
+          "label": {
+            "en": "Title",
+            "fr": "Titre"
+          },
+          "help": {
+            "en": "Empty: the usual title.",
+            "fr": "Vide : le titre habituel."
+          },
+          "example": "Hype",
+          "maxLength": 40,
+          "default": ""
+        },
+        {
+          "id": "animQuality",
+          "type": "choice",
+          "label": {
+            "en": "Effects",
+            "fr": "Effets"
+          },
+          "help": {
+            "en": "Lighter effects for a slower computer.",
+            "fr": "Des effets plus légers pour un ordinateur lent."
+          },
+          "default": "auto",
+          "choices": [
+            {
+              "value": "auto",
+              "label": {
+                "en": "Automatic",
+                "fr": "Automatiques"
+              }
+            },
+            {
+              "value": "full",
+              "label": {
+                "en": "All",
+                "fr": "Tous"
+              }
+            },
+            {
+              "value": "light",
+              "label": {
+                "en": "Light",
+                "fr": "Légers"
+              }
+            },
+            {
+              "value": "minimal",
+              "label": {
+                "en": "None",
+                "fr": "Aucun"
+              }
+            }
+          ]
+        },
+        {
+          "id": "animCalm",
+          "type": "boolean",
+          "label": {
+            "en": "Calm motion",
+            "fr": "Mouvements calmes"
+          },
+          "help": {
+            "en": "No flashes, shakes or flying pieces.",
+            "fr": "Sans éclairs, secousses ni éclats qui volent."
+          },
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "session-counter",
+      "label": {
+        "en": "Session counter",
+        "fr": "Compteur du live"
+      },
+      "description": {
+        "en": "A total that grows during the live: subs, bits or follows. Each one gets a reaction.",
+        "fr": "Un total qui monte pendant le live : subs, bits ou follows. Chacun a sa réaction."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 240,
+        "height": 120
+      },
+      "followsStyle": true,
+      "tvScale": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "count",
+          "type": "choice",
+          "label": {
+            "en": "What it counts",
+            "fr": "Ce qui est compté"
+          },
+          "default": "subs",
+          "choices": [
+            {
+              "value": "subs",
+              "label": {
+                "en": "Subs (new, renewed, gifted)",
+                "fr": "Subs (nouveaux, renouvelés, offerts)"
+              }
+            },
+            {
+              "value": "bits",
+              "label": {
+                "en": "Bits",
+                "fr": "Bits"
+              }
+            },
+            {
+              "value": "follows",
+              "label": {
+                "en": "Follows",
+                "fr": "Follows"
+              }
+            }
+          ]
+        },
+        {
+          "id": "label",
+          "type": "text",
+          "label": {
+            "en": "Title",
+            "fr": "Titre"
+          },
+          "help": {
+            "en": "Empty: the usual title.",
+            "fr": "Vide : le titre habituel."
+          },
+          "example": "Subs du live",
+          "maxLength": 40,
+          "default": ""
+        },
+        {
+          "id": "animQuality",
+          "type": "choice",
+          "label": {
+            "en": "Effects",
+            "fr": "Effets"
+          },
+          "help": {
+            "en": "Lighter effects for a slower computer.",
+            "fr": "Des effets plus légers pour un ordinateur lent."
+          },
+          "default": "auto",
+          "choices": [
+            {
+              "value": "auto",
+              "label": {
+                "en": "Automatic",
+                "fr": "Automatiques"
+              }
+            },
+            {
+              "value": "full",
+              "label": {
+                "en": "All",
+                "fr": "Tous"
+              }
+            },
+            {
+              "value": "light",
+              "label": {
+                "en": "Light",
+                "fr": "Légers"
+              }
+            },
+            {
+              "value": "minimal",
+              "label": {
+                "en": "None",
+                "fr": "Aucun"
+              }
+            }
+          ]
+        },
+        {
+          "id": "animCalm",
+          "type": "boolean",
+          "label": {
+            "en": "Calm motion",
+            "fr": "Mouvements calmes"
+          },
+          "help": {
+            "en": "No flashes, shakes or flying pieces.",
+            "fr": "Sans éclairs, secousses ni éclats qui volent."
+          },
+          "default": false
         }
       ]
     }

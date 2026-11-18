@@ -1,6 +1,6 @@
 // How a journal line is described in words (shared by the admin page and the OBS dock): the colour of its badge, who, and the details ("12 months · tier 2", "500 bits").
 /** Colour of the badge of each kind (always written next to it: the colour alone never carries the meaning). */
-export const TONE = { follow: "ok", sub: "accent", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype_begin: "warn", hype_progress: "warn", hype_end: "neutral", redeem: "neutral" };
+export const TONE = { follow: "ok", sub: "accent", sub_end: "neutral", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype_begin: "warn", hype_progress: "warn", hype_end: "neutral", redeem: "neutral" };
 
 const fmtDate = (ctx, at) => new Date(at).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone: ctx.timezone });
 const num = (ctx, n) => new Intl.NumberFormat(ctx.locale).format(n);
@@ -11,6 +11,7 @@ export function detail(ctx, d) {
   const tier = d.tier ? t("d_tier", { n: d.tier }) : "";
   switch (d.kind) {
     case "sub": p.push(d.gifted ? t("d_gifted") : tier); break;
+    case "sub_end": p.push(d.gifted ? t("d_gifted") : tier); break;
     case "resub": p.push(t("d_months", { n: d.months ?? 0 }), tier); break;
     case "gift": p.push(t("d_gift", { n: d.count ?? 0 }), tier); break;
     case "cheer": p.push(t("d_bits", { n: num(ctx, d.amount ?? 0) })); break;

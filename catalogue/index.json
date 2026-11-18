@@ -18,7 +18,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.96.0",
-      "version": "1.19.0",
+      "version": "1.20.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔",
@@ -2277,6 +2277,45 @@
       "requires": {
         "core": "0.6.0"
       }
+    },
+    {
+      "id": "stream-goals",
+      "name": "Live goals",
+      "description": "A goal bar and a subathon whose time grows with each sub, bits or follow. Both follow the skin of your overlay pages.",
+      "i18n": {
+        "en": {
+          "name": "Live goals",
+          "description": "A goal bar and a subathon whose time grows with each sub, bits or follow. Both follow the skin of your overlay pages."
+        },
+        "fr": {
+          "name": "Objectifs du live",
+          "description": "Une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow. Les deux suivent le skin de vos pages d'overlay."
+        }
+      },
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/stream-goals",
+      "ref": "v1.96.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🎯",
+      "requires": {
+        "core": "0.30.0"
+      },
+      "needs": [
+        {
+          "service": "alerts.queue",
+          "min": 2,
+          "optional": true
+        },
+        {
+          "service": "twitch.live",
+          "optional": true
+        }
+      ],
+      "places": [
+        "live.goals"
+      ]
     },
     {
       "id": "stream-story",
