@@ -4,6 +4,32 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : sur un site en Curiosa 0.31.0, les extensions Twitch rangent leurs réglages par tâche : « En direct › Alertes », « Récompenses », « Chat », « Raid », et « Réseaux › Twitch ». Leurs entrées « Réseaux › Twitch » disparaissent du menu. Sur un cœur plus ancien, rien ne change.*
+
+*In short: on a site with Curiosa 0.31.0, the Twitch extensions put their settings by task: "Live › Alerts", "Rewards", "Chat", "Raid", and "Networks › Twitch". Their "Networks › Twitch" entries leave the menu. On an older core, nothing changes.*
+
+### Nouveautés
+
+- **Une page par tâche.** Overlay alertes 1.19.0 va dans « En direct › Alertes » (Événements, Règles, Voix). Sa médiathèque va dans « En direct › Chat › Médias », à côté des commandes qui l'utilisent.
+- **Une seule page « Récompenses ».** Les réactions à l'écran d'Overlay alertes et les réponses du Bot Twitch 1.23.0 sont sur la même page. Home Assistant 1.3.0 en devient l'onglet « Maison connectée ».
+- **Chat et Raid.** Les commandes et les timers du Bot Twitch sont dans « En direct › Chat ». Raid Twitch 2.6.0 a sa page « En direct › Raid » (Ma liste, Sélection du moment).
+- **Réseaux › Twitch.** Connecteur Twitch 1.7.0 et Chaîne Twitch 2.5.0 partagent la page « Twitch ». Les chiffres suivis de la chaîne vont dans « Réseaux › Chiffres ».
+- **Rien ne bouge ailleurs.** Vos réglages, vos listes, les outils des assistants et les éléments d'overlay restent les mêmes. La page de chaque extension reste dans Extensions.
+- **One page per task.** Alerts overlay 1.19.0 goes to "Live › Alerts" (Events, Rules, Voice). Its media library goes to "Live › Chat › Media", next to the commands that use it.
+- **One "Rewards" page.** The on-screen reactions of Alerts overlay and the answers of Twitch bot 1.23.0 are on the same page. Home Assistant 1.3.0 becomes its "Smart home" tab.
+- **Chat and Raid.** The commands and timers of Twitch bot are in "Live › Chat". Twitch raid 2.6.0 has its page "Live › Raid" (My list, Featured).
+- **Networks › Twitch.** Twitch connector 1.7.0 and Twitch channel 2.5.0 share the "Twitch" page. The figures followed on the channel go to "Networks › Figures".
+- **Nothing moves elsewhere.** Your settings, your lists, the assistants' tools and the overlay elements stay the same. Each extension's page stays in Extensions.
+
+### Pour les développeurs
+
+- **`catalogue/places.json`** : le vocabulaire des emplacements (6 groupes ouverts, 32 pages, onglets, titres EN+FR, phrase d'intro R1), lu par le cœur 0.31.0 avec le catalogue ; avec les pages du cœur : 9 groupes, 33 pages. `catalogue/index.json` donne à chaque module ses pages (`places`, via `placesOf` de `scripts/rules.mjs`).
+- **Double mode** : les six modules utilisent seulement `places[].fromTab` (jamais `tabs[].place`), gardent `adminMenu` et leur `minCore` ; un cœur plus ancien voit exactement le manifeste de la 1.95.1 (test).
+- **Limite du cœur** : 3 sections d'un module par page. Overlay alertes en a 3 sur « Alertes » ; ses réglages d'apparence sont dans la section « Événements Twitch » et la médiathèque dans « Chat ». L'onglet « Apparence » reste au vocabulaire pour plus tard.
+- **Tests** : `tests/places.test.mjs` (vocabulaire, `places.known`, double mode depuis les manifestes réels de la 1.95.1, kit `places.valid` / `places.budget` / `compat.minCore`, menus des quatre sites réels). `docs/ERGONOMIE-ADMIN.md` reprend la ligne « page d'emplacement » du cœur.
+
 ## 1.95.1 — 2026-11-18
 
 *En bref : Overlay alertes 1.18.1 reprend enfin l'ancien journal d'Activité Twitch. La 1.18.0 avait repris l'état et les réglages, mais aucune ligne du journal. Gardez Activité Twitch installée jusqu'à la mise à jour.*

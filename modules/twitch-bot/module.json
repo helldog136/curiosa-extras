@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.22.0",
+  "version": "1.23.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",
@@ -309,6 +309,36 @@
         "fr": "Informations utilisées",
         "en": "Information used"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "commands",
+      "place": "live.chat.commands",
+      "order": 200,
+      "fromTab": "settings",
+      "seeAlso": [
+        "live.rewards"
+      ]
+    },
+    {
+      "id": "timers",
+      "place": "live.chat.timers",
+      "order": 200,
+      "fromTab": "timers"
+    },
+    {
+      "id": "rewards",
+      "place": "live.rewards",
+      "order": 300,
+      "fromTab": "rewards",
+      "title": {
+        "en": "Chat answers",
+        "fr": "Réponses dans le chat"
+      },
+      "seeAlso": [
+        "live.chat"
+      ]
     }
   ],
   "settings": [
