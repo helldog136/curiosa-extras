@@ -175,7 +175,7 @@ test("une source en panne : message poli sous la liste, jamais d'erreur bloquant
   const ctx = mk({ calendar: [slot(1, 6), slot(2, 30)], yt: () => { throw new Error("jeton-secret-abc"); }, tw: twOk([{ id: "twitch:me:1", title: "Surprise", start: iso(10) }]) });
   const { els } = current = await boot(ctx);
   assert.equal(rowsOf(els.get("event-list")).length, 3, "l'agenda et Twitch répondent");
-  assert.match(els.get("event-alert").textContent, /Ma chaîne ne répond pas pour l'instant/, "le message est visible sans ouvrir la liste");
+  assert.match(els.get("event-alert").textContent, /Ma chaîne ne répond pas/, "le message est visible sans ouvrir la liste");
   assert.equal(els.get("event-retry").hidden, false);
   assert.equal(els.get("status").hidden, true, "pas de bandeau d'erreur");
   assert.ok(!JSON.stringify([...els.values()].map((e) => e.textContent)).includes("jeton-secret-abc"), "jamais le message d'une panne");
@@ -260,7 +260,7 @@ test("en anglais : titre, boutons et messages sont traduits", async () => {
   const { els, html } = current = await boot(ctx);
   assert.match(html, /For which event\?/);
   assert.match(els.get("event-chosen").textContent, /Story for:.*Stream 1/);
-  assert.match(els.get("event-alert").textContent, /Ma chaîne is not answering right now/);
+  assert.match(els.get("event-alert").textContent, /Ma chaîne is not answering/);
   assert.ok(html.includes(`>${en.ui_event_none_btn}</button>`), "the \"No event\" button is translated");
   assert.match(rowsOf(els.get("event-list"))[0].textContent, /Schedule/, "la pastille de l'agenda est traduite");
 });

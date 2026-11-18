@@ -84,7 +84,7 @@ test("plateformes proposées : connecteurs installés d'abord, sinon celles déj
   const list = async (ctx) => (await via(ctx)).fields[0].options.map((o) => o.value);
   const bare = makeCtx();
   assert.deepEqual(await list(bare), ["twitch", "youtube", "instagram", "tiktok", "discord", "x", "bluesky"], "rien d'installé, carnet vide : les plateformes courantes");
-  assert.ok(JSON.stringify(await def.adminPanel(bare, { query: { new: "person" } })).includes("Aucune plateforme n'est encore branchée"));
+  assert.ok(JSON.stringify(await def.adminPanel(bare, { query: { new: "person" } })).includes("Aucune plateforme n'est branchée"));
   const twitchOnly = makeCtx({ services: twitchApi([]) });
   assert.deepEqual(await list(twitchOnly), ["twitch"]);
   assert.ok(!JSON.stringify(await def.adminPanel(twitchOnly, { query: { new: "person" } })).includes("Aucune plateforme"));
@@ -265,7 +265,7 @@ test("non-régression : outils MCP et service inchangés (contact_create, contac
   const q = await def.adminActions.addVia(ctx, { network: "youtube", handle: "@Chan_One" });
   const found = await svc.find(ctx, { q: "chan_one" });
   assert.equal(found.contacts[0].id, idOf(q.redirect));
-  assert.equal(manifest.version, "2.6.0");
+  assert.equal(manifest.version, "2.6.1");
   assert.equal(manifest.apiVersion, 2);
   assert.deepEqual(manifest.rights.map((x) => x.id), ["email.view", "export", "categories.create"]);
   assert.deepEqual(Object.keys(def.mcp).sort(), manifest.mcp.map((t) => t.name).sort());

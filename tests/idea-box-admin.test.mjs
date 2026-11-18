@@ -115,7 +115,7 @@ test("à relire : le lien direct du tableau de bord ne montre que ces idées, av
   assert.deepEqual(tableOf(blocks).filters, []);
   assert.equal(blocks.find((b) => b.type === "links").items[0].label, "Voir toutes les idées");
   const none = await panel(ctxFor(), { show: "review" });
-  assert.match(none.find((b) => b.type === "markdown" && /Rien à relire/.test(b.text)).text, /Rien à relire/);
+  assert.match(none.find((b) => b.type === "markdown" && /Aucune idée à relire/.test(b.text)).text, /Aucune idée à relire/);
   assert.equal(tableOf(none), undefined);
 });
 

@@ -72,7 +72,7 @@ test("administration : l'adresse du dock est montrée à côté de celle du tél
     assert.equal(dock, `${phone}&dock=1`, "une seule clé secrète : le dock n'a pas de second secret");
     const steps = blocks.find((b) => b.type === "markdown" && b.text === msgs.dockSteps);
     assert.ok(steps, "les étapes sont affichées");
-    assert.match(steps.text, /\n1\. .*\n2\. .*\n3\. /s); assert.doesNotMatch(steps.text, /\n4\. /);
+    assert.match(steps.text, /(^|\n)1\. .*\n2\. .*\n3\. /s); assert.doesNotMatch(steps.text, /\n4\. /);
     for (const word of locale === "fr" ? ["Docks de navigateur personnalisés", "Appliquer", "nom", "adresse"] : ["Custom Browser Docks", "Apply", "name", "address"]) assert.ok(steps.text.includes(word), word);
     assert.ok(flat(blocks).includes(`(${dock})`), "lien pour l'ouvrir dans un onglet");
     assert.ok(blocks.some((b) => b.type === "heading" && b.text === msgs.dockTitle));

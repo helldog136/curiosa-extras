@@ -19,7 +19,7 @@ const formReq = (url, fields) => { const fd = new FormData(); for (const [k, v] 
 test("un seul champ obligatoire : le nom ; « déjà joué » par défaut ; marqué administration, sans pseudo ; jaquette trouvée toute seule", async () => {
   const c = ctx({}, { rawgCover: { status: "found", url: COVER } });
   const r = await def.adminActions.addGame(c, { title: "  Hollow\u0007   Knight " });
-  assert.match(r.ok, /Hollow Knight/); assert.match(r.ok, /Déjà joué/); assert.match(r.ok, /trouvée toute seule/);
+  assert.match(r.ok, /Hollow Knight/); assert.match(r.ok, /Déjà joué/); assert.match(r.ok, /Jaquette trouvée/);
   const [g] = await all(c);
   assert.deepEqual([g.data.title, g.data.status, g.data.origin, g.data.submitterName, g.data.coverUrl, g.data.replayVotes], ["Hollow Knight", "already_played", "admin", null, COVER, 0]);
   assert.equal(g.data.coverResult, "found"); assert.equal(g.data.coverTries, 1);
@@ -99,7 +99,7 @@ test("plusieurs jeux : doublons dans la base ou dans la liste, nom trop long →
   await c.api.store.add("games", { title: "Celeste", status: "proposed", replayVotes: 0 });
   const r = await def.adminActions.addGames(c, { titles: `Hades\ncéleste\nTunic\nhades\n${"y".repeat(101)}\nA\nB` });
   const msg = r.errors.titles;
-  assert.match(msg, /^Rien n'a été ajouté\./);
+  assert.match(msg, /^Rien n'a été ajouté/);
   assert.match(msg, /Ligne 2 : « Celeste » est déjà dans la liste \(Proposé\)/);
   assert.match(msg, /Ligne 4 : « hades » est déjà écrit à la ligne 1/);
   assert.match(msg, /Ligne 5 : nom trop long/);
@@ -143,7 +143,7 @@ test("jaquette : service du module d'abord, puis ancienne interface du cœur, pu
   assert.equal((await all(viaCore))[0].data.coverUrl, COVER);
   const noKey = ctx({}, { rawgConfigured: false, rawgCover: { status: "no-key", url: null } });
   const r = await def.adminActions.addGame(noKey, { title: "Celeste" });
-  assert.match(r.ok, /cherchée un peu plus tard/);
+  assert.match(r.ok, /cherchée plus tard/);
   const row = (await all(noKey))[0].data;
   assert.equal(row.coverUrl, null); assert.equal(row.coverKey, undefined, "pas d'essai compté : le rattrapage s'en charge");
   const none = ctx({}, { rawgCover: { status: "none", url: null } });

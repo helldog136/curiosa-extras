@@ -84,7 +84,7 @@
   "status_pending": "To check",
   "status_approved": "Published",
   "status_rejected": "Refused",
-  "emptyAdmin": "No review yet. Share the “Leave a review” link (Share tab): reviews will arrive here, under “To check”.",
+  "emptyAdmin": "No review. Share the “Leave a review” link (Share tab): reviews arrive under “To check”.",
   "emptyFilter": "No review matches this filter.",
   "colDate": "Date",
   "colName": "First name or nickname",

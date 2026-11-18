@@ -6,7 +6,7 @@
     "en": "Hand-written streams",
     "fr": "Streams saisis à la main"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
   "menuGroup": "tools",
   "description": {
     "en": "Write your streams here (day, time, games, every week) and your site shows them: the schedule, the chat bot… No Google account or calendar to set up.",
@@ -73,8 +73,8 @@
         "fr": "Fuseau horaire des heures que vous tapez"
       },
       "help": {
-        "en": "IANA name, e.g. Europe/Paris, America/Montreal. Daylight saving time is handled.",
-        "fr": "Nom IANA, ex. Europe/Paris, America/Montreal. L'heure d'été est gérée."
+        "fr": "Par exemple Europe/Paris ou America/Montreal.",
+        "en": "For example Europe/Paris or America/Montreal."
       }
     }
   ]

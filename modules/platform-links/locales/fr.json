@@ -8,7 +8,7 @@
   "colLink": "Lien",
   "editHeading": "Modifier : {name}",
   "editPlace": "Ce lien est à la place {n} sur {total}. Sous le formulaire, les boutons Monter et Descendre changent l'ordre des icônes sur le site.",
-  "empty": "Aucun lien pour l'instant. Ajoutez le premier avec le formulaire ci-dessous : collez simplement l'adresse de votre page.",
+  "empty": "Aucun lien. Collez l'adresse de votre page dans le formulaire ci-dessous.",
   "err_choice": "Choisissez une des propositions de la liste.",
   "err_confirm": "Cochez la case pour confirmer le retrait.",
   "err_label_needed": "Donnez un nom à ce lien, par exemple « Ma boutique ».",

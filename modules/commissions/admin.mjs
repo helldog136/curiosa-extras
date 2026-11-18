@@ -38,7 +38,7 @@ async function overview(ctx, q, manage) {
   blocks.push({ type: "heading", text: ctx.t("stateTitle") });
   const free = ps.free === null ? "" : ctx.t("slotsFree", { free: ps.free, slots: queue.slots });
   blocks.push({ type: "banner", tone: ps.state === "open" ? "success" : ps.state === "full" ? "warning" : "info", text: ctx.t(`seen_${ps.state}`, { free }) });
-  if (queue.reopenOn && ps.state !== "open" && queue.reopenOn < day(new Date())) blocks.push({ type: "banner", tone: "info", text: ctx.t("reopenPassed", { date: fmtDay(ctx.locale, queue.reopenOn) }) });
+  if (queue.reopenOn && ps.state !== "open" && queue.reopenOn < day(new Date())) blocks.push({ type: "banner", tone: "warning", text: ctx.t("reopenPassed", { date: fmtDay(ctx.locale, queue.reopenOn) }) });
   if (manage) {
     blocks.push({
       type: "table", columns: [ctx.t("colMode")], rows: MODES.map((m) => [`${ctx.t(`mode_${m}`)}${queue.mode === m ? ` ${ctx.t("modeCurrentMark")}` : ""}`]),
@@ -90,7 +90,7 @@ async function detail(ctx, id, manage) {
   const card = await B.cardOf(ctx, o);
   const blocks = [back, { type: "heading", text: ctx.t("orderOf", { nick: o.nick || "—" }) }];
   if (card.state === "missing") blocks.push({ type: "banner", tone: "warning", text: ctx.t("cardMissing") });
-  if (card.state === "unavailable") blocks.push({ type: "banner", tone: "info", text: ctx.t("cardUnavailable") });
+  if (card.state === "unavailable") blocks.push({ type: "banner", tone: "warning", text: ctx.t("cardUnavailable") });
   const rows = [
     [ctx.t("fStatus"), ctx.t(`status_${o.status}`)],
     [ctx.t("fReceived"), stamp(o.at)],
@@ -139,7 +139,7 @@ async function detail(ctx, id, manage) {
 async function formulasTab(ctx, editId, manage) {
   const list = await D.listFormulas(ctx);
   const blocks = [{ type: "markdown", text: ctx.t("formulasHelp"), tab: "formulas" }];
-  if (!list.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("formulasNone"), tab: "formulas" });
+  if (!list.length) blocks.push({ type: "markdown", text: ctx.t("formulasNone"), tab: "formulas" });
   else {
     blocks.push({
       type: "table", tab: "formulas", columns: [ctx.t("colName"), ctx.t("price")],
@@ -149,7 +149,7 @@ async function formulasTab(ctx, editId, manage) {
   }
   if (!manage) return blocks;
   const editing = idOk(editId) ? list.find((f) => f.id === editId) : null;
-  if (!editing && list.length >= LIMITS.formulas) return [...blocks, { type: "banner", tone: "info", tab: "formulas", text: ctx.t("formulasMax", { n: LIMITS.formulas }) }];
+  if (!editing && list.length >= LIMITS.formulas) return [...blocks, { type: "banner", tone: "warning", tab: "formulas", text: ctx.t("formulasMax", { n: LIMITS.formulas }) }];
   blocks.push({
     type: "adminForm", tab: "formulas", action: "saveFormula", title: ctx.t(editing ? "formulaEdit" : "formulaAdd"), submitLabel: ctx.t("save"), ...(editing ? { cancelHref: "?tab=formulas" } : {}),
     fields: [

@@ -60,7 +60,7 @@ test("sondage terminé : la page de confirmation dit ce qui sera perdu ; sans la
   assert.ok(!text.includes(pollsFr.deleteOpenWarn_many.slice(0, 30)));
   const before = c.api.store.writes.length;
   const refused = await remove(c, { id: p.id });
-  assert.ok(refused.errors.confirm.includes("rien n'est supprimé") && !refused.ok);
+  assert.ok(refused.errors.confirm.includes("Cochez la case") && !refused.ok);
   assert.equal(c.api.store.writes.length, before, "un appel sans confirmation n'écrit rien");
   assert.equal((await polls(c)).length, 1); assert.equal(await c.api.store.count(`b-${p.id}`), 4);
   const done = await remove(c, { id: p.id, confirm: "on" });
@@ -389,7 +389,7 @@ test("textes : parité EXACTE fr/en (mêmes clés, mêmes {variables}), toutes l
 });
 
 test("la version et la mise à jour à chaud : 1.3.0, minCore 0.5.0 (éléments d'overlay), et apiVersion inchangés, aucune migration ; le module rechargé avec ?v= supprime comme avant", async () => {
-  assert.equal(manifest.version, "1.9.0"); assert.equal(manifest.minCore, "0.11.0"); assert.equal(manifest.apiVersion, 2);
+  assert.equal(manifest.version, "1.9.1"); assert.equal(manifest.minCore, "0.11.0"); assert.equal(manifest.apiVersion, 2);
   assert.ok((manifest.dataVersion ?? 1) === 1 && !manifest.migrations, "aucune migration : aucune donnée n'est ajoutée ni transformée");
   const hot = await import("../modules/polls/index.mjs?v=1.2.0-hot");
   assert.equal(typeof hot.deletePoll, "function");

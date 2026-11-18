@@ -51,7 +51,7 @@
   "noteProblem": "That did not work. Try again in a moment.",
   "adminIntro": "Review the ideas you receive, publish them and make them move forward.",
   "seeAll": "See all ideas",
-  "nothingToReview": "Nothing to review right now.",
+  "nothingToReview": "No idea to review.",
   "pendingBanner": "{n} ideas are waiting for your review.",
   "pendingBanner_one": "1 idea is waiting for your review.",
   "colIdea": "Idea",

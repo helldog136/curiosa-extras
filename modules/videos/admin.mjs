@@ -125,8 +125,8 @@ async function editScreen(ctx, snap, x) {
     return out;
   }
   if (!x.title) out.push({ type: "banner", tone: "warning", text: t("editNoTitle") });
-  if (x.noEmbed) out.push({ type: "banner", tone: "info", text: t("editNoEmbed", { service: p?.label ?? "" }) });
-  if (D.settings(ctx).thumbs === "copy" && !x.thumb && !x.cover) out.push({ type: "banner", tone: "info", text: t("editNoThumb") });
+  if (x.noEmbed) out.push({ type: "banner", tone: "warning", text: t("editNoEmbed", { service: p?.label ?? "" }) });
+  if (D.settings(ctx).thumbs === "copy" && !x.thumb && !x.cover) out.push({ type: "banner", tone: "warning", text: t("editNoThumb") });
   const albums = await A.list(ctx);
   const transcript = await D.getText(ctx, x.n).catch(() => "");
   const fields = [
@@ -173,7 +173,7 @@ async function bulkScreen(ctx, snap, isNew) {
   const form = { type: "adminForm", action: "bulkPreview", submitLabel: t("bulkPreviewButton"), cancelHref: cancel, fields: [{ name: "urls", kind: "textarea", required: true, label: t("bulkField", { max: LIMITS.bulk }), help: t("bulkFieldHelp", { max: LIMITS.bulk, example: EXAMPLE }) }, ...catField, ...stateField] };
   const bulk = isNew ? null : await D.readBulk(ctx);
   if (!bulk) {
-    return [{ type: "heading", text: t("bulkTitle") }, ...(isNew ? [] : [{ type: "banner", tone: "info", text: t("bulkExpired") }]), { type: "markdown", text: t("bulkIntro", { max: LIMITS.bulk }) }, form];
+    return [{ type: "heading", text: t("bulkTitle") }, ...(isNew ? [] : [{ type: "banner", tone: "warning", text: t("bulkExpired") }]), { type: "markdown", text: t("bulkIntro", { max: LIMITS.bulk }) }, form];
   }
   const good = bulk.rows.filter((r) => r.ok && !snap.byExt.has(`${r.provider}:${r.ext}`));
   const rows = bulk.rows.map((r) => {
