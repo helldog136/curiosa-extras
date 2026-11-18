@@ -5,7 +5,7 @@
     "fr": "Jeu du jour",
     "en": "Daily game"
   },
-  "version": "1.1.3",
+  "version": "1.2.0",
   "menuGroup": "community",
   "minCore": "0.6.0",
   "description": {
@@ -111,6 +111,24 @@
       "default": {
         "admin": true,
         "editor": false
+      }
+    }
+  ],
+  "places": [
+    {
+      "id": "daily",
+      "place": "community.games.daily",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "packs",
+      "place": "community.games.daily",
+      "order": 300,
+      "fromTab": "tools",
+      "title": {
+        "en": "Packs and files",
+        "fr": "Packs et fichiers"
       }
     }
   ],

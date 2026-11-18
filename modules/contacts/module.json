@@ -6,7 +6,7 @@
     "en": "Contacts",
     "fr": "Contacts"
   },
-  "version": "2.5.2",
+  "version": "2.6.0",
   "menuGroup": "community",
   "description": {
     "en": "Your private address book: people and organisations, their accounts on the networks (Twitch, YouTube, Bluesky…), categories, notes and photo. Each person lives here once; the rest of the site only links to them.",
@@ -97,6 +97,14 @@
     {
       "service": "youtube.api",
       "optional": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "community.contacts",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "permissions": [

@@ -6,7 +6,7 @@
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "menuGroup": "community",
   "description": {
     "en": "A thank-you page for your community: cards with photos, one person in the spotlight each month. Names stay in Contacts.",
@@ -209,6 +209,14 @@
         "fr": "Mon mur",
         "en": "My wall"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "wall",
+      "place": "community.supporters.wall",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "settings": [

@@ -98,7 +98,7 @@ test("hero : ligne d'accroche et bouton — recopiés ; le lien du bouton doit �
 
 test("hero : manifeste 1.0.3 — défauts du site, lien du bouton de type link, groupes facultatifs cohérents", async () => {
   const m = await assertValidManifest(hero.manifest);
-  assert.equal(m.version, "1.0.3");
+  assert.equal(m.version, "1.1.0");
   const by = Object.fromEntries(m.settings.map((s) => [s.key, s]));
   assert.equal(by.title.default, "site:name");
   assert.equal(by.text.default, "site:tagline");

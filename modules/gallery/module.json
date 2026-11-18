@@ -5,7 +5,7 @@
     "fr": "Galeries photos",
     "en": "Photo galleries"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "minCore": "0.6.0",
   "description": {
     "fr": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Visionneuse plein écran et demande de retrait.",
@@ -120,6 +120,20 @@
         "fr": "La liste de vos albums publiés (titre, couverture, nombre de photos, adresse), pour lier une rétrospective à un événement par exemple",
         "en": "The list of your published albums (title, cover, photo count, address), for example to link a recap to an event"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "content.galleries",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "takedowns",
+      "place": "content.galleries.takedowns",
+      "order": 200,
+      "fromTab": "requests"
     }
   ],
   "settings": [
