@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { def, model as M, store as S, assets as A, publishedCtx, manifest, get } from "./helpers/mascotKit.mjs";
 import { makeBrowser } from "./helpers/mascotDom.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
 
 const UUID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const PIC = (n, ext = "png") => `/uploads/${UUID(n)}.${ext}`;

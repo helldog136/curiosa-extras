@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import * as K from "./helpers/mascotKit.mjs";
 import { runStage } from "./helpers/mascotStageDom.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
 
 const { model: M, store: S, def, get } = K;
 const UUID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

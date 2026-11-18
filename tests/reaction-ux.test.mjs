@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { world as evWorld, mod as evMod, en as evEn, fr as evFr } from "./helpers/eventsWorld.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
 
 const AL = new URL("../modules/alerts-overlay", import.meta.url).pathname;
 const json = (p) => JSON.parse(fs.readFileSync(p, "utf8"));

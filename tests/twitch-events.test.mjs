@@ -306,7 +306,7 @@ test("instance deletion removes our subscriptions and permission requests, nothi
 });
 
 test("admin page passes the page ergonomics (R3 R4 R9 R10 R11 R14 R15 R17 R22), empty and filled, both languages, with errors", async () => {
-  const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
+  const { assertAdminPageErgonomics } = await import("./helpers/ergonomicsPending.mjs");
   for (const locale of ["fr", "en"]) {
     const { ctx } = world({ locale, alerts: true });
     await S.ensureSecret(ctx);
