@@ -6,7 +6,7 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.5.1",
+  "version": "2.6.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 70,
   "menuGroup": "tools",
@@ -85,6 +85,20 @@
         "fr": "Sélection du moment",
         "en": "Featured picks"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "list",
+      "place": "live.raid.list",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "featured",
+      "place": "live.raid.featured",
+      "order": 200,
+      "fromTab": "moment"
     }
   ],
   "settings": [

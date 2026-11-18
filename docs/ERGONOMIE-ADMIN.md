@@ -112,5 +112,6 @@ Le cœur fournit ces briques **une fois**, pour ses pages **et** pour les module
 | Bouton secondaire non destructif à côté du bouton principal (« Tester ») | R3 | `ExtraActionButton` | `adminForm.extraActions: [{ label, action }]` |
 | Exemple et erreur sous le champ | R11, R22 | `Field` : `example`, `error` | réglage `example`, champ `example`, `errors` d'une action |
 | Mot de passe, identifiant, code à usage unique | R22, R28 | `PasswordInput`, `UsernameHint` | réglage `secret` (clé d'un service) ; règles dans [FORMULAIRES-AUTHENTIFICATION.md](FORMULAIRES-AUTHENTIFICATION.md) |
+| Ranger ses réglages et ses listes dans une page partagée (« En direct › Alertes »), avec une seule barre « Enregistrer », l'origine de chaque section et un seul repli « Réglages avancés » | R1, R2, R3, R12, R14, R25 | page d'emplacement (`PlaceSectionCard`, cœur 0.31.0) | `place`, `places[]` du manifeste ; voir [PLACES.md](PLACES.md) |
 
 Un nouveau besoin qui revient dans plusieurs pages s'ajoute **ici, au cœur**, pas page par page.
