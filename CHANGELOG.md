@@ -4,6 +4,40 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.97.0 — 2026-11-18
+
+*En bref : nouvelle extension « Objectifs du live » : une barre d'objectif et un subathon dont le temps grandit à chaque sub, bits ou follow. Overlay alertes 1.20.0 ajoute le train de la hype et le compteur du live animés. Il faut Curiosa 0.30.0 pour les éléments animés.*
+
+*In short: new extension "Live goals": a goal bar and a subathon whose time grows with each sub, bits or follow. Alerts overlay 1.20.0 adds an animated hype train and live counter. The animated elements need Curiosa 0.30.0.*
+
+### Nouveautés
+
+- **Objectifs du live 1.0.0.** Deux éléments pour vos pages d'overlay. La barre d'objectif compte vos followers, vos abonnements payants ou un nombre que vous tenez à la main. Le subathon est un compte à rebours : chaque sub, bits ou follow ajoute du temps, selon vos règles, et « +5:00 » s'écrit à l'écran.
+- **Le chemin court.** Dans « En direct › Objectifs » : onglet « Objectif » (ce qui compte, l'objectif), onglet « Subathon » (le début, la durée de départ). Le reste est replié : temps par sub, par 100 bits, par follow, durée maximale.
+- **Sans Twitch, ça marche aussi.** Réglez la valeur et le temps à la main. Avec Overlay alertes, chaque événement fait bouger la barre en 2 à 4 secondes. Avec Ma chaîne Twitch, la barre part du vrai nombre.
+- **Rien n'est compté deux fois**, même avec deux pages d'overlay ouvertes ou après un rechargement. Une nouvelle lecture du vrai nombre recale la barre en douceur, sans fête. Un test ne compte jamais.
+- **Overlay alertes 1.20.0 : train de la hype et compteur du live.** Le train montre son niveau, sa progression et son temps restant, et se cache sans train. Le compteur montre les subs, bits ou follows depuis le début du live.
+- **L'allure suit le skin de la page d'overlay.** Tous les skins marchent ; ceux qui ont une recette d'animation (vitrail, néon) seront plus riches une fois publiés.
+- **Live goals 1.0.0.** Two elements for your overlay pages. The goal bar counts your followers, your paid subs, or a number you keep by hand. The subathon is a countdown: each sub, bits or follow adds time, by your rules, and "+5:00" is written on screen.
+- **The short path.** In "Live › Goals": tab "Goal" (what counts, the target), tab "Subathon" (the start, the starting length). The rest is folded: time per sub, per 100 bits, per follow, longest length.
+- **It works without Twitch too.** Set the value and the time by hand. With Alerts overlay, each event moves the bar within 2 to 4 seconds. With My Twitch channel, the bar starts from the real number.
+- **Nothing is counted twice**, even with two overlay pages open or after a reload. A new reading of the real number puts the bar right smoothly, with no celebration. A test never counts.
+- **Alerts overlay 1.20.0: hype train and live counter.** The train shows its level, its progress and its time left, and hides when no train is on. The counter shows subs, bits or follows since the live started.
+- **The look follows the overlay page's skin.** Every skin works; skins with an animation recipe (stained glass, neon) will look richer once published.
+
+### Corrections
+
+- **Train de la hype : la progression dans un niveau et le compte à rebours de Twitch sont gardés.** Avant, seul un nouveau niveau était retenu et l'heure de fin était perdue. Le journal garde toujours une ligne par nouveau niveau : sa taille ne change pas.
+- **Fin d'abonnement.** Overlay alertes écoute la fin d'un abonnement (même autorisation que les subs). Aucune alerte n'est montrée ; un objectif d'abonnements payants peut baisser. Twitch n'envoie rien quand quelqu'un ne suit plus la chaîne.
+- **Hype train: the progress inside a level and Twitch's countdown are kept.** Before, only a new level was kept and the end time was lost. The journal still gets one line per new level: its size does not change.
+- **End of a subscription.** Alerts overlay listens to the end of a subscription (same permission as subs). No alert is shown; a paid subs goal can go down. Twitch sends nothing when someone unfollows.
+
+### Pour les développeurs
+
+- **`stream-goals`** : `minCore` 0.30.0, besoins facultatifs `alerts.queue` et `twitch.live` (bloc `suggestInstall`), sujets `twitch.event` et `social.stat` consommés. Règle anti double comptage (README) : référence `social.stat` + lignes du registre après son `asOf`, uniques par id de message puis par personne. Subathon replié depuis le registre (paliers ×1/×2/×5, plafond, pause, corrections). Outils `goal_get`, `subathon_get` (lecture) ; `goal_set`, `goal_test`, `subathon_add_time`, `subathon_pause` éteints par défaut. Emplacements `live.goals.goal` et `live.goals.subathon` (`places[].fromTab`), onglets du vocabulaire ajoutés.
+- **Overlay alertes 1.20.0** : `expiresAt` dans l'événement normalisé, la ligne du journal et le sujet ; état vivant `hype` dans l'état d'écoute ; `channel.subscription.end` v1 avec l'interrupteur « sub », type `sub_end` (aucune alerte, Test de « sub » inchangé) ; éléments `hype-train` (`levels`) et `session-counter` (`counter`), routes `gauge/:slug` et `gauge-state/:slug`.
+- **Tests** : `tests/stream-goals.test.mjs`, `tests/alerts-gauges.test.mjs` (images par le moteur du cœur, rafales, recalage, reprise sans rejeu, deux pages, ancien format du train). `docs/TOPICS.md` à jour. Entrée de vitrine `showcase/modules/stream-goals/`.
+
 ## 1.96.0 — 2026-11-18
 
 *En bref : sur un site en Curiosa 0.31.0, les extensions Twitch rangent leurs réglages par tâche : « En direct › Alertes », « Récompenses », « Chat », « Raid », et « Réseaux › Twitch ». Leurs entrées « Réseaux › Twitch » disparaissent du menu. Sur un cœur plus ancien, rien ne change.*
