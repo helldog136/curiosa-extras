@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.101.1 — 2026-11-18
+
+*En bref : aucun changement visible dans vos pages. Le dépôt contrôle désormais sept nouvelles règles de clarté (états en mots simples, champs déjà remplis, formulations conditionnelles, phrases de remplissage), pour que les prochains nettoyages ne puissent que réduire les écarts connus.*
+
+*In short: nothing changes on your pages. The repository now checks seven new clarity rules (plain-word states, already-filled fields, conditional wording, filler sentences), so the next cleanups can only reduce the known gaps.*
+
+### Pour les développeurs
+
+- Copie du kit du cœur 0.36.0 (`tests/helpers/ergonomics.mjs`, règles R33a à R33g) et de `docs/ERGONOMIE-ADMIN.md`. Aucune extension ne change : `dataVersion`, `minCore` et `apiVersion` ne bougent pas.
+- `tests/ergonomics-baseline.json` passe en version 2 avec les 109 écarts R33 connus de 30 extensions : c'est la seule croissance autorisée, la base ne fait plus que rétrécir.
+- `tests/helpers/ergonomicsPending.mjs` : 12 tests de pages ignorent R33a et R33d tant que leur extension n'est pas nettoyée.
+
+*(English)*
+
+- Copy of the core 0.36.0 kit (`tests/helpers/ergonomics.mjs`, rules R33a to R33g) and of `docs/ERGONOMIE-ADMIN.md`. No extension changes: `dataVersion`, `minCore` and `apiVersion` do not move.
+- `tests/ergonomics-baseline.json` goes to version 2 with the 109 known R33 gaps of 30 extensions: the only allowed growth, the baseline only shrinks from now on.
+- `tests/helpers/ergonomicsPending.mjs`: 12 page tests skip R33a and R33d until their extension is cleaned.
+
 ## 1.101.0 — 2026-11-18
 
 *En bref : les pages des 20 extensions de réseaux et de statistiques (Instagram, GitHub, Discord, YouTube, Bluesky, Mastodon, Reddit et les autres) n'affichent plus que ce qui sert : plus d'aide qui répète le libellé, plus de tableau pour un seul chiffre, plus de « rien à faire ». Rien d'autre ne change.*

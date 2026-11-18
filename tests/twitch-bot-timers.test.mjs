@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHmac } from "node:crypto";
 import { htmlOf, rowsOf, formOfBlocks, plain, cellOf, tableOf, tableRow } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
 import { world, chat, NOW, S, SRC, C, es, fr } from "./helpers/botWorld.mjs";
 
 const T = await import("../modules/twitch-bot/timers.mjs");

@@ -852,7 +852,7 @@ test("Historique : événements déclarés valides, en deux langues", () => {
 
 test("fenêtres des récompenses : « Nouvelle récompense », « Modifier » et « Renommer » s'ouvrent au-dessus de la liste (une seule à la fois), reviennent à l'onglet, repèrent la ligne enregistrée ; le test reste dans la page", async () => {
   const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
-  const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
+  const { assertAdminPageErgonomics } = await import("./helpers/ergonomicsPending.mjs");
   const w = await setup();
   const rw = await mk(w);
   await A.actions.rewardCreate.run(w.ctx, { title: "Aspi", cost: "200", what: "custom", actionName: "Lancer l'aspirateur" });

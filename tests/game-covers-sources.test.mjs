@@ -498,7 +498,7 @@ test("« Jaquettes gardées » : source en pastille écrite ET colorée, vignett
   assert.ok(view.find((b) => b.type === "html").html.includes("/m/game-covers/cover/"));
   assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.equal((await metaDocs(c)).some((m) => m.id === copies.idOf(titleKey("Hades"))), false, "copie effacée avec la jaquette oubliée");
-  for (const query of [{}, { tab: "saved" }, { tab: "saved", titre: "Hades" }]) assertAdminPageErgonomics((await mod.adminPanel(c, { query })).filter((b) => b.type !== "html"));
+  for (const query of [{}, { tab: "saved" }, { tab: "saved", titre: "Hades" }]) assertAdminPageErgonomics((await mod.adminPanel(c, { query })).filter((b) => b.type !== "html"), { skip: ["R33d"] }) /* R33d pending: batch E3 (game-covers) */;
 });
 
 test("réglages : tous avancés ou le code facultatif ; 7 réglages simples au plus ; aucun mot interdit ; la clé reste un secret facultatif", () => {
