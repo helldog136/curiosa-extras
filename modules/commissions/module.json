@@ -5,7 +5,7 @@
     "en": "Commissions",
     "fr": "Commandes"
   },
-  "version": "1.0.4",
+  "version": "1.1.0",
   "menuGroup": "community",
   "minCore": "0.2.5",
   "description": {
@@ -58,6 +58,20 @@
         "en": "Commission status"
       },
       "size": "small"
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "community.commissions",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "packages",
+      "place": "community.commissions.packages",
+      "order": 200,
+      "fromTab": "formulas"
     }
   ],
   "settings": [

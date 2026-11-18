@@ -6,7 +6,7 @@
     "en": "Live status",
     "fr": "Statut du live"
   },
-  "version": "1.4.7",
+  "version": "1.5.0",
   "adminMenu": "Réseaux",
   "menuGroup": "tools",
   "platform": "twitch",
@@ -43,6 +43,18 @@
     {
       "id": "use",
       "hidden": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "live.golive",
+      "order": 200,
+      "fromTab": "settings",
+      "seeAlso": [
+        "networks.twitch",
+        "networks.youtube"
+      ]
     }
   ],
   "settings": [

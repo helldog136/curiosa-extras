@@ -5,7 +5,7 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.4.1",
+  "version": "1.5.0",
   "menuGroup": "community",
   "minCore": "0.11.0",
   "description": {
@@ -62,6 +62,20 @@
         "en": "Share"
       },
       "panel": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "community.reviews",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "share",
+      "place": "community.reviews.share",
+      "order": 200,
+      "fromTab": "share"
     }
   ],
   "settings": [

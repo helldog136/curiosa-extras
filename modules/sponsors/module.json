@@ -5,7 +5,7 @@
     "en": "Sponsors",
     "fr": "Sponsors"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": {
     "en": "Shows your sponsors and their promo codes on the site, with the mandatory partnership mention.",
     "fr": "Affiche vos sponsors et leurs codes promo sur le site, avec la mention de partenariat obligatoire."
@@ -86,6 +86,17 @@
     "pages",
     "slots",
     "topics"
+  ],
+  "places": [
+    {
+      "id": "sponsors",
+      "place": "community.partners.sponsors",
+      "order": 200,
+      "fromTab": "settings",
+      "seeAlso": [
+        "obs.overlays"
+      ]
+    }
   ],
   "settings": [
     {

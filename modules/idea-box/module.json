@@ -5,7 +5,7 @@
     "fr": "Boîte à idées",
     "en": "Idea box"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "menuGroup": "community",
   "minCore": "0.6.0",
   "description": {
@@ -38,6 +38,14 @@
         "fr": "Idées",
         "en": "Ideas"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "community.ideas",
+      "order": 200,
+      "fromTab": "settings"
     }
   ],
   "settings": [
