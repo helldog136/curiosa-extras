@@ -52,7 +52,7 @@ test("manifeste : la source d'événements est offerte (une réponse par chaîne
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   const offer = manifestJson.offers.find((o) => o.service === "event.source");
   assert.deepEqual([offer.version, offer.each, offer.readOnly], [1, true, ["upcoming"]]);
-  assert.equal(manifestJson.version, "1.5.0");
+  assert.match(manifestJson.version, /^1\.5\.\d+$/);   // the offer came with 1.5.0; later patches (texts) keep it
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional]), [["youtube.api", 1, true]], "le service youtube.api reste un besoin FACULTATIF");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const words = Object.entries(fr).filter(([k]) => k.startsWith("events_")).map(([, v]) => v).join(" ") + Object.entries(en).filter(([k]) => k.startsWith("events_")).map(([, v]) => v).join(" ");
