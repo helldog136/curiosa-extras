@@ -4,16 +4,16 @@ Garde **la clé YouTube de votre site à un seul endroit**. Vous la saisissez un
 
 ## Réglages
 
-- **Clé YouTube** : gratuite. Dans la [console Google](https://console.cloud.google.com/apis/library/youtube.googleapis.com), activez « YouTube Data v3 », puis créez une clé dans « Identifiants » et collez-la ici. Si une de vos chaînes YouTube avait déjà une clé, elle est reprise toute seule : rien à retaper.
-- **ID client Google** et **Code secret du client Google** (facultatifs) : seulement pour connecter votre compte YouTube (voir plus bas). Le code secret est saisi une fois et jamais réaffiché.
+- **Access code**: free. In the [Google console](https://console.cloud.google.com/apis/library/youtube.googleapis.com), enable “YouTube Data v3”, create a key under “Credentials”, click **Register the access code** and paste it. If one of your YouTube channels already had a key, it is carried over: nothing to retype.
+- **Google client ID** and **client secret** (optional): only to connect your YouTube account (see below), typed in the **Register the client ID** window.
 - **Part de la limite du jour utilisée par le site** (mode avancé) : 9 000 par défaut.
 - **Laisser le site répondre dans le chat de votre direct** (mode avancé) : **désactivé par défaut**.
 
 ## La limite du jour de YouTube
 
-YouTube accorde **10 000 unités par jour** à une clé gratuite, remises à zéro à minuit heure de Californie (9 h du matin en France). Lire une chaîne, une liste de vidéos ou les détails de 50 vidéos coûte **1 unité**. Le connecteur compte ce qui est utilisé et **s'arrête avant la fin** : 9 000 par défaut, dont 1 000 gardées pour ce que vous faites vous-même dans l'administration. Le panneau du connecteur dit combien a été utilisé aujourd'hui.
+YouTube accorde **10 000 unités par jour** à une clé gratuite, remises à zéro à minuit heure de Californie (9 h du matin en France). Lire une chaîne, une liste de vidéos ou les détails de 50 vidéos coûte **1 unité**. Le connecteur compte ce qui est utilisé et **s'arrête avant la fin** : 9 000 par défaut, dont 1 000 gardées pour ce que vous faites vous-même dans l'administration. The key card says on one line how much was used today.
 
-Si la limite est atteinte (ou si YouTube le signale), plus aucune demande ne part jusqu'à la remise à zéro : le panneau l'écrit en clair (« La limite YouTube du jour est épuisée, reprise demain à 9 h ») et le site continue d'afficher les **dernières données connues**, avec leur date.
+Si la limite est atteinte (ou si YouTube le signale), plus aucune demande ne part jusqu'à la remise à zéro : the card turns to Degraded and says it in plain words (“YouTube's daily allowance is used up, back tomorrow at 9 am”) et le site continue d'afficher les **dernières données connues**, avec leur date.
 
 ## Connecter votre compte YouTube (facultatif)
 
@@ -21,14 +21,14 @@ Pour **répondre dans le chat** de votre direct (par exemple « Tout est coupé.
 
 **Ce que YouTube exige, d'après sa documentation officielle** : écrire dans un chat demande bien une connexion au compte (autorisation « youtube » ou « youtube.force-ssl ») ; la liste des autorisations acceptées pour *lire* un chat y figure aussi, mais la documentation ne dit nulle part que la clé seule est refusée pour un chat public. Le connecteur essaie donc d'abord la clé, et dit « Connectez votre compte YouTube » seulement si YouTube la refuse.
 
-**Mise en route, une seule fois** (l'écran du connecteur la guide pas à pas, avec les liens) :
+**Setup, once** (the account card shows these steps, with the links, only until the client ID is registered):
 
 1. Dans la console Google, choisissez ou créez un projet et vérifiez que « YouTube Data API v3 » est activée.
 2. Dans Google Auth Platform, préparez l'écran d'autorisation (« Externe »), puis cliquez sur **Publier l'application** (sans cela, la connexion s'arrête au bout de 7 jours).
 3. Dans « Clients », créez un client de type **Téléviseurs et périphériques à entrée limitée** : Google affiche un **ID client** et un **code secret**.
-4. Collez ces deux valeurs dans les champs du connecteur, enregistrez, puis cliquez sur **Connecter mon compte YouTube**.
+4. Click **Register the client ID**, paste these two values and save, then click **Connect my YouTube account**.
 
-**Se connecter** : l'écran affiche un **code court** et l'adresse google.com/device. Ouvrez-la sur votre téléphone, entrez le code, choisissez le compte de votre chaîne, autorisez (si Google dit « application non vérifiée », c'est normal : c'est votre propre application ; « Paramètres avancés » puis « Accéder à… »), puis revenez cliquer sur **C'est fait, vérifier**. Aucune adresse de retour à configurer.
+**Se connecter** : l'écran affiche un **code court** et l'adresse google.com/device. Ouvrez-la sur votre téléphone, entrez le code, choisissez le compte de votre chaîne, autorisez (if Google says “unverified app”, it is your own app: “Advanced”, then “Go to…”), puis revenez cliquer sur **C'est fait, vérifier**. Aucune adresse de retour à configurer.
 
 - **Autorisation minimale** : lecture du chat seulement. L'autorisation d'**écrire** n'est demandée que si vous activez, dans les options avancées, **« Laisser le site répondre dans le chat »** (désactivé par défaut) ; Google l'appelle alors « gérer votre compte YouTube » (le flux « appareil » de Google n'accepte pas d'autorisation plus étroite pour écrire). Le site ne s'en sert que pour écrire un court message quand une autre fonction le demande.
 - **Déconnecter** : un clic efface l'accès gardé par le site et prévient Google. Vous pouvez aussi le retirer sur votre compte Google.
@@ -71,4 +71,4 @@ Toute demande accepte `fresh: true` (depuis la 1.2.0) : ni lue ni gardée en cac
 
 Erreurs : `config` (aucune clé), `auth` (clé refusée : pause de 10 min ou jusqu'au changement de clé), `quota` (budget du jour atteint, ou 403 `quotaExceeded` : rien avant minuit `America/Los_Angeles`, `retryAt`), `rate`, `timeout`, `network`, `circuit`, `busy`, `invalid`, `too_large`. Avec un résultat déjà lu pour la même demande, la réponse est `ok: true` avec `stale: true`, `at` (date de la lecture) et `error`.
 
-Fonctionnement : tout passe par `ctx.api.net` (seau propre à la clé, disjoncteur par hôte, déduplication) ; la clé est envoyée dans l'en-tête `x-goog-api-key`, jamais dans l'adresse. Cache de 10 min par demande (300 entrées), pause d'une minute après une panne pour la même demande. Compteur du jour dans le stockage (`quota`), budget réglable (`dailyBudget`, 9 000 par défaut), dont `min(1000, budget/9)` réservées à `priority: "interactive"`. Les unités ne sont comptées que si une demande est réellement partie. Une clé reprise par `adopt` est gardée dans le stockage (`credential`) ; le réglage « Clé YouTube » l'emporte toujours.
+Fonctionnement : tout passe par `ctx.api.net` (seau propre à la clé, disjoncteur par hôte, déduplication) ; la clé est envoyée dans l'en-tête `x-goog-api-key`, jamais dans l'adresse. Cache de 10 min par demande (300 entrées), pause d'une minute après une panne pour la même demande. Compteur du jour dans le stockage (`quota`), budget réglable (`dailyBudget`, 9 000 par défaut), dont `min(1000, budget/9)` réservées à `priority: "interactive"`. Les unités ne sont comptées que si une demande est réellement partie. Since 1.5.0 (`minCore` 0.36.0, data version 2) the three codes (`apiKey`, `oauthClientId`, `oauthClientSecret`) are no longer settings (`legacySettings`, moved once by `migrations[2]`): they live in one document of the private storage (`credential`, see `credentials.mjs`), typed in the “Edit” windows; `carried` lists the fields carried over by `adopt` (a value typed here is never replaced by `adopt`).

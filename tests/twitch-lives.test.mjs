@@ -210,7 +210,7 @@ test("chaîne jamais en direct : aucune session, aucune mesure brute, aucune err
   const st = await live.trackingState(ctx);
   assert.equal(st.since, T0); assert.equal(st.lastError, null);
   const panel = JSON.stringify(await def.adminPanel(ctx));
-  assert.match(panel, /Suivi actif depuis le/); assert.match(panel, /Aucun direct mesuré pour l'instant/);
+  assert.match(panel, /Mesure active depuis le/); assert.ok(!/Aucun direct mesuré|vient d'être activé/.test(panel), "no filler: the card says since when");
   const note = (await def.mcp.twitch_streams(ctx, {})).note;
   assert.match(note, /none measured since 2026-10-15T18:00:00.000Z/);
   const items = byMetric(await stat(ctx));
@@ -367,8 +367,8 @@ test("« Effacer les mesures » : tout part (directs, mesures, listes, état), l
   await simpleLive(ctx);
   assert.ok(await ctx.api.store.count(live.COLLECTIONS.sessions) > 0);
   const panel = await def.adminPanel(ctx);
-  const erase = panel.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "eraseLive"));
-  assert.ok(erase.rowActions[0].confirm && erase.rowActions[0].danger);
+  const erase = panel.find((b) => b.type === "connection" && b.id === "tracking").menu.find((a) => a.action === "eraseLive");
+  assert.ok(erase.confirm.includes("Le suivi repart de zéro") && erase.danger, "the confirmation says what is lost");
   const r = await def.adminActions.eraseLive(ctx);
   assert.equal(r.ok, fr.live_erased);
   for (const c of Object.values(live.COLLECTIONS)) assert.equal(await ctx.api.store.count(c), 0, c);
@@ -548,31 +548,34 @@ test("social.stat : sans durée de suivi aucun chiffre de direct ; followers_gai
 
 // ── Panneau « Mes directs », textes ───────────────────────────────────────────────────────────────────────────────────────────────
 
-test("panneau « Mes directs » : phrase d'honnêteté, suivi actif depuis, derniers directs, meilleur jeu, vidéos les plus vues ; tableaux de 2 colonnes (lisibles sur téléphone)", async () => {
+test("panneau « Mes directs » : suivi actif depuis (une ligne), derniers directs, meilleur jeu, vidéos les plus vues ; tableaux de 2 colonnes (lisibles sur téléphone)", async () => {
   const ctx = mk(); await L.connect(C.ctx);
   L.state.videos = [video(1, { view_count: 10 }), video(2, { view_count: 999 })]; L.state.clips = [clip(1)];
   await twoHourLive(ctx);
   const blocks = await def.adminPanel(ctx);
   const text = JSON.stringify(blocks);
-  assert.match(text, /Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ce suivi a été activé : Twitch ne fournit pas l'historique\./);
-  assert.match(text, /Suivi actif depuis le 15 octobre 2026/);
+  assert.ok(!/Mesuré par votre site|ne fournit pas l'historique/.test(text), "said once, in the help of the setting");
+  assert.match(text, /Mesure active depuis le 15 octobre 2026/);
   assert.match(text, /Le jeu qui vous fait gagner le plus de followers/); assert.match(text, /Zelda/); assert.match(text, /30 followers par heure/);
   const videos = blocks.find((b) => b.type === "table" && b.columns[0] === "Vidéo");
   assert.match(videos.rows[0][0], /Vidéo 2/); assert.match(videos.rows[0][1], /999 vues/);
   assert.ok(blocks.filter((b) => b.type === "table" && !b.rowActions).every((b) => b.columns.length <= 2));
   const lives = blocks.find((b) => b.type === "table" && b.columns[0] === "Direct");
   assert.match(lives.rows[0][1], /150 personnes en moyenne/); assert.match(lives.rows[0][1], /\+40 followers/);
-  // en direct : une bannière
+  // en direct : la ligne du direct en cours, pas de bannière en plus
   L.live("777", { viewer_count: 321 }); await tick(ctx, 200);
-  assert.match(JSON.stringify(await def.adminPanel(ctx)), /Vous êtes en direct : 321 personnes qui regardent/);
+  const nowBlocks = await def.adminPanel(ctx);
+  assert.ok(!nowBlocks.some((b) => b.type === "banner"), "no banner");
+  assert.match(JSON.stringify(nowBlocks), /en cours/);
 });
 
 test("panneau : Twitch en panne = message simple ; pas connecté = on dit comment compter les followers par jeu", async () => {
   const ctx = mk();
   L.state.fail.streams = 500; await tick(ctx, 0);
   const text = JSON.stringify(await def.adminPanel(ctx));
-  assert.match(text, /Twitch ne répond pas pour le moment/); assert.match(text, /connectez votre chaîne Twitch/);
-  assert.match(text, /arrivent dans quelques minutes/);
+  assert.match(text, /Twitch ne répond pas pour le moment/);
+  assert.ok(!/connectez votre chaîne Twitch|arrivent dans quelques minutes/.test(text), "no pointer to another place, no approximate promise");
+  assert.equal((await def.adminPanel(ctx)).find((b) => b.id === "tracking").state, "degraded");
 });
 
 test("mots simples : aucun jargon dans les textes de « Mes directs » (fr et en), i18n complète, toutes les clés utilisées existent", () => {
@@ -584,9 +587,9 @@ test("mots simples : aucun jargon dans les textes de « Mes directs » (fr et en
   const code = ["index", "connect", "helix", "handover", "live", "analytics"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
   for (const m of code.matchAll(/\bt\("([a-zA-Z_]+)"/g)) assert.ok(m[1] in fr, m[1]);
   for (const m of code.matchAll(/\bt\(!?[a-z]*\s*\?\s*"([a-zA-Z_]+)"\s*:\s*[a-z.]*\s*\?\s*"([a-zA-Z_]+)"\s*:\s*"([a-zA-Z_]+)"/g)) for (const k of m.slice(1)) assert.ok(k in fr, k);
-  for (const k of ["type_archive", "type_highlight", "type_upload", "live_videosPending", "live_videosError", "live_videosNone", "live_bestNone", "live_needConnect"]) assert.ok(fr[k] && en[k], k);
-  // l'honnêteté sur la limite est dite en mode simple, en toutes lettres
-  assert.match(fr.live_honest, /Twitch ne fournit pas l'historique/); assert.match(en.live_honest, /does not provide the history/);
-  assert.ok(manifest.settings.find((s) => s.key === "trackStats").help.fr.includes("toutes les 2 minutes"));
+  for (const k of ["type_archive", "type_highlight", "type_upload", "live_videosError", "live_videosNone", "live_bestNone"]) assert.ok(fr[k] && en[k], k);
+  // l'honnêteté sur la limite est dite en mode simple, une seule fois : dans l'aide du réglage
+  const help = manifest.settings.find((s) => s.key === "trackStats").help;
+  assert.match(help.fr, /Twitch ne fournit pas l'historique/); assert.match(help.en, /Twitch gives no history/);
   for (const s of manifest.settings.filter((x) => ["liveEveryMinutes", "rawDays", "keepYears"].includes(x.key))) for (const v of [s.label.fr, s.label.en, s.help.fr, s.help.en]) assert.ok(!JARGON.test(v), v);
 });

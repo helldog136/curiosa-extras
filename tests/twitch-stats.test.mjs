@@ -35,7 +35,8 @@ afterEach(() => { globalThis.fetch = realFetch; for (const m of Object.keys(spie
 const settingsOf = (extra = {}) => ({ channel: "MaChaine", trackStats: true, statsFollowers: true, statsPaying: false, ...extra });
 const mk = (extra = {}, key = "tw") => fakeCtx({ key, locale: "fr", messages: fr, settings: settingsOf(extra), services: { "twitch.api": C.methods } });
 const unesc = (v) => v.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-const buttonOf = (blocks) => { const b = blocks.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")); return b ? { href: unesc(/href="([^"]+)"/.exec(b.html)[1]), label: unesc(/>([^<]+)<\/a>/.exec(b.html)[1]) } : null; };
+const card = (blocks) => blocks.find((x) => x.type === "connection" && x.id === "twitch");
+const buttonOf = (blocks) => { const p = card(blocks)?.primary; return p?.href ? { href: p.href, label: p.label } : null; };
 const linkOf = async (ctx) => buttonOf(await def.adminPanel(ctx))?.href;
 const stat = (ctx) => def.exports["social.stat"](ctx, { limit: 50 });
 /** Le retour de Twitch arrive à l'adresse donnée dans le lien : celle de Ma Chaîne Twitch (installation d'avant) ou celle du Connecteur (nouvelle). */
@@ -73,7 +74,7 @@ test("locales : fr et en alignées, toutes les clés utilisées par le code exis
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
   const code = ["index", "connect", "helix", "handover", "analytics"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
   for (const m of code.matchAll(/\bt\("([a-zA-Z_]+)"/g)) assert.ok(m[1] in fr, m[1]);
-  for (const k of ["err_auth", "err_rate", "err_network", "err_config_affiliate", "err_config_credentials", "res_denied", "res_refused", "res_network", "res_rate", "res_expired", "res_wrongAccount", "res_scope", "stat_followers", "stat_paying", "noConnector", "suggestReason", "notReadyConnector", "handover_conflict", "handover_incomplete", "cb_noConnector", "cb_down"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["err_rate", "err_network", "err_config_affiliate", "res_denied", "res_refused", "res_network", "res_rate", "res_expired", "res_wrongAccount", "res_scope", "stat_followers", "stat_paying", "noConnector", "suggestReason", "notReadyConnector", "handover_conflict", "handover_incomplete", "cb_noConnector", "cb_down"]) assert.ok(fr[k] && en[k], k);
 });
 
 test("mots simples : aucun jargon dans les textes de connexion et d'erreur, en français comme en anglais", () => {
@@ -82,7 +83,7 @@ test("mots simples : aucun jargon dans les textes de connexion et d'erreur, en f
   assert.ok(keys.length > 20);
   for (const k of keys) for (const [l, d] of [["fr", fr], ["en", en]]) assert.ok(!JARGON.test(d[k]), `${l}.${k} : « ${d[k]} »`);
   assert.equal(fr.connect, "Connecter ma chaîne Twitch");
-  assert.match(fr.connected, /Connectée en tant que \{login\} depuis le \{date\}/);
+  assert.match(fr.connected, /^Connectée en tant que \{login\} depuis le \{date\}$/);
 });
 
 // ── Panneau et connexion ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -100,7 +101,8 @@ test("nouvelle configuration : un seul bouton, lien vers Twitch avec l'adresse d
   for (const [extra, scopes] of cases) {
     mod.resetCache(); connectorModule.resetCache(); C = connector();
     const blocks = await def.adminPanel(mk(extra));
-    assert.equal(blocks.filter((b) => b.type === "html" && b.html.includes("data-twitch-connect")).length, 1);
+    assert.equal(card(blocks).state, "notConfigured");
+    assert.ok(buttonOf(blocks), "un seul bouton");
     const u = new URL(buttonOf(blocks).href);
     assert.equal(u.searchParams.get("redirect_uri"), OWN);
     assert.equal(u.searchParams.get("client_id"), "cid");
@@ -115,9 +117,11 @@ test("connexion (nouvelle configuration) : retour sur le Connecteur, puis sur la
   assert.equal(res.status, 303);
   assert.equal(res.headers.get("location"), "/admin/instances/id-tw");
   const blocks = await def.adminPanel(ctx);
-  const account = blocks.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "disconnect"));
-  assert.ok(account && /machaine/.test(account.rows[0][0].text) && account.rowActions[0].danger && account.rowActions[0].confirm, "le compte connecté et « Déconnecter » discret et confirmé");
-  assert.deepEqual(blocks.find((b) => b.type === "table" && !b.rowActions).rows, [["Followers Twitch", (1234).toLocaleString("fr")]]);
+  const c = card(blocks);
+  const disconnect = c.menu.find((a) => a.action === "disconnect");
+  assert.ok(disconnect.danger && disconnect.confirm, "« Déconnecter » discret et confirmé, dans le menu de la carte");
+  assert.equal(c.state, "configured");
+  assert.match(c.summary, /^Connectée en tant que machaine depuis le .* · 1\u202f234 followers$|^Connectée en tant que machaine depuis le .* · 1.234 followers$/);
   assert.equal(await ctx.api.store.count("twitchConnection"), 0, "aucun jeton chez Ma Chaîne Twitch");
 });
 
@@ -161,13 +165,12 @@ test("relais sans Connecteur : page simple (503), rien d'écrit", async () => {
 test("mauvais compte : refusé par le Connecteur, le panneau dit lequel ; Connecteur sans application : message simple avec le chemin vers le Connecteur", async () => {
   const ctx = mk();
   await connectAs(ctx, { login: "autre_compte" });
-  assert.ok((await def.adminPanel(ctx)).some((b) => b.type === "banner" && b.text.includes("autre_compte")));
+  assert.ok(card(await def.adminPanel(ctx)).reason.includes("autre_compte"));
   C = connector({ settings: {} });
   const p = await def.adminPanel(mk());
-  const b = p.find((x) => x.type === "banner" && x.text === fr.notReadyConnector);
-  assert.ok(b, "message « réglez votre application dans le Connecteur »");
-  assert.equal(b.href, "/admin/instances/id-twitch-connector");
-  assert.ok(!buttonOf(p));
+  assert.equal(card(p).reason, fr.notReadyConnector, "message « réglez votre application dans le Connecteur »");
+  assert.equal(card(p).primary.href, "/admin/instances/id-twitch-connector");
+  assert.equal(buttonOf(p).label, fr.open_connector, "no Twitch authorization button: the way is the connector page");
 });
 
 // ── Chiffres ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -212,7 +215,7 @@ test("abonnés payants : une chaîne non affiliée (403) donne « config » avec
   mod.resetCache();
   const by = Object.fromEntries((await stat(ctx)).map((x) => [x.metric, x]));
   assert.deepEqual([by.paying.error, by.followers.value], ["config", 1234]);
-  assert.ok(JSON.stringify((await def.adminPanel(ctx)).find((b) => b.type === "table").rows).includes(fr.err_config_affiliate));
+  assert.ok(card(await def.adminPanel(ctx)).summary.includes(fr.err_config_affiliate));
 });
 
 test("erreurs de Twitch : 429 → rate, réseau coupé → network, jamais de valeur, pas de harcèlement", async () => {
@@ -241,7 +244,7 @@ test("on ajoute une statistique après coup : « il faut autoriser de nouveau »
   const more = mk({ statsPaying: true });
   more.api.store = ctx.api.store;
   const p = await def.adminPanel(more);
-  assert.ok(p.some((b) => b.type === "banner" && b.text === fr.morePermission));
+  assert.equal(card(p).reason, fr.morePermission);
   assert.ok(buttonOf(p));
   const by = Object.fromEntries((await stat(more)).map((x) => [x.metric, x]));
   assert.deepEqual([by.paying.error, by.followers.value], ["auth", 1234]);
@@ -256,7 +259,7 @@ test("renouvellement refusé par Twitch : « À reconnecter » visible avec le b
   const [f] = await stat(ctx);
   assert.deepEqual([f.error, "value" in f], ["auth", false]);
   const p = await def.adminPanel(ctx);
-  assert.ok(p.some((b) => b.type === "banner" && b.text === fr.reconnect));
+  assert.equal(card(p).reason, fr.reconnect);
   assert.ok(buttonOf(p));
 });
 

@@ -12,10 +12,14 @@ export const connectorMessages = (locale = "fr") => JSON.parse(fs.readFileSync(`
 /**
  * Un Connecteur YouTube prêt à servir : { ctx, methods, services }.
  *   services : à passer tel quel à fakeCtx({ services }) du module consommateur (`youtube.api` → les vraies méthodes du Connecteur, avec SON contexte).
- * Options : apiKey (réglage « Clé YouTube », null = aucun), settings (autres réglages), locale, et toute option de fakeCtx.
+ * Options : apiKey (le code d'accès, null = aucun), settings (dont oauthClientId / oauthClientSecret : l'ID et le secret du client Google) (autres réglages), locale, et toute option de fakeCtx.
  */
-export function makeConnector({ apiKey = "FAKE-YT-KEY-0001", settings = {}, locale = "fr", key = "youtube-connector", ...opts } = {}) {
-  const ctx = fakeCtx({ moduleId: "youtube-connector", key, locale, messages: connectorMessages(locale), settings: { ...(apiKey ? { apiKey } : {}), ...settings }, ...opts });
+export function makeConnector({ apiKey = "FAKE-YT-KEY-0001", settings = {}, locale = "fr", key = "youtube-connector", rows = {}, ...opts } = {}) {
+  // Since 1.5 the codes (access code, Google client ID and secret) live in the connector's own storage, typed in the "Modify" windows: they seed the `credential` document.
+  const { oauthClientId, oauthClientSecret, ...other } = settings;
+  const doc = { ...(apiKey ? { apiKey } : {}), ...(oauthClientId ? { oauthClientId } : {}), ...(oauthClientSecret ? { oauthClientSecret } : {}) };
+  const seeded = Object.keys(doc).length ? { credential: [{ ...doc, carried: [] }] } : {};
+  const ctx = fakeCtx({ moduleId: "youtube-connector", key, locale, messages: connectorMessages(locale), settings: other, rows: { ...seeded, ...rows }, ...opts });
   const methods = Object.fromEntries(Object.entries(connectorModule.default.services["youtube.api"]).map(([m, fn]) => [m, (args) => fn(ctx, args)]));
   return { ctx, methods, services: { "youtube.api": methods } };
 }

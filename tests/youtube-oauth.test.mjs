@@ -54,6 +54,11 @@ async function connect(c, { decision = "approved", grant } = {}) {
 const dumpOf = (c, ...except) => JSON.stringify(c.ctx.dumpStore().filter((r) => !except.includes(r.collection)));
 const collection = (c, name) => c.ctx.dumpStore().filter((r) => r.collection === name);
 const flat = (v) => JSON.stringify(v);
+const acc = (blocks) => blocks.find((b) => b.type === "connection" && b.id === "account");
+/** The html of a page, including the html carried by the setup of a connection block. */
+const htmlOf = (blocks) => blocks.flatMap((b) => [b, ...(b.setup ?? [])]).filter((b) => b.type === "html").map((b) => b.html).join("");
+/** Another Google client typed in the "Edit" window (the codes live in the storage since 1.5.0). */
+const otherClient = (c) => def.adminActions.saveAccount(c.ctx, { oauthClientId: "999999999999-zzzzzzzzzzzzzzzz.apps.googleusercontent.com", oauthClientSecret: "" });
 /** Comme flat, avec les apostrophes lues comme une personne les lit (le panneau les échappe en &#39;). */
 const plain = (v) => flat(v).replace(/&#39;/g, "'");
 
@@ -69,15 +74,14 @@ async function withConsole(fn) {
 
 test("manifeste 1.3.0 : valide, secret saisi par la propriétaire, écriture désactivée par défaut et avancée, aucun outil MCP, onglets inchangés, service youtube.api v1", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.4.0");
+  assert.equal(manifest.version, "1.5.0");
   const by = (k) => manifest.settings.find((s) => s.key === k);
-  assert.equal(by("oauthClientId").type, "text"); assert.equal(by("oauthClientId").optional, true);
-  assert.equal(by("oauthClientSecret").type, "secret"); assert.equal(by("oauthClientSecret").optional, true);
+  assert.deepEqual(manifest.legacySettings.map((x) => [x.key, !!x.secret]), [["apiKey", true], ["oauthClientId", false], ["oauthClientSecret", true]], "typed in the \"Modify\" windows since 1.5.0");
+  assert.ok(!by("oauthClientId") && !by("oauthClientSecret") && !by("apiKey"));
   assert.equal(by("chatReply").type, "boolean"); assert.equal(by("chatReply").default, false, "désactivé par défaut"); assert.equal(by("chatReply").advanced, true, "réglage avancé");
-  assert.equal(by("apiKey").type, "secret");
   assert.equal(manifest.mcp, undefined, "aucun outil pour l'assistant : rien de la connexion ne lui est exposé");
   assert.deepEqual(manifest.tabs, [{ id: "use", hidden: true }]);
-  assert.equal(manifest.minCore, "0.2.2");
+  assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["youtube.api", 1]]);
   assert.ok(manifest.offers[0].readOnly.includes("chatPost"), "un message écrit dans le chat n'est jamais recopié vers une réplique");
   assert.equal(def.tasks, undefined, "aucune tâche en arrière-plan");
@@ -89,7 +93,7 @@ test("textes : parité exacte FR/EN, toutes les clés utilisées existent (y com
   const used = [...src["index.mjs"].matchAll(/\bt\("([\w]+)"/g)].map((m) => m[1]);
   for (const k of used) assert.ok(k in fr, `clé absente : ${k}`);
   for (const code of ["client_id", "client_secret", "too_fast", "too_many", "client", "scope", "rate", "timeout", "network", "google", "no_pending", "expired", "denied", "policy"]) assert.ok(`err_${code}` in fr && `err_${code}` in en, `err_${code}`);
-  for (const code of ["code_expired", "denied", "policy", "client", "google", "scope_missing", "write_missing", "expired", "revoke_failed", "disconnected"]) assert.ok(`last_${code}` in fr && `last_${code}` in en, `last_${code}`);
+  for (const code of ["code_expired", "denied", "policy", "client", "google", "scope_missing", "write_missing", "expired", "revoke_failed"]) assert.ok(`last_${code}` in fr && `last_${code}` in en, `last_${code}`);
   const visible = Object.entries(fr).filter(([k]) => /^(acc_|btn_|pend_|err_|last_|check_|cancel_|connect_|disconnect_)/.test(k)).map(([, v]) => v).join(" ");
   assert.ok(!/oauth|token|jeton|endpoint|payload|slug|scope/i.test(visible), "mots simples, pas de jargon");
   for (const k of ["acc_step1", "acc_step2", "acc_step3", "acc_step4"]) assert.match(fr[k], /\*\*/, "chaque étape met en gras ce qu'il faut chercher à l'écran");
@@ -122,7 +126,8 @@ test("parcours d'Emma : code court + adresse Google, rien avant l'intervalle, «
   let panel = flat(await def.adminPanel(c.ctx));
   assert.match(panel, /ABCD-EFGH/); assert.match(panel, /google\.com\/device/);
   assert.ok(!SECRET_RE.test(panel), "le code de l'appareil ne s'affiche jamais, seulement le code court");
-  assert.equal((await connectorModule.default.adminPanel(c.ctx)).filter((b) => b.type === "adminForm").map((b) => b.action).join(), "accountCheck,accountCancel");
+  const waiting = (await connectorModule.default.adminPanel(c.ctx, { query: {} })).find((b) => b.id === "account");
+  assert.deepEqual([waiting.state, waiting.primary.action, waiting.setup.find((b) => b.type === "adminForm").action], ["notConfigured", "accountCheck", "accountCancel"]);
   // Trop tôt : aucun appel à Google.
   const early = await run(c, "accountCheck");
   assert.match(early.ok, /pas encore reçu/); assert.equal(g.calls.token.length, 0);
@@ -140,16 +145,13 @@ test("parcours d'Emma : code court + adresse Google, rien avant l'intervalle, «
   assert.equal(collection(c, "oauth-tokens").length, 1);
   assert.equal(g.calls.token.at(-1).form.client_secret, CLIENT_SECRET, "le code secret n'est envoyé qu'à l'adresse des jetons, dans le corps");
   panel = flat(await def.adminPanel(c.ctx));
-  assert.match(panel, /Déconnecter mon compte YouTube/); assert.match(panel, /connecté depuis le/);
+  assert.match(panel, /Déconnecter mon compte YouTube/); assert.match(panel, /Connecté depuis le/);
 });
 
-test("« répondre dans le chat » activé : la portée demandée est youtube (la plus petite que le flux appareil permette pour écrire) ; sans lui, jamais ; l'écran explique ce que Google va demander", async () => {
+test("« répondre dans le chat » activé : la portée demandée est youtube (la plus petite que le flux appareil permette pour écrire) ; sans lui, jamais ; l'écran ne le raconte pas à l'avance", async () => {
   const off = mk();
-  assert.match(flat(await def.adminPanel(off.ctx)), /seulement l'autorisation de lire/);
+  assert.ok(!/seulement l'autorisation de lire|gérer votre compte YouTube/.test(flat(await def.adminPanel(off.ctx))), "no sentence about what Google will ask: the button is enough");
   const on = mk({ chatReply: true });
-  const panel = flat(await def.adminPanel(on.ctx));
-  assert.match(panel, /gérer votre compte YouTube/);
-  assert.match(panel, /Le site ne s'en sert que pour cela/);
   const r = await connect(on);
   assert.equal(g.calls.device[0].form.scope, SCOPE_MANAGE);
   assert.ok(r.ok);
@@ -212,7 +214,7 @@ test("sécurité : le code court est échappé à l'affichage ; toute action du 
   const c = mk();
   g.next.device = () => ({ json: { device_code: "4/DEVSECRET-x-CCCCCCCCCCCC", user_code: "<img/src=x/onerror=alert(1)>", verification_url: "https://www.google.com/device", expires_in: 600, interval: 5 } });
   assert.ok((await run(c, "accountConnect")).ok);
-  const html = (await def.adminPanel(c.ctx)).filter((b) => b.type === "html").map((b) => b.html).join("");
+  const html = htmlOf(await def.adminPanel(c.ctx));
   assert.ok(!/<img\/src/.test(html)); assert.match(html, /&lt;img\/src=x\/onerror=alert\(1\)&gt;/);
   for (const action of Object.keys(def.adminActions)) {
     const r = await def.adminActions[action](c.ctx, { redirect: "https://evil.example", next: "//evil.example" });
@@ -226,19 +228,19 @@ test("sécurité : un code d'appareil vieux de plus de 30 minutes est mort (aucu
   tick(31 * 60_000);
   const late = await run(c, "accountCheck");
   assert.equal(late.error, fr.err_expired); assert.equal(g.calls.token.length, 0);
-  assert.match(flat(await def.adminPanel(c.ctx)), /Le code a expiré avant d'être utilisé/);
+  assert.match(flat(acc(await def.adminPanel(c.ctx)).reason), /Le code a expiré avant d'être utilisé/);
   // Un autre identifiant client : le code d'avant ne vaut plus rien.
   const a = mk(); g.decision = "approved";
   await run(a, "accountConnect");
   tick(6000);
-  const aCtx = { ...a.ctx, setting: (k) => (k === "oauthClientId" ? "999999999999-zzzzzzzzzzzzzzzz.apps.googleusercontent.com" : a.ctx.setting(k)) };
-  assert.equal((await O.checkConnect(aCtx)).error, "no_pending"); assert.equal(g.calls.token.length, 0);
+  await otherClient(a);
+  assert.equal((await O.checkConnect(a.ctx)).error, "no_pending"); assert.equal(g.calls.token.length, 0);
   // Les jetons d'un autre client ne servent plus : « reconnectez ».
   const b = mk();
   await connect(b);
-  const ctx2 = { ...b.ctx, setting: (k) => (k === "oauthClientId" ? "999999999999-zzzzzzzzzzzzzzzz.apps.googleusercontent.com" : b.ctx.setting(k)) };
-  assert.equal((await O.connection(ctx2)).state, "stale");
-  assert.equal((await O.bearer(ctx2, "read")).error, "not_connected");
+  await otherClient(b);
+  assert.equal((await O.connection(b.ctx)).state, "stale");
+  assert.equal((await O.bearer(b.ctx, "read")).error, "not_connected");
 });
 
 /* ───────────── Les jetons ne sortent jamais ───────────── */
@@ -261,7 +263,7 @@ test("jetons : JAMAIS dans une réponse de service, un panneau, un résultat d'a
     seen.push(await connect(c));
     seen.push(await run(c, "accountDisconnect"), await def.adminPanel(c.ctx));
   });
-  const all = flat(seen) + lines.join("\n") + c.ctx.calls.netLog.join("\n") + dumpOf(c, "oauth-tokens", "oauth-pending");
+  const all = flat(seen) + lines.join("\n") + c.ctx.calls.netLog.join("\n") + dumpOf(c, "oauth-tokens", "oauth-pending", "credential");
   assert.ok(!SECRET_RE.test(all), `un jeton ou un code d'appareil a fuité : ${(all.match(/.{20}SECRET.{20}/) ?? [])[0]}`);
   assert.ok(!all.includes(CLIENT_SECRET), "le code secret du client n'est jamais réaffiché ni journalisé");
   assert.ok(!all.includes(API_KEY), "la clé YouTube non plus");
@@ -455,15 +457,15 @@ test("portée décochée sur l'écran de Google : rien n'est connecté et l'acc�
   assert.equal(r.error, fr.err_scope);
   assert.equal(collection(c, "oauth-tokens").length, 0);
   assert.equal(g.calls.revoke.length, 1, "les jetons reçus sont rendus aussitôt");
-  assert.match(flat(await def.adminPanel(c.ctx)), /décoché l'autorisation/);
+  assert.match(flat(acc(await def.adminPanel(c.ctx)).reason), /décoché l'autorisation/);
   api.resetState(); g = fakeGoogle(); globalThis.fetch = g.fetch;
   const w = mk({ chatReply: true });
   const ok = await connect(w, { grant: [SCOPE_READ] });
   assert.ok(ok.ok && /sans|connecté/.test(ok.ok));
   const st = await api.status(w.ctx);
   assert.deepEqual(st.chat, { read: true, write: false });
-  const panel = flat(await def.adminPanel(w.ctx));
-  assert.match(panel, /l'autorisation d'écrire n'a pas encore été donnée/);
+  const panel = flat(acc(await def.adminPanel(w.ctx)).reason);
+  assert.match(panel, /autorisation d'écrire/);
   assert.equal((await w.methods.chatPost({ liveChatId: CHAT, text: "x" })).error, "chat_denied");
   assert.equal(g.calls.chatInsert.length, 0, "sans la portée, rien ne part vers YouTube");
 });
@@ -654,50 +656,54 @@ test("le service ne propose qu'UN nouvel appel d'écriture (chatPost) : rien d'a
 
 test("panneau, première fois : une mise en route en 4 étapes avec les liens de la console Google et les mots à chercher ; aucun bouton de connexion tant que l'ID et le code secret ne sont pas là", async () => {
   const c = makeConnector({ apiKey: API_KEY });
-  const blocks = await def.adminPanel(c.ctx);
+  const blocks = await def.adminPanel(c.ctx, { query: {} });
   const text = plain(blocks);
-  for (const needle of ["Compte YouTube (facultatif)", "Mise en route, une seule fois", "console.cloud.google.com/auth/clients", "console.cloud.google.com/auth/overview", "youtube.googleapis.com", "Téléviseurs et périphériques à entrée limitée", "Publier l'application", "ID client Google", "Code secret du client Google"]) assert.ok(text.includes(needle), needle);
+  for (const needle of ["Compte YouTube", "console.cloud.google.com/auth/clients", "console.cloud.google.com/auth/overview", "youtube.googleapis.com", "Téléviseurs et périphériques à entrée limitée", "Publier l'application", "Enregistrer l'ID client"]) assert.ok(text.includes(needle), needle);
+  assert.ok(!/Mise en route, une seule fois|Revoir les 4 étapes/.test(text), "no heading, no folded copy of the steps");
   assert.equal(blocks.filter((b) => b.type === "adminForm").length, 0);
-  const steps = blocks.find((b) => b.type === "html" && /<ol/.test(b.html)).html;
+  assert.equal(acc(blocks).primary.href, "?edit=account");
+  const steps = acc(blocks).setup.find((b) => b.type === "html" && /<ol/.test(b.html)).html;
   assert.equal((steps.match(/<li/g) ?? []).length, 4, "quatre étapes");
   assert.match(steps, /<a href="https:\/\/console\.cloud\.google\.com\/[^"]+" target="_blank" rel="noopener noreferrer"[^>]*>/);
   // En anglais aussi.
   const e = makeConnector({ apiKey: API_KEY, locale: "en" });
-  const en4 = plain(await def.adminPanel(e.ctx));
-  assert.ok(en4.includes("TVs and Limited Input devices") && en4.includes("Getting started, once"));
-  // Un ID mal collé est signalé sous les étapes.
+  const en4 = plain(await def.adminPanel(e.ctx, { query: {} }));
+  assert.ok(en4.includes("TVs and Limited Input devices") && en4.includes("Register the client ID"));
+  // Un ID mal collé est signalé (une raison, un bouton pour le corriger).
   const bad = mk({ oauthClientId: "abc", oauthClientSecret: "12" });
-  const warn = plain(await def.adminPanel(bad.ctx));
-  assert.ok(warn.includes("L'ID client ne ressemble pas") && warn.includes("Le code secret du client semble incomplet"));
+  const warn = acc(await def.adminPanel(bad.ctx, { query: {} }));
+  assert.ok(warn.reason.includes("L'ID client ne ressemble pas") && warn.primary.href === "?edit=account");
+  const secretOnly = mk({ oauthClientId: CLIENT_ID, oauthClientSecret: "12" });
+  assert.ok(acc(await def.adminPanel(secretOnly.ctx, { query: {} })).reason.includes("Le code secret du client semble incomplet"));
 });
 
-test("panneau, états : prêt (bouton « Connecter », étapes repliées), en attente (code, lien, carré à scanner, deux boutons), connecté (Déconnecter), jamais le code secret ni l'ID dans une réponse", async () => {
+test("panneau, états : prêt (bouton « Connecter »), en attente (code, lien, carré à scanner, « Annuler »), connecté (Déconnecter), jamais le code secret ni l'ID dans une réponse", async () => {
   const c = mk();
-  let blocks = await def.adminPanel(c.ctx);
-  assert.deepEqual(blocks.filter((b) => b.type === "adminForm").map((b) => [b.action, b.submitLabel]), [["accountConnect", fr.btn_connect]]);
-  assert.match(blocks.find((b) => b.type === "html" && /<details>/.test(b.html)).html, /Revoir les 4 étapes/);
+  let blocks = await def.adminPanel(c.ctx, { query: {} });
+  assert.deepEqual([acc(blocks).state, acc(blocks).primary], ["notConfigured", { label: fr.btn_connect, action: "accountConnect" }]);
+  assert.equal(acc(blocks).setup, undefined, "the steps are done: nothing to show");
   await run(c, "accountConnect");
-  blocks = await def.adminPanel(c.ctx);
-  assert.deepEqual(blocks.filter((b) => b.type === "adminForm").map((b) => b.action), ["accountCheck", "accountCancel"]);
-  const pend = blocks.find((b) => b.type === "html" && /ABCD-EFGH/.test(b.html)).html;
+  blocks = await def.adminPanel(c.ctx, { query: {} });
+  assert.deepEqual([acc(blocks).primary.action, acc(blocks).setup.filter((b) => b.type === "adminForm").map((b) => b.action)], ["accountCheck", ["accountCancel"]]);
+  const pend = acc(blocks).setup.find((b) => b.type === "html" && /ABCD-EFGH/.test(b.html)).html;
   assert.match(pend, /role="img" aria-label="[^"]+"/, "texte alternatif du carré"); assert.match(pend, /<svg|ABCD/);
   assert.match(pend, /href="https:\/\/www\.google\.com\/device" target="_blank" rel="noopener noreferrer"/);
   assert.match(pend, /min-height:44px/, "cible tactile d'au moins 44 px");
   assert.match(pend, /valable encore \d+ min/);
   await connect(c);
-  blocks = await def.adminPanel(c.ctx);
-  assert.deepEqual(blocks.filter((b) => b.type === "adminForm").map((b) => b.action), ["accountDisconnect"]);
+  blocks = await def.adminPanel(c.ctx, { query: {} });
+  assert.deepEqual([acc(blocks).state, acc(blocks).menu.map((m) => m.action)], ["configured", ["accountDisconnect"]]);
   assert.ok(!flat(blocks).includes(CLIENT_SECRET) && !flat(blocks).includes(CLIENT_ID), "ni le code secret ni l'ID client ne sont réaffichés par le panneau");
-  for (const b of blocks.filter((x) => x.type === "adminForm")) assert.ok(def.adminActions[b.action], `action ${b.action} déclarée`);
+  for (const m of acc(blocks).menu) assert.ok(def.adminActions[m.action], `action ${m.action} déclarée`);
 });
 
-test("panneau, 'répondre dans le chat' activé après une connexion en lecture seule : l'écran dit quoi faire et propose de reconnecter ; coupé alors que l'autorisation reste donnée : il le dit aussi", async () => {
+test("panneau, 'répondre dans le chat' activé après une connexion en lecture seule : la carte dit quoi faire et propose de reconnecter ; coupé alors que l'autorisation reste donnée : la ligne le dit aussi", async () => {
   const c = mk();
   await connect(c);
   const on = { ...c.ctx, setting: (k) => (k === "chatReply" ? true : c.ctx.setting(k)) };
-  const blocks = await def.adminPanel(on);
-  assert.match(plain(blocks), /l'autorisation d'écrire n'a pas encore été donnée/);
-  assert.deepEqual(blocks.filter((b) => b.type === "adminForm").map((b) => b.action), ["accountConnect", "accountDisconnect"]);
+  const card = acc(await def.adminPanel(on, { query: {} }));
+  assert.deepEqual([card.state, card.primary.action], ["degraded", "accountConnect"]);
+  assert.match(card.reason, /pas encore reçu l'autorisation d'écrire/);
   tick(11_000);
   assert.equal((await run({ ...c, ctx: on }, "accountConnect")).ok, fr.connect_started);
   assert.equal(g.calls.device.at(-1).form.scope, SCOPE_MANAGE, "reconnexion avec la portée d'écriture");
@@ -705,7 +711,9 @@ test("panneau, 'répondre dans le chat' activé après une connexion en lecture 
   const w = mk({ chatReply: true });
   await connect(w);
   const off = { ...w.ctx, setting: (k) => (k === "chatReply" ? false : w.ctx.setting(k)) };
-  assert.match(plain(await def.adminPanel(off)), /« répondre dans le chat » est coupé/);
+  const idle = acc(await def.adminPanel(off, { query: {} }));
+  assert.equal(idle.state, "configured");
+  assert.match(idle.summary, /réponses désactivées/);
 });
 
 test("le panneau s'ouvre sans AUCUN appel à Google, dans tous les états", async () => {

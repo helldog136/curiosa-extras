@@ -32,9 +32,12 @@ Il n'y a **pas** de déclencheur sur un mot écrit dans le chat : seuls les dons
 - **« Connectez votre compte YouTube »** : si YouTube refuse de laisser lire le chat avec la seule clé du site, la page l'écrit en mots simples avec un lien vers le Connecteur YouTube, et ne retente rien tant que ce n'est pas réglé (la lecture reprend tout de suite après la connexion).
 - **Un seul état « en direct »**, celui de Home Assistant, qui le tient de Twitch. Si vous diffusez seulement sur YouTube, Home Assistant ne vous voit pas en direct et refuse les dons (la page le dit). Voir `docs/ideas/youtube-live-actions.md`.
 
+## What the page shows (1.3.0)
+Two cards, each in one of the three states written by the core (Configured, Degraded, Not configured). **YouTube chat reading**: what is read and when it was last read on one line, with the share of the daily allowance used; when something is wrong, the reason and the button that fixes it (open the settings, connect the YouTube account, install the missing extension). **Home Assistant**: paired and seeing you live, or the reason it does not play (not installed, not paired, cut, not answering, not live); when everything is cut, the card holds the button “Resume everything”. The big “Cut everything” button stays visible while the house can be cut. The only sentence left is the warning that the chat is read only while the page is open.
+
 ## La limite du jour de YouTube
 
-YouTube donne 10 000 unités par jour à la clé du site. Lire le chat d'un direct en coûte 5 à chaque lecture : environ **12 % de la limite par heure** à une lecture toutes les 15 secondes. La page l'écrit en clair (« environ N % de votre limite du jour »). Le module **s'arrête doucement** à 50 % de la limite du jour (réglable dans les options avancées), pour laisser de la place aux autres modules YouTube, et reprend à la remise à zéro. Chercher un direct (chaque minute tant que la page est ouverte hors direct, soit environ 1 % de la limite par heure) coûte 2 unités.
+YouTube donne 10 000 unités par jour à la clé du site. Lire le chat d'un direct en coûte 5 à chaque lecture : environ **12 % de la limite par heure** à une lecture toutes les 15 secondes. The chat card shows it on one line (“daily allowance: N% of 50%”). Le module **s'arrête doucement** à 50 % de la limite du jour (réglable dans les options avancées), pour laisser de la place aux autres modules YouTube, et reprend à la remise à zéro. Chercher un direct (chaque minute tant que la page est ouverte hors direct, soit environ 1 % de la limite par heure) coûte 2 unités.
 
 ## Alertes à l'écran (OBS), version 1.1.0
 

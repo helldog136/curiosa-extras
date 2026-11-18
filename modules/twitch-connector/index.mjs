@@ -39,8 +39,10 @@ async function callback(request, ctx) {
 export default {
   services: { "twitch.api": service.methods },
   routes: { [conn.CALLBACK]: callback },
-  adminPanel: (ctx) => panel.render(ctx),
+  adminPanel: (ctx, o) => panel.render(ctx, o),
   adminActions: panel.actions,
+  // Données en version 2 : le Client ID et le secret des réglages passent dans le stockage (voir store.mjs, migrateSettings).
+  migrations: { 2: async (ctx) => { await store.migrateSettings(ctx); } },
   // Every 5 minutes: ask Twitch whether each authorization still works (an account is checked at most every 10 minutes), mail the owner when it is time.
   tasks: { check: { everyMinutes: 5, run: async (ctx) => { await hl.sweep(ctx, { userToken: helix.userToken }); } } },
   // The red dot of the menu: authorizations that need the owner.

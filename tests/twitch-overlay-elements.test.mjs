@@ -37,9 +37,9 @@ const unesc = (v) => v.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&
 /** La chaîne est connectée à Twitch (avec les deux autorisations) comme la personne propriétaire le ferait. */
 async function connect(ctx) {
   const blocks = await def.adminPanel(ctx);
-  const b = blocks.find((x) => x.type === "html" && x.html.includes("data-twitch-connect"));
-  assert.ok(b, "bouton « Connecter ma chaîne Twitch » attendu");
-  await C.callback(new Request(tw.approve(unesc(/href="([^"]+)"/.exec(b.html)[1]), {})));
+  const b = blocks.find((x) => x.type === "connection" && x.id === "twitch")?.primary;
+  assert.ok(b?.href, "bouton « Connecter ma chaîne Twitch » attendu");
+  await C.callback(new Request(tw.approve(b.href, {})));
 }
 const count = (pred) => tw.log.filter(pred).length;
 const helixCalls = (p) => count((c) => c.path === `/helix/${p}`);
@@ -58,7 +58,7 @@ const dataOf = async (ctx, slug, extra) => (await call(ctx, slug, { extra })).js
 
 test("manifeste : valide ; 2.2.0, minCore 0.5.0 ; deux éléments fluides (stats, live) qui suivent le style, avec contenu d'exemple ; options minimales ; chaque élément a sa fonction", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.5.1"); assert.equal(manifest.minCore, "0.11.0");
+  assert.equal(manifest.version, "2.6.0"); assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.overlayElements.map((e) => [e.id, e.fit]), [["stats", "fluid"], ["live", "fluid"]]);
   assert.deepEqual(Object.keys(def.overlayElements), manifest.overlayElements.map((e) => e.id));
   for (const e of manifest.overlayElements) {

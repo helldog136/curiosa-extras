@@ -9,6 +9,9 @@
 //   - Hôtes : liste fermée de TROIS adresses exactes (HTTPS), toutes à Google. Tout passe par ctx.api.net (délai dur, taille bornée, aucune redirection suivie).
 import { createHash } from "node:crypto";
 
+const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
+const creds = await import(`./credentials.mjs${v}`);
+
 export const URLS = Object.freeze({ device: "https://oauth2.googleapis.com/device/code", token: "https://oauth2.googleapis.com/token", revoke: "https://oauth2.googleapis.com/revoke" });
 const ALLOWED = new Set(Object.values(URLS));
 export const SCOPE_READ = "https://www.googleapis.com/auth/youtube.readonly";
@@ -41,9 +44,8 @@ const COLLECTIONS = { tokens: "oauth-tokens", pending: "oauth-pending", last: "o
 
 /** Empreinte courte de l'identifiant client : sépare les jetons et les pauses quand il change. Jamais réversible, jamais affichée. */
 const fp16 = (id) => createHash("sha256").update(`youtube-connector:oauth:${id}`).digest("hex").slice(0, 16);
-export function clientOf(ctx) {
-  const id = String(ctx.setting("oauthClientId") ?? "").trim();
-  const secret = String(ctx.setting("oauthClientSecret") ?? "").trim();
+export async function clientOf(ctx) {
+  const { oauthClientId: id, oauthClientSecret: secret } = await creds.read(ctx);
   const idOk = ID_RE.test(id), secretOk = SECRET_RE.test(secret);
   return { id, secret, idSet: id !== "", secretSet: secret !== "", idOk, secretOk, valid: idOk && secretOk, fp: idOk ? fp16(id) : "" };
 }
@@ -139,7 +141,7 @@ const LABEL = { [SCOPE_READ]: "read", [SCOPE_WRITE]: "manage", [SCOPE_FORCE_SSL]
  * Jamais un jeton, un code d'appareil ni un secret.
  */
 export async function connection(ctx, now = Date.now()) {
-  const c = clientOf(ctx);
+  const c = await clientOf(ctx);
   const [tok, pend, last] = [await load(ctx, "tokens"), await load(ctx, "pending"), await load(ctx, "last")];
   const t = tok?.data ?? null;
   const usable = !!t && typeof t.refresh === "string" && c.valid && t.fp === c.fp;
@@ -148,7 +150,7 @@ export async function connection(ctx, now = Date.now()) {
   const live = !!p && Number(p.expiresAt) > now && p.fp === c.fp && c.valid;
   const state = usable ? "connected" : live ? "pending" : t ? "stale" : "none";
   return {
-    configured: c.valid, idSet: c.idSet, secretSet: c.secretSet, state, read: canRead(scopes), write: canWrite(scopes),
+    configured: c.valid, idSet: c.idSet, secretSet: c.secretSet, idOk: c.idOk, secretOk: c.secretOk, state, read: canRead(scopes), write: canWrite(scopes),
     scopes: [...new Set(scopes.map((s) => LABEL[s]))], since: usable && Number(t.at) ? new Date(t.at).toISOString() : null,
     pending: live ? { userCode: String(p.userCode), url: safeVerificationUrl(p.url), expiresAt: Number(p.expiresAt), wantWrite: p.wantWrite === true } : null,
     last: last?.data && typeof last.data.code === "string" ? { code: last.data.code, at: Number(last.data.at) || 0 } : null,
@@ -162,7 +164,7 @@ export async function connection(ctx, now = Date.now()) {
  */
 export function startConnect(ctx, { write = false, now = Date.now() } = {}) {
   return serial(ctx, async () => {
-    const c = clientOf(ctx);
+    const c = await clientOf(ctx);
     if (!c.idOk) return { ok: false, error: "client_id" };
     if (!c.secretOk) return { ok: false, error: "client_secret" };
     const st = ost(ctx);
@@ -200,7 +202,7 @@ export const cancelConnect = (ctx) => serial(ctx, async () => { await drop(ctx, 
  */
 export function checkConnect(ctx, { now = Date.now() } = {}) {
   return serial(ctx, async () => {
-    const c = clientOf(ctx);
+    const c = await clientOf(ctx);
     const row = await load(ctx, "pending");
     const p = row?.data;
     if (!p || p.fp !== c.fp || !c.valid) { if (p) await drop(ctx, "pending"); return { ok: false, error: "no_pending" }; }
@@ -249,7 +251,7 @@ export function checkConnect(ctx, { now = Date.now() } = {}) {
 /** Efface les jetons ICI d'abord (toujours), puis prévient Google (au mieux). { ok: true, revoked: true | false | null } : null = rien à révoquer. */
 export function disconnect(ctx) {
   return serial(ctx, async () => {
-    const c = clientOf(ctx);
+    const c = await clientOf(ctx);
     const tok = (await load(ctx, "tokens"))?.data;
     await drop(ctx, "tokens"); await drop(ctx, "pending"); await drop(ctx, "last");
     const st = ost(ctx);
@@ -270,7 +272,7 @@ export function disconnect(ctx) {
  * `need` : "read" ou "write". Rafraîchit seulement si le jeton expire dans moins d'une minute, une demande à la fois.
  */
 export async function bearer(ctx, need = "read", { priority = "background", now = Date.now() } = {}) {
-  const c = clientOf(ctx);
+  const c = await clientOf(ctx);
   const row = await load(ctx, "tokens");
   const t = row?.data;
   if (!t || !c.valid || t.fp !== c.fp || typeof t.refresh !== "string") return { ok: false, error: "not_connected" };
