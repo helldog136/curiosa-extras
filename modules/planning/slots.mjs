@@ -1,7 +1,7 @@
 // Planning : les créneaux reçus des calendriers (sujet `planning.slot`), mis au format que lisent les apparences. Fonctions PURES : ni réseau, ni stockage,
 // ni horloge cachée, aucune exception sur des données absurdes. Le Planning ne sait pas d'où viennent les créneaux : il les prend tels que le cœur les lui donne.
 const V = new URL(import.meta.url).search;
-const { zonedTimeToUtc, addDaysToWall } = await import(`./dates.mjs${V}`);
+const { zonedTimeToUtc, addDaysToWall, wallDateNow } = await import(`./dates.mjs${V}`);
 const { loginsOf } = await import(`./partners.mjs${V}`);
 
 export const MAX_GAMES_PER_STREAM = 3;
@@ -64,3 +64,21 @@ export function toSlots(items, tz = "UTC") {
   }
   return out.sort((a, b) => a.start.getTime() - b.start.getTime() || a.title.localeCompare(b.title));
 }
+
+/**
+ * "Next stream" rule, shared by every surface that announces THE next stream: a stream that has already started is never "next", even by one minute
+ * (it is "live" until it ends, and the lists keep showing it as such). A timed stream is still to come while its start is later than `now`.
+ * A whole-day stream is still to come during its own day (it has no start time), in the display zone `tz`. Never throws.
+ * @param slot { start (Date), allDay }
+ */
+export function notStarted(slot, now, tz = "UTC") {
+  const start = slot?.start instanceof Date ? slot.start : null;
+  const nowMs = now instanceof Date ? now.getTime() : Number(now);
+  if (!start || !Number.isFinite(start.getTime()) || !Number.isFinite(nowMs)) return false;
+  if (!slot.allDay) return start.getTime() > nowMs;
+  const zone = validZone(tz) ? tz : "UTC", a = wallDateNow(zone, start), b = wallDateNow(zone, new Date(nowMs));
+  return Date.UTC(a.y, a.m - 1, a.d) >= Date.UTC(b.y, b.m - 1, b.d);
+}
+
+/** The next stream of a list sorted by start: the first one that is not cancelled and has not started (see `notStarted`), or null. */
+export const nextSlot = (slots, now, tz = "UTC") => (Array.isArray(slots) ? slots : []).find((s) => s && !s.cancelled && notStarted(s, now, tz)) ?? null;
