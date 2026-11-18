@@ -59,50 +59,44 @@ const SRC_NAME = { rawg: "RAWG", twitch: "Twitch", steam: "Steam" };
 const SRC_TONE = { rawg: "accent", twitch: "info", steam: "neutral" };
 const srcName = (src) => SRC_NAME[src] ?? SRC_NAME.rawg;
 
-/** Où en est chaque source, en mots simples : [{ source, on, down, text }] (RAWG sans code ou Twitch non connecté ne sont PAS des erreurs : une source de moins). */
+/** Où en est chaque source : [{ source, on, down, refused }] (RAWG sans code ou Twitch non connecté ne sont PAS des erreurs : une source de moins). */
 async function sourceStates(ctx) {
   const rawgState = await rawg.readState(ctx);
   const out = [];
   for (let a of await chain.availableSources(ctx)) {
-    const name = SRC_NAME[a.source];
-    if (a.source === "rawg" && a.on && rawgState?.state === "refused") a = { ...a, on: false, why: "refused" };   // le dernier essai a été refusé : une source de moins, dite en mots simples
+    let refused = false;
+    if (a.source === "rawg" && a.on && rawgState?.state === "refused") { refused = true; a = { ...a, on: false }; }   // le dernier essai a été refusé : une source de moins, dite en mots simples
     const down = a.on && (srcs.breakerOf(a.source)?.open === true || (a.source === "rawg" && rawgState?.state === "unreachable"));
-    let word;
-    if (!a.on) word = a.source === "rawg" ? (a.why === "refused" ? ctx.t("src_refused") : ctx.t("src_nokey")) : a.source === "twitch" ? ctx.t("src_twitch_off") : ctx.t("src_off");
-    else word = down ? ctx.t("src_down") : a.source === "twitch" ? ctx.t("src_connected") : ctx.t("src_active");
-    out.push({ source: a.source, on: a.on, down, text: `${name} : ${word}` });
+    out.push({ source: a.source, on: a.on, down, refused });
   }
   return out;
 }
 
-/** L'état des sources en une phrase : toutes les sources disponibles répondent, ou aucune ne répond (les jaquettes déjà gardées restent affichées). `short` : seulement un souci. */
-async function statusBlocks(ctx, { short = false } = {}) {
+/** L'état des sources en UNE carte (R33) : configurée (les sources qui servent, une ligne), dégradée (une source refuse ou ne répond pas), à configurer (aucune source). */
+async function connectionBlocks(ctx) {
+  const { key, source } = await rawg.keyOf(ctx);
   const states = await sourceStates(ctx);
   const on = states.filter((s) => s.on);
-  const line = { type: "markdown", text: ctx.t("sources_line", { list: states.map((s) => s.text).join(" — ") }) };
-  if (!on.length) return [{ type: "banner", tone: "warning", text: ctx.t("none_available") }, line];
-  if (on.every((s) => s.down)) return [{ type: "banner", tone: "warning", text: ctx.t("outage") }, { type: "markdown", text: ctx.t("outage_saved") }, ...(short ? [] : [line])];
-  if (short) return [line];
-  const last = await fx.latestAuto(ctx);
-  return [{ type: "banner", tone: "success", text: ctx.t("all_fine") }, line, ...(last ? [{ type: "markdown", text: ctx.t("last_found", { source: srcName(last.src), date: when(ctx, last.at) }) }] : [])];
-}
-
-async function keyBlocks(ctx) {
-  const { key, source } = await rawg.keyOf(ctx);
-  const blocks = [{ type: "heading", text: ctx.t("sources_title") }, ...(await statusBlocks(ctx))];
-  if (!key) blocks.push({ type: "markdown", text: ctx.t("guide") });
-  // A picked-up code: one word and a tooltip, forgotten from a discreet confirmed menu (never a big button).
-  if (key && source === "adopted") blocks.push({ type: "table", columns: [ctx.t("key_col")], pageSize: 0, rows: [[{ text: ctx.t("key_state"), badge: "info", title: ctx.t("key_adopted") }]], rowIds: ["key"], rowActions: [{ label: ctx.t("forget_key"), action: "forgetKey", confirm: ctx.t("forget_key_confirm"), danger: true }] });
-  if (key) blocks.push({ type: "adminForm", action: "testKey", submitLabel: ctx.t("test_key"), fields: [] });
-  blocks.push({ type: "netHealth", items: [{ host: "api.rawg.io", label: ctx.t("health_label") }, { host: "store.steampowered.com", label: ctx.t("health_label_steam") }] });
-  return blocks;
+  const down = on.filter((s) => s.down);
+  const names = (list) => list.map((s) => srcName(s.source));
+  const title = ctx.t("sources_title"), edit = { href: "?tab=settings" };
+  const menu = [
+    ...(key ? [{ label: ctx.t("test_key"), action: "testKey" }] : []),
+    ...(key && source === "adopted" ? [{ label: ctx.t("forget_key"), action: "forgetKey", confirm: ctx.t("forget_key_confirm"), danger: true }] : []),
+  ];
+  let block;
+  if (states.some((s) => s.refused)) block = { state: "degraded", reason: ctx.t("status_refused"), primary: { label: ctx.t("fix_key"), ...edit } };
+  else if (!on.length) block = { state: "notConfigured", reason: ctx.t("none_available"), setup: [{ type: "markdown", text: ctx.t("guide") }] };
+  else if (down.length) block = { state: "degraded", reason: down.length === on.length ? ctx.t("outage") : ctx.t(down.length === 1 ? "source_down" : "sources_down", { list: names(down).join(", ") }), primary: key ? { label: ctx.t("test_key"), action: "testKey" } : { label: ctx.t("open_settings"), ...edit } };
+  else block = { state: "configured", summary: names(on).join(" · "), net: [{ host: "api.rawg.io", label: ctx.t("health_label") }, { host: "store.steampowered.com", label: ctx.t("health_label_steam") }] };
+  return [{ type: "connection", id: "sources", title, ...block, ...(block.state === "notConfigured" ? {} : { edit, menu }) }];
 }
 
 async function listScreen(ctx) {
-  const out = [...(await keyBlocks(ctx))];
+  const out = [...(await connectionBlocks(ctx))];
 
   const todo = await fx.readToCheck(ctx);
-  out.push({ type: "heading", text: ctx.t("todo_title") }, { type: "markdown", text: ctx.t("todo_intro") });
+  out.push({ type: "heading", text: ctx.t("todo_title") });
   if (!todo.length) out.push({ type: "markdown", text: ctx.t("todo_empty") });
   else {
     const shown = todo.slice(0, 25);
@@ -127,7 +121,7 @@ const coverText = (ctx, e) => (e.origin === "none" ? "—" : e.kind === "image" 
 async function savedScreen(ctx) {
   const entries = await fx.savedEntries(ctx);
   const kept = await copies.allMeta(ctx);
-  const out = [{ type: "markdown", text: ctx.t("saved_intro") }, ...(await statusBlocks(ctx, { short: true }))];
+  const out = [];
   out.push({
     type: "adminForm", action: "find", submitLabel: ctx.t("find_button"),
     fields: [{ name: "q", label: ctx.t("find_label"), required: true, example: ctx.t("find_example"), help: ctx.t("find_help") }],
@@ -196,9 +190,9 @@ async function entryScreen(ctx, rawTitle, mode) {
 /** Says in plain words whether the image of a correction is kept on the site (consumers only ever show the kept copy), and offers a retry when it is not. */
 async function copyBlocks(ctx, fix, tab) {
   const st = await copies.copyState(ctx, titleKey(fix.title), fix.src ?? "rawg", fix.img);
-  if (st.state === "copied") return [{ type: "banner", tone: "success", text: ctx.t("copy_copied") }];
+  if (st.state === "copied") return [];   // l'image est sur le site : rien à dire
   const text = st.state === "failed" ? ctx.t("copy_failed", { reason: ctx.t(`copy_why_${st.why}`) }) : ctx.t("copy_pending");
-  return [{ type: "banner", tone: st.state === "failed" ? "warning" : "info", text },
+  return [st.state === "failed" ? { type: "banner", tone: "warning", text } : { type: "markdown", text },
     { type: "adminForm", action: "retryCopy", submitLabel: ctx.t("copy_retry"), fields: [{ name: "id", kind: "hidden", value: fix.title }, { name: "tab", kind: "hidden", value: tab }] }];
 }
 
@@ -220,7 +214,6 @@ async function fixScreen(ctx, title, search, tab) {
   const out = [
     { type: "markdown", text: `[${ctx.t(tab === SAVED_TAB ? "back_saved" : "back")}](${href(tab)})` },
     { type: "heading", text: ctx.t("which") },
-    { type: "markdown", text: ctx.t("which_intro") },
     { type: "html", html: `<section class="rounded-2xl border border-line bg-surface p-5 space-y-3"><p class="text-sm text-muted break-words">${esc(ctx.t("asked"))}</p><p class="text-xl font-semibold break-words" data-testid="asked">${esc(title)}</p>` +
       (current ? `<div class="flex items-center gap-3" data-testid="current">${coverImg(current.url, "h-16 w-12")}<p class="min-w-0 break-words text-sm"><span class="text-muted">${esc(ctx.t(current.isSaved ? "current_saved" : "current_auto"))}</span><br>${esc(current.label)}</p></div>` : "") + `</section>` },
   ];

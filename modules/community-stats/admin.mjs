@@ -18,11 +18,10 @@ async function describe(ctx, s, now) {
   const t = ctx.t;
   const known = s.lastValue != null;
   const period = PERIOD_METRICS.includes(s.metric);
-  const figure = [title(ctx, s), `${t(`metric_${s.metric}`)} : ${known ? figureText(ctx, s.metric, s.lastValue) : "—"}`, t(s.visible ? "onSiteYes" : "onSiteNo")].join("\n");
+  const figure = [title(ctx, s), `${t(`metric_${s.metric}`)} : ${known ? figureText(ctx, s.metric, s.lastValue) : "—"}`].join("\n");
   const lines = [];
   const broken = s.source === "auto" && s.state !== "ok";
-  if (known && period) lines.push(t("periodNote"));
-  else if (known) {
+  if (known && !period) {
     const { week, month } = await changesOf(ctx, s);
     if (!week && !month) lines.push(evolutionPhrase(ctx, null, s.metric));
     if (week) lines.push(evolutionPhrase(ctx, week, s.metric));
@@ -76,7 +75,7 @@ export default {
     const blocks = [{ type: "heading", text: t("title") }, { type: "markdown", text: t("intro") }];
     blocks.push({ type: "markdown", text: [run.lastRunAt ? t("lastUpdate", { when: ago(ctx, run.lastRunAt, now) }) : t("neverUpdated"), t("autoEvery", { freq: t(`freq_${periodKey(ctx)}`) })].join(" ") });
     if (run.lastError) blocks.push({ type: "banner", tone: "warning", text: t("noticeLastFailed") });
-    for (const s of staleManual(stats, now).slice(0, 5)) blocks.push({ type: "banner", tone: "warning", text: t("staleReminder", { platform: platformName(s), account: s.account, days: Math.floor((now - s.lastAt) / DAY) }) });
+    for (const s of staleManual(stats, now).slice(0, 5)) blocks.push({ type: "banner", tone: "warning", text: t("staleReminder", { platform: platformName(s), account: s.account, days: Math.floor((now - s.lastAt) / DAY) }), href: `?edit=${s.docId}` });
 
     blocks.push({ type: "adminForm", action: "refresh", submitLabel: t("updateNow"), fields: [] });
 
@@ -88,19 +87,17 @@ export default {
       for (const s of stats) rows.push(await describe(ctx, s, now));
       blocks.push({ type: "table", columns: [t("colFigure"), t("colEvolution")], rows });
       blocks.push({ type: "heading", text: t("headingShow") });
-      blocks.push({ type: "markdown", text: `${t("showHelp")} ${t("showComing")}` });
       blocks.push({ type: "adminForm", action: "saveVisibility", submitLabel: t("showSave"), fields: stats.map((s) => ({ name: `show_${s.docId}`, label: `${title(ctx, s)} — ${t(`metric_${s.metric}`)}`, kind: "select", value: s.visible ? "yes" : "no", options: [{ value: "no", label: t("showNo") }, { value: "yes", label: t("showYes") }] })) });
     }
     if (!auto.length && stats.length) blocks.push({ type: "markdown", text: t("emptyAutoShort") });
 
     blocks.push({ type: "heading", text: t("headingManual") }, { type: "markdown", text: t("manualHelp") });
     if (manual.length) blocks.push({ type: "table", columns: [t("colAccount"), t("colManualFigure")], rows: manual.map((s) => [`${title(ctx, s)}\n${t(`metric_${s.metric}`)}`, `${formatValue(ctx, s.lastValue)}\n${dateText(ctx, s.lastAt)}`]), rowIds: manual.map((s) => s.docId), rowActions: [{ label: t("actUpdate"), href: "?edit={id}" }, { label: t("actDelete"), action: "forget", confirm: t("confirmDeleteManual"), danger: true }] });
-    else blocks.push({ type: "markdown", text: t("manualEmpty") });
     blocks.push(manualForm(ctx, null));
 
     const gone = auto.filter((s) => s.state === "missing");
     if (gone.length) {
-      blocks.push({ type: "heading", text: t("headingGone") }, { type: "markdown", text: t("goneHelp") });
+      blocks.push({ type: "heading", text: t("headingGone") });
       blocks.push({ type: "table", columns: [t("colFigure")], rows: gone.map((s) => [`${title(ctx, s)}\n${t(`metric_${s.metric}`)}`]), rowIds: gone.map((s) => s.docId), rowActions: [{ label: t("actForget"), action: "forget", confirm: t("confirmForget"), danger: true }] });
     }
     blocks.push({ type: "markdown", text: `*${t("footerAdvanced")}*` });

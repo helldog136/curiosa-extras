@@ -30,7 +30,7 @@ const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
 test("manifeste : valide, 1.2.3, minCore 0.5.0, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.4.0"); assert.equal(manifestJson.minCore, "0.11.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.4.1"); assert.equal(manifestJson.minCore, "0.11.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });
@@ -244,9 +244,9 @@ test("explications des chiffres manquants : une raison humaine ET une action, pr
   assert.match(reasonText(ctx, s("hidden", "youtube")), /YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio/);
   assert.match(reasonText(ctx, s("auth", "twitch")), /L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch »/);
   assert.match(reasonText(ctx, s("auth", "bluesky")), /Bluesky demande votre autorisation.*reconnectez/);
-  assert.match(reasonText(ctx, s("rate", "github")), /GitHub demande de patienter.*Rien à faire/);
-  assert.match(reasonText(ctx, s("network", "reddit")), /Reddit ne répond pas.*Rien à faire/);
-  assert.match(reasonText(ctx, s("config", "mastodon")), /Mastodon n'est pas encore bien réglé|module Mastodon n'est pas encore bien réglé/);
+  assert.match(reasonText(ctx, s("rate", "github")), /^GitHub demande de patienter un peu\.$/);
+  assert.match(reasonText(ctx, s("network", "reddit")), /^Reddit ne répond pas pour l'instant\.$/);
+  assert.match(reasonText(ctx, s("config", "mastodon")), /Le nom du compte Mastodon est introuvable : ouvrez votre module Mastodon et vérifiez-le/);
   assert.match(reasonText(make({ locale: "en" }).ctx, s("hidden", "youtube")), /make it public in YouTube Studio/);
 });
 
@@ -299,7 +299,8 @@ test("rappel doux : un chiffre saisi à la main de plus de 30 jours est signalé
     assert.equal(await def.adminBadge(ctx), 1);
     const blocks = await def.adminPanel(ctx, { query: {}, now: NOW });
     const banner = blocks.find((b) => b.type === "banner");
-    assert.match(banner.text, /Instagram \(@emma\) n'a pas été mis à jour depuis 33 jours/);
+    assert.match(banner.text, /Le chiffre d'Instagram \(@emma\) date de 33 jours|Le chiffre de Instagram \(@emma\) date de 33 jours/);
+    assert.equal(banner.href, `?edit=${staleManual(stats, NOW)[0].docId}`, "le rappel mène au formulaire du chiffre à noter");
   } finally { Date.now = realNow; }
 });
 
@@ -407,7 +408,7 @@ test("admin : état vide chaleureux, avec l'action à faire ; aucun jargon dans 
   const blocks = await def.adminPanel(ctx, { query: {}, now: NOW });
   const text = JSON.stringify(blocks);
   assert.match(text, /Aucun de vos réseaux ne partage encore ses chiffres : ouvrez votre module Twitch ou YouTube et cochez « Suivre mes statistiques »/);
-  assert.match(text, /Aucun compte saisi à la main pour l'instant/);
+  assert.doesNotMatch(text, /Aucun compte saisi à la main/, "un état vide sans action : seul le formulaire reste");
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "refresh"));
   assert.ok(!blocks.some((b) => b.type === "table" && b.columns.length === 2 && b.columns[0] === "Chiffre"), "pas de tableau vide");
   assert.equal(await def.adminBadge(ctx), 0);
@@ -423,7 +424,7 @@ test("admin : cartes lisibles (compte, chiffre, évolution en phrase, origine, m
   const blocks = await def.adminPanel(ctx, { query: {}, now: NOW + DAY });
   const tables = blocks.filter((b) => b.type === "table");
   const cards = tables[0].rows.map((r) => r.join(" | ")).join("\n");
-  assert.match(cards, /Twitch · emma_live\nFollowers : 1\s120\nGardé pour vous/);
+  assert.match(cards, /Twitch · emma_live\nFollowers : 1\s120 \|/);
   assert.match(cards, /\+84 followers cette semaine \(\+8,1 %\)/);
   assert.match(cards, /L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch »/);
   assert.match(cards, /Dernier chiffre connu/);
@@ -433,7 +434,7 @@ test("admin : cartes lisibles (compte, chiffre, évolution en phrase, origine, m
   const visibility = blocks.find((b) => b.type === "adminForm" && b.action === "saveVisibility");
   assert.equal(visibility.fields.length, 3);
   assert.ok(visibility.fields.every((f) => f.value === "no" && f.options.length === 2), "tout est privé au départ");
-  assert.match(JSON.stringify(blocks), /« Montrer sur mon site » autorise l'affichage d'un chiffre au public/);
+  assert.doesNotMatch(JSON.stringify(blocks), /autorise l'affichage|arrive bientôt|Gardé pour vous/, "ni explication de l'évidence, ni promesse, ni état répété (le formulaire le dit)");
   assert.match(visibility.fields[0].options[1].label, /Oui, le montrer sur mon site/);
   const manual = tables.find((t) => t.rowActions?.some((a) => a.action === "forget" && /Supprimer/.test(a.label)));
   assert.ok(manual.rowActions.every((a) => !a.action || a.confirm), "toute suppression demande confirmation");
@@ -464,7 +465,7 @@ test("admin : actions — mettre à jour (cadence), noter un chiffre (messages h
     assert.match((await def.adminActions.forget(ctx, { id: manual.docId })).ok, /supprimé/);
     assert.equal(await statOf(ctx, manual.id), undefined);
     assert.equal(await ctx.api.store.count("communitySamples") > 0, true);
-    assert.match((await def.adminActions.forget(ctx, { id: "inconnu" })).error, /Introuvable/);
+    assert.match((await def.adminActions.forget(ctx, { id: "inconnu" })).error, /n'existe plus/);
     feed.items = []; clock += DAY; await collectNow(ctx, { now: clock });
     const gone = await statOf(ctx, "twitch-channel:emma:followers");
     assert.equal(gone.state, "missing");
@@ -556,13 +557,14 @@ test("période : la page d'administration parle simplement (durées en heures et
   assert.match(text, /Temps de direct \(30 jours\) : 12 h 30/);
   assert.match(text, /Temps regardé par votre audience \(30 jours\) : 294 h 40/);
   assert.match(text, /Followers gagnés en direct \(30 jours\) : 40/);
-  assert.match(text, /Calculé sur vos directs des 30 derniers jours, mesurés par votre site\./);
+  assert.doesNotMatch(text, /Calculé sur vos directs/, "« (30 jours) » est dans le libellé : pas de phrase identique sur chaque ligne (R14)");
+  assert.match(text, /Mise à jour automatique/, "l'origine de chaque chiffre reste dite");
   const short = JSON.stringify(await def.adminPanel(make({ items: [item({ id: "twitch-channel:emma:hours_streamed", metric: "hours_streamed", value: 45 })] }).ctx, { query: {}, now: NOW }));
   assert.ok(!/45 min/.test(short), "avant la première collecte rien n'est affiché");
   const m = make({ items: [item({ id: "twitch-channel:emma:hours_streamed", metric: "hours_streamed", value: 45 })], locale: "en" });
   await collectNow(m.ctx, { now: NOW });
   assert.match(JSON.stringify(await def.adminPanel(m.ctx, { query: {}, now: NOW })), /Time live \(30 days\) : 45 min/);
-  for (const k of ["metric_avg_viewers", "metric_peak_viewers", "metric_hours_streamed", "metric_hours_watched", "metric_followers_gained", "periodNote", "durHm", "durM"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["metric_avg_viewers", "metric_peak_viewers", "metric_hours_streamed", "metric_hours_watched", "metric_followers_gained", "durHm", "durM"]) assert.ok(fr[k] && en[k], k);
 });
 
 test("période : l'IA voit l'unité (minutes, spectateurs, personnes) ; le filtre de métrique accepte les nouveaux chiffres", async () => {

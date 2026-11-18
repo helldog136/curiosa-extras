@@ -70,7 +70,7 @@ test("page éteinte : aucune entrée de plan du site, aucun lien, aucun script a
 test("administration : page éteinte avec adresse → dit ce que voient les visiteurs, le menu, le plan du site ; allumée → lien ; sans adresse → avertissement ; jamais de jargon", async () => {
   const text = (blocks) => blocks.filter((b) => b.tab === "moment").map((b) => b.text ?? "").join("\n");
   const off = text(await admin.panel(site({ publicPage: false }).ctx, { query: {} }));
-  assert.match(off, /éteinte/); assert.match(off, /« \/en-direct »/); assert.match(off, /page introuvable/); assert.match(off, /menu du site/); assert.match(off, /plan du site/);
+  assert.match(off, /éteinte/); assert.match(off, /« \/en-direct »/); assert.match(off, /page introuvable/); assert.match(off, /ni dans le menu/); assert.match(off, /plan du site/);
   const offBlocks = await admin.panel(site({ publicPage: false }).ctx, { query: {} });
   assert.ok(!offBlocks.some((b) => b.tab === "moment" && b.type === "links" && String(b.items?.[0]?.href).includes("en-direct")), "pas de lien vers une page éteinte");
   const nopathOff = text(await admin.panel(site({ publicPage: false }, { basePath: null }).ctx, { query: {} }));
@@ -140,7 +140,7 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
 });
 
 test("mise à jour à chaud : version 2.2.3, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.6.1");
+  assert.equal(manifest.version, "2.6.2");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));

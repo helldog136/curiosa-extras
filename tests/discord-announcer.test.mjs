@@ -1,9 +1,12 @@
 import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
+const { assertConnectionStates } = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/ergonomics.mjs")).href);
 const DIR = new URL("../modules/discord-announcer", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${DIR}/${p}`, "utf8"));
 const manifestJson = readJson("module.json");
@@ -99,7 +102,7 @@ test("panneau d'admin : état, bouton de test, journal ; le test envoie un messa
   assert.equal(out.ok, "Test message sent.");
   assert.deepEqual(calls[0].body.allowed_mentions, { parse: [] });
   const blocks = await def.adminPanel(ctx);
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "test"));
+  assert.deepEqual(blocks.find((b) => b.type === "connection").menu.map((m) => m.action), ["test"], "le test est dans le menu de la connexion, pas un bouton de plus");
   assert.ok(blocks.some((b) => b.type === "table"));
   assert.ok(def.tasks.announce.everyMinutes >= 1);
 });
@@ -117,4 +120,30 @@ test("live : annoncé une fois, titre + jeu, 🔴 ; un live relancé dans le dé
   // un vrai nouveau live, 3 h plus tard
   ctx.api.topics.collect = async (t) => (t === "stream.live" ? [live("s3", new Date(NOW + 3 * 3600_000).toISOString())] : []);
   assert.equal((await mod.announce(ctx, NOW + 3 * 3600_000 + 60_000)).sent, 1);
+});
+
+test("connexion en trois états (R33) : à régler, réglée, dégradée après un envoi refusé ; jamais de champ, de consigne ni de phrase « tout va bien » une fois réglée", async () => {
+  const notConfigured = await def.adminPanel(ctxWith({}, { webhookUrl: "" }));
+  const configured = await def.adminPanel(ctxWith({}));
+  const failed = ctxWith({});
+  await failed.api.store.add("log", { key: "k", subject: "Annonce", ok: false, status: 404, error: "Unknown Webhook", attempts: 2, at: "2030-06-01T12:00:00Z" });
+  const degraded = await def.adminPanel(failed);
+  assertConnectionStates({ notConfigured, configured, degraded });
+  const only = (blocks) => blocks.filter((b) => b.type === "connection");
+  assert.equal(only(notConfigured).length + only(configured).length + only(degraded).length, 3, "un seul bloc par état");
+  assert.deepEqual(only(notConfigured)[0].primary, { label: "Set the sending address", href: "?tab=settings" });
+  assert.match(only(notConfigured)[0].setup[0].text, /Integrations/, "la consigne n'existe que tant que l'adresse manque");
+  assert.equal(only(configured)[0].setup, undefined);
+  assert.equal(only(configured)[0].summary, "Site news and Twitch lives");
+  assert.equal(only(configured)[0].edit.href, "?tab=settings");
+  assert.equal(configured.some((b) => b.type === "table" || b.type === "heading"), false, "journal vide : ni titre ni tableau vide");
+  assert.equal(only(degraded)[0].reason, "The last send failed (code 404).");
+  assert.deepEqual(only(degraded)[0].primary, { label: "Send a test message", action: "test" });
+  assert.ok(degraded.some((b) => b.type === "table"), "le journal montre l'échec");
+  // Une adresse réglée mais qui n'est pas celle de Discord : à régler, avec la raison.
+  const bad = await def.adminPanel(ctxWith({}, { webhookUrl: "https://evil.example/x" }));
+  assert.equal(only(bad)[0].state, "notConfigured"); assert.match(only(bad)[0].reason, /not a valid/);
+  // Un envoi réussi après l'échec : redevenue réglée.
+  await failed.api.store.add("log", { key: "k2", subject: "Annonce", ok: true, status: 204, error: null, attempts: 1, at: "2030-06-01T12:05:00Z" });
+  assert.equal(only(await def.adminPanel(failed))[0].state, "configured");
 });

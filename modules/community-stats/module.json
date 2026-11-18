@@ -5,7 +5,7 @@
     "fr": "Statistiques de la communauté",
     "en": "Community statistics"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "menuGroup": "community",
   "minCore": "0.11.0",
   "description": {
@@ -112,8 +112,8 @@
         "en": "How often should your numbers be noted?"
       },
       "help": {
-        "fr": "Une fois par jour convient très bien : vous n'avez rien à régler. Plus c'est fréquent, plus l'historique est détaillé (et plus il prend de place).",
-        "en": "Once a day is just fine: there is nothing to set. The more often, the more detailed the history (and the more room it takes)."
+        "fr": "Plus c'est fréquent, plus l'historique est détaillé, et plus il prend de place.",
+        "en": "The more often, the more detailed the history, and the more room it takes."
       },
       "options": [
         {

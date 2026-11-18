@@ -86,30 +86,24 @@ export default {
   },
 
   async adminPanel(ctx) {
-    const t = ctx.t, s = settingsOf(ctx);
-    // Pas d'adresse (ou adresse refusée) : c'est le champ « Adresse de votre agenda » (onglet Réglages, ouvert d'office) qu'il faut remplir. Le mode d'emploi pour la trouver
-    // s'affiche donc DANS cet onglet, au-dessus du champ (`tab: "settings"`, cœur 0.2.5) ; Utiliser, resté vide, n'est pas affiché. Une fois l'adresse bonne : retour dans Utiliser.
-    const toFill = (problem) => [{ type: "heading", text: t("adminStatus"), tab: "settings" }, { type: "markdown", text: problem, tab: "settings" }, { type: "html", html: tutorialHtml(ctx, s.zone || "UTC"), tab: "settings" }];
-    if (!s.url) return toFill(t("adminNotSet"));
-    if (!isPublicHttpsUrl(s.url)) return toFill(`⚠️ ${t("err_url")}`);
-    const blocks = [{ type: "heading", text: t("adminStatus") }];
+    const t = ctx.t, s = settingsOf(ctx), title = t("adminStatus"), edit = { href: "?tab=settings" };
+    // Pas d'adresse (ou adresse refusée) : c'est le champ « Adresse de votre agenda » (onglet Réglages, ouvert d'office) qu'il faut remplir. Les étapes pour la trouver
+    // s'affichent donc DANS cet onglet, au-dessus du champ (`tab: "settings"`, cœur 0.2.5) ; Utiliser, resté vide, n'est pas affiché. Une fois l'adresse bonne : retour dans Utiliser.
+    if (!s.url || !isPublicHttpsUrl(s.url)) return [{ type: "connection", id: "calendar", tab: "settings", title, state: "notConfigured", reason: t(s.url ? "err_url" : "adminNotSet"), setup: [{ type: "html", html: tutorialHtml(ctx, s.zone || "UTC", { setup: true }) }] }];
     let host = "";
     try { host = new URL(s.url).hostname; } catch { host = ""; }
-    blocks.push({ type: "markdown", text: t("adminSaved", { host }) });
     const now = new Date(), r = await loadEvents(ctx, { from: now, to: new Date(now.getTime() + 30 * DAY) });
-    if (!r.ok) {
-      blocks.push({ type: "markdown", text: `⚠️ ${t(`err_${r.error}`, { status: r.status ?? "" })}` });
-    } else {
-      const upcoming = r.events.filter((e) => !e.cancelled);
-      blocks.push({ type: "markdown", text: `✔ ${t("adminOk", { n: upcoming.length, cancelled: r.events.length - upcoming.length })}` });
-      if (r.stale) blocks.push({ type: "markdown", text: `⚠️ ${t("adminStale", { reason: t(`err_${r.error}`, { status: r.status ?? "" }) })}` });
-      if (upcoming.length) {
-        const fmt = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: r.zone });
-        const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: r.zone });
-        blocks.push({ type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith")], rows: upcoming.slice(0, 10).map((e) => [e.allDay ? `${day.format(e.start)} · ${t("allDay")}` : fmt.format(e.start), e.title || t("untitled"), extractGameNames(e.description).join(", "), extractPartners(e.description).join(", ")]) });
-      }
+    const reread = t("testBtn");
+    if (!r.ok) return [{ type: "connection", id: "calendar", title, state: "degraded", reason: t(`err_${r.error}`, { status: r.status ?? "" }), primary: { label: reread, action: "test" }, edit }];
+    const upcoming = r.events.filter((e) => !e.cancelled);
+    const blocks = [r.stale
+      ? { type: "connection", id: "calendar", title, state: "degraded", reason: `${t(`err_${r.error}`, { status: r.status ?? "" })} ${t("adminStale")}`, primary: { label: reread, action: "test" }, edit }
+      : { type: "connection", id: "calendar", title, state: "configured", summary: t("adminSummary", { host, n: upcoming.length }), edit, menu: [{ label: reread, action: "test" }] }];
+    if (upcoming.length) {
+      const fmt = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: r.zone });
+      const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: r.zone });
+      blocks.push({ type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith")], rows: upcoming.slice(0, 10).map((e) => [e.allDay ? `${day.format(e.start)} · ${t("allDay")}` : fmt.format(e.start), e.title || t("untitled"), extractGameNames(e.description).join(", "), extractPartners(e.description).join(", ")]) });
     }
-    blocks.push({ type: "adminForm", action: "test", submitLabel: t("testBtn"), fields: [] });
     blocks.push({ type: "html", html: tutorialHtml(ctx, r.zone) });
     return blocks;
   },

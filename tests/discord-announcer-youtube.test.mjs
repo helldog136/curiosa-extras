@@ -211,7 +211,7 @@ test("par défaut (réglage jamais enregistré, ou « non ») : les directs YouT
   assert.deepEqual(await announce(bare), { sent: 0, skipped: 0 });
   assert.equal(yt.calls.all.length, 0); assert.equal(discord.length, 0);
   const panel = await def.adminPanel(bare);
-  assert.ok(panel.some((b) => b.type === "markdown" && /ne sont pas annoncés/.test(b.text)));
+  assert.equal(panel.find((b) => b.type === "connection").summary, "Nouveautés du site et directs Twitch", "YouTube coché ? non : le résumé ne le dit pas");
   assert.equal((await announce(site({ settings: { youtubeLive: true } }))).sent, 1);
 });
 
@@ -315,13 +315,12 @@ test("un direct YouTube sans heure de début est traité comme tout frais", asyn
   assert.equal((await announce(ctx)).sent, 1);
 });
 
-test("administration : une phrase sur YouTube seulement si Chaîne YouTube est installée ; rien de plus pour les autres", async () => {
-  const withYt = await def.adminPanel(site());
-  assert.ok(withYt.some((b) => b.type === "markdown" && /Vos directs YouTube sont annoncés/.test(b.text) && /10 minutes/.test(b.text)));
-  const off = await def.adminPanel(site({ settings: { youtubeLive: false } }));
-  assert.ok(off.some((b) => b.type === "markdown" && /ne sont pas annoncés.*Annoncer aussi mes directs YouTube/.test(b.text)));
-  const without = await def.adminPanel(site({ youtube: false }));
-  assert.ok(!without.some((b) => b.type === "markdown" && /YouTube/.test(b.text)));
+test("administration : YouTube n'est dans le résumé que si Chaîne YouTube est installée ET le réglage coché ; rien de plus pour les autres", async () => {
+  const summary = async (ctx) => (await def.adminPanel(ctx)).find((b) => b.type === "connection").summary;
+  assert.equal(await summary(site()), "Nouveautés du site, directs Twitch et YouTube");
+  assert.equal(await summary(site({ settings: { youtubeLive: false } })), "Nouveautés du site et directs Twitch");
+  assert.equal(await summary(site({ youtube: false })), "Nouveautés du site et directs Twitch");
+  assert.ok(!(await def.adminPanel(site())).some((b) => b.type === "markdown"), "plus de phrase sur les directs YouTube");
 });
 
 test("pas de minuteur de fond ajouté : la même tâche d'une minute, aucune autre", () => {

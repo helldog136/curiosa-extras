@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.36.0",
   "id": "game-covers",
   "name": {
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": {
     "en": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks.",
     "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics."
@@ -185,8 +185,8 @@
         "fr": "Code d'accès gratuit Rawg (facultatif)"
       },
       "help": {
-        "en": "Free at rawg.io/apidocs. Never shown again.",
-        "fr": "Gratuit sur rawg.io/apidocs. Jamais réaffiché."
+        "en": "Free at rawg.io/apidocs.",
+        "fr": "Gratuit sur rawg.io/apidocs."
       }
     },
     {
@@ -199,8 +199,8 @@
         "fr": "Utiliser les jaquettes de Twitch"
       },
       "help": {
-        "en": "Last resort, if the Twitch connector is set up.",
-        "fr": "En dernier secours, si le Connecteur Twitch est réglé."
+        "en": "Last resort, through the Twitch connector.",
+        "fr": "En dernier recours, via le Connecteur Twitch."
       }
     },
     {

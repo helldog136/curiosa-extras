@@ -3,6 +3,8 @@
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { assertValidManifest } from "./helpers/builtinChecks.mjs";
@@ -21,7 +23,7 @@ const realFetch = globalThis.fetch;
 beforeEach(() => { mock.timers.reset(); mock.timers.enable({ apis: ["Date"], now: T0 }); Y.resetYoutube(); channelLive.resetLive(); connectorApi.resetState(); Y.timing.waitMs = 2_500; });
 afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 
-const MSG = { live: "{channel} est en direct", liveYoutube: "EN DIRECT YOUTUBE", liveMany: "En direct", watch: "Regarder", viewersOne: "{count} spectateur", viewersMany: "{count} spectateurs", playerChoice: "Chaîne", ytStart: "Lancer YouTube", ytNote: "Rien avant le clic", needSource: "AUCUNE SOURCE", suggestTwitch: "T", suggestYoutube: "Y", ytNeedChannel: "CHAINE", ytNeedKey: "CLE", ytQuota: "QUOTA", ytDown: "PANNE", openYoutube: "Ouvrir", openYoutubeConnector: "Ouvrir connecteur", needCredentials: "RELIEZ", needChannel: "INDIQUEZ" };
+const MSG = { live: "{channel} est en direct", liveYoutube: "EN DIRECT YOUTUBE", liveMany: "En direct", watch: "Regarder", viewersOne: "{count} spectateur", viewersMany: "{count} spectateurs", playerChoice: "Chaîne", ytStart: "Lancer YouTube", ytNote: "Rien avant le clic", needSource: "AUCUNE SOURCE", sourcesTitle: "Sources", twitchTitle: "Twitch", youtubeTitle: "YouTube", sumTwitch: "Chaînes : {list}", sumYoutube: "LU", twitchApp: "RELIEZ", twitchChannel: "INDIQUEZ", suggestTwitch: "T", suggestYoutube: "Y", ytNeedChannel: "CHAINE", ytNeedKey: "CLE", ytQuota: "QUOTA", ytDown: "PANNE", openYoutube: "Ouvrir", openYoutubeConnector: "Ouvrir connecteur", needCredentials: "RELIEZ", needChannel: "INDIQUEZ" };
 const twitchStatus = (o = {}) => ({ live: true, known: true, configured: true, channel: "helldog136", displayName: "helldog136", title: "Soirée Zelda", game: "Zelda", viewers: 12, ...o });
 const twitchInstance = (st) => ({ instance: "tw0", name: "Twitch", methods: { channel: () => ({ channel: "helldog136", ready: true, missing: [] }), status: () => st } });
 
@@ -49,7 +51,7 @@ const player = (ctx) => def.sections.player(ctx);
 test("manifeste : même identifiant et même plateforme, nom « Statut du live », deux sources facultatives, réglages simples avec valeurs par défaut sensées", async () => {
   const m = await assertValidManifest(manifest);
   assert.equal(m.id, "live-status");
-  assert.equal(m.version, "1.5.0");
+  assert.equal(m.version, "1.6.0");
   assert.deepEqual(m.name, { en: "Live status", fr: "Statut du live" });
   assert.equal(m.platform, "twitch");
   assert.ok(m.requires.every((r) => r.optional === true && r.label.fr && r.label.en));
@@ -59,7 +61,7 @@ test("manifeste : même identifiant et même plateforme, nom « Statut du live �
   assert.deepEqual(set.youtubeLoad.options.map((o) => o.value), ["click", "auto"]);
   assert.match(m.privacy.fr, /YouTube/); assert.match(m.privacy.en, /YouTube/);
   assert.match(m.privacy.fr, /clic/); assert.match(m.privacy.en, /click/);
-  assert.equal(m.minCore, "0.2.2");
+  assert.equal(m.minCore, "0.36.0");
   assert.ok(!m.offers && !(m.provides ?? []).length && !(m.consumes ?? []).length);
 });
 
@@ -106,7 +108,7 @@ test("Twitch seul SANS Chaîne YouTube : aucun appel à YouTube, rien de plus qu
   assert.deepEqual(await banner(s.ctx), [{ type: "banner", tone: "success", text: "helldog136 est en direct", href: "https://twitch.tv/helldog136" }]);
   assert.equal(s.yt.calls.all.length, 0);
   assert.equal((await player(s.ctx))[0].type, "embed");
-  assert.deepEqual(await def.adminPanel(s.ctx), [], "Twitch prêt : aucun message");
+  assert.deepEqual((await def.adminPanel(s.ctx)).map((b) => [b.id, b.state, b.summary]), [["twitch", "configured", "Chaînes : helldog136"]], "Twitch prêt : une carte, une ligne ; pas de carte YouTube sans Chaîne YouTube");
 });
 
 test("les deux en direct : bannière à deux lignes nommant chaque plateforme, un seul lecteur (Twitch par défaut, YouTube au choix)", async () => {
@@ -145,14 +147,14 @@ test("aucune source : ni bannière ni lecteur ; l'administration le dit en mots 
   assert.equal(await banner(s.ctx), null);
   assert.equal(await player(s.ctx), null);
   const blocks = await def.adminPanel(s.ctx);
-  assert.deepEqual(blocks.map((b) => [b.type, b.service ?? b.text]), [["banner", "AUCUNE SOURCE"], ["suggestInstall", "twitch.live"], ["suggestInstall", "youtube.live"]]);
-  assert.match(locales.fr.needSource, /Installez Ma Chaîne Twitch ou Chaîne YouTube/);
-  assert.match(locales.en.needSource, /Install My Twitch channel or YouTube channel/);
+  assert.deepEqual(blocks.map((b) => [b.type, b.state, b.reason]), [["connection", "notConfigured", "AUCUNE SOURCE"]]);
+  assert.deepEqual(blocks[0].setup.map((b) => [b.type, b.service]), [["suggestInstall", "twitch.live"], ["suggestInstall", "youtube.live"]]);
+  assert.equal(locales.fr.needSource, "Aucune source de direct n'est installée : ni bannière ni lecteur.");
   // Chaîne YouTube présente (même hors direct) ou Twitch présent : plus de proposition.
   const yt = site();
-  assert.ok(!(await def.adminPanel(yt.ctx)).some((b) => b.type === "suggestInstall"));
+  assert.ok(!JSON.stringify(await def.adminPanel(yt.ctx)).includes("suggestInstall"));
   const tw = site({ twitch: twitchStatus(), youtube: false });
-  assert.ok(!(await def.adminPanel(tw.ctx)).some((b) => b.type === "suggestInstall"));
+  assert.ok(!JSON.stringify(await def.adminPanel(tw.ctx)).includes("suggestInstall"));
 });
 
 test("Chaîne YouTube mal réglée ou en panne : l'administration dit quoi faire, les visiteurs ne voient rien de cassé, Twitch continue", async () => {
@@ -161,15 +163,18 @@ test("Chaîne YouTube mal réglée ou en panne : l'administration dit quoi faire
   const origAll = noChannel.ctx.api.services.callAll;
   noChannel.ctx.api.services.callAll = async (name, ...r) => (name === "youtube.live" ? [{ ok: true, instance: "c", name: "Chaîne YouTube", value: { ok: false, error: "channel" } }] : origAll(name, ...r));
   let a = await def.adminPanel(noChannel.ctx);
-  assert.ok(a.some((b) => b.text === "CHAINE") && a.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/youtube-channel)")));
+  const yc = a.find((b) => b.id === "youtube");
+  assert.deepEqual([yc.state, yc.reason, yc.primary.href], ["notConfigured", "CHAINE", "/admin/modules/youtube-channel"]);
   assert.equal((await banner(noChannel.ctx))[0].type, "banner", "Twitch continue");
   for (const [error, text, link] of [["config", "CLE", "youtube-connector"], ["auth", "CLE", "youtube-connector"], ["unavailable", "CLE", "youtube-connector"], ["quota", "QUOTA"], ["rate", "QUOTA"], ["timeout", "PANNE"], ["network", "PANNE"], ["weird<script>", "PANNE"]]) {
     Y.resetYoutube();
     const s = site();
     s.ctx.api.services.callAll = async () => [{ ok: true, instance: "c", name: "Chaîne YouTube", value: { ok: false, error } }];
     a = await def.adminPanel(s.ctx);
-    assert.ok(a.some((b) => b.type === "banner" && b.text === text), `${error} → ${text}`);
-    if (link) assert.ok(a.some((b) => b.type === "markdown" && b.text.includes(`](/admin/modules/${link})`)), error);
+    const card = a.find((b) => b.id === "youtube");
+    assert.equal(card.reason, text, `${error} → ${text}`);
+    assert.equal(card.state, link ? "notConfigured" : "degraded", `${error} : à configurer ou dégradée`);
+    assert.equal(card.primary.href, `/admin/modules/${link ?? "youtube-connector"}`, error);
     assert.equal(await banner(s.ctx), null); assert.equal(await player(s.ctx), null);
   }
 });
@@ -299,4 +304,17 @@ test("le code ne parle jamais à YouTube lui-même (aucune adresse d'API, aucune
     const src = fs.readFileSync(new URL(`../modules/live-status/${f}`, import.meta.url), "utf8");
     assert.ok(!/fetch\(|googleapis\.com|api[_-]?key|\bkey=/i.test(src), f);
   }
+});
+
+test("connexion en trois états (R33) : aucune source, source qui sert, source dégradée (limite YouTube atteinte)", async () => {
+  const { assertConnectionStates } = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/ergonomics.mjs")).href);
+  const notConfigured = await def.adminPanel(site({ youtube: false }).ctx);
+  const configured = await def.adminPanel(site({ twitch: twitchStatus(), youtube: false }).ctx);
+  Y.resetYoutube();
+  const s = site({ twitch: twitchStatus() });
+  const origAll = s.ctx.api.services.callAll;
+  s.ctx.api.services.callAll = async (name, ...r) => (name === "youtube.live" ? [{ ok: true, instance: "c", name: "Chaîne YouTube", value: { ok: false, error: "quota" } }] : origAll(name, ...r));
+  const degraded = await def.adminPanel(s.ctx);
+  assertConnectionStates({ notConfigured, configured, degraded });
+  assert.deepEqual(degraded.map((b) => [b.id, b.state]), [["twitch", "configured"], ["youtube", "degraded"]], "chaque source a sa carte ; seule celle qui va mal est dégradée");
 });

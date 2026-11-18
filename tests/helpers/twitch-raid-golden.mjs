@@ -1,9 +1,10 @@
 // Empreintes du dock de la 2.1, enregistrées sur le code d'AVANT la 2.2 (voir tests/twitch-raid-compat.test.mjs). Ne pas régénérer à la légère : elles PROUVENT que le dock n'a pas bougé.
 // 2.3.0: the three PAGE fingerprints (dockPage, denied, dockPageEn) were re-recorded for the new look (administration tokens); every DATA fingerprint (live, pick, refusals) is still the 2.1 one.
+// 2.6.2 (R33): dockPage and dockPageEn re-recorded for three shorter dock texts (dock_updated, dock_empty_hint, dock_rm_intro); the data fingerprints are untouched.
 export const GOLDEN = {
   "dockStatus": 200,
   "dockCsp": "default-src 'none'; script-src 'nonce-N'; style-src 'nonce-N'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
-  "dockPage": "358a23276fe637993666d012ae8bf335",
+  "dockPage": "95379a622577bd8048c04c0fcfd1d0da",
   "denied": [
     403,
     "7297c6e8aceb143bfaa373ef120fcf06"
@@ -66,5 +67,5 @@ export const GOLDEN = {
       "startedAt": 1792841400000
     }
   },
-  "dockPageEn": "54048c6627c30ba79818674e51fef362"
+  "dockPageEn": "72a790b8dd870cfc3a8846cb951bd2b8"
 };

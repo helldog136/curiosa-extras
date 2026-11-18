@@ -162,7 +162,7 @@ test("migration SANS catégorie : les fiches sont créées, le dock continue (lu
   assert.ok(book.calls.some(([, m, a]) => m === "accounts" && Array.isArray(a.ids) && a.ids.length === 120));
   let blocks = await def.adminPanel(ctx, { query: {} });
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "finish"), "la dernière étape est un bouton : la catégorie se crée toute seule");
-  assert.match(blocks.find((b) => b.type === "markdown" && /fiches recopiées/.test(b.text)).text, /120 fiches recopiées.*« Cible de raid ».*créée toute seule/);
+  assert.match(blocks.find((b) => b.type === "markdown" && /fiches recopiées/.test(b.text)).text, /120 fiches recopiées.*« Cible de raid ».*créée si elle manque/);
   assert.ok(blocks.some((b) => b.type === "markdown" && /\*\*120\*\* chaînes Twitch : vos chaînes de la version 1/.test(b.text)));
   assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), "rien d'alarmant : c'est une étape");
   // la personne crée la catégorie dans le réglage (le cœur appelle createCategory POUR elle), puis l'enregistre
@@ -335,7 +335,7 @@ test("catégorie : choisie (réglage), « Cible de raid » par défaut (FR ou EN
   merged.book.admin.mergeCategories(merged.cat, old);
   assert.deepEqual(await source.resolveCategory(mctx), { id: merged.cat, label: "Cible de raid", how: "moved" });
   assert.deepEqual((await source.targets(mctx)).partners.map((p) => p.login), ["dave_tv"]);
-  assert.ok((await def.adminPanel(mctx, { query: {} })).some((b) => b.type === "banner" && /a été fusionnée dans « Cible de raid »/.test(b.text)));
+  assert.ok((await def.adminPanel(mctx, { query: {} })).some((b) => b.type === "markdown" && /a été fusionnée dans « Cible de raid »/.test(b.text)));
   assert.ok(merged.book.calls.some(([, m]) => m === "categoriesResolve"));
 });
 

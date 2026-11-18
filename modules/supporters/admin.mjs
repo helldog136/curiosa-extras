@@ -30,9 +30,9 @@ export async function panel(ctx, { query = {} } = {}) {
   if (pidOk(pid)) return personScreen(ctx, pid);
   if (/^[a-z0-9:_-]{1,120}$/.test(tier)) return tierScreen(ctx, tier);
   const snap = await D.snapshot(ctx, { fresh: true });
-  const out = [];
-  out.push(...statusBlocks(ctx, snap));
+  const t = ctx.t, out = [];
   out.push(...connectionBlocks(ctx, snap));
+  out.push({ type: "markdown", text: t("sumLine", S.summary(ctx, snap)) });
   out.push(...await listBlocks(ctx, snap, query));
   out.push(...tierBlocks(ctx, snap));
   out.push(...await contactsBlocks(ctx, snap));
@@ -43,37 +43,36 @@ export async function panel(ctx, { query = {} } = {}) {
 
 /* ───────────── 1. La connexion ───────────── */
 
-function statusBlocks(ctx, snap) {
-  const t = ctx.t, provider = R.providerOf(ctx), st = D.stateOf(snap), out = [];
-  const token = !!clean(ctx.setting("accessToken"), 600);
-  if (provider.mode !== "file" && !token) out.push({ type: "banner", tone: "warning", text: t("needToken"), href: "?tab=settings" });
-  else if (provider.mode === "pull" && st.syncCode && !["ok", "partial"].includes(st.syncCode)) out.push({ type: "banner", tone: "warning", text: t(`sync_${st.syncCode}`) });
-  if (P.flag(ctx.setting("publicPage"), false) !== true) out.push({ type: "banner", tone: "info", text: t("pageOff"), href: "?tab=settings" });
-  return out;
-}
-
+/**
+ * La connexion à la plateforme, en UNE carte (R33) : à configurer (code d'accès absent, ou plateforme « par notification » qui n'a encore rien envoyé : la mise en place
+ * est alors montrée), dégradée (la dernière actualisation a échoué, ou le service ne répond pas), configurée (une ligne). Un import de fichier n'a pas de connexion.
+ */
 function connectionBlocks(ctx, snap) {
-  const t = ctx.t, provider = R.providerOf(ctx), st = D.stateOf(snap), out = [];
+  const t = ctx.t, provider = R.providerOf(ctx), st = D.stateOf(snap);
+  if (provider.mode === "file") return [];
   const token = !!clean(ctx.setting("accessToken"), 600);
-  out.push({ type: "heading", text: t("connTitle", { platform: R.say(ctx, provider.label) }) });
-  out.push({ type: "markdown", text: R.say(ctx, provider.what) });
-  const steps = R.say(ctx, provider.steps);
-  const list = Array.isArray(steps) ? steps : [];
-  list.forEach((text, i) => {
-    out.push({ type: "markdown", text: `**${i + 1}.** ${text}` });
-    if (provider.mode === "push" && i + 1 === (provider.webhookStep ?? 1)) out.push({ type: "copy", label: t("webhookLabel"), text: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}/m/${ctx.instance.key}/${provider.id}` });
-  });
-  if (provider.mode !== "file") out.push({ type: "markdown", text: token ? t("tokenSaved") : t("tokenMissing") });
-  const summary = S.summary(ctx, snap);
-  if (provider.mode === "pull") {
-    if (st.syncedAt) out.push({ type: "markdown", text: t("lastRefresh", { when: when(ctx, st.syncedAt), n: st.syncCount ?? 0 }) });
-    out.push({ type: "netHealth", items: [{ host: provider.hosts[0], label: R.say(ctx, provider.label), ...(st.syncedAt ? { lastGoodAt: new Date(st.syncedAt).toISOString() } : {}) }] });
-    if (can(ctx, RIGHT_MANAGE)) out.push({ type: "adminForm", action: "refresh", submitLabel: t("refreshButton"), fields: [{ name: "go", kind: "hidden", value: "1" }] });
-  } else if (provider.mode === "push") {
-    out.push({ type: "markdown", text: st.eventAt ? t("lastEvent", { when: when(ctx, st.eventAt) }) : t("noEventYet") });
+  const platform = R.say(ctx, provider.label), title = t("connTitle", { platform }), edit = { href: "?tab=settings" };
+  const setup = () => {
+    const steps = R.say(ctx, provider.steps);
+    const blocks = [{ type: "markdown", text: R.say(ctx, provider.what) }];
+    (Array.isArray(steps) ? steps : []).forEach((text, i) => {
+      blocks.push({ type: "markdown", text: `**${i + 1}.** ${text}` });
+      if (provider.mode === "push" && i + 1 === (provider.webhookStep ?? 1)) blocks.push({ type: "copy", label: t("webhookLabel"), text: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}/m/${ctx.instance.key}/${provider.id}` });
+    });
+    return blocks;
+  };
+  if (!token) return [{ type: "connection", id: "platform", title, state: "notConfigured", reason: t("reasonToken"), primary: { label: t("setToken"), ...edit }, setup: setup() }];
+  if (provider.mode === "push") {
+    if (!st.eventAt) return [{ type: "connection", id: "platform", title, state: "notConfigured", reason: t("noEvent", { platform }), setup: setup() }];
+    return [{ type: "connection", id: "platform", title, state: "configured", summary: t("sumPush", { platform, when: when(ctx, st.eventAt) }), edit }];
   }
-  out.push({ type: "markdown", text: t("sumLine", summary) });
-  return out;
+  const refresh = can(ctx, RIGHT_MANAGE) ? { label: t("refreshButton"), action: "refresh" } : null;
+  const net = [{ host: provider.hosts[0], label: platform, ...(st.syncedAt ? { lastGoodAt: new Date(st.syncedAt).toISOString() } : {}) }];
+  if (st.syncCode && !["ok", "partial"].includes(st.syncCode)) {
+    const fixCode = ["token", "scope", "none"].includes(st.syncCode);
+    return [{ type: "connection", id: "platform", title, state: "degraded", reason: t(`sync_${st.syncCode}`), primary: fixCode || !refresh ? { label: t("fixToken"), ...edit } : refresh, edit, menu: refresh && fixCode ? [refresh] : [] }];
+  }
+  return [{ type: "connection", id: "platform", title, state: "configured", summary: st.syncedAt ? t("sumPull", { platform, n: st.syncCount ?? 0, when: when(ctx, st.syncedAt) }) : t("sumPullNever", { platform }), edit, menu: refresh ? [refresh] : [], net }];
 }
 
 /* ───────────── 2. La liste ───────────── */
@@ -150,8 +149,7 @@ async function personScreen(ctx, pid) {
   if (P.flag(ctx.setting("publicPage"), false) !== true) out.push({ type: "banner", tone: "warning", text: t("linkNeedsPage"), href: "?tab=settings" });
   const link = await O.consentLink(ctx, pid);
   if (link.ok) out.push({ type: "copy", label: t("linkLabel"), text: link.url });
-  out.push({ type: "adminForm", action: "personRenew", submitLabel: t("linkRenew"), fields: [{ name: "pid", kind: "hidden", value: pid }], title: t("linkRenewTitle") });
-  out.push({ type: "heading", text: t("actionsTitle") });
+  out.push({ type: "adminForm", action: "personRenew", submitLabel: t("linkRenew"), fields: [{ name: "pid", kind: "hidden", value: pid }] });
   if (P.consentState(p) === "pending") {
     out.push({ type: "markdown", text: t("approveIntro", { pseudo: p.consent.pseudo }) });
     out.push({ type: "adminForm", action: "personApprove", submitLabel: t("approveYes"), fields: [{ name: "pid", kind: "hidden", value: pid }, { name: "approve", kind: "hidden", value: "1" }] });
@@ -200,10 +198,8 @@ async function tierScreen(ctx, k) {
 
 async function contactsBlocks(ctx, snap) {
   const t = ctx.t, out = [{ type: "heading", text: t("contactsTitle") }];
-  out.push({ type: "markdown", text: t("contactsIntro") });
   const book = await C.providers(ctx);
   if (!book.length) {
-    out.push({ type: "markdown", text: t("contactsAbsent") });
     out.push({ type: "suggestInstall", service: C.SERVICE, min: 2, reason: t("suggestReason") });
     return out;
   }

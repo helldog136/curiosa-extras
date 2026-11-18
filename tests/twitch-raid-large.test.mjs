@@ -504,30 +504,32 @@ test("admin : 2 000 chaînes dans Contacts → compteur, mode, lien vers Contact
 });
 
 
-test("admin : la phrase du mode dit où on en est (FR et EN), l'avertissement « Nouvelle adresse » est clair pour tout le monde", async () => {
-  const text = (blocks, tone) => blocks.filter((b) => b.type === "banner" && b.tone === tone).map((b) => b.text).join("|");
-  const r = text(await def.adminPanel(mkList(612), { query: {} }), "info");
-  assert.match(r, /Vous avez 612 chaînes : le dock propose un bouton « au hasard » plutôt que la liste complète\. Jusqu'à 500 chaînes il montre toutes celles qui sont en direct\./); assert.match(r, /100 chaînes à la fois/);
-  assert.match(text(await def.adminPanel(mkList(40), { query: {} }), "info"), /Vous avez 40 chaînes : le dock montre toutes celles qui sont en direct\. Au-delà de 500 chaînes/);
-  const e = text(await def.adminPanel(mkList(612, { locale: "en", messages: { ...en } }), { query: {} }), "info");
-  assert.match(e, /You have 612 channels: the dock offers a “random” button rather than the full list\. Up to 500 channels/);
+test("admin : seul le passage au tirage au hasard est dit (FR et EN), jamais la vue complète ; l'avertissement « Nouvelle adresse » est clair pour tout le monde", async () => {
+  const text = (blocks) => blocks.filter((b) => b.type === "markdown").map((b) => b.text).join("|");
+  const r = text(await def.adminPanel(mkList(612), { query: {} }));
+  assert.match(r, /Votre liste dépasse 500 chaînes : le dock propose un bouton « au hasard » à la place de la liste\. Twitch ne permet de vérifier que 100 chaînes à la fois\./);
+  assert.doesNotMatch(text(await def.adminPanel(mkList(40), { query: {} })), /dock montre toutes celles qui sont en direct|Au-delà de 500/, "vue complète : le comportement habituel n'est pas redit");
+  const e = text(await def.adminPanel(mkList(612, { locale: "en", messages: { ...en } }), { query: {} }));
+  assert.match(e, /Your list has more than 500 channels: the dock offers a “random” button instead of the list\./);
   const blocks = await def.adminPanel(mkList(3), { query: {} });
+  assert.equal(blocks.some((b) => b.type === "banner" && b.tone === "info"), false, "aucun encadré d'information sans action");
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
-  assert.match(renew.columns[0], /coupe l'accès à tout le monde/); assert.match(renew.rows[0][0], /cesse de marcher tout de suite pour tout le monde/); assert.match(renew.rowActions[0].confirm, /POUR PERSONNE/);
+  assert.match(renew.columns[0], /coupe l'accès à tout le monde/); assert.match(renew.rows[0][0], /l'ancienne cesse de marcher pour tout le monde/); assert.match(renew.rowActions[0].confirm, /POUR PERSONNE/);
   assert.ok(renew.rowActions[0].danger);
-  assert.match(blocks.find((b) => b.type === "markdown" && /Docks de navigateur/.test(b.text)).text, /Cette adresse ouvre votre dock à toute personne qui l'a/);
-  assert.match(fr.renewed, /ne marche plus pour personne/);
+  assert.match(blocks.find((b) => b.type === "markdown" && /ouvre votre dock/.test(b.text)).text, /Cette adresse ouvre votre dock à toute personne qui l'a/);
+  assert.match(blocks.find((b) => b.type === "html" && /Docks de navigateur/.test(b.html)).html, /<details><summary>Ajouter le dock dans OBS<\/summary>/, "les étapes OBS sont repliées");
+  assert.match(fr.renewed, /l'ancienne ne marche plus/);
 });
 
 
 test("admin « Voir qui est en direct » : vue complète avec bandeau partiel ; au hasard : un essai (compté dans le plafond)", async () => {
   const ctx = mkList(350); api.liveSet = new Set([name(1)]); api.failWhen = (w) => w.includes(name(150));
-  assert.match((await act(ctx, "check")).ok, /En direct maintenant : CHAINE_0001\. Attention : certaines chaînes n'ont pas pu être vérifiées cette fois \(non vérifiées : 100\)/);
+  assert.match((await act(ctx, "check")).ok, /En direct maintenant : CHAINE_0001\. Non vérifiées : 100 chaînes\./);
   api = fakeApi(); api.liveSet = new Set([name(1), name(400), name(650)]);
   const big2 = mkList(700);
   let r; for (let i = 0; i < 5; i++) { search.resetSearch(); r = await act(big2, "check"); if (r.ok && /est en direct/.test(r.ok)) break; }
   assert.match(r.ok, /Essai au hasard : CHAINE_/);
-  api.liveSet = new Set(); search.resetSearch(); assert.match((await act(big2, "check")).ok, /personne n'a été trouvé en ligne/);
+  api.liveSet = new Set(); search.resetSearch(); assert.match((await act(big2, "check")).ok, /Personne en ligne trouvé lors de cet essai au hasard/);
 });
 
 
@@ -548,9 +550,9 @@ test("vie privée : le dock n'expose ni notes, ni secret, ni identifiant de fich
   for (const t of seen) { assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note"); assert.ok(!t.includes(`"${ids[3]}"`), "aucun identifiant de fiche"); }
   for (const t of seen.slice(0, -2)) if (!t.includes("<script")) assert.ok(!t.includes(secret.slice(0, 12)) || t.length < 0, "le secret ne revient jamais dans les données");
   assert.ok(/une minute/.test(manifest.privacy.fr) && /one minute/.test(manifest.privacy.en) && /Contacts/.test(manifest.privacy.fr) && /adresse/.test(manifest.privacy.fr));
-  assert.equal(manifest.version, "2.6.1");
+  assert.equal(manifest.version, "2.6.2");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "manage_link", "dock_nr_category_gone", "dock_nr_contacts_missing"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "manage_link", "dock_nr_category_gone", "dock_nr_contacts_missing"]) assert.ok(fr[k] && en[k], k);
 });
 
 
