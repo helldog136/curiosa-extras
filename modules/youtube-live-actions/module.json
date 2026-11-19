@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.6",
+  "minCore": "0.36.0",
   "id": "youtube-live-actions",
   "name": {
     "fr": "Actions du live YouTube",
     "en": "YouTube live actions"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "adminMenu": "Réseaux.YouTube",
   "platform": "youtube",
   "description": {
@@ -201,8 +201,8 @@
         "en": "YouTube channel"
       },
       "help": {
-        "fr": "La chaîne dont on lit le direct. Avec une seule chaîne installée, il n'y a rien à choisir.",
-        "en": "The channel whose live is read. With only one channel installed, there is nothing to choose."
+        "fr": "La chaîne dont on lit le direct.",
+        "en": "The channel whose live is read."
       }
     },
     {
@@ -253,8 +253,8 @@
         "en": "Read the chat even without Home Assistant (OBS alerts only)"
       },
       "help": {
-        "fr": "Sans Home Assistant, rien ne se déclenche chez vous. Cochez si vous voulez seulement les alertes à l'écran : le chat est alors lu (même limite du jour de YouTube) et les dons sont notés « rien à jouer » dans le journal.",
-        "en": "Without Home Assistant, nothing happens at your place. Tick this if you only want on-screen alerts: the chat is then read (same YouTube daily limit) and donations are logged as “nothing to play”."
+        "fr": "Pour seulement afficher les alertes à l'écran. Le chat est lu (même limite du jour) ; le journal note « Affiché en alerte seulement ».",
+        "en": "To only show on-screen alerts. The chat is read (same daily allowance); the log notes “Shown as an alert only”."
       }
     },
     {
@@ -282,8 +282,8 @@
         }
       ],
       "help": {
-        "fr": "Un don ne peut pas être remboursé : si Home Assistant refuse le message (mot interdit, lien…), rien d'autre n'est perdu. Les lumières et les autres règles jouent normalement.",
-        "en": "A donation cannot be refunded: if Home Assistant refuses the message (banned word, link…), nothing else is lost. The lights and the other rules play as usual."
+        "fr": "Si Home Assistant refuse le message (mot interdit, lien…), les lumières et les autres règles jouent quand même.",
+        "en": "If Home Assistant refuses the message (banned word, link…), the lights and the other rules still play."
       }
     },
     {
@@ -310,8 +310,8 @@
         "en": "Read the chat at most every (seconds)"
       },
       "help": {
-        "fr": "Entre 5 et 60. Plus c'est rapide, plus la limite du jour de YouTube se consomme vite : à 15 secondes, environ 12 % de la limite par heure de direct. YouTube peut demander d'aller plus lentement : on obéit.",
-        "en": "Between 5 and 60. The faster, the quicker YouTube's daily limit is used: at 15 seconds, about 12% of the limit per hour of live. YouTube may ask to go slower: we obey."
+        "fr": "Entre 5 et 60. À 15 secondes, la lecture consomme 12 % de la limite du jour de YouTube par heure de direct. Si YouTube demande d'aller plus lentement, le site le fait.",
+        "en": "Between 5 and 60. At 15 seconds, reading uses 12% of YouTube's daily allowance per hour of live. If YouTube asks to go slower, the site does."
       }
     },
     {

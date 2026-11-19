@@ -15,24 +15,6 @@
     "mascot/admin.mjs statusLive",
     "testimonials/admin.mjs bannerPending",
     "twitch-bot/entry.mjs entry_unpublished",
-    "twitch-channel/analytics.mjs live_now",
-    "twitch-channel/analytics.mjs live_since",
-    "twitch-channel/analytics.mjs live_starting",
-    "videos/admin.mjs bannerMissing",
-    "youtube-connector/index.mjs acc_none",
-    "youtube-connector/index.mjs acc_write_idle",
-    "youtube-connector/index.mjs ctx.t(c.pending.wantWrite ? \"acc_pending_write\" : \"acc_pendi",
-    "youtube-connector/index.mjs ctx.t(c.write ? \"acc_connected_write\" : \"acc_connected_read\"",
-    "youtube-connector/index.mjs ctx.t(wanted ? \"acc_ready_write\" : \"acc_ready\")",
-    "youtube-connector/index.mjs key_ok",
-    "youtube-connector/index.mjs last_${c.last.code}",
-    "youtube-live-actions/admin.mjs house_ok",
-    "youtube-live-actions/admin.mjs house_unpaired",
-    "youtube-live-actions/admin.mjs st_idle",
-    "youtube-live-actions/admin.mjs st_no_bridge",
-    "youtube-live-actions/admin.mjs st_no_channel",
-    "youtube-live-actions/admin.mjs st_no_chat",
-    "youtube-live-actions/admin.mjs st_reading",
-    "youtube-live-actions/admin.mjs st_starting"
+    "videos/admin.mjs bannerMissing"
   ]
 }

@@ -10,7 +10,7 @@ import { world, EV, TYPES, NOW, es, S, P, L, D, mod, manifest, en } from "./help
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { makeTempDir } from "./helpers/tmp.mjs";
 import { publishedTags, extractRelease } from "./helpers/hotUpdate.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const REPO = path.resolve(new URL("..", import.meta.url).pathname);
 const TAG = "v1.94.0";

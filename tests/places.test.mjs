@@ -30,8 +30,8 @@ const TWITCH = {
   "alerts-overlay": ["1.21.0", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.24.0", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.4.0", { main: "live.rewards.home" }],
-  "twitch-connector": ["1.7.1", { main: "networks.twitch" }],
-  "twitch-channel": ["2.5.1", { main: "networks.twitch", stats: "networks.stats" }],
+  "twitch-connector": ["1.8.0", { main: "networks.twitch" }],
+  "twitch-channel": ["2.6.0", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.2", { list: "live.raid.list", featured: "live.raid.featured" }],
 };
 /** Every other module with settings or an admin panel (1.100.0): version after migration, and its sections (id → place). */
@@ -93,11 +93,13 @@ const ROLLOUT = {
   "videos": ["1.2.1", { main: "content.videos", shelves: "content.videos.shelves" }],
   "x-twitter": ["1.2.1", { main: "networks.accounts" }],
   "youtube-channel": ["1.5.1", { main: "networks.youtube", stats: "networks.stats" }],
-  "youtube-connector": ["1.4.0", { main: "networks.youtube" }],
-  "youtube-live-actions": ["1.2.0", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
+  "youtube-connector": ["1.5.0", { main: "networks.youtube" }],
+  "youtube-live-actions": ["1.3.0", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
 };
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
+// R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
+const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
@@ -256,6 +258,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     assert.ok(nowCore === oldCore || nowCore === "0.36.0", `${id}: minCore only moves for the connection block (0.36.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
     if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
+    if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
     assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);
     // What an older core needs to keep showing the module in the same place.

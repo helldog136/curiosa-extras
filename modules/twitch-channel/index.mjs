@@ -349,30 +349,23 @@ export default {
   },
 
   async adminPanel(ctx) {
-    const blocks = [];
     const st = await connectorState(ctx);
     if (!st.present) {
-      // Sans Connecteur : bouton et lien seulement (aucun appel à Twitch) ; le cœur propose d'installer un module qui offre le service, s'il en existe un.
-      return [
-        { type: "banner", tone: "warning", text: ctx.t("noConnector") },
-        { type: "suggestInstall", service: connect.SERVICE, min: 3, reason: ctx.t("suggestReason") },
-        ...(await adoptedBlocks(ctx)),
-      ];
+      // Without the Connector: one block that says so and offers to install it (the core proposes a module that offers the service, if there is one).
+      return [{ type: "connection", id: "twitch", title: ctx.t("conn_title"), summary: "", state: "notConfigured", reason: ctx.t("noConnector"), setup: [{ type: "suggestInstall", service: connect.SERVICE, min: 3, reason: ctx.t("suggestReason") }] }];
     }
-    const h = await hand.retry(ctx);
-    if (h?.state === "conflict") blocks.push({ type: "banner", tone: "warning", text: ctx.t("handover_conflict") });
-    else if (h?.state === "pending" && h.reason === "incomplete") blocks.push({ type: "banner", tone: "warning", text: ctx.t("handover_incomplete") });
-    blocks.push(...(await adoptedBlocks(ctx)));
+    const handover = await hand.retry(ctx);
     const channel = await channelOf(ctx);
-    if (!LOGIN.test(channel)) return blocks;
+    if (!LOGIN.test(channel)) return [];
     await register(ctx, channel);
+    const carried = !text(ctx.setting("channel")) && !!text((await firstDoc(ctx, hand.ADOPTED))?.data?.channel);
     const tracking = ctx.setting("trackStats") === true;
     const found = tracking ? await statsOf(ctx) : null;
     const results = found?.results ?? [];
-    const connection = await connect.panel(ctx, channel, async () => results);
-    if (!tracking) return [...blocks, ...connection];
+    const connection = await connect.panel(ctx, channel, async () => results, { carried, handover });
+    if (!tracking) return connection;
     const connected = !!results.find((r) => r.metric === "followers" && !r.result.error);
-    return [...blocks, ...connection, ...(await analytics.panel(ctx, found?.creds ?? (await credentials(ctx)), connected))];
+    return [...connection, ...(await analytics.panel(ctx, found?.creds ?? (await credentials(ctx)), connected))];
   },
   adminActions: {
     async forgetAdopted(ctx) {
@@ -384,11 +377,3 @@ export default {
     async eraseLive(ctx) { await live.eraseAll(ctx); return { ok: ctx.t("live_erased"), redirect: "?" }; },
   },
 };
-
-/** Une chaîne reprise d'un autre module : signalée (jamais une valeur), « oublier » rend la main au seul réglage. */
-async function adoptedBlocks(ctx) {
-  const a = (await firstDoc(ctx, hand.ADOPTED))?.data ?? {};
-  if (!text(a.channel) || text(ctx.setting("channel"))) return [];
-  // One word in a table (the detail is a tooltip); forgetting is a discreet, confirmed row action, not a big button.
-  return [{ type: "table", columns: [ctx.t("adopted_col")], pageSize: 0, rows: [[{ text: ctx.t("adopted_state"), badge: "info", title: ctx.t("adopted_tip") }]], rowIds: ["adopted"], rowActions: [{ label: ctx.t("forget"), action: "forgetAdopted", confirm: ctx.t("forget_confirm"), danger: true }] }];
-}

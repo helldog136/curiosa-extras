@@ -9,6 +9,7 @@ const version = new URL(import.meta.url).search;
 const helix = await import(new URL(`./helix.mjs${version}`, import.meta.url).href);
 
 export const SERVICE = "twitch.api";
+const SETTINGS_TAB = "?tab=settings";
 export const CALLBACK = "oauth/callback";
 const RETURN_TO = /^\/admin\/instances\/[A-Za-z0-9_-]{1,64}$/;
 export const slotOf = (v) => (v === "bot" ? "bot" : "main");
@@ -63,13 +64,9 @@ export async function callback(request, ctx, channelOf) {
   return back(ctx, v.returnTo);
 }
 
-/* ───────────── Panneau : état, bouton ───────────── */
+/* ───────────── Panneau : un bloc « connexion » ───────────── */
 
 const sameDay = (iso, ctx) => { try { return new Date(iso).toLocaleDateString(ctx.locale, { dateStyle: "long" }); } catch { return String(iso).slice(0, 10); } };
-const statMessage = (ctx, r) => (r.error === "config" ? ctx.t(r.reason === "affiliate" ? "err_config_affiliate" : "err_config_credentials") : r.error === "auth" && ["renew", "scope", "denied"].includes(r.reason) ? ctx.t(`err_auth_${r.reason}`) : ctx.t(`err_${r.error}`));
-const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-/** Le bouton « Connecter ma chaîne Twitch » : un lien (adresse donnée par le Connecteur, vérifiée : toujours id.twitch.tv en https) habillé aux couleurs de l'administration. */
-const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
 const twitchLink = (u) => typeof u === "string" && /^https:\/\/id\.twitch\.tv\/oauth2\/authorize\?/.test(u);
 
 /** Déclare au Connecteur les autorisations voulues par CETTE chaîne (suivi des statistiques) ; idempotent. */
@@ -78,53 +75,50 @@ export async function declare(ctx, channel) {
   return call(ctx, "wantScopes", { channel, consumer: ctx.instance.key, slot: "main", scopes, returnTo: adminPage(ctx) });
 }
 
-/** The connected account and, in a discreet menu, « Disconnect » (confirmed: it says what stops). Never a big button. */
-const accountRow = (ctx, acc, channel, badge) => ({
-  type: "table", columns: [ctx.t("col_account")], pageSize: 0, rowIds: ["main"],
-  rows: [[{ text: acc.login ?? channel, badge, ...(acc.connectedAt ? { title: ctx.t("connected", { login: acc.login ?? channel, date: sameDay(acc.connectedAt, ctx) }) } : {}) }]],
-  rowActions: [{ label: ctx.t("disconnect"), action: "disconnect", confirm: ctx.t("disconnect_confirm"), danger: true }],
-});
-
 /**
- * Blocs de connexion ; `getStats` : [{ metric, result }] (cache) pour la liste des chiffres, appelée seulement une fois connecté.
- * Rend [] quand il n'y a rien à connecter (ni statistiques suivies, ni autorisation demandée par un autre module).
+ * The connection of the channel to Twitch: ONE block of the core (`connection`), in the state that tells what the person can do now. `getStats`: [{ metric, result }] (cache),
+ * read only once connected. Returns [] when there is nothing to connect (no statistics followed, no permission asked by another module) and nothing carried over.
+ * `carried`: the channel comes from another module (the setting is empty): it is named in the summary and forgotten from the menu. `handover`: the state of the move to the Connector.
  */
-export async function panel(ctx, channel, getStats) {
+export async function panel(ctx, channel, getStats, { carried = false, handover = null } = {}) {
   const tracking = ctx.setting("trackStats") === true;
   await declare(ctx, channel);
   const r = await call(ctx, "account", { channel, slot: "main" });
-  if (!r.ok || !r.value?.ok) return [];
-  const acc = r.value;
-  const extras = (acc.wanted ?? []).filter((s) => !STATS.has(s));
-  if (!tracking && !extras.length) return [];
-  const out = [{ type: "heading", text: ctx.t("conn_title") }];
-  if (acc.result) out.push({ type: "banner", tone: "warning", text: ctx.t(`res_${acc.result.code}`, { login: acc.result.login ?? "" }) });
+  const acc = r.ok && r.value?.ok ? r.value : null;
+  const extras = (acc?.wanted ?? []).filter((s) => !STATS.has(s));
+  const t = ctx.t;
+  const forget = carried ? [{ label: t("forget"), action: "forgetAdopted", confirm: t("forget_confirm"), danger: true }] : [];
+  // "Modify" leads to the settings tab: the channel and what is followed are settings of the module
+  const head = { type: "connection", id: "twitch", title: t("conn_title"), summary: "", edit: { href: SETTINGS_TAB } };
+  const bad = handover?.state === "conflict" ? t("handover_conflict") : handover?.state === "pending" && handover.reason === "incomplete" ? t("handover_incomplete") : "";
+  if (!acc && bad) return [{ ...head, state: "notConfigured", reason: bad }];
+  if (!acc || (!tracking && !extras.length && !bad)) return carried ? [{ ...head, state: "configured", summary: t("channel_summary", { channel }), menu: forget }] : [];
   const st = acc.status;
-  if (st === "ok") {
-    const stats = await getStats();
-    if (extras.length) out.push({ type: "markdown", text: ctx.t("extras_note") });
-    if (stats.length) out.push({ type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows: stats.map(({ metric, result: x }) => [ctx.t(`stat_${metric}`), x.error ? statMessage(ctx, x) : x.value.toLocaleString(ctx.locale)]) });
-    // Twitch refuses what the connector believed fine (a permission lost, an authorization withdrawn): the way out is right here, not "somewhere else".
-    if (stats.some(({ result: x }) => x.error === "auth")) {
-      out.push({ type: "banner", tone: "warning", text: ctx.t("frozen") });
-      const again = await call(ctx, "connectLink", { channel, slot: "main", force: true, returnTo: adminPage(ctx) });
-      if (twitchLink(again.ok ? again.value?.url : null)) out.push(button(ctx.t("authorizeAgain"), again.value.url));
-    }
-    out.push(accountRow(ctx, acc, channel, "success"));
-    return out;
+  const since = acc.health?.since ? { since: new Date(acc.health.since).toISOString() } : {};
+  const url = async (force) => { const l = await call(ctx, "connectLink", { channel, slot: "main", ...(force ? { force: true } : {}), returnTo: adminPage(ctx) }); return l.ok ? l.value ?? {} : {}; };
+  // not connected yet: the reason (what the last attempt said, the move to the Connector, or why Twitch must ask) and THE button
+  if (st === "none") {
+    const v = await url(false);
+    const why = acc.result ? t(`res_${acc.result.code}`, { login: acc.result.login ?? "" }) : bad || t("conn_none");
+    if (twitchLink(v.url)) return [{ ...head, state: "notConfigured", reason: why, primary: { label: t("connect"), href: v.url }, setup: [{ type: "markdown", text: t(tracking ? "conn_why" : "conn_why_chat") }] }];
+    if (v.reason === "https") return [{ ...head, state: "notConfigured", reason: t("needHttps") }];
+    if (v.reason === "not_ready") return [{ ...head, state: "notConfigured", reason: t("notReadyConnector"), ...(RETURN_TO.test(acc.adminPath ?? "") ? { primary: { label: t("open_connector"), href: acc.adminPath } } : {}) }];
+    if (v.reason === "nothing") return [{ ...head, state: "notConfigured", reason: t("chooseOne") }];
+    return [{ ...head, state: "notConfigured", reason: why }];
   }
-  if (st === "reconnect") out.push({ type: "banner", tone: "warning", text: ctx.t("reconnect") });
-  else if (st === "more") out.push({ type: "banner", tone: "warning", text: ctx.t("morePermission") });
-  else out.push({ type: "markdown", text: ctx.t(tracking ? "conn_why" : "conn_why_chat") });
-  if (extras.length && st !== "none") out.push({ type: "markdown", text: ctx.t("extras_note") });
-  const link = await call(ctx, "connectLink", { channel, slot: "main", returnTo: adminPage(ctx) });
-  const v = link.ok ? link.value ?? {} : {};
-  if (twitchLink(v.url)) out.push(button(ctx.t(st === "none" ? "connect" : "authorizeAgain"), v.url));
-  else if (v.reason === "https") out.push({ type: "banner", tone: "warning", text: ctx.t("needHttps") });
-  else if (v.reason === "not_ready") out.push({ type: "banner", tone: "warning", text: ctx.t("notReadyConnector"), ...(RETURN_TO.test(acc.adminPath ?? "") ? { href: acc.adminPath } : {}) });
-  else if (v.reason === "nothing") out.push({ type: "banner", tone: "warning", text: ctx.t("chooseOne") });
-  if (st !== "none") out.push(accountRow(ctx, acc, channel, "warning"));
-  return out;
+  const stats = st === "ok" ? await getStats() : [];
+  const figures = stats.flatMap(({ metric, result: x }) => (x.error ? (x.error === "config" && x.reason === "affiliate" ? [t("err_config_affiliate")] : []) : [t(`stat_line_${metric}`, { n: x.value.toLocaleString(ctx.locale) })]));
+  const summary = [carried ? t("channel_summary", { channel }) : "", t("connected", { login: acc.login ?? channel, date: acc.connectedAt ? sameDay(acc.connectedAt, ctx) : "" }), ...figures].filter(Boolean).join(" · ");
+  const base = { ...head, summary, menu: [{ label: t("disconnect"), action: "disconnect", confirm: t("disconnect_confirm"), danger: true }, ...forget] };
+  const again = async (force) => { const v = await url(force); return twitchLink(v.url) ? { primary: { label: t("authorizeAgain"), href: v.url } } : {}; };
+  if (st === "reconnect") return [{ ...base, state: "degraded", reason: acc.result ? t(`res_${acc.result.code}`, { login: acc.result.login ?? "" }) : t("reconnect"), ...since, ...(await again(false)) }];
+  if (st === "more") return [{ ...base, state: "degraded", reason: acc.result ? t(`res_${acc.result.code}`, { login: acc.result.login ?? "" }) : t("morePermission"), ...since, ...(await again(false)) }];
+  if (bad) return [{ ...base, state: "degraded", reason: bad, ...(handover.state === "conflict" ? await again(true) : RETURN_TO.test(acc.adminPath ?? "") ? { primary: { label: t("open_connector"), href: acc.adminPath } } : {}) }];
+  // connected: Twitch may still refuse what the connector believed fine (a permission lost, an authorization withdrawn): the way out is right here
+  if (stats.some(({ result: x }) => x.error === "auth")) return [{ ...base, state: "degraded", reason: t("frozen"), ...(await again(true)) }];
+  const down = stats.find(({ result: x }) => x.error === "network" || x.error === "rate");
+  if (down) return [{ ...base, state: "degraded", reason: t(`err_${down.result.error}`) }];
+  return [{ ...base, state: "configured" }];
 }
 
 /** Déconnecter la chaîne : le Connecteur révoque et efface. */

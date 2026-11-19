@@ -1,18 +1,18 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.36.0",
   "id": "twitch-connector",
   "name": {
     "en": "Twitch connector",
     "fr": "Connecteur Twitch"
   },
-  "version": "1.7.1",
+  "version": "1.8.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 10,
   "platform": "twitch",
   "description": {
-    "en": "Links your site to Twitch once for everything that touches Twitch. Guided setup in 5 minutes, with a “Copy” button.",
-    "fr": "Relie votre site à Twitch une seule fois pour tout ce qui touche à Twitch. Réglage guidé en 5 minutes, avec un bouton « Copier »."
+    "en": "Links your site to Twitch, once, for everything that uses Twitch.",
+    "fr": "Relie votre site à Twitch, une seule fois, pour tout ce qui utilise Twitch."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -63,33 +63,6 @@
   ],
   "settings": [
     {
-      "key": "appClientId",
-      "type": "text",
-      "optional": true,
-      "refersTo": "external",
-      "label": {
-        "en": "Client ID of your Twitch application",
-        "fr": "Client ID de votre application Twitch"
-      },
-      "help": {
-        "en": "From dev.twitch.tv/console: the guide at the top of this page shows where. Leave empty if your site already filled it in for you.",
-        "fr": "Depuis dev.twitch.tv/console : le guide en haut de cette page montre où le trouver. Laissez vide s'il a été repris tout seul."
-      }
-    },
-    {
-      "key": "appSecret",
-      "type": "secret",
-      "optional": true,
-      "label": {
-        "en": "Secret of your Twitch application",
-        "fr": "Secret de votre application Twitch"
-      },
-      "help": {
-        "en": "Never shown again once saved. Leave empty if your site already filled it in for you.",
-        "fr": "Jamais réaffiché une fois enregistré. Laissez vide s'il a été repris tout seul."
-      }
-    },
-    {
       "key": "healthMail",
       "type": "boolean",
       "default": true,
@@ -103,6 +76,16 @@
       }
     }
   ],
+  "legacySettings": [
+    {
+      "key": "appClientId"
+    },
+    {
+      "key": "appSecret",
+      "secret": true
+    }
+  ],
+  "dataVersion": 2,
   "logEvents": [
     {
       "key": "connection.problem",
