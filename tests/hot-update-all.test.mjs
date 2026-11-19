@@ -128,6 +128,22 @@ const cache = new Map();
 const tmpRoot = makeTempDir("hot-update-all-");
 test.after(() => fs.rmSync(tmpRoot, { recursive: true, force: true }));
 
+/**
+ * Node's fetch (undici) feeds a multipart (FormData) request body from an unguarded async loop: cancelling the body reader closes the stream, the loop then
+ * enqueues into it and raises "ReadableStream is already closed" as an unhandled rejection (Node 24 blames the running test). The core's route probes post
+ * FormData bodies, and releases published before home-assistant 1.4.2 still cancel the reader of an oversized body. While an OLD release is replayed,
+ * cancelling therefore only releases the reader (what the current code does). Remove once no replayed release cancels a request body reader.
+ */
+async function withSafeBodyCancel(fn) {
+  const proto = ReadableStreamDefaultReader.prototype;
+  const original = proto.cancel;
+  proto.cancel = function cancelAsRelease() { this.releaseLock(); return Promise.resolve(); };
+  try { return await fn(); } finally {
+    await new Promise((resolve) => setTimeout(resolve, 50)); // let a body feeder that is still running finish before the original behaviour returns
+    proto.cancel = original;
+  }
+}
+
 const coreKit = async (name) => import(pathToFileURL(path.join(CORE, "testsupport", name)).href);
 
 test("modules à plusieurs fichiers serveur couverts par le rejeu", () => {
@@ -154,7 +170,7 @@ for (const id of multi) {
     t.diagnostic(label);
     // Fichiers dont un import statique est admis par la liste blanche : le rejeu ne les reproche pas non plus.
     const tolerated = new Set(info[id].graph.statics.filter((s) => ALLOWED_STATIC[`${id}/${s.file}`]).map((s) => path.normalize(path.join(path.dirname(s.file), s.spec))));
-    const r = await replayUpdate({ core, probes, oldDir, newDir: current, tmp: work, tolerated });
+    const r = await withSafeBodyCancel(() => replayUpdate({ core, probes, oldDir, newDir: current, tmp: work, tolerated }));
     if (r.oldBroken) { t.diagnostic(`ancienne version ignorée : ${r.oldBroken}`); return; }
     assert.deepEqual(r.problems, [], `${id} ${label}`);
     t.diagnostic(`${r.stats.files} fichiers rechargés, ${r.stats.oldCalls} appels avant (${r.stats.rows} enregistrements créés), ${r.stats.calls} appels après`);
