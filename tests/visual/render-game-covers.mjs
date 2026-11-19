@@ -53,7 +53,7 @@ const fetchFake = async (input) => {
 };
 const twitch = { status: () => ({ ready: true }), request: () => ({ ok: true, status: 200, json: { data: [{ id: "509658", name: "Hades", box_art_url: "https://static-cdn.jtvnw.net/ttv-boxart/509658-52x72.jpg" }] } }) };
 const mk = ({ rawgKey = "FAKE-KEY-0123456789", twitchOn = true, steam = true } = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: LOC, settings: { rawgKey, useSteam: steam }, logEvents: manifest.logEvents, services: twitchOn ? { "twitch.api": twitch } : {} });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: LOC, settings: { useSteam: steam }, legacy: { rawgKey }, logEvents: manifest.logEvents, services: twitchOn ? { "twitch.api": twitch } : {} });
   c.can = () => true;
   return c;
 };

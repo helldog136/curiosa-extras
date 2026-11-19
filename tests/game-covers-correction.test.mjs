@@ -62,7 +62,7 @@ const serve = () => {
   };
 };
 const makeCtx = () => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Covers", messages: en, locale: "en", settings: { rawgKey: KEY, useSteam: false }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents,
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Covers", messages: en, locale: "en", settings: { useSteam: false }, legacy: { rawgKey: KEY }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents,
     services: { "twitch.api": { status: () => ({ ready: true }), request: (a) => ({ ok: true, status: 200, json: { data: TWITCH_DB[String(a?.query?.query?.[0] ?? "").toLowerCase()] ?? [] } }) } } });
   c.can = () => true;
   return c;
@@ -314,6 +314,6 @@ test("a corrected cover that was never asked for shows 'not copied yet' (pending
 });
 
 test("manifest 1.3.2: a corrective version, nothing else added (no permission, no host)", () => {
-  assert.equal(manifest.version, "1.5.3");
+  assert.equal(manifest.version, "1.6.0");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
 });

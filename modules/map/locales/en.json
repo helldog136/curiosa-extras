@@ -112,10 +112,7 @@
   "statePublished": "Published",
   "stateDraft": "Draft",
   "stateAll": "All states",
-  "filterTitle": "Search my places",
-  "filterQ": "Word to look for",
-  "filterState": "State",
-  "filterGo": "Search",
+  "filterQ": "Search my places",
   "emptyAdmin": "No place. Add the first one with the form above.",
   "noMatch": "No place matches this search.",
   "checkOnOsm": "Check the position on OpenStreetMap",
@@ -214,5 +211,7 @@
   "reportFailed": "{n} lines refused:",
   "reportFull": "The maximum of {max} places is reached.",
   "reportMore": "{n} lines are left. Send the same file again: the start line {next} is already filled in.",
-  "exportLabel": "Download my places (CSV)"
+  "exportLabel": "Download my places (CSV)",
+  "moveUp": "Move up",
+  "moveDown": "Move down"
 }

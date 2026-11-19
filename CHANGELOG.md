@@ -4,6 +4,28 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.107.0 — 2026-11-19
+
+*In short: secrets (Discord address, Rawg code, platform access code) live behind "Edit" instead of a field; live search on the long lists; one switch per row where a verb button stood; fewer fields on the Calendar and Thanks wall forms.*
+
+### New
+
+- **Discord announcements, Game covers, Supporters.** Once set, the sending address, the access code and the platform code are no longer a field of the Settings tab: the card shows one line and one "Edit" button that opens a window ("Leave empty to keep the current one"). A value already saved is carried over by itself.
+- **FAQ, Videos, Directory, Supporters, Thanks wall, Testimonials, Map.** The lists have a live "Search" field (no button). Paged lists ask the server (needs core 0.38.0; FAQ needs 0.6.0).
+
+### Improvements
+
+- **YouTube live actions.** A rule's state is a switch; one visible action ("Edit", in a window) and the deletion in the "⋯" menu. Two fields of the simulation form no longer share a name with the rule form, so each label points to its own field.
+- **Directory.** Hiding a person is a switch in the one list of people (hidden people stay listed, switch off).
+- **FAQ.** One table for all published questions, with the category as a coloured column and quick filters.
+- **Calendar (manual).** Five fields visible; all-day, cancelled, repeat and skipped dates are folded; the list is searchable; "Planned" is no longer written on every row.
+- **Thanks wall.** Five settings visible; the second to sixth groups, the name style and the photos are folded.
+- **Testimonials, Map.** At most two visible actions per row, the others in the "⋯" menu. Videos: the add forms of categories and series no longer share field names.
+
+### Not done in this release
+
+- Calendar (online) keeps its address as a setting (the Planning migration installs it at its own core version): see the pull request.
+
 ## 1.106.0 — 2026-11-19
 
 *En bref : la liste de Contacts se recherche en direct sur tout le carnet (cœur 0.38) ; fin des « pour le moment » à l'écran ; le formulaire de règle des Actions du direct YouTube replie ses réglages rares.*

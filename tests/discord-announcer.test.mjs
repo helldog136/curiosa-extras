@@ -24,7 +24,8 @@ function mockFetch(handler = () => ({ ok: true, status: 204 })) {
   globalThis.fetch = async (url, init) => { const body = JSON.parse(init.body); calls.push({ url, body }); const r = handler(calls.length, body); return { ok: r.ok, status: r.status, statusText: "x", text: async () => r.text ?? "" }; };
   return calls;
 }
-const ctxWith = (topics, settings = {}) => fakeCtx({ key: "discord", messages: readJson("locales/en.json"), settings: { webhookUrl: HOOK, ...settings }, topics });
+// The sending address is no longer a setting: a site that still holds it as one hands it over (see "hand-over" below), so the tests start from that state.
+const ctxWith = (topics, { webhookUrl = HOOK, ...settings } = {}) => fakeCtx({ key: "discord", messages: readJson("locales/en.json"), settings, legacy: { webhookUrl }, topics });
 const entry = (title, path, publishedAt) => ({ title, path, publishedAt, source: { instance: "blog", module: "blog", name: "Blog" } });
 
 test("manifeste valide, réglages lus déclarés, parité en/fr, clés ctx.t existantes", () => {
@@ -131,13 +132,12 @@ test("connexion en trois états (R33) : à régler, réglée, dégradée après 
   assertConnectionStates({ notConfigured, configured, degraded });
   const only = (blocks) => blocks.filter((b) => b.type === "connection");
   assert.equal(only(notConfigured).length + only(configured).length + only(degraded).length, 3, "un seul bloc par état");
-  assert.equal(only(notConfigured)[0].primary, undefined, "the field is right below the guide: no button that leads to the tab already open");
+  assert.deepEqual(only(notConfigured)[0].primary, { label: "Add the address", href: "?edit=webhook" }, "the address is typed in a window");
   assert.match(only(notConfigured)[0].setup[0].text, /Integrations/, "la consigne n'existe que tant que l'adresse manque");
   assert.equal(only(configured)[0].setup, undefined);
   assert.equal(only(configured)[0].summary, "Site news and Twitch lives");
-  assert.equal(only(configured)[0].edit.href, "?tab=settings");
+  assert.equal(only(configured)[0].edit.href, "?edit=webhook");
   assert.equal(configured.some((b) => b.type === "table" || b.type === "heading"), false, "journal vide : ni titre ni tableau vide");
-  assert.equal(only(notConfigured)[0].tab, "settings", "the guide opens in the tab where the address is typed");
   assert.equal(only(configured)[0].tab, undefined);
   const row = degraded.find((b) => b.type === "table").rows[0];
   assert.equal(row[2], "failed (404) · 2 tries · Unknown Webhook", "no \"attempt(s)\", no dangling colon");
@@ -153,4 +153,36 @@ test("connexion en trois états (R33) : à régler, réglée, dégradée après 
   // Un envoi réussi après l'échec : redevenue réglée.
   await failed.api.store.add("log", { key: "k2", subject: "Annonce", ok: true, status: 204, error: null, attempts: 1, at: "2030-06-01T12:05:00Z" });
   assert.equal(only(await def.adminPanel(failed))[0].state, "configured");
+});
+
+test("the sending address lives in the store: handed over once from the former setting (written first, cleared after), never a field on the Settings tab", async () => {
+  const ctx = ctxWith({});
+  assert.equal(await mod.webhookOf(ctx), HOOK);
+  assert.deepEqual((await ctx.api.store.list("secret")).map((r) => r.data), [{ url: HOOK }]);
+  assert.deepEqual(ctx.calls.legacyCleared, ["webhookUrl"]);
+  assert.equal(await mod.webhookOf(ctx), HOOK, "second read: from the store");
+  assert.equal(manifestJson.settings.some((s) => s.key === "webhookUrl"), false);
+  assert.deepEqual(manifestJson.legacySettings, [{ key: "webhookUrl", secret: true }]);
+  assert.equal(manifestJson.places.some((p) => (p.settings ?? []).includes("webhookUrl")), false);
+});
+
+test("the window \"Edit\": the address shows as kept, an empty field keeps it, a wrong address is refused under the field, a good one replaces it", async () => {
+  const ctx = ctxWith({});
+  assert.equal((await def.adminPanel(ctx)).some((b) => b.type === "adminForm"), false, "closed by default: no field on the page");
+  const dialog = (await def.adminPanel(ctx, { query: { edit: "webhook" } })).find((b) => b.type === "adminForm");
+  assert.equal(dialog.presentation, "dialog");
+  assert.deepEqual([dialog.fields.length, dialog.fields[0].kind, dialog.fields[0].valueHint, dialog.fields[0].value], [1, "secret", "kept", undefined]);
+  assert.equal((await def.adminActions.saveWebhook(ctx, { webhookUrl: "" })).ok, "Address saved.");
+  assert.equal(await mod.webhookOf(ctx), HOOK);
+  const bad = await def.adminActions.saveWebhook(ctx, { webhookUrl: "https://evil.example/x" });
+  assert.match(bad.errors.webhookUrl, /starts with https:\/\/discord\.com/);
+  assert.equal(await mod.webhookOf(ctx), HOOK);
+  const NEW = "https://discord.com/api/webhooks/999/zzz";
+  assert.equal((await def.adminActions.saveWebhook(ctx, { webhookUrl: NEW })).redirect, "?");
+  assert.equal(await mod.webhookOf(ctx), NEW);
+  assert.equal((await ctx.api.store.list("secret")).length, 1, "one document");
+  const empty = ctxWith({}, { webhookUrl: "" });
+  const first = (await def.adminPanel(empty, { query: { edit: "webhook" } })).find((b) => b.type === "adminForm");
+  assert.equal(first.fields[0].valueHint, undefined, "nothing set: an empty field, no \"leave empty\" sentence");
+  assert.match((await def.adminActions.saveWebhook(empty, { webhookUrl: "" })).errors.webhookUrl, /Paste/);
 });

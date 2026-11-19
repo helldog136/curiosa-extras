@@ -83,7 +83,7 @@ const twitchService = () => ({
 });
 const makeCtx = (extra = {}) => {
   const { settings, services, ...rest } = extra;
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY, ...(settings ?? {}) }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents, services: { "twitch.api": twitchService(), ...(services ?? {}) }, ...rest });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: Object.fromEntries(Object.entries(settings ?? {}).filter(([k]) => k !== "rawgKey")), legacy: { rawgKey: settings && "rawgKey" in settings ? settings.rawgKey : KEY }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents, services: { "twitch.api": twitchService(), ...(services ?? {}) }, ...rest });
   c.can = () => true;
   return c;
 };
@@ -503,8 +503,7 @@ test("« Jaquettes gardées » : source en pastille écrite ET colorée, vignett
 
 test("réglages : tous avancés ou le code facultatif ; 7 réglages simples au plus ; aucun mot interdit ; la clé reste un secret facultatif", () => {
   const simple = manifest.settings.filter((s) => !s.advanced && !s.rare);
-  assert.ok(simple.length <= 7); assert.deepEqual(simple.map((s) => s.key), ["rawgKey"]);
-  assert.equal(manifest.settings.find((s) => s.key === "rawgKey").optional, true);
+  assert.ok(simple.length <= 7); assert.deepEqual(simple.map((s) => s.key), []);
   assert.deepEqual(manifest.settings.filter((s) => s.advanced).map((s) => s.key).sort(), ["refreshDays", "remoteFallback", "useSteam", "useTwitch"]);
   const days = manifest.settings.find((s) => s.key === "refreshDays");
   assert.deepEqual([days.default, days.min, days.max], [30, 1, 365]); assert.ok(days.unit.fr && days.example.fr);

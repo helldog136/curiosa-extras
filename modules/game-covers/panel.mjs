@@ -51,7 +51,16 @@ export async function render(ctx, { query } = {}) {
   const view = String(one(query?.voir) ?? "");
   const forgetAsk = String(one(query?.oublier) ?? "");
   if (view || forgetAsk) return tagged([...out, ...(await entryScreen(ctx, view || forgetAsk, forgetAsk ? "forget" : "view"))], SAVED_TAB);
-  return [...tagged(out, tab), ...tagged(await listScreen(ctx), "use"), ...tagged(await savedScreen(ctx), SAVED_TAB)];
+  return [...tagged(out, tab), ...tagged(await listScreen(ctx), "use"), ...tagged(one(query?.edit) === "key" ? await keyDialog(ctx) : [], "use"), ...tagged(await savedScreen(ctx), SAVED_TAB)];
+}
+
+/** La fenêtre « Modifier » : le code d'accès gratuit, montré comme réglé quand il l'est (jamais un champ vide qui cache une valeur). */
+async function keyDialog(ctx) {
+  const own = await rawg.ownKeyOf(ctx);
+  return [{
+    type: "adminForm", presentation: "dialog", action: "saveKey", cancelHref: "?", title: ctx.t("sources_title"), submitLabel: ctx.t("save_key"),
+    fields: [{ name: "rawgKey", label: ctx.t("key_label"), kind: "secret", example: ctx.t("key_example"), help: ctx.t("key_help"), ...(own ? { valueHint: "kept" } : {}) }],
+  }];
 }
 
 // ── La liste : clé, jaquettes à vérifier, choix gardés ─────────────────────────────────────────────────────────────────────
@@ -79,15 +88,15 @@ async function connectionBlocks(ctx) {
   const on = states.filter((s) => s.on);
   const down = on.filter((s) => s.down);
   const names = (list) => list.map((s) => srcName(s.source));
-  const title = ctx.t("sources_title"), edit = { href: "?tab=settings" };
+  const title = ctx.t("sources_title"), edit = { href: "?edit=key" };
   const menu = [
     ...(key ? [{ label: ctx.t("test_key"), action: "testKey" }] : []),
     ...(key && source === "adopted" ? [{ label: ctx.t("forget_key"), action: "forgetKey", confirm: ctx.t("forget_key_confirm"), danger: true }] : []),
   ];
   let block;
   if (states.some((s) => s.refused)) block = { state: "degraded", reason: ctx.t("status_refused"), primary: { label: ctx.t("fix_key"), ...edit } };
-  else if (!on.length) block = { state: "notConfigured", reason: ctx.t("none_available"), setup: [{ type: "markdown", text: ctx.t("guide") }] };
-  else if (down.length) block = { state: "degraded", reason: down.length === on.length ? ctx.t("outage") : ctx.t(down.length === 1 ? "source_down" : "sources_down", { list: names(down).join(", ") }), primary: key ? { label: ctx.t("test_key"), action: "testKey" } : { label: ctx.t("open_settings"), ...edit } };
+  else if (!on.length) block = { state: "notConfigured", reason: ctx.t("none_available"), primary: { label: ctx.t("add_key"), ...edit }, setup: [{ type: "markdown", text: ctx.t("guide") }] };
+  else if (down.length) block = { state: "degraded", reason: down.length === on.length ? ctx.t("outage") : ctx.t(down.length === 1 ? "source_down" : "sources_down", { list: names(down).join(", ") }), primary: key ? { label: ctx.t("test_key"), action: "testKey" } : { label: ctx.t("add_key"), ...edit } };
   else block = { state: "configured", summary: names(on).join(" · "), net: [{ host: "api.rawg.io", label: ctx.t("health_label") }, { host: "store.steampowered.com", label: ctx.t("health_label_steam") }] };
   return [{ type: "connection", id: "sources", title, ...block, ...(block.state === "notConfigured" ? {} : { edit, menu }) }];
 }
@@ -263,6 +272,17 @@ export const actions = {
     const result = await rawg.checkKey(ctx);
     if (result === "ok") return { ok: ctx.t("test_ok"), redirect: "?saved=tested" };
     return { error: ctx.t(`test_${String(result).replace("-", "_")}`) };
+  },
+  /** La fenêtre « Modifier » : un champ vide garde la clé actuelle ; une clé au mauvais format est refusée sous le champ. */
+  async saveKey(ctx, values) {
+    const typed = String(values?.rawgKey ?? "").trim();
+    const own = await rawg.ownKeyOf(ctx);
+    if (!typed && own) return { ok: ctx.t("key_saved"), redirect: "?" };
+    if (!rawg.isValidKey(typed)) return { errors: { rawgKey: ctx.t("err_key_format") } };
+    await fx.writeOne(ctx, COL.own, { key: typed, at: new Date().toISOString() });
+    await rawg.forgetState(ctx);
+    rawg.clearCache();
+    return { ok: ctx.t("key_saved"), redirect: "?" };
   },
   /** Oublie la clé reprise du site (celle des Réglages de cette page n'est pas touchée). */
   async forgetKey(ctx) {

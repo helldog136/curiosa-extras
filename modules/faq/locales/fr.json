@@ -138,5 +138,6 @@
   "linkOrderThemes": "Changer l'ordre des thèmes",
   "orderTitle": "Ordre : {name}",
   "orderHelp": "Cliquez sur « ↑ Haut » ou « ↓ Bas » pour déplacer une ligne. L'ordre est celui de la page publique.",
-  "orderDone": "Terminé"
+  "orderDone": "Terminé",
+  "linkOrderIn": "Changer l'ordre dans « {name} »"
 }

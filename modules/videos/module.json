@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.38.0",
   "id": "videos",
   "name": {
     "fr": "Vidéothèque",
     "en": "Video library"
   },
-  "version": "1.2.3",
+  "version": "1.3.0",
   "description": {
     "fr": "Une page de vidéos YouTube sans rien héberger : grille, catégories, recherche, séries à regarder dans l'ordre et partage.",
     "en": "A page of YouTube videos without hosting anything: grid, categories, search, series to watch in order and sharing."

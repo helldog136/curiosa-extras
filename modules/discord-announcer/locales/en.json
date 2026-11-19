@@ -18,10 +18,16 @@
   "liveDefault": "🔴 Live on {platform}: {title}",
   "notSet": "No sending address is set: nothing is sent.",
   "badAddress": "The sending address is not a valid Discord address.",
-  "setupSteps": "In Discord: channel settings, Integrations, then create a sending address. Paste it in “Discord channel sending address” below.",
+  "setupSteps": "In Discord: channel settings, Integrations, then create a sending address. Then choose “Add the address”.",
   "sumBase": "Site news and Twitch lives",
   "sumYoutube": "Site news, Twitch and YouTube lives",
   "lastFailed": "The last send failed.",
   "lastFailedCode": "The last send failed (code {status}).",
-  "resultTries": "{attempts} tries"
+  "resultTries": "{attempts} tries",
+  "addAddress": "Add the address",
+  "saveAddress": "Save the address",
+  "fieldAddress": "Discord channel sending address",
+  "fieldAddressExample": "https://discord.com/…/your-code",
+  "savedAddress": "Address saved.",
+  "errAddress": "Paste the sending address given by Discord, it starts with https://discord.com"
 }

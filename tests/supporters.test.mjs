@@ -129,7 +129,7 @@ test("Patreon : actualiser lit les membres actifs, leur palier (rang, jamais le 
   for (const p of people) { assert.equal(p.hidden, false); assert.equal(p.consent, null); assert.equal(p.approved, false); }
   const tiers = [...(await D.snapshot(ctx, { fresh: true })).tiers.values()].map((r) => r.data);
   assert.deepEqual(tiers.map((t) => [t.name, t.rank]).sort((a, b) => a[1] - b[1]), [["Petit", 1], ["Moyen", 2], ["Grand", 3]], "rang du plus bas au plus haut");
-  const dump = JSON.stringify(ctx.dumpStore());
+  const dump = JSON.stringify(ctx.dumpStore().filter((r) => r.collection !== "access"));
   for (const secret of ["7100191", "7200193", "7300197", "must-never-be-read", "amount", "cents", "tok-creator"]) assert.ok(!dump.includes(secret), `« ${secret} » ne doit jamais être gardé`);
   assert.ok(pat.calls.every((c) => new URL(c.url).hostname === "www.patreon.com"));
   assert.ok(pat.calls.every((c) => !/email/i.test(c.url)), "aucune adresse e-mail n'est demandée");
@@ -254,7 +254,7 @@ test("Ko-fi : un don vérifié crée un soutien actif, caché et sans accord ; n
   const p = people[0];
   assert.deepEqual([p.provider, p.status, p.hidden, p.consent, p.approved, p.name], ["kofi", "active", false, null, false, "Jo Example"]);
   assert.match(p.k, /^kofi:[a-f0-9]{20}$/, "empreinte irréversible, pas l'adresse");
-  const dump = JSON.stringify(ctx.dumpStore());
+  const dump = JSON.stringify(ctx.dumpStore().filter((r) => r.collection !== "access"));
   for (const secret of ["jo@example.test", "3.00", "EUR", "kofi-verify-token", "Merci", "txid", "22222222"]) assert.ok(!dump.includes(secret), `« ${secret} » ne doit pas être gardé`);
 });
 

@@ -54,7 +54,6 @@ export function ruleWhen(ctx, r) {
 function ruleSummary(ctx, r) {
   const parts = [ruleWhen(ctx, r), `→ ${r.action}${r.readMessage ? ` ${ctx.t("rule_with_message")}` : ""}`];
   parts.push(ctx.t("rule_cooldown", { seconds: r.cooldownSec || 0 }));
-  if (r.enabled === false) parts.push(ctx.t("rule_paused"));
   return parts.join(" · ");
 }
 
@@ -189,8 +188,9 @@ function ruleForm(ctx, o, editing) {
     { name: "readMessage", folded: true, kind: "checkbox", label: t("f_read"), value: cur.readMessage ? "on" : "", help: t("f_read_help") },
   ];
   return [
-    { type: "heading", text: editing ? t("rules_edit_title", { name: editing.name }) : t("rules_add_title") },
-    { type: "adminForm", action: "saveRule", submitLabel: editing ? t("rules_save") : t("rules_add"), fields, ...(editing ? { cancelHref: "?" } : {}) },
+    // Editing opens in a window above the list (the list keeps its search and its place); adding stays in the page, under the list.
+    ...(editing ? [] : [{ type: "heading", text: t("rules_add_title") }]),
+    { type: "adminForm", action: "saveRule", submitLabel: editing ? t("rules_save") : t("rules_add"), fields, ...(editing ? { presentation: "dialog", title: t("rules_edit_title", { name: editing.name }), cancelHref: "?" } : {}) },
   ];
 }
 
@@ -200,9 +200,11 @@ function ruleBlocks(ctx, o, query) {
   const out = [{ type: "heading", text: t("rules_title") }];
   if (!o.rules.length) out.push({ type: "markdown", text: t("rules_empty") });
   else {
+    // The state is a switch (it shows the state, it is not a verb); one visible action, the destructive one in the "⋯" menu (R16, R17).
     out.push({
-      type: "table", columns: [t("col_rule")], rows: o.rules.map((r) => [`${r.name} — ${ruleSummary(ctx, r)}`]), rowIds: o.rules.map((r) => r.id),
-      ...(manage ? { rowActions: [{ label: t("rule_edit"), href: "?edit={id}" }, { label: t("rule_toggle"), action: "toggleRule" }, { label: t("rule_delete"), action: "removeRule", confirm: t("rule_delete_confirm"), danger: true }] } : {}),
+      type: "table", columns: [t("col_rule"), t("col_on")], searchable: true, truncate: [0], rowIds: o.rules.map((r) => r.id),
+      rows: o.rules.map((r) => [`${r.name} — ${ruleSummary(ctx, r)}`, manage ? { text: r.enabled === false ? t("rule_off") : t("rule_on"), switch: { on: r.enabled !== false, action: "setRuleState", label: t("rule_switch", { name: r.name }), onText: "", offText: t("rule_off") } } : (r.enabled === false ? t("rule_off") : "")]),
+      ...(manage ? { rowActions: [{ label: t("rule_edit"), href: "?edit={id}", presentation: "dialog" }, { label: t("rule_delete"), action: "removeRule", confirm: t("rule_delete_confirm"), danger: true, inMenu: true }] } : {}),
     });
   }
   if (manage) {
@@ -226,9 +228,9 @@ function simBlocks(ctx, o) {
     ...(plays ? [{ type: "banner", tone: "warning", text: t("sim_plays") }] : []),
     ...(house.installed ? [{
       type: "adminForm", action: "simulate", submitLabel: t("sim_btn"), fields: [
-        { name: "type", kind: "select", label: t("f_type"), value: "superchat", options: R.TYPES.map((x) => ({ value: x, label: t(`type_${x}`) })) },
+        { name: "simType", kind: "select", label: t("f_type"), value: "superchat", options: R.TYPES.map((x) => ({ value: x, label: t(`type_${x}`) })) },
         { name: "amount", kind: "text", label: t("sim_amount"), value: "5", help: t("sim_amount_help") },
-        { name: "currency", kind: "select", label: t("f_currency"), value: "EUR", options: currencies.map((c) => ({ value: c, label: c })) },
+        { name: "simCurrency", kind: "select", label: t("f_currency"), value: "EUR", options: currencies.map((c) => ({ value: c, label: c })) },
         { name: "count", kind: "text", label: t("sim_count"), value: "5", help: t("sim_count_help") },
         { name: "text", kind: "textarea", label: t("sim_text"), help: t("sim_text_help") },
       ],
@@ -332,17 +334,19 @@ export const actions = {
       const prev = id ? (await S.listRules(ctx)).find((x) => x.id === id) : null;
       const saved = await S.saveRule(ctx, id, { ...r.rule, lastAt: prev?.lastAt ?? 0, order: prev?.order });
       if (!saved) return { error: ctx.t("rules_full", { max: S.LIMITS.rules }) };
-      return { ok: ctx.t(id ? "done_rule_saved" : "done_rule_added"), redirect: "?" };
+      return id ? { ok: ctx.t("done_rule_saved") } : { ok: ctx.t("done_rule_added"), redirect: "?" };   // the edit window closes by itself on success
     },
   },
-  toggleRule: {
+  /** The switch of a row: it SAYS the wanted state (`values.enabled` "1" or "0"), it never inverts, so a double click cannot undo the first. */
+  setRuleState: {
     right: "yt.manage",
     run: async (ctx, values) => {
       const rule = (await S.listRules(ctx)).find((x) => x.id === values.id);
       if (!rule) return { error: ctx.t("err_rule_gone") };
+      const on = values.enabled === "1";
       const { id, ...data } = rule;
-      await S.saveRule(ctx, id, { ...data, enabled: rule.enabled === false });
-      return { ok: ctx.t(rule.enabled === false ? "done_rule_on" : "done_rule_off") };
+      await S.saveRule(ctx, id, { ...data, enabled: on });
+      return { ok: ctx.t(on ? "done_rule_on" : "done_rule_off") };
     },
   },
   removeRule: { right: "yt.manage", run: async (ctx, values) => { await S.removeRule(ctx, String(values.id ?? "")); return { ok: ctx.t("done_rule_removed") }; } },
@@ -350,10 +354,11 @@ export const actions = {
   simulate: {
     right: "yt.test",
     run: async (ctx, values) => {
-      const r = await E.simulate(ctx, values);
+      // The two fields that the rule form also has are named apart (two fields of one page never share a name: a label must point to its own field).
+      const r = await E.simulate(ctx, { ...values, type: values.simType ?? values.type, currency: values.simCurrency ?? values.currency });
       if (!r.ok) {
         const field = r.field && ["type", "amount", "currency", "count"].includes(r.field) ? r.field : null;
-        if (field) return { errors: { [field]: ctx.t(`sim_err_${r.code}`) } };
+        if (field) return { errors: { [field === "type" && "simType" in values ? "simType" : field === "currency" && "simCurrency" in values ? "simCurrency" : field]: ctx.t(`sim_err_${r.code}`) } };
         return { error: ctx.t(["too_fast", "too_many", "no_bridge"].includes(r.code) ? `sim_err_${r.code}` : "sim_err_other") };
       }
       const sentences = r.lines.map((l) => `${l.rule ? `${l.rule} : ` : ""}${resultText(ctx, l)}`);

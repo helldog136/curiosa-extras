@@ -44,7 +44,7 @@ function site({ twitch = [], youtube = true, settings = {}, locale = "fr", extra
   const conn = makeConnector({ apiKey: "FAKE-YT-KEY-0001" });
   const cctx = fakeCtx({ moduleId: "youtube-channel", key: "chaine", settings: { channelId: CHANNEL }, services: conn.services, messages: channelMessages, permissions: ["sections", "topics", "admin"] });
   const methods = { current: (a) => channelDef.services["youtube.live"].current(cctx, a) };
-  return fakeCtx({ key: "discord", locale, messages: readJson(`locales/${locale}.json`), settings: { webhookUrl: HOOK, youtubeLive: true, ...settings }, topics: { "stream.live": () => twitch, ...extra },
+  return fakeCtx({ key: "discord", locale, messages: readJson(`locales/${locale}.json`), settings: { youtubeLive: true, ...settings }, legacy: { webhookUrl: HOOK }, topics: { "stream.live": () => twitch, ...extra },
     ...(youtube ? { serviceInstances: { "youtube.live": [{ instance: "chaine", name: "Chaîne YouTube", methods }] } } : {}) });
 }
 const goLive = (o = {}) => yt.goLive({ videoId: "LIVEvideo01", title: "Direct YouTube", startedAt: iso(NOW - 4 * 60_000), ...o });
@@ -54,7 +54,7 @@ const MIN = 60_000;
 
 test("manifeste : version mineure, Chaîne YouTube FACULTATIVE, réglages simples (annonce YouTube oui, « les deux » = un message, texte vide), vérification avancée 10 min, parité fr/en, clés existantes", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.4.1");
+  assert.equal(manifest.version, "1.5.0");
   assert.deepEqual(manifest.requires.map((x) => [x.service, x.optional]), [["youtube.live", true]]);
   const set = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));
   assert.equal(set.youtubeLive.default, false); assert.equal(set.liveBoth.default, "both"); assert.equal(set.liveText.default, ""); assert.equal(set.liveText.optional, true);

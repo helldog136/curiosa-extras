@@ -70,6 +70,26 @@ export async function secretOf(ctx) {
   return secret;
 }
 
+/**
+ * The platform access code: one document of the store (window "Edit", R33), never a field on the Settings tab. A code still held as the former setting is handed
+ * over here: written first, cleared after, so nothing is lost if a step fails. Returns "" when there is none.
+ */
+export const ACCESS = "access";
+export async function tokenOf(ctx) {
+  const doc = (await ctx.api.store.list(ACCESS, { limit: 1 }))[0];
+  const own = P.clean(doc?.data?.token, 600);
+  let held = "";
+  try { held = P.clean(await ctx.legacy?.get("accessToken"), 600); } catch { held = ""; }
+  if (!held) return own;
+  if (!own) await ctx.api.store.add(ACCESS, { token: held });
+  try { await ctx.legacy.clear("accessToken"); } catch { /* cleared at the next read */ }
+  return own || held;
+}
+export async function saveToken(ctx, token) {
+  const doc = (await ctx.api.store.list(ACCESS, { limit: 1 }))[0];
+  if (doc) await ctx.api.store.update(doc.id, { token }); else await ctx.api.store.add(ACCESS, { token });
+}
+
 /** Fusionne des champs dans le document d'état. À appeler DANS withLock. */
 export async function patchState(ctx, patch) {
   await secretOf(ctx);
