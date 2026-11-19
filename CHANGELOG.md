@@ -4,6 +4,39 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.105.3 — 2026-11-19
+
+*En bref : les cartes d'état disent l'état réel de leur source, les compteurs à zéro et les sections vides disparaissent, et les mots internes (« repris ») quittent les écrans des modules Twitch, YouTube, Discord, Soutiens et Jaquettes.*
+
+*In short: the state cards tell the real state of their source, zero counters and empty sections disappear, and internal words ("carried over") leave the screens of the Twitch, YouTube, Discord, Supporters and Covers modules.*
+
+### Améliorations
+
+- **Connecteur Twitch 1.8.1.** La phrase sous la case e-mail est retirée ; la fenêtre « Modifier » ne dit plus « Repris depuis… » ; « Oublier l'application reprise » devient « Oublier l'application ».
+- **Ma Chaîne Twitch 2.6.1.** « Mes directs » n'est plus « Configuré » quand l'application Twitch n'est pas réglée (la carte de connexion dit pourquoi). Les sections « meilleur jeu » et « vidéos » vides disparaissent. « Oublier la chaîne reprise » devient « Oublier la chaîne ». Description sur une ligne.
+- **Statut du live 1.6.1.** La carte Twitch passe en « Dégradé », avec la raison et un lien, quand Twitch ne répond pas ou refuse l'application du site.
+- **Connecteur YouTube 1.5.1.** Le code d'accès tient en une ligne (« Code …xxxx ») ; la limite du jour n'apparaît que lorsqu'elle est presque atteinte. Le compte YouTube facultatif devient un seul lien « Connecter un compte YouTube » (le guide s'ouvre à la demande) au lieu d'une carte « Non configuré » à quatre étapes. « Code prêt », « reprise à 8 h » et « Oublier le code repris » disparaissent.
+- **Actions du live YouTube 1.3.1.** « Tout est repris » devient « Tout est remis en marche ». La part de la limite du jour n'est montrée que près de la limite ; plus de titre ni de phrase pour un journal vide ; l'avertissement « gardez cette page ouverte » seulement quand le chat est lu ; plus de double « Ouvrir Home Assistant ».
+- **Annonces Discord 1.4.1.** Le journal écrit « échec (404) · 2 essais » sans deux-points pendant ; sans adresse réglée, le guide s'ouvre dans l'onglet Réglages, à côté du champ.
+- **Soutiens 1.3.1.** La ligne de compteurs ne montre que ce qui n'est pas à zéro (rien s'il n'y a personne) ; les phrases de réassurance sur les paliers, les sections vides et l'introduction de l'import (passée dans l'info-bulle du champ) disparaissent.
+- **Jaquettes de jeux 1.5.1.** Description sur une ligne ; plus de section « Aucune jaquette à vérifier ».
+
+### Pour les développeurs
+
+- Tests à trois états étendus (Statut du live avec Twitch en panne ou refusé, Ma Chaîne Twitch sans application, Discord, compte YouTube facultatif, compteurs des Soutiens). Les bases d'ergonomie et de bannières ne grandissent pas ; les lignes R33b restantes (adresse Discord, code des Soutiens, code RAWG) demandent de ranger ces champs derrière « Modifier ».
+
+*(English)*
+
+- **Twitch connector 1.8.1.** The sentence under the e-mail switch is removed; the "Modify" window no longer says "Taken from…"; "Forget the carried-over application" becomes "Forget the application".
+- **My Twitch channel 2.6.1.** "My lives" is no longer "Configured" when the Twitch application is not set up (the connection card says why). Empty "best game" and "videos" sections disappear. "Forget the carried-over channel" becomes "Forget the channel". One-line description.
+- **Live status 1.6.1.** The Twitch card becomes "Degraded", with the reason and a link, when Twitch does not answer or refuses the site's application.
+- **YouTube connector 1.5.1.** The access code is one line ("Code …xxxx"); the daily allowance only shows when nearly used up. The optional YouTube account is a single "Connect a YouTube account" link (the guide opens on request) instead of a four-step "Not configured" card. "Code ready", "restarts at 8" and "Forget the carried-over code" are gone.
+- **YouTube live actions 1.3.1.** "Everything is resumed" becomes "Everything is switched back on". The share of the daily allowance only shows near the limit; no heading or sentence for an empty journal; the "keep this page open" warning only while the chat is read; no double "Open Home Assistant".
+- **Discord announcer 1.4.1.** The journal reads "failed (404) · 2 tries" without a dangling colon; with no address set, the guide opens in the Settings tab, next to the field.
+- **Supporters 1.3.1.** The counters line only shows what is not zero (nothing when nobody is there); the reassurance sentences about tiers, empty sections and the import introduction (moved into the field tooltip) are removed.
+- **Game covers 1.5.1.** One-line description; no "No cover to check" section.
+- Three-state tests extended (Live status with Twitch down or refused, My Twitch channel without application, Discord, optional YouTube account, Supporters counters). The ergonomics and banners baselines do not grow; the remaining R33b lines (Discord address, Supporters code, RAWG code) need those fields moved behind "Modify".
+
 ## 1.105.2 — 2026-11-19
 
 *En bref : les pages du Bot Twitch, de l'Overlay d'alertes, d'Événements Twitch et de Home Assistant n'affichent plus ce qui ne sert à rien : une seule rangée de filtres, plus de colonne ni d'étiquette identiques sur chaque ligne, un seul bouton pour le mode collaboration, plus de journal ni de phrase vides.*
