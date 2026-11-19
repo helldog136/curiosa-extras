@@ -51,7 +51,7 @@ export const ZONES = [
 /** Les choix d'une liste, dans la langue demandée (français, sinon anglais). */
 export function zoneOptions(lang) {
   const i = String(lang).slice(0, 2) === "fr" ? 1 : 2;
-  return ZONES.map((z) => ({ value: z[0], label: `${z[i]} (${z[0]})` }));
+  return ZONES.map((z) => ({ value: z[0], label: z[i] }));
 }
 
 /** Villes d'un aperçu « chez vos visiteurs » : [nom officiel, français, anglais]. */

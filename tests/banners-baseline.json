@@ -1,16 +1,9 @@
 {
   "comment": "KNOWN informational banners without a link (R32). This list only shrinks: fix one, then node tests/helpers/banners.mjs --write.",
   "known": [
-    "commissions/admin.mjs seen_${ps.state}",
-    "daily-game/admin.mjs bannerLow",
-    "events/admin.mjs ctx.t(alb.state === \"absent\" ? \"albumsAbsent\" : \"albumsDown\"",
-    "events/admin.mjs ctx.t(vid.state === \"absent\" ? \"videosAbsent\" : \"videosDown\"",
-    "events/admin.mjs note_${ev.note}",
-    "events/admin.mjs reportSummary(ctx, rep)",
-    "gallery/admin.mjs gone.text",
-    "game-covers/panel.mjs saved_${saved}",
-    "map/admin.mjs lines.join(\" \")",
-    "testimonials/admin.mjs bannerPending",
-    "videos/admin.mjs bannerMissing"
-  ]
+    "game-covers/panel.mjs saved_${saved}"
+  ],
+  "justified": {
+    "game-covers/panel.mjs saved_${saved}": "Result of saving a cover, shown on the page reached after the redirect (the action message would be lost by the redirect). Left to the connection-states agent; re-check after their release."
+  }
 }

@@ -50,6 +50,8 @@ export const SENTENCE_MAX_WORDS = 20;
 export const FORM_FIELDS_MAX = 5;
 export const SECTION_FIELDS_MAX = 7;
 export const SEARCH_FROM_ROWS = 10;
+/** R19 — more than this many chips or pills in ONE group is a wall: use a select with its own search. */
+export const CHIPS_PER_GROUP_MAX = 10;
 export const UNIFORM_COLUMN_FROM_ROWS = 5;
 
 export const RULES = {
@@ -559,6 +561,7 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
         add("R33b", `le formulaire ${name} est configuré (tous ses champs sont déjà remplis) mais reste visible : le replier derrière un bouton « Modifier » (« connection » + « presentation: "dialog" »)`);
       }
       for (const f of shown) {
+        if (f.kind === "segmented" && Array.isArray(f.options) && f.options.length > CHIPS_PER_GROUP_MAX) add("R19", `le champ « ${f.name} » a ${f.options.length} boutons côte à côte (${CHIPS_PER_GROUP_MAX} au plus) : une liste avec recherche`);
         for (const p of labelProblems(f.label ?? "")) add("R10", `champ « ${f.name} » : ${p}`);
         const bad = forbiddenWords(`${f.label ?? ""} ${f.help ?? ""}`);
         if (bad.length) add("R9", `champ « ${f.name} » : mot interdit « ${bad.join("», « ")} »`);
@@ -572,6 +575,13 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
           const cells = rows.map((r) => stripTags(cellText(r[c])));
           if (cells[0] && !/^[-–—·]+$/.test(cells[0]) && cells.every((x) => x === cells[0])) add("R14", `la colonne « ${cols[c] ?? c + 1} » affiche « ${excerpt(cells[0], 30)} » sur toutes les ${rows.length} lignes : c'est un titre, pas une étiquette`);
         }
+      }
+      // R19 — les pastilles de filtre d'un tableau : une par valeur de la colonne ; au-delà de 10, un mur de pastilles.
+      for (const f of Array.isArray(b.filters) ? b.filters : []) {
+        const col = typeof f?.column === "number" ? f.column : cols.indexOf(f?.column);
+        if (col < 0) continue;
+        const values = new Set(rows.map((r) => stripTags(cellText(r?.[col]))).filter(Boolean));
+        if (values.size > CHIPS_PER_GROUP_MAX) add("R19", `le filtre de la colonne « ${cols[col] ?? col} » fait ${values.size} pastilles (${CHIPS_PER_GROUP_MAX} au plus) : un seul contrôle avec recherche`);
       }
       for (const a of b.rowActions ?? []) if (a.presentation === "dialog" && (typeof a.href !== "string" || a.action)) add("R24", `the row button « ${a.label} » asks for a dialog (presentation: "dialog") but is not a link: give it an \`href\` such as "?edit={id}", not an \`action\``);
       for (const a of b.rowActions ?? []) if (TOGGLE_RE.test(a.label ?? "")) add("R17", `le bouton de ligne « ${a.label} » : un interrupteur montre l'état courant`);
@@ -589,6 +599,7 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
       }));
     } else if (b.type === "links") {
       for (const l of b.items ?? []) if (TOGGLE_RE.test(l.label ?? "")) add("R17", `le lien « ${l.label} » : un interrupteur montre l'état`);
+      if ((b.items ?? []).length > CHIPS_PER_GROUP_MAX) add("R19", `le bloc « links » montre ${(b.items ?? []).length} pastilles dans un seul groupe (${CHIPS_PER_GROUP_MAX} au plus) : une liste avec recherche`);
     }
   }
   closeSection();

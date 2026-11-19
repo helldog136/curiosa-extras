@@ -142,9 +142,9 @@ test("aperçu = résultat : ce que l'écran annonce est exactement ce que fait l
   const d2 = await svc.create(ctx2, { name: "Réunie", email: "r@example.test" });
   await B.addAccount(ctx2, { id: d2.id, network: "youtube", handle: "@reunie" });
   const page = textOf(await def.adminPanel(ctx2, { query: { view: "merge", keep: k2, drop: d2.id } }));
-  assert.match(page, /Comptes repris : YouTube · @reunie\./);
+  assert.match(page, /Comptes ajoutés : YouTube · @reunie\./);
   assert.match(page, /Champs vides complétés : e-mail\./);
-  assert.match(page, /Pas de notes à reprendre\./);
+  assert.match(page, /Pas de notes à ajouter\./);
   assert.match(page, /Les autres modules \(Partenariats, Raid, Story…\) sont prévenus/);
   assert.match(page, /Une fois validé, c.{1,6}est définitif\./);
 });

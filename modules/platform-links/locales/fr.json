@@ -54,7 +54,7 @@
   "p_leave_message": "Ce lien ouvre une autre page : {label}.",
   "p_leave_title": "Vous quittez le site",
   "p_message": "Ce lien mène vers un site réservé aux adultes (18 ans et plus).",
-  "p_missing_message": "Il a peut-être été retiré ou modifié. Vous pouvez revenir au site.",
+  "p_missing_message": "Il a été retiré ou son adresse a changé. Vous pouvez revenir au site.",
   "p_missing_title": "Ce lien n'existe plus",
   "p_title": "Avant de continuer",
   "p_to": "Vous allez ouvrir : {label} ({host})",

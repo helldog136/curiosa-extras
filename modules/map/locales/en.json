@@ -41,7 +41,7 @@
   "coordsInvalid": "These coordinates are not valid. Example: latitude 12.3456 and longitude 34.5678.",
   "showMore": "Show more",
   "loadFailed": "Could not load this information. Try again in a moment.",
-  "noPoints": "There is nothing to put on the map.",
+  "noPoints": "No place to put on the map.",
   "close": "Close",
   "seeOnMap": "See on the map",
   "directions": "Directions",

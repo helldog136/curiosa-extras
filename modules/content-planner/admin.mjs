@@ -42,7 +42,7 @@ function listPage(ctx, ideas, query, today, gone) {
   const searching = words.length > 0;
   const place = PLACES.includes(query.col) ? query.col : "idea";
   const cnt = D.counts(ideas);
-  const blocks = [V.styleBlock(), { type: "markdown", text: `*${t("private")}*` }];
+  const blocks = [V.styleBlock()];
   if (gone) blocks.push(V.note([t("ideaGone")]));
   const lines = gentleLines(ctx, ideas, today);
   if (lines.length) blocks.push(V.note(lines));

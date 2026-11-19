@@ -57,7 +57,7 @@ async function mainBlocks(ctx, snap, q, editor) {
   if (b === null) out.push({ type: "banner", tone: "warning", text: t("noPage") });
   const miss = O.missing(ctx, snap);
   if (editor && miss.any) {
-    out.push({ type: "banner", tone: "info", text: t("bannerMissing", { titles: miss.noTitle, thumbs: miss.noThumb }) });
+    out.push({ type: "banner", tone: "warning", text: t("bannerMissing", { titles: miss.noTitle, thumbs: miss.noThumb }) });
     out.push({ type: "adminForm", action: "complete", submitLabel: t("completeButton", { n: Math.min(LIMITS.fillBatch, miss.videos) }), fields: [{ name: "go", kind: "hidden", value: "1" }] });
   }
   if (editor) {

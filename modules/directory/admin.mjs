@@ -101,7 +101,6 @@ function templateBlocks(ctx, data) {
   if (data.config.cats.length || data.config.team.length || !can(ctx, RIGHT_EDIT)) return [];
   return [
     { type: "heading", text: t("tplTitle") },
-    { type: "markdown", text: t("tplIntro") },
     { type: "adminForm", action: "template", submitLabel: t("tplApply"), fields: [
       { name: "template", kind: "select", label: t("tplField"), value: "association", required: true, help: t("tplHelp"), options: T.TEMPLATE_IDS.map((id) => ({ value: id, label: t(`tpl_${id}`) })) },
     ] },
@@ -114,7 +113,6 @@ function categoryBlocks(ctx, model, view, data) {
   const t = ctx.t, out = [];
   const writable = can(ctx, RIGHT_EDIT);
   out.push({ type: "heading", text: t("catTitle") });
-  out.push({ type: "markdown", text: t("catIntro") });
   const cats = data.config.cats;
   if (!cats.length) {
     out.push({ type: "markdown", text: t("catNone") });
@@ -208,7 +206,6 @@ function teamBlocks(ctx, model, view, data) {
   const t = ctx.t, out = [];
   const writable = can(ctx, RIGHT_EDIT);
   out.push({ type: "heading", text: t("teamTitleAdmin") });
-  out.push({ type: "markdown", text: t("teamIntro") });
   const team = data.config.team;
   if (!team.length) out.push({ type: "markdown", text: t("teamNone") });
   else {

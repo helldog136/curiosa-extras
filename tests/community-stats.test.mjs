@@ -30,7 +30,7 @@ const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
 test("manifeste : valide, 1.2.3, minCore 0.5.0, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.4.1"); assert.equal(manifestJson.minCore, "0.11.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.4.2"); assert.equal(manifestJson.minCore, "0.11.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });
@@ -245,7 +245,7 @@ test("explications des chiffres manquants : une raison humaine ET une action, pr
   assert.match(reasonText(ctx, s("auth", "twitch")), /L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch »/);
   assert.match(reasonText(ctx, s("auth", "bluesky")), /Bluesky demande votre autorisation.*reconnectez/);
   assert.match(reasonText(ctx, s("rate", "github")), /^GitHub demande de patienter un peu\.$/);
-  assert.match(reasonText(ctx, s("network", "reddit")), /^Reddit ne répond pas pour l'instant\.$/);
+  assert.match(reasonText(ctx, s("network", "reddit")), /^Reddit ne répond pas\.$/);
   assert.match(reasonText(ctx, s("config", "mastodon")), /Le nom du compte Mastodon est introuvable : ouvrez votre module Mastodon et vérifiez-le/);
   assert.match(reasonText(make({ locale: "en" }).ctx, s("hidden", "youtube")), /make it public in YouTube Studio/);
 });

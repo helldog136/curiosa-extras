@@ -160,7 +160,7 @@ const GOLDEN = {
         "overlayItem": "cae58c6fb6a61775",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "4bbd1d675cd75c00"
+        "admin": "3fcb1ed777fc027e"
       },
       "slow-fr": {
         "main": "41d1b3b2eebdcc2d",
@@ -175,7 +175,7 @@ const GOLDEN = {
         "overlayItem": "a5d2a7e99e43787c",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "2396491003b96769"
+        "admin": "588d83f6134ace0c"
       },
       "grid-fr": {
         "main": "30bb0b500b5d2f36",
@@ -190,7 +190,7 @@ const GOLDEN = {
         "overlayItem": "a5d2a7e99e43787c",
         "mcpSummary": "7891def77e41e38b",
         "mcpList": "0a91373e8d373683",
-        "admin": "9921cf1a4465518d"
+        "admin": "cccc016d9bf5a39b"
       }
     }
   },

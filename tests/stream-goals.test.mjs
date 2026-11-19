@@ -364,7 +364,7 @@ test("tier factors: the settings sit in the subathon fold with a unit, a visible
   assert.deepEqual(visible("subathon"), ["subathonStart", "subathonLength"]);
   assert.ok(manifest.settings.filter((s) => s.tab === "subathon" && !s.rare).length <= 7, "R5");
   assert.equal(manifest.minCore, "0.30.0");
-  assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.version, "1.1.1");
   assert.deepEqual(manifest.places.map((p) => p.place), ["live.goals.goal", "live.goals.subathon"], "same place, two sections");
   assert.equal(manifest.tabs.filter((t) => !t.hidden).length, 2);
 });

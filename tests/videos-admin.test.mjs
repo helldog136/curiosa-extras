@@ -121,7 +121,7 @@ test("ajout en lot : aperçu avant validation, doublons et erreurs signalés, ri
     const screen = await panel(ctx, { bulk: "1" });
     const table = screen.find((b) => b.type === "table");
     assert.deepEqual(table.rows.map((r) => r[0].split(" — ").slice(1).join(" — ")), ["Nouvelle vidéo", "Nouvelle vidéo", "Répétée dans votre liste", "Déjà dans la vidéothèque (« Déjà là »)", "Pas une adresse YouTube", "Pas YouTube : non pris en charge", "Liste de lecture : collez une seule vidéo"]);
-    assert.match(textOf(screen), /2 adresse\(s\) prête\(s\) sur 7/);
+    assert.match(textOf(screen), /2 adresse\(s\) valide\(s\) sur 7/);
     assert.match(screen.find((b) => b.action === "bulkConfirm").submitLabel, /Ajouter 2 vidéos/);
     assert.match((await act(ctx, "bulkConfirm", { go: "1" })).ok, /2 vidéos ajoutées/);
   });

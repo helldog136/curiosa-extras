@@ -41,7 +41,7 @@
   "coversDown": "The cover site cannot be reached: try again later.",
   "coversPartial": " Found before stopping: {found}.",
   "coversDone": "Search finished: {found} cover(s) found, {none} with no result.",
-  "coversAmbiguous": "For these suggestions, the cover may belong to another game.",
+  "coversAmbiguous": "For these suggestions, the name looks like another game: check the cover.",
   "coverWrong": "Not the right game?",
   "coversMore": " {left} left to try: run the search again.",
   "rawgBanner": "Covers are not connected to the site yet, so suggestions will have no image. Open the “Game covers” module once.",

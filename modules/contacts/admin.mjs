@@ -75,11 +75,10 @@ async function listPage(ctx, q) {
   const filtered = !!(cat || network || review || orgId || text);
   const parts = [
     nav(ctx, kind === "org" ? "orgs" : "contacts"),
-    `<p class="ct-help">${U.esc(t("private"))}</p>`,
-    U.searchBar({ q: base.q ?? "", hidden: { kind, cat: base.cat, net: network, review: base.review, org: orgId }, label: t("searchLabel"), placeholder: t("searchPlaceholder"), button: t("searchButton") }),
+    U.searchBar({ q: base.q ?? "", hidden: { kind, cat: base.cat, net: network, review: base.review, org: orgId }, label: t("searchLabel"), placeholder: t("searchPlaceholder") }),
     U.chips(chipItems, t("filtersLabel")),
     `<div class="ct-actions"><a class="ct-btn" href="?new=${kind === "org" ? "org" : "person"}">${U.esc(t(kind === "org" ? "addOrg" : "addPerson"))}</a>${filtered ? `<a class="ct-btn ct-ghost" href="${kind === "org" ? "?kind=org" : "?"}">${U.esc(t("filterAll"))}</a>` : ""}</div>`,
-    `<p class="ct-count" role="status">${U.esc(text ? plural(ctx, total, "results") : plural(ctx, total, "count"))}</p>`,
+    total > 0 || text ? `<p class="ct-count" role="status">${U.esc(text ? plural(ctx, total, "results") : plural(ctx, total, "count"))}</p>` : "",
     cards.length ? U.cardList(cards, { t, netName: netName(ctx), linkOf: (c) => `?contact=${encodeURIComponent(c.id)}` }) : `<p class="ct-empty">${U.esc(t(idx.list.length ? "emptySearch" : "emptyBook"))}</p>`,
     more || q.after || q.at ? `<p class="ct-more">${more ? `<a class="ct-btn" href="${U.esc(more)}">${U.esc(t("seeMore"))}</a>` : ""}${q.after || q.at ? `<a class="ct-btn ct-ghost" href="${U.esc(U.href({ ...base }))}">${U.esc(t("backToStart"))}</a>` : ""}</p>` : "",
   ];

@@ -1502,7 +1502,7 @@ export default {
       blocks.push({ type: "markdown", text: arch.items.map((r) => pollOf(r, "archive")).map((p) => `- [${p.question.replace(/[\[\]\\]/g, "")}](?poll=${encodeURIComponent(p.id)}) — ${votersText(ctx, Number(p.voters) || 0)}${manage ? ` · [${ctx.t("actDelete")}](?delete=${encodeURIComponent(p.id)})` : ""}`).join("\n") });
       if (arch.next) blocks.push({ type: "markdown", text: `[${ctx.t("nextPage")}](?ac=${encodeURIComponent(arch.next)})` });
     }
-    blocks.push({ type: "heading", text: ctx.t("limitsTitle") }, { type: "markdown", text: ctx.t("limitsText") });
+    blocks.push({ type: "html", html: `<details><summary>${esc(ctx.t("limitsTitle"))}</summary><p>${esc(ctx.t("limitsText"))}</p></details>` });
     if (polls.length && manage) blocks.push({ type: "download", name: "results", label: ctx.t("downloadResults") });
     return [...blocks, ...screen];
   },

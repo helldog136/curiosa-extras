@@ -4,6 +4,29 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.105.4 — 2026-11-19
+
+*En bref : une dernière passe sur les écrans d'administration que la vérification indépendante avait trouvés encore trop bavards : plus de « pour l'instant », de « en principe » ni de phrases qui rassurent, et chaque réserve qui reste est expliquée par écrit.*
+
+*In short: a last pass over the administration screens that the independent check still found too wordy: no more "for now", "in principle" or reassuring sentences, and every remaining exception is explained in writing.*
+
+### Améliorations
+
+- **Contacts, Cahier de contenu, Témoignages, Galeries photos, Annuaire, Sondages, Compte à rebours.** Plus de phrase qui rassure (« Votre carnet est privé… »), plus de compteur à 0, plus de paragraphe d'explication sous un écran qui marche. La recherche de Contacts n'a plus de bouton : Entrée la lance. Les fuseaux horaires du Compte à rebours se lisent sans leur nom technique.
+- **Tous les textes visibles disent l'état exact.** « Pour l'instant », « en principe », « peut-être » et les états « Prêt » ou « repris » sont remplacés par ce qui est vrai maintenant, dans 24 extensions.
+- **Moins de bandeaux sans action.** Les bandeaux qui ne demandaient rien deviennent une ligne simple ou un avertissement.
+
+### Pour les développeurs
+
+- `tests/helpers/ergonomicsPending.mjs` est supprimé (plus aucun test ne l'utilise). Chaque ligne R33 qui reste dans `tests/ergonomics-baseline.json` et chaque bannière de `tests/banners-baseline.json` porte maintenant une raison écrite (`justified`) ; un test l'exige. La base d'ergonomie passe de 536 à 485 lignes, dont 4 lignes R33 (réglages secrets déclarés dans le manifeste), et la base des bannières de 13 à 1. Le kit d'ergonomie et le document `docs/ERGONOMIE-ADMIN.md` sont recopiés à l'identique depuis le cœur 0.37.0 (règle R19 : au plus 10 pastilles par groupe).
+
+*(English)*
+
+- **Contacts, Content notebook, Reviews, Photo galleries, Directory, Polls, Countdown.** No more reassuring sentences ("Your address book is private…"), no more counters at 0, no more explanation paragraphs under a working screen. The Contacts search has no button any more: Enter runs it. The Countdown time zones read without their technical name.
+- **Every visible text states the exact state.** "For now", "in principle", "maybe" and the "Ready" or "taken over" states are replaced by what is true now, in 24 extensions.
+- **Fewer banners without an action.** Banners that asked for nothing become a plain line or a warning.
+- `tests/helpers/ergonomicsPending.mjs` is deleted (no test uses it). Every R33 line left in `tests/ergonomics-baseline.json` and every banner in `tests/banners-baseline.json` now has a written reason (`justified`), and a test requires it. The ergonomics baseline goes from 536 to 485 lines, 4 of them R33 (secret settings declared in the manifest), and the banners baseline from 13 to 1. The ergonomics kit and `docs/ERGONOMIE-ADMIN.md` are copied identically from core 0.37.0 (rule R19: at most 10 chips per group).
+
 ## 1.105.3 — 2026-11-19
 
 *En bref : les cartes d'état disent l'état réel de leur source, les compteurs à zéro et les sections vides disparaissent, et les mots internes (« repris ») quittent les écrans des modules Twitch, YouTube, Discord, Soutiens et Jaquettes.*
