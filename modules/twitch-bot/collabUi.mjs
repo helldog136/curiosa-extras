@@ -18,8 +18,8 @@ export function bar(ctx, s, e) {
   const button = e.on
     ? K.actionButton({ label: t("co_stop_btn"), act: "collabOff", cls: "small primary", fail })
     : K.actionButton({ label: t("co_start_btn"), act: "collabOn", cls: "small", fail, title: t("co_start_tip") });
-  const choices = `<a class="ck-btn small" href="?tab=use&collab=1">${K.esc(t("co_choices_btn"))}</a>`;   // opens the window of the choices (the address is the open state)
-  return K.statusBar(ctx, { kind: e.on ? "warn" : "builtin", pill: t(e.on ? "co_pill_on" : "co_pill_off"), texts, buttons: `${choices}${button}` });
+  const choices = e.on ? `<a class="ck-btn small" href="?tab=use&collab=1">${K.esc(t("co_choices_btn"))}</a>` : "";   // opens the window of the choices (the address is the open state); one single button while the mode is off
+  return K.statusBar(ctx, { kind: e.on ? "warn" : "builtin", pill: e.on ? t("co_pill_on") : "", texts, buttons: `${choices}${button}` });
 }
 
 /** The choices form, in a window opened by the link under the line (`?collab=1`). One visible field; the rest is folded (R4, R7). */

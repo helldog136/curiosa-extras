@@ -307,7 +307,7 @@ test("administration : l'onglet Timers est UN tableau du cœur des commandes qui
   assert.deepEqual(t.rowIds, [pause, key], "par ordre alphabétique");
   const row = tableRow(t, "!rappel"), p = tableRow(t, "!pause");
   assert.equal(cellOf(row[2]), "toutes les 10 min · Au moins 3 messages");
-  assert.equal(row[3].title, "Prêt : il compte à partir du prochain message du chat");
+  assert.equal(row[3].title, "Compte à partir du prochain message du chat");
   assert.deepEqual([row[3].switch.action, row[3].switch.on, p[3].switch.on], ["timerToggle", true, false]);
   assert.equal(cellOf(p[2]), "toutes les 90 min", "5 messages en direct = l'ordinaire : rien de plus (R14)");
   assert.equal(cellOf(p[3]), fr.tm_filter_off);

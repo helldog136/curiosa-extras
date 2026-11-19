@@ -279,7 +279,7 @@ test("tools for assistants: read the voice and moderation, change them (bounded)
 });
 
 test("manifest: 1.8.0, optional journal, video settings (six, own tab), viewers tab, FR and EN texts in parity", () => {
-  assert.equal(manifest.version, "1.22.0");
+  assert.equal(manifest.version, "1.22.1");
   // (1.18.0) the Twitch part is inside: every Twitch need is optional (a site without Twitch installs nothing more)
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.api", true], ["twitch.live", true], ["twitch.rewards", true], ["twitch.events.handover", true]]);
   assert.equal(manifest.settings.filter((s) => s.type === "video" && s.tab === "media").length, 6);

@@ -6,13 +6,13 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.15.0",
+  "version": "1.15.1",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
   "description": {
-    "en": "Bridge version: hands its journal and settings over once, then stops listening. Remove it afterwards.",
-    "fr": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter. Retirez-la ensuite."
+    "en": "Bridge version: hands its journal and settings over to the Alerts overlay (OBS) once, then stops listening.",
+    "fr": "Version de passage : donne une fois son journal et ses réglages à Overlay alertes (OBS), puis arrête d'écouter."
   },
   "author": "Helldog136",
   "license": "MIT",
