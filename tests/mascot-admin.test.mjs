@@ -1,4 +1,5 @@
-// Mascotte — l'administration : état et aperçu, apparence (erreurs sous les champs), phrases (140 caractères, 100 au plus), gabarits, droits, outils pour l'assistant IA.
+// Mascot — the administration: state and preview, look (errors under the fields), sentences (140 characters, 100 at most), templates, rights, tools for the AI assistant.
+// The test site speaks French, so the texts asserted below are the French texts of the module.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ctxFor, publishedCtx, def, model as M, store as S, manifest, rows, assets } from "./helpers/mascotKit.mjs";
@@ -8,7 +9,7 @@ const panel = (ctx, query = {}) => def.adminPanel(ctx, { query });
 const byTab = (blocks, tab) => blocks.filter((b) => (b.tab ?? "use") === tab);
 const phraseValues = (over = {}) => ({ text: "Bonjour !", kind: "hello", lang: "fr", pages: "", link: "", state: "published", ...over });
 
-test("à l'installation : phrases de départ posées, mascotte en BROUILLON, rien dans les pages", async () => {
+test("on installation: starter sentences are put, the mascot is a DRAFT, nothing in the pages", async () => {
   const ctx = ctxFor();
   await def.hooks.onInstanceCreate(ctx);
   const phrases = await S.loadPhrases(ctx);
@@ -19,7 +20,7 @@ test("à l'installation : phrases de départ posées, mascotte en BROUILLON, rie
   assert.equal((await S.loadPhrases(ctx)).length, phrases.length, "idempotent");
 });
 
-test("les phrases de départ ne reviennent pas quand on a tout supprimé (gabarit « Vide »)", async () => {
+test("the starter sentences do not come back after everything was deleted (Empty template)", async () => {
   const ctx = ctxFor();
   await panel(ctx);
   await run(ctx, "applyTemplate", { id: "empty" });
@@ -27,25 +28,26 @@ test("les phrases de départ ne reviennent pas quand on a tout supprimé (gabari
   assert.equal((await S.loadPhrases(ctx)).length, 0);
 });
 
-test("le panneau : brouillon, publiée, sans phrase, sans page — chaque état dit ce qu'il faut faire", async () => {
+test("the panel: draft, published, no sentence, no page; a warning says what is wrong, a healthy mascot shows no banner", async () => {
   const ctx = ctxFor();
   let blocks = await panel(ctx);
   assert.equal(blocks[0].tone, "warning");
-  assert.match(blocks[0].text, /brouillon/);
+  assert.match(blocks[0].text, /Brouillon/);
   assert.equal(blocks[1].action, "publish");
   await run(ctx, "publish");
   blocks = await panel(ctx);
-  assert.equal(blocks[0].tone, "success");
-  assert.equal(blocks[1].action, "unpublish");
+  assert.equal(blocks[0].action, "unpublish", "a healthy mascot shows no banner, only its button");
+  assert.ok(!blocks.some((b) => b.type === "banner"));
   assert.ok(blocks.some((b) => b.type === "links" && b.items[0].href === "/?mascot=voir"));
   await run(ctx, "applyTemplate", { id: "empty" });
-  assert.match((await panel(ctx))[0].text, /sans phrase publiée/);
+  assert.match((await panel(ctx))[0].text, /Aucune phrase n'est publiée/);
+  assert.equal((await panel(ctx))[0].href, "?tab=phrases");
   const some = ctxFor({ where: "some", pages: "" });
   await panel(some); await run(some, "publish");
-  assert.match((await panel(some))[0].text, /aucune page/);
+  assert.match((await panel(some))[0].text, /Aucune page/);
 });
 
-test("onglets : aperçu et apparence, phrases et gabarits, adresse de rappel", async () => {
+test("tabs: preview and look, sentences and templates, address to see it again", async () => {
   const blocks = await panel(ctxFor());
   assert.ok(byTab(blocks, "use").some((b) => b.type === "adminForm" && b.action === "saveLook"));
   assert.ok(byTab(blocks, "phrases").some((b) => b.type === "adminForm" && b.action === "savePhrase"));
@@ -55,7 +57,7 @@ test("onglets : aperçu et apparence, phrases et gabarits, adresse de rappel", a
   for (const b of blocks.filter((b) => b.type === "table")) assert.equal(b.rows.length, b.rowIds.length);
 });
 
-test("sans droit d'écrire : ni formulaire ni bouton ; sans droit de publier : pas de bouton Publier", async () => {
+test("without the right to edit: no form and no button; without the right to publish: no Publish button", async () => {
   const blocks = await panel(ctxFor({}, { rights: [] }));
   assert.ok(!blocks.some((b) => b.type === "adminForm") && blocks.every((b) => !b.rowActions));
   const editor = ctxFor({}, { rights: ["edit"] });
@@ -64,7 +66,7 @@ test("sans droit d'écrire : ni formulaire ni bouton ; sans droit de publier : p
   for (const [name, a] of Object.entries(def.adminActions)) assert.ok(manifest.rights.some((r) => r.id === a.right), name);
 });
 
-test("aperçu : couleurs du thème, trois humeurs ; ce qui vient de la personne est échappé ; couleur invalide ignorée", async () => {
+test("preview: theme colours, three moods; what comes from the person is escaped; an invalid colour is ignored", async () => {
   const ctx = ctxFor({}, { theme: { accent: "#e8a23b", accent2: "#22aa88", accentFg: "#111111", bg: "#121214", surface: "#1b1b1d", fg: "#f4f4f5", muted: "#a1a1a3", line: "#2e2e30" } });
   await S.saveConfig(ctx, { names: { fr: "<img src=x onerror=alert(1)>" } });
   const html = (await panel(ctx)).find((b) => b.type === "html").html;
@@ -76,7 +78,7 @@ test("aperçu : couleurs du thème, trois humeurs ; ce qui vient de la personne 
   assert.ok(!(await panel(bad)).find((b) => b.type === "html").html.includes("evil"));
 });
 
-test("apparence : ma propre image — image et description obligatoires, erreurs SOUS un champ avec un exemple", async () => {
+test("look: my own picture needs the picture and its description, errors UNDER a field with an example", async () => {
   const ctx = ctxFor();
   let r = await run(ctx, "saveLook", { look: "image", image: "", alt_fr: "" });
   assert.match(r.errors.look, /Choisissez une image/);
@@ -97,7 +99,7 @@ test("apparence : ma propre image — image et description obligatoires, erreurs
   assert.equal(S.altFor({ ...ctx, locale: "en" }, c), "Un renard orange qui salue");
 });
 
-test("apparence : le dessin inclus n'a besoin de rien ; un fichier envoyé avec cadrage est accepté", async () => {
+test("look: the included drawing needs nothing; an uploaded file with a crop is accepted", async () => {
   const ctx = ctxFor();
   assert.ok((await run(ctx, "saveLook", { look: "builtin", image: "", crop: "round" })).ok);
   const up = "/uploads/123e4567-e89b-12d3-a456-426614174000.png?c=1_1_0.5_0.5_ffffff";
@@ -105,7 +107,7 @@ test("apparence : le dessin inclus n'a besoin de rien ; un fichier envoyé avec 
   assert.equal((await S.loadConfig(ctx)).image, up);
 });
 
-test("publier avec une image sans description est refusé ; le brouillon est toujours possible", async () => {
+test("publishing a picture without a description is refused; draft is always possible", async () => {
   const ctx = ctxFor();
   await S.saveConfig(ctx, { look: "image", image: "https://example.org/a.png", alts: {} });
   assert.match((await run(ctx, "publish")).error, /décrivez/);
@@ -115,7 +117,7 @@ test("publier avec une image sans description est refusé ; le brouillon est tou
   assert.equal((await S.loadConfig(ctx)).published, false);
 });
 
-test("phrases : ajouter, modifier, basculer en brouillon, supprimer", async () => {
+test("sentences: add, edit, switch to draft and back, delete", async () => {
   const ctx = ctxFor();
   await run(ctx, "applyTemplate", { id: "empty" });
   assert.ok((await run(ctx, "savePhrase", phraseValues({ text: "Première phrase." }))).ok);
@@ -124,15 +126,17 @@ test("phrases : ajouter, modifier, basculer en brouillon, supprimer", async () =
   const q = (await S.loadPhrases(ctx))[0];
   assert.deepEqual([q.id, q.text, q.kind, q.pages, q.link], [p.id, "Changée.", "tip", ["/agenda", "/blog/*"], "/agenda"]);
   assert.equal(q.at, p.at);
-  await run(ctx, "togglePhrase", { id: p.id });
+  await run(ctx, "setPhraseState", { id: p.id, enabled: "0" });
   assert.equal((await S.loadPhrases(ctx))[0].state, "draft");
-  await run(ctx, "togglePhrase", { id: p.id });
+  await run(ctx, "setPhraseState", { id: p.id, enabled: "0" });
+  assert.equal((await S.loadPhrases(ctx))[0].state, "draft", "the switch says the wanted state: a second click never undoes the first");
+  await run(ctx, "setPhraseState", { id: p.id, enabled: "1" });
   assert.equal((await S.loadPhrases(ctx))[0].state, "published");
   assert.ok((await run(ctx, "removePhrase", { id: p.id })).ok);
   assert.equal((await S.loadPhrases(ctx)).length, 0);
 });
 
-test("phrases : chaque erreur est SOUS son champ, dit quoi faire et donne un exemple", async () => {
+test("sentences: each error is UNDER its field, says what to do and gives an example", async () => {
   const ctx = ctxFor();
   const cases = [
     [{ text: "" }, "text", /Exemple/], [{ text: "x".repeat(141) }, "text", /141 caractères.*140/],
@@ -148,7 +152,7 @@ test("phrases : chaque erreur est SOUS son champ, dit quoi faire et donne un exe
   assert.match((await run(en, "savePhrase", phraseValues({ text: "Hi {prenom}" }))).errors.text, /\{prenom\} does not exist.*\{site_name\}/);
 });
 
-test("cent phrases au plus ; la liste de l'administration se découpe par 50", async () => {
+test("a hundred sentences at most; the list of the administration is cut by 50", async () => {
   const ctx = ctxFor();
   await run(ctx, "applyTemplate", { id: "empty" });
   for (let i = 0; i < 100; i++) assert.ok((await run(ctx, "savePhrase", phraseValues({ text: `Phrase ${i}` }))).ok);
@@ -160,19 +164,19 @@ test("cent phrases au plus ; la liste de l'administration se découpe par 50", a
   assert.ok((await panel(ctx, { page: "99999" })).length > 0);
 });
 
-test("un identifiant forgé ne vise jamais autre chose qu'une phrase", async () => {
+test("a forged id never targets anything but a sentence", async () => {
   const ctx = ctxFor();
   await panel(ctx);
   await S.saveConfig(ctx, { published: true, names: { fr: "Pixel" } });
   const configId = ctx.dumpStore().find((r) => r.collection === "config").id;
-  for (const name of ["removePhrase", "togglePhrase"]) assert.ok((await run(ctx, name, { id: configId })).error, name);
+  for (const name of ["removePhrase", "setPhraseState"]) assert.ok((await run(ctx, name, { id: configId })).error, name);
   assert.ok((await run(ctx, "savePhrase", phraseValues({ id: configId }))).error);
   assert.ok((await run(ctx, "removePhrase", { id: "n-importe-quoi" })).error);
   assert.equal((await S.loadConfig(ctx)).names.fr, "Pixel");
   assert.equal(rows(ctx, "config").length, 1);
 });
 
-test("gabarits : « Bienvenue discrète » remplace tout, « Vide » efface, un gabarit inconnu est refusé", async () => {
+test("templates: Discreet welcome replaces everything, Empty clears, an unknown template is refused", async () => {
   const ctx = ctxFor();
   await run(ctx, "applyTemplate", { id: "empty" });
   await run(ctx, "savePhrase", phraseValues({ text: "La mienne." }));
@@ -183,15 +187,18 @@ test("gabarits : « Bienvenue discrète » remplace tout, « Vide » efface, un 
   assert.equal((await S.loadPhrases(ctx)).length, phrases.length);
 });
 
-test("site à une seule langue : un seul champ de nom et de description, pas de série anglaise", async () => {
+test("a one-language site: one name field and one description field, no English series", async () => {
   const ctx = ctxFor({}, { locales: ["fr"] });
   const form = (await panel(ctx)).find((b) => b.action === "saveLook");
-  assert.deepEqual(form.fields.filter((f) => /^(name|alt)_/.test(f.name)).map((f) => f.name), ["name_fr", "alt_fr"]);
+  assert.deepEqual(form.fields.filter((f) => /^(name|alt)_/.test(f.name)).map((f) => f.name), ["name_fr"], "the description only shows with my own picture");
+  await S.saveConfig(ctx, { look: "image" });
+  const own = (await panel(ctx)).find((b) => b.action === "saveLook");
+  assert.deepEqual(own.fields.filter((f) => /^(name|alt)_/.test(f.name)).map((f) => f.name), ["alt_fr", "name_fr"]);
   assert.ok(!(await S.loadPhrases(ctx)).some((p) => p.lang === "en"));
   assert.doesNotMatch(form.fields.find((x) => x.name === "name_fr").label, /\(/);
 });
 
-test("outils pour l'assistant : lire ; proposer une phrase est TOUJOURS un brouillon, non accordé d'office, plafond de 100", async () => {
+test("tools for the assistant: read; proposing a sentence is ALWAYS a draft, not granted by default, ceiling of 100", async () => {
   const names = manifest.mcp.map((m) => m.name);
   assert.deepEqual(Object.keys(def.mcp).sort(), [...names].sort());
   assert.ok(names.every((n) => `mascot__${n}`.length <= 64));
@@ -218,7 +225,7 @@ test("outils pour l'assistant : lire ; proposer une phrase est TOUJOURS un broui
   assert.equal((await S.loadPhrases(ctx)).filter((p) => p.state === "published").length, 0);
 });
 
-test("sauvegarde lisible : un tableau des phrases, cellules neutralisées contre les formules", async () => {
+test("readable backup: a table of the sentences, cells neutralised against formulas", async () => {
   const ctx = ctxFor();
   await run(ctx, "applyTemplate", { id: "empty" });
   await run(ctx, "savePhrase", phraseValues({ text: "=HYPERLINK(\"x\")" }));
@@ -227,7 +234,48 @@ test("sauvegarde lisible : un tableau des phrases, cellules neutralisées contre
   assert.match(file.content, /"'=HYPERLINK/);
 });
 
-test("le script ne contient aucune couleur écrite en dur", async () => {
+test("the script contains no hard-coded colour", async () => {
   const built = await assets.buildClient(await publishedCtx());
   assert.ok(!/#[0-9a-f]{3,8}\b/i.test(built.code));
+});
+
+test("look: the picture, its description and its shape only show with my own picture; the name is a folded option", async () => {
+  const ctx = ctxFor();
+  const names = async () => (await panel(ctx)).find((b) => b.action === "saveLook").fields;
+  let fields = await names();
+  assert.deepEqual(fields.filter((f) => !f.folded).map((f) => f.name), ["look"]);
+  assert.ok(fields.filter((f) => /^name_/.test(f.name)).every((f) => f.folded));
+  // Choosing "My own picture" only switches the look: the fields that were not on the form keep what is stored, and nothing is refused yet.
+  await S.saveConfig(ctx, { names: { fr: "Pixel" }, alts: { fr: "Un renard" }, crop: "square" });
+  const r = await run(ctx, "saveLook", { look: "image" });
+  assert.ok(r.ok && !r.errors);
+  let c = await S.loadConfig(ctx);
+  assert.deepEqual([c.look, c.crop, c.names, c.alts], ["image", "square", { fr: "Pixel" }, { fr: "Un renard" }]);
+  fields = await names();
+  assert.deepEqual(fields.filter((f) => !f.folded).map((f) => f.name), ["look", "image", "alt_fr", "alt_en"]);
+  assert.ok(fields.find((f) => f.name === "crop").folded);
+  assert.ok((await run(ctx, "publish")).error, "a picture look without a picture is not published");
+});
+
+test("sentences: one searchable list, the state is a switch, only what differs is written, a sentence opens in a window", async () => {
+  const ctx = ctxFor();
+  await run(ctx, "applyTemplate", { id: "empty" });
+  await run(ctx, "savePhrase", phraseValues({ text: "Everywhere.", lang: "" }));
+  await run(ctx, "savePhrase", phraseValues({ text: "Only here.", lang: "en", pages: "/events", state: "draft" }));
+  const blocks = await panel(ctx, {});
+  const table = blocks.find((x) => x.type === "table" && x.rowActions?.some((a) => a.action === "removePhrase"));
+  assert.equal(table.searchable, true);
+  assert.deepEqual(table.rows.map((r) => r[1]), ["Salutation", "Salutation · anglais · /events"], "no \"All languages\" label on the default");
+  assert.deepEqual(table.rows.map((r) => r[2].switch.on), [true, false]);
+  assert.ok(table.rows.every((r) => r[2].switch.action === "setPhraseState" && r[2].switch.label));
+  assert.ok(table.rowActions.every((a) => a.action !== "togglePhrase"));
+  assert.equal(table.rowActions.find((a) => a.label === "Modifier").presentation, "dialog");
+  const [first] = await S.loadPhrases(ctx);
+  const edit = (await panel(ctx, { edit: first.id })).filter((b) => b.action === "savePhrase");
+  assert.equal(edit.length, 1);
+  assert.equal(edit[0].presentation, "dialog");
+  assert.equal(edit[0].cancelHref, "?tab=phrases");
+  const add = blocks.find((b) => b.action === "savePhrase");
+  assert.equal(add.presentation, undefined, "adding stays in the page: two fields and a click");
+  assert.deepEqual(add.fields.filter((f) => !f.folded).map((f) => f.name), ["text", "kind", "lang"]);
 });

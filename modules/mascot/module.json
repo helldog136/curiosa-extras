@@ -5,12 +5,12 @@
     "fr": "Mascotte",
     "en": "Mascot"
   },
-  "version": "1.5.2",
+  "version": "1.5.3",
   "menuGroup": "content",
   "minCore": "0.11.0",
   "description": {
-    "fr": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
-    "en": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy."
+    "fr": "Un petit personnage discret dans un coin du site. Il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases.",
+    "en": "A small, discreet character in a corner of the site. It says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -205,10 +205,6 @@
         "fr": "Sur quelles pages",
         "en": "On which pages"
       },
-      "help": {
-        "fr": "Elle ne s'impose jamais : une apparition par visite, après quelques secondes.",
-        "en": "It is never pushy: one appearance per visit, after a few seconds."
-      },
       "options": [
         {
           "value": "all",
@@ -227,8 +223,8 @@
         {
           "value": "some",
           "label": {
-            "fr": "Certaines pages (à lister ci-dessous)",
-            "en": "Some pages (listed below)"
+            "fr": "Certaines pages",
+            "en": "Some pages"
           }
         }
       ]
@@ -243,9 +239,10 @@
         "en": "The pages concerned"
       },
       "help": {
-        "fr": "Utile seulement avec « Certaines pages ». Une page par ligne. Exemples : /agenda (cette page), /blog/* (le blog et tout ce qu'il contient).",
-        "en": "Only used with “Some pages”. One page per line. Examples: /events (this page), /blog/* (the blog and everything in it)."
-      }
+        "fr": "Pour « Certaines pages ». Une par ligne, /blog/* pour une rubrique.",
+        "en": "Used with “Some pages”. One per line, /blog/* for a section."
+      },
+      "example": "/events"
     },
     {
       "key": "corner",
@@ -283,8 +280,8 @@
         "en": "Also announce news from other modules"
       },
       "help": {
-        "fr": "Par exemple le jeu du jour, quand un module le propose. Décochez pour que seules vos phrases soient dites.",
-        "en": "For example the daily game, when a module offers it. Untick so that only your own sentences are said."
+        "fr": "Comme le jeu du jour. Décoché : seulement vos phrases.",
+        "en": "Such as the daily game. Off: only your own sentences."
       }
     },
     {
@@ -297,8 +294,8 @@
         "en": "A “Wake the mascot” link at the bottom of pages"
       },
       "help": {
-        "fr": "Utile si une personne l'a coupée pour toujours et veut la retrouver.",
-        "en": "Handy if a visitor switched it off for good and wants it back."
+        "fr": "Pour les personnes qui l'ont coupée pour toujours.",
+        "en": "For visitors who switched it off for good."
       }
     },
     {
@@ -308,12 +305,18 @@
       "advanced": true,
       "tab": "settings",
       "label": {
-        "fr": "Attente avant d'apparaître (secondes, de 3 à 60)",
-        "en": "Wait before appearing (seconds, from 3 to 60)"
+        "fr": "Attente avant d'apparaître",
+        "en": "Wait before appearing"
       },
       "help": {
-        "fr": "Le temps pendant lequel la personne qui visite est tranquille en arrivant sur la page.",
-        "en": "How long the visitor is left alone after arriving on the page."
+        "fr": "Le temps laissé tranquille à l'arrivée.",
+        "en": "Time the visitor is left alone on arrival."
+      },
+      "min": 3,
+      "max": 60,
+      "unit": {
+        "fr": "secondes",
+        "en": "seconds"
       }
     },
     {
@@ -323,12 +326,18 @@
       "advanced": true,
       "tab": "settings",
       "label": {
-        "fr": "Durée minimale d'une bulle (secondes, de 4 à 20)",
-        "en": "Minimum time a bubble stays (seconds, from 4 to 20)"
+        "fr": "Durée minimale d'une bulle",
+        "en": "Minimum time a bubble stays"
       },
       "help": {
-        "fr": "Les phrases longues restent plus longtemps ; la bulle ne se ferme jamais pendant qu'on la survole ou qu'on la lit au clavier.",
-        "en": "Longer sentences stay longer; the bubble never closes while it is hovered or focused."
+        "fr": "Les phrases longues restent plus longtemps.",
+        "en": "Longer sentences stay longer."
+      },
+      "min": 4,
+      "max": 20,
+      "unit": {
+        "fr": "secondes",
+        "en": "seconds"
       }
     },
     {
@@ -338,13 +347,15 @@
       "advanced": true,
       "tab": "settings",
       "label": {
-        "fr": "Messages au plus par jour et par personne (de 1 à 10)",
-        "en": "Most messages per day and per visitor (from 1 to 10)"
+        "fr": "Messages au plus par jour et par personne",
+        "en": "Most messages per day and per visitor"
       },
       "help": {
-        "fr": "Compté dans le navigateur de la personne qui visite. Une apparition par visite, quoi qu'il arrive.",
-        "en": "Counted in the visitor's browser. One appearance per visit, whatever happens."
-      }
+        "fr": "Compté dans le navigateur de la personne.",
+        "en": "Counted in the visitor's browser."
+      },
+      "min": 1,
+      "max": 10
     },
     {
       "key": "transitionIn",
@@ -741,8 +752,8 @@
         "en": "Mascot"
       },
       "description": {
-        "fr": "Un petit personnage qui dit bonjour, donne une astuce ou annonce une nouveauté, avec les phrases que vous avez écrites pour votre site.",
-        "en": "A little character that says hello, shares a tip or announces something new, with the sentences you wrote for your site."
+        "fr": "Un petit personnage qui dit bonjour, donne une astuce ou annonce une nouveauté, avec vos propres phrases.",
+        "en": "A little character that says hello, shares a tip or announces news, with your own sentences."
       },
       "fit": "scale",
       "size": {
