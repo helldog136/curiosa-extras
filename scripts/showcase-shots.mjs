@@ -6,7 +6,7 @@
 //   --setup-only   download and prepare the core, then stop        --keep   keep the working folder
 //   --work <dir>   working folder (default: <system temp>/showcase-work; about 1 GB)        --core <x.y.z>   core version (default CORE_VERSION)
 //   --png <dir>    also keep the PNG of every shot there (to LOOK at them before committing)
-// Needs: Node 22, git, curl, tar, npm, a Chromium (CHROMIUM_PATH, or one under /opt/pw-browsers or ~/.cache/ms-playwright) and the `playwright` package
+// Needs: Node 22 or newer (CI runs Node 24), git, curl, tar, npm, a Chromium (CHROMIUM_PATH, or one under /opt/pw-browsers or ~/.cache/ms-playwright) and the `playwright` package
 // (PLAYWRIGHT_MODULE=<folder holding node_modules/playwright>, or /opt/node-tools). Nothing is installed into this repository.
 // How: the core's own visual harness (scripts/visual: fixed clock, no network, demo content for ~25 modules) builds the site; scripts/showcase/seed.mjs adds the
 // demo streamer and the demo data (scripts/showcase/demo/<module>.mjs). What is photographed: scripts/showcase/plan.mjs.

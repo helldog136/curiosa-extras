@@ -8,7 +8,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Trouver la dernière version publiée de Curiosa
         id: core
         run: |
@@ -16,13 +16,13 @@ jobs:
           test -n "$ref" || { echo "Aucune version publiée de Curiosa trouvée"; exit 1; }
           echo "Curiosa testé : $ref"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: helldog136/Curiosa
           ref: ${{ steps.core.outputs.ref }}
           path: curiosa-core
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+      - uses: actions/setup-node@v5
+        with: { node-version: 24 }
       - name: Préparer le kit de test (sans lancer le site)
         run: npm ci --omit=dev --ignore-scripts && npx prisma generate
         working-directory: curiosa-core

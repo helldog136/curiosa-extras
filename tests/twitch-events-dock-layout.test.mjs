@@ -137,7 +137,9 @@ test("events dock: the controls are folded by default and remembered, icon butto
     assert.equal(await h.page.isVisible("#controls"), false);
     assert.equal(await h.page.evaluate(() => document.querySelectorAll("#list .replay").length), 3, "one replay button per row");
     assert.match(await h.page.getAttribute("#list .row:first-child .replay", "aria-label"), /^Replay the alert: /);
-    await h.page.click("#list .row:first-child .replay"); await h.page.click("#list .row:first-child .replay", { force: true, timeout: 500 }).catch(() => {});
+    // The SAME button twice (a handle, not a selector): once a replay is sent, the list gets a new first row, and a selector would then hit that other row's button (which is what a fast Node 24 did).
+    const replayBtn = await h.page.$("#list .row:first-child .replay");
+    await replayBtn.click(); await replayBtn.click({ force: true, timeout: 500 }).catch(() => {});
     await h.page.waitForTimeout(300);
     assert.equal(h.posts.filter((p) => /"replay"/.test(p)).length, 1, "one replay sent");
     assert.equal(await h.page.evaluate(() => document.querySelector("#scope").tagName + document.querySelector("#typesel").tagName), "SELECTSELECT");

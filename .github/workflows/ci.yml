@@ -24,7 +24,7 @@ jobs:
           - { label: publié, core: published, informational: false }
           - { label: dev (information), core: dev, informational: true }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # tout l'historique et les étiquettes : tests/hot-update-all.test.mjs rejoue la mise à jour depuis la dernière version publiée
           fetch-depth: 0
@@ -41,13 +41,13 @@ jobs:
           test -n "$ref" || { echo "Aucune version publiée du cœur trouvée"; exit 1; }
           echo "Cœur testé : $ref"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: helldog136/Curiosa
           ref: ${{ steps.core.outputs.ref }}
           path: core
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+      - uses: actions/setup-node@v5
+        with: { node-version: 24 }
       # npm rebuild better-sqlite3: the SQLite driver of cores built on Prisma 7 (a native module that --ignore-scripts skips); nothing to do on older cores
       - run: npm ci --ignore-scripts && npm rebuild better-sqlite3 && npx prisma generate
         working-directory: core

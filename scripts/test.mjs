@@ -15,13 +15,14 @@ if (!fs.existsSync(path.join(core, "tests/helpers/register.mjs")) || !fs.existsS
 }
 // Passerelles du cœur (fakeCtx.mjs, builtinChecks.mjs) : elles retrouvent testsupport/ par le dossier courant, qui est celui du cœur.
 for (const f of ["fakeCtx.mjs", "builtinChecks.mjs"]) fs.copyFileSync(path.join(core, "tests/helpers", f), path.join(here, "tests/helpers", f));
+// TEST_REPORTER=tap: the reporter of the inner `node --test` (Node 24 defaults to "spec" when stdout is not a terminal, Node 22 to "tap"); tests that read the summary set it.
 const args = process.argv.slice(2); // fichiers de test à lancer (par défaut : tous) : node scripts/test.mjs tests/x.test.mjs
 const files = args.length ? args.map((f) => path.resolve(f)) : fs.readdirSync(path.join(here, "tests")).filter((f) => f.endsWith(".test.mjs")).map((f) => path.join(here, "tests", f));
 // TMPDIR PROPRE À CETTE EXÉCUTION : un dossier racine unique, supprimé à la fin (même en cas d'échec), hérité par tous les processus de test.
 // Garde-fou : ce que les tests y laissent est listé en clair. KEEP_TEST_TMP=1 : on garde tout (et on dit où) pour déboguer.
 const keep = process.env.KEEP_TEST_TMP === "1";
 const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), "curiosa-extras-tests-"));
-const r = spawnSync(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--import", path.join(core, "tests/helpers/register.mjs"), "--test", ...files], { cwd: core, stdio: "inherit", env: { ...process.env, TMPDIR: runRoot, TMP: runRoot, TEMP: runRoot, CURIOSA_DIR: core, CURIOSA_EXTRAS_DIR: here } } // CURIOSA_DIR : le kit de conformité ; CURIOSA_EXTRAS_DIR : les modules lus sont ceux de CE dépôt
+const r = spawnSync(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--import", path.join(core, "tests/helpers/register.mjs"), "--test", ...(process.env.TEST_REPORTER ? [`--test-reporter=${process.env.TEST_REPORTER}`] : []), ...files], { cwd: core, stdio: "inherit", env: { ...process.env, TMPDIR: runRoot, TMP: runRoot, TEMP: runRoot, CURIOSA_DIR: core, CURIOSA_EXTRAS_DIR: here } } // CURIOSA_DIR : le kit de conformité ; CURIOSA_EXTRAS_DIR : les modules lus sont ceux de CE dépôt
 );
 let code = r.status ?? 1;
 const leftovers = fs.readdirSync(runRoot).filter((n) => n !== "node-compile-cache"); // cache de Node lui-même, pas un dossier de test
