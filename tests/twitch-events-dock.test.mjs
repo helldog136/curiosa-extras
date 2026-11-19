@@ -269,7 +269,7 @@ test("admin: the OBS dock tab says where to copy the address and how to add it i
   const dlg = (await mod.adminPanel(ctx, { query: { dock: "1" } })).find((b) => b.presentation === "dialog" && b.action === "renewDock");
   assert.equal(dlg.fields[0].value, `https://site.example.org/m/ev/dock?k=${k}`);
   assert.deepEqual([dlg.title, dlg.submitLabel, dlg.danger, dlg.cancelHref], ["OBS dock", "Replace the address", true, "?"]);
-  assert.equal(manifest.version, "1.22.0");
+  assert.equal(manifest.version, "1.22.1");
   const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   for (const locale of ["en", "fr"]) assertAdminPageErgonomics(await mod.adminPanel((await site({ locale })).ctx, { query: {} }));
 });

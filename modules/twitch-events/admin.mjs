@@ -167,7 +167,7 @@ export async function panel(ctx, { query } = {}) {
       ...(showState ? [sx.label === usual ? "" : { text: sx.text, badge: sx.tone, ...(sx.why ? { title: sx.why } : {}) }] : []),
       // (1.12.0) channel points: the cell leads to the Rewards tab, where each reward has its own reaction (R25)
       ...(ready ? [ty.id === "redeem" ? { text: `${rx.summaryText(ctx, sums[ty.id])}${sums[ty.id]?.rewards ? ` · ${t("rw_count", { n: sums[ty.id].rewards })}` : ""}`, href: "?tab=rewards", title: t("rw_count_title") } : { text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),   // no column of identical dashes when the overlay is missing (R14)
-      { text: alert ? t("on") : t("off"), switch: { on: alert, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: t("on"), offText: t("off") } }];
+      { text: alert ? t("on") : t("off"), switch: { on: alert, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: "", offText: t("off") } }];   // the usual state (on) is not written on every row (R14)
   });
   return [
     { type: "markdown", text: t("page_intro") },
@@ -175,8 +175,9 @@ export async function panel(ctx, { query } = {}) {
     ...(await rx.setUpBlocks(ctx, al.state, query)),
     ...(await rx.setUpBlocks(ctx, al.state, query, "types")),
     ...[await alertsLink(ctx)].filter(Boolean),
-    { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
-      rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
+    // an empty journal is one plain sentence and its one action (R18, R33): no empty table, no box
+    ...(rows.length ? [{ type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), ...(new Set(lines.map((l) => l.kind)).size > 1 ? { filters: [{ column: 1, allLabel: t("filter_all") }] } : {}), truncate: [3], pageSize: 50,
+      rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] }] : [{ type: "markdown", text: t("empty") }, { type: "links", items: [{ label: t("empty_test"), href: "?tab=types" }] }]),
     ...(await rwAdmin.blocks(ctx, { query: query ?? {}, ready, enabled: enabled.redeem === true })),
     { type: "links", tab: "dock", items: [{ label: t("dock_open"), href: "?tab=dock&dock=1", presentation: "dialog" }] },
     ...(query?.dock === "1" ? [{ ...(await dockDialog(ctx)), tab: "dock" }] : []),

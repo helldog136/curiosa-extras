@@ -28,7 +28,7 @@ function shortDate(ctx, n) {
  */
 export function stateTexts(ctx, state, why, reopen) {
   const t = ctx.t;
-  if (state === "on") return { full: t("state_on"), note: "", word: t("state_on"), text: t("state_on") };
+  if (state === "on") return { full: t("state_on"), note: "", word: t("state_on"), text: "" };   // the usual state is never written next to the switch (R14); `word` still names the filter pill
   if (state === "off") return { full: t("state_off"), note: "", word: t("state_off"), text: t("state_off") };
   if (state === "outside") {
     const note = reopen ? t("note_outside", { date: shortDate(ctx, reopen) }) : t("note_ended");
@@ -43,7 +43,7 @@ const byName = (ctx) => (a, b) => (a.enabled === b.enabled ? 0 : a.enabled ? -1 
 /* ───────────── Le tableau ───────────── */
 
 /** Une ligne : [nom, réponse, origine (pastille écrite), état (interrupteur)]. Une source disparue n'a pas d'interrupteur : seulement son état écrit. */
-function commandRow(ctx, info, c) {
+function commandRow(ctx, info, c, { showOrigin = true } = {}) {
   const t = ctx.t, p = info.s.prefix, origin = originOf(c);
   const onState = c.kind === "partner" || c.kind === "network" ? (c.missing ? c.state : c.onState ?? "on") : c.onState ?? "on";
   const cur = stateTexts(ctx, c.state, c.why, c.reopen);
@@ -58,7 +58,7 @@ function commandRow(ctx, info, c) {
     : { text: cur.word, title: cur.full, switch: { on: c.enabled, action: "toggle", label: c.kind === "word" ? t("sw_label_word", { word: first }) : t("sw_label", { command: first }), onText: (c.enabled ? cur : would).text, offText: t("state_off") } };
   const shows = c.media ? t("row_media", { name: MD.nameOf(c.media, info.lib ?? { items: [] }) }) : "";   // what it also puts on screen: only when it does (R14)
   const answer = [c.text, shows].filter(Boolean).join(" · ");
-  return [{ text: name, title: `${words(p, c).join("  ")}${role ? `  (${role})` : ""}` }, { text: answer, title: answer }, origin === "builtin" ? "" : { text: t(`origin_${origin}`), badge: BADGES[origin] }, state];
+  return [{ text: name, title: `${words(p, c).join("  ")}${role ? `  (${role})` : ""}` }, { text: answer, title: answer }, ...(showOrigin ? [origin === "builtin" ? "" : { text: t(`origin_${origin}`), badge: BADGES[origin] }] : []), state];
 }
 
 /**
@@ -67,10 +67,16 @@ function commandRow(ctx, info, c) {
  */
 export function commandsTable(ctx, info) {
   const t = ctx.t, list = [...info.list, ...(info.words ?? [])].sort(byName(ctx));
+  // A column or a filter that has one single value says nothing (R14, R33): the origin column and its pills appear only when the rows differ, the state pills too.
+  const showOrigin = new Set(list.map(originOf)).size > 1;
+  const rows = list.map((c) => commandRow(ctx, info, c, { showOrigin }));
+  const stateCol = showOrigin ? 3 : 2;
+  const mixedStates = new Set(rows.map((r) => r[stateCol].text)).size > 1;
+  const filters = [...(showOrigin ? [{ column: 2, allLabel: t("filter_all") }] : []), ...(mixedStates ? [{ column: stateCol, allLabel: t("filter_all") }] : [])];
   return {
-    type: "table", columns: [t("col_command"), t("col_answer"), t("col_origin"), t("col_active")], rowIds: list.map((c) => c.key),
-    searchable: true, searchPlaceholder: t("search_commands"), filters: [{ column: 2, allLabel: t("filter_all") }, { column: 3, allLabel: t("filter_any") }], truncate: [0, 1],
-    rows: list.map((c) => commandRow(ctx, info, c)),
+    type: "table", columns: [t("col_command"), t("col_answer"), ...(showOrigin ? [t("col_origin")] : []), t("col_active")], rowIds: list.map((c) => c.key),
+    searchable: true, searchPlaceholder: t("search_commands"), ...(filters.length ? { filters } : {}), truncate: [0, 1],
+    rows,
     rowActions: [{ label: t("act_edit"), href: `${tabHref("use")}&edit={id}`, presentation: "dialog" }, { label: t("delete_btn"), action: "remove", confirm: t("delete_row_confirm"), danger: true }],
   };
 }
@@ -230,8 +236,8 @@ export function logBlock(ctx, s, entries) {
     return `<tr ${K.rowAttrs({ result: e.result }, `${e.user} ${cmd} ${what}`)}><td class="c-name"><span class="ck-ell">${esc(when(e.at))} · ${esc(e.user)}</span></td><td class="c-ans"><span class="ck-ell ck-name" title="${esc(cmd)}">${esc(cmd)}</span></td><td class="c-extra"><span class="ck-ell" title="${esc(what)}">${esc(what)}</span></td></tr>`;
   }).join("");
   const clear = entries.length ? `<button type="button" class="ck-btn small ck-js" data-ck-act="clearLog" data-ck-confirm="${esc(t("log_clear_confirm", { n: entries.length }))}" data-ck-yes="${esc(t("log_clear"))}" data-ck-no="${esc(t("cancel_btn"))}" data-ck-reload data-ck-fail="${esc(t("err_toggle"))}">${esc(t("log_clear"))}</button>` : "";
-  const head = `<div class="ck-head"><h2 class="ck-title">${esc(t("log_title"))}</h2>${clear}</div><p class="ck-intro">${esc(t("log_help"))}</p>`;
-  if (!entries.length) return { type: "html", html: `<div class="ck ck-log">${head}<p class="ck-intro">${esc(t("log_empty"))}</p></div>` };
+  const head = `<div class="ck-head"><h2 class="ck-title">${esc(t("log_title"))}</h2>${clear}</div>`;
+  if (!entries.length) return null;   // nothing recognised yet: no title, no sentence to say so (R33)
   const sent = entries.filter((e) => e.result === "sent").length;
   return {
     type: "html",

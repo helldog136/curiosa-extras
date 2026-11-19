@@ -25,7 +25,7 @@ function world(settings = {}, uploads = [{ url: GIF, by: "u1" }, { url: WAV, by:
 const add = (w, name, kind, file) => w.A.addMedia(w.ctx, { name, kind, file });
 
 test("manifest: 1.8.0, offers alerts.show (read-only list), tab renamed Media, FR/EN parity of the new texts", () => {
-  assert.equal(manifest.version, "1.22.0");
+  assert.equal(manifest.version, "1.22.1");
   const o = manifest.offers.find((x) => x.service === "alerts.show");
   assert.deepEqual([o.version, o.each, o.readOnly], [3, true, ["list", "files", "compositions"]]);
   assert.deepEqual(manifest.tabs.find((t) => t.id === "media").label, { en: "Media", fr: "Médias" });
@@ -118,7 +118,7 @@ test("administration: table with live search, filter, type badge written, dialog
   const wf = world(); wf.ctx = fakeCtx({ key: "mdfr", locale: "fr", messages: fr, settings: {}, uploads: [] });
   assertAdminPageErgonomics(await def.adminPanel(wf.ctx, { query: { tab: "media" } }));
   const empty = (await def.adminPanel(world().ctx, { query: { tab: "media" } })).filter((b) => b.tab === "media" && b.type === "markdown");
-  assert.ok(empty.some((b) => /Add a picture/.test(b.text)), "empty state says what to do");
+  assert.ok(empty.some((b) => b.text === "No file."), "empty state: one short sentence (the buttons above say what to do, R33)");
 });
 
 test("the page: nothing changes without media; with a library it queues, plays a sound file at the media volume, draws sound-only without a card, and clears on Empty the queue", async (t) => {

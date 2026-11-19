@@ -84,8 +84,7 @@ export default {
     const m = await moved(ctx);
     if (!m) return admin.panel(ctx, opts);
     return [
-      { type: "banner", tone: "info", text: ctx.t("moved_banner"), ...(m.path ? { href: m.path } : {}) },   // the banner is the link to the new page (R33: one line, one action)
-      { type: "markdown", text: ctx.t("moved_remove") },
+      { type: "banner", tone: "info", text: ctx.t("moved_banner"), ...(m.path ? { href: m.path } : {}) },   // ONE message, which is also the link to the new page (R33)
     ];
   },
   adminActions: admin.actions,

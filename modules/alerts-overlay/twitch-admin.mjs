@@ -37,7 +37,7 @@ const minText = (ctx, id, n) => (!tw.MINIMUM[id] || !n ? "" : ctx.t(`tw_min_${id
 function optionsForm(ctx, o) {
   const t = ctx.t;
   return { type: "adminForm", tab: "twitch", action: "saveTwitchOptions", title: t("two_title"), submitLabel: t("two_save_btn"), submitStyle: "secondary", fields: [
-    { name: "twitchSounds", kind: "switch", label: t("two_sounds"), value: o.twitchSounds ? "on" : "", help: t("two_sounds_help") },
+    { name: "twitchSounds", kind: "switch", label: t("two_sounds"), value: o.twitchSounds ? "on" : "" },
     { name: "twitchText", kind: "switch", label: t("two_text"), value: o.twitchText ? "on" : "", help: t("two_text_help") },
     { name: "ignoreNames", kind: "text", label: t("two_ignore"), value: o.ignoreNames, example: t("two_ignore_example"), help: t("two_ignore_help") },
     { name: "groupSeconds", kind: "number", folded: true, label: t("two_group"), min: 0, max: 30, step: 1, unit: t("tw_unit_seconds"), value: o.groupSeconds, help: t("two_group_help") },
@@ -51,7 +51,7 @@ export async function panel(ctx, { query = {}, twitch = "editor" } = {}) {
   // (R33) the state is said only when it is not the usual one (paused), and "empty the queue" only when something waits
   const queueBlocks = [
     ...(q.paused ? [{ type: "banner", tone: "warning", text: t("q_paused", { n: q.held }) }] : []),
-    { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
+    { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), submitStyle: "secondary", fields: [] },
     ...(q.held + q.staged > 0 ? [{ type: "table", columns: [t("q_col")], pageSize: 0, rows: [[String(q.held + q.staged)]], rowIds: ["queue"], rowActions: [{ label: t("q_clear_btn"), action: "clearQueue", confirm: t("q_clear_confirm", { n: q.held + q.staged }), danger: true }] }] : []),
   ];
   if (twitch === "none") return queueBlocks;
@@ -63,7 +63,7 @@ export async function panel(ctx, { query = {}, twitch = "editor" } = {}) {
     const c = cfg.types[id];
     // what the alert would say with a sample (never the raw `{name}` words); the tooltip gives the text as written
     return [{ text: typeName(ctx, id), badge: BADGE[id] }, { text: shown[id] || c.template || t(`tw_text_${id}`), title: c.template || t("tw_default_note"), ...(c.image ? { image: { src: c.image, alt: t("tw_image_alt", { type: typeName(ctx, id) }) } } : {}) }, c.seconds ? t("tw_seconds", { n: c.seconds }) : "", minText(ctx, id, c.min),
-      { text: c.on ? t("tw_on") : t("tw_off"), switch: { on: c.on, action: "setType", label: t("tw_switch_label", { type: typeName(ctx, id) }), onText: t("tw_on"), offText: t("tw_off") } }];
+      { text: c.on ? t("tw_on") : t("tw_off"), switch: { on: c.on, action: "setType", label: t("tw_switch_label", { type: typeName(ctx, id) }), onText: "", offText: t("tw_off") } }];   // the usual state (on) is not written on every row (R14)
   });
   const fields = edit ? [
     { name: "id", kind: "hidden", label: "id", value: edit },
@@ -105,14 +105,14 @@ async function viewersBlocks(ctx, cfg) {
   const rep = await tw.loadReport(ctx), vs = await tw.voiceState(ctx), list = await tw.textsList(ctx);
   const voices = rep?.voices ?? [];
   // only what needs a gesture is said: the switch shows "off", and a voice that works is not announced (R33)
-  const state = !cfg.tts.on ? null : !rep ? ["warning", t("tts_state_unknown")] : !rep.supported ? ["warning", t("tts_state_nosupport")] : !voices.length ? ["warning", t("tts_state_novoice")] : vs.muted ? ["info", t("tts_state_muted")] : null;
+  const state = !cfg.tts.on ? null : !rep ? t("tts_state_unknown") : !rep.supported ? t("tts_state_nosupport") : !voices.length ? t("tts_state_novoice") : vs.muted ? t("tts_state_muted") : null;   // every case is a warning: the voice cannot speak
   const voiceOptions = [{ value: "", label: t("tts_voice_auto") }, ...voices.map((x) => ({ value: x.n, label: `${x.n} (${x.l})` })), ...(cfg.tts.voice && !voices.some((x) => x.n === cfg.tts.voice) ? [{ value: cfg.tts.voice, label: cfg.tts.voice }] : [])];
   // the state is said only when it is the unusual one (R14): a held alert; a hidden text is the usual case and is not repeated on every line
   const rows = list.map((x) => [{ text: typeName(ctx, x.type), badge: BADGE[x.type] ?? "neutral" }, x.name, { text: x.text, title: x.text }, { text: x.hold ? t("mod_reason_held", { reason: t(`mod_reason_${x.reason}`) }) : t(`mod_reason_${x.reason}`), badge: x.hold ? "warn" : "neutral" }]);
   return [
     { type: "heading", tab, text: t("vw_head") },
     { type: "markdown", tab, text: t("vw_intro") },
-    ...(state ? [{ type: "banner", tab, tone: state[0], text: state[1] }] : []),
+    ...(state ? [{ type: "banner", tab, tone: "warning", text: state }] : []),
     { type: "heading", tab, text: t("tts_title") },
     { type: "adminForm", tab, action: "saveVoice", submitLabel: t("tts_save_btn"), fields: [
       { name: "on", kind: "switch", label: t("tts_f_on"), value: cfg.tts.on ? "on" : "", help: t("tts_f_on_help") },
