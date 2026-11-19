@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.109.0 — 2026-11-20
+
+*In short: a page can now be shown with a skin other than the site's, so a showcase can have one page per skin. Needs Curiosa 0.45.0.*
+
+### New
+
+- **Pages 1.3.0: "Skin for this page".** In the page editor, under "Options", choose one of the installed skins for that page only. "Same as the site" stays the default. The setting only shows when at least two skins are installed, and a removed skin falls back to the site's.
+- The page is a real preview of the skin: header, menu and footer included, with your "Customize" settings for that skin.
+- AI assistants can choose the skin when they write a page draft; the page stays a draft.
+
+### For developers
+
+- `modules/pages/module.json`: `"skin"` in `content.features` and `"minCore": "0.45.0"` (an older core keeps the old Pages and does not offer it). All the logic is in the core (column `Entry.skin`, `docs/PAGE-SKIN.md`). New test: `tests/pages-skin.test.mjs`.
+
 ## 1.108.2 — 2026-11-19
 
 *In short: Home Assistant 1.4.2 refuses an oversized request body more cleanly. Nothing changes for you.*

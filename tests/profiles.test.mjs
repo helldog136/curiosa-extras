@@ -97,10 +97,11 @@ test("modèles de pages : FR et EN gardent la même structure (mêmes titres de 
   for (const t of templates) assert.deepEqual(shape(t.body.fr), shape(t.body.en), t.id);
 });
 
-test("le module pages reste un module à contenu sans code : aucune permission de plus, version 1.2.0 (ajouts compatibles)", () => {
+test("le module pages reste un module à contenu sans code : aucune permission de plus, version 1.3.0 (ajouts compatibles)", () => {
   assert.deepEqual([...pages.permissions].sort(), ["pages", "sections"]);
-  assert.equal(pages.version, "1.2.0");
-  assert.ok(!("minCore" in pages) && !pages.requires, "un cœur plus ancien ignore la clé `templates` : aucun cœur minimal à exiger");
+  assert.equal(pages.version, "1.3.0");
+  assert.ok(!pages.requires, "un cœur plus ancien ignore la clé `templates` : aucun besoin de module");
+  assert.equal(pages.minCore, "0.45.0", "1.3.0 ajoute la fonction `skin` : un cœur plus ancien garde la version d'avant (la clé `templates` seule n'exigeait rien)");
   assert.ok(!fs.existsSync(new URL("../modules/pages/index.mjs", import.meta.url)), "aucun code ajouté à la page d'administration");
   for (const s of strings(file)) assert.ok(typeof s === "string");
 });
