@@ -427,7 +427,7 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
 });
 
 test("the bridge 1.13.0: offers only the hand-over, keeps working as 1.12.0 until it is called, says it moved, FR/EN parity", () => {
-  assert.equal(bridgeMan.version, "1.15.1");
+  assert.equal(bridgeMan.version, "1.15.2");
   assert.deepEqual(bridgeMan.offers.map((o) => [o.service, o.version]), [["twitch.events.handover", 1]]);
   assert.equal(bridgeMan.mcp, undefined, "its tools are the overlay's now");
   assert.ok(!bridgeMan.permissions.includes("mcp"));

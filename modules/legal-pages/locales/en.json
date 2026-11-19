@@ -65,7 +65,7 @@
   "note.thirdParty": "Content from another site can set its own cookies and receives your visitors' IP address. In Belgium and France, ask for consent first. This template adds no consent banner. To avoid a banner, replace that content with a simple link.",
   "note.list": "An e-mail list needs each person's clear consent, and every message must offer a way to unsubscribe. This template writes it on the page, but it is up to you to follow it.",
   "note.list.CA": "In Canada, the anti-spam law requires each person's consent and an unsubscribe link in every message. This template writes it on the page, but it is up to you to follow it.",
-  "note.keep": "You promise to delete the messages you receive {period} after your last exchange with the person. Remember to clean up your address book.",
+  "note.keep": "You promise to delete the messages you receive {period} after your last exchange with the person. Clean up your address book accordingly.",
   "note.sellsHere": "You sell on your site: this template does not write your terms of sale or the information about the right of withdrawal. They have to be written separately.",
   "note.addressVisible": "Your address will be visible to everyone. If it is your home, you may prefer not to show it (“Address and phone” step).",
   "st.country.title": "Where do you live (or where is your association or company based)?",

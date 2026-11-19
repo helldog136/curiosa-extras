@@ -130,7 +130,7 @@
   "dock_types_label": "Types",
   "dock_search": "Search",
   "dock_search_none": "No line matches. Clear the search.",
-  "dock_empty": "No event yet.",
+  "dock_empty": "No event.",
   "dock_empty_hint": "New events appear here by themselves.",
   "dock_loading": "Loading…",
   "dock_pause": "Pause alerts",

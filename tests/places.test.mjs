@@ -27,16 +27,16 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 
 /** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
 const TWITCH = {
-  "alerts-overlay": ["1.22.1", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
-  "twitch-bot": ["1.24.1", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
+  "alerts-overlay": ["1.22.2", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
+  "twitch-bot": ["1.24.2", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.4.1", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
-  "twitch-channel": ["2.6.1", { main: "networks.twitch", stats: "networks.stats" }],
+  "twitch-channel": ["2.6.2", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.3", { list: "live.raid.list", featured: "live.raid.featured" }],
 };
 /** Every other module with settings or an admin panel (1.100.0): version after migration, and its sections (id → place). */
 const ROLLOUT = {
-  "audience": ["1.12.1", { rooms: "live.participation.rooms", nicknames: "live.participation.rooms", draw: "live.participation.draw" }],
+  "audience": ["1.12.2", { rooms: "live.participation.rooms", nicknames: "live.participation.rooms", draw: "live.participation.draw" }],
   "bandcamp": ["1.2.1", { main: "networks.accounts" }],
   "bluesky": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "calendar-ical": ["1.2.1", { sources: "calendar.schedule.sources" }],
@@ -55,7 +55,7 @@ const ROLLOUT = {
   "facebook": ["1.2.1", { main: "networks.accounts" }],
   "faq": ["1.1.2", { main: "content.faq", inbox: "content.faq.inbox" }],
   "gallery": ["1.3.2", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
-  "game-covers": ["1.5.1", { covers: "community.games.covers", kept: "community.games.covers" }],
+  "game-covers": ["1.5.2", { covers: "community.games.covers", kept: "community.games.covers" }],
   "game-suggestions": ["1.11.2", { main: "community.games" }],
   "github": ["1.3.2", { main: "networks.accounts", stats: "networks.stats" }],
   "hero": ["1.1.0", { banner: "site.home.banners" }],
@@ -63,7 +63,7 @@ const ROLLOUT = {
   "instagram": ["1.2.1", { main: "networks.accounts" }],
   "kick": ["1.2.1", { main: "networks.accounts" }],
   "kofi": ["1.2.1", { main: "networks.accounts" }],
-  "legal-pages": ["1.1.2", { legal: "site.general.privacy" }],
+  "legal-pages": ["1.1.3", { legal: "site.general.privacy" }],
   "live-status": ["1.6.1", { main: "live.golive" }],
   "map": ["1.2.2", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
@@ -83,7 +83,7 @@ const ROLLOUT = {
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
   "stream-story": ["2.15.2", { main: "calendar.story", styles: "calendar.story.styles" }],
-  "supporters": ["1.3.1", { main: "community.supporters" }],
+  "supporters": ["1.3.2", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.5.2", { main: "community.reviews", share: "community.reviews.share" }],
   "thanks-wall": ["1.4.2", { wall: "community.supporters.wall" }],
@@ -93,8 +93,8 @@ const ROLLOUT = {
   "videos": ["1.2.2", { main: "content.videos", shelves: "content.videos.shelves" }],
   "x-twitter": ["1.2.1", { main: "networks.accounts" }],
   "youtube-channel": ["1.5.1", { main: "networks.youtube", stats: "networks.stats" }],
-  "youtube-connector": ["1.5.1", { main: "networks.youtube" }],
-  "youtube-live-actions": ["1.3.1", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
+  "youtube-connector": ["1.5.2", { main: "networks.youtube" }],
+  "youtube-live-actions": ["1.3.2", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
 };
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */

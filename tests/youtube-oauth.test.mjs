@@ -74,7 +74,7 @@ async function withConsole(fn) {
 
 test("manifeste 1.3.0 : valide, secret saisi par la propriétaire, écriture désactivée par défaut et avancée, aucun outil MCP, onglets inchangés, service youtube.api v1", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.5.1");
+  assert.equal(manifest.version, "1.5.2");
   const by = (k) => manifest.settings.find((s) => s.key === k);
   assert.deepEqual(manifest.legacySettings.map((x) => [x.key, !!x.secret]), [["apiKey", true], ["oauthClientId", false], ["oauthClientSecret", true]], "typed in the \"Modify\" windows since 1.5.0");
   assert.ok(!by("oauthClientId") && !by("oauthClientSecret") && !by("apiKey"));

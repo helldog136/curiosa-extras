@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.105.5 — 2026-11-19
+
+*En bref : fin de la passe sur les mots d'état : « pour l'instant », « pour le moment » (messages d'erreur), « Reprise » et les rappels « Pensez à… » disparaissent des écrans des extensions restantes ; chaque texte dit ce qui est vrai maintenant.*
+
+*In short: end of the pass on state wording: "for now", "right now" (error messages), a bare "Resumed" and "Remember to…" reminders are gone from the remaining extensions; each text states what is true now.*
+
+### Améliorations
+
+- **Journal des alertes, Événements Twitch, Bot Twitch, Jaquettes de jeux, Soutiens, Chaîne Twitch, Connecteur YouTube, Actions du direct YouTube, Audience, Pages légales.** Un journal vide dit « Aucun événement. », une erreur dit « Google ne répond pas. » ou « Twitch limite les demandes. » sans « pour l'instant », « Vous n'apparaissez pas sur la page. » remplace « Pour l'instant, vous n'apparaissez pas… », « Reprise : » devient « Alertes reprises : », et le rappel « Pensez à faire le ménage… » devient une consigne précise.
+
+*(English)*
+
+- **Alerts journal, Twitch events, Twitch bot, Game covers, Supporters, Twitch channel, YouTube connector, YouTube live actions, Audience, Legal pages.** An empty journal says "No event.", an error says "Google is not answering." or "Twitch is limiting requests." without "for now", "You do not appear on the page." replaces "For now, you do not appear…", a bare "Resumed:" becomes "Alerts resumed:", and the "Remember to clean up…" reminder becomes a precise instruction.
+
 ## 1.105.4 — 2026-11-19
 
 *En bref : une dernière passe sur les écrans d'administration que la vérification indépendante avait trouvés encore trop bavards : plus de « pour l'instant », de « en principe » ni de phrases qui rassurent, et chaque réserve qui reste est expliquée par écrit.*

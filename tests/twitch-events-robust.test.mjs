@@ -235,7 +235,7 @@ async function signed(ctx, id) {
 
 test("manifest: permission mail, the channel setting (advanced), one-minute watch, FR and EN texts", async () => {
   // (1.18.0) the Twitch part of the alerts overlay: the channel stays a setting; retention, e-mails and silence are options of the first tab (twitch/settings.mjs)
-  assert.equal(manifest.version, "1.22.1");
+  assert.equal(manifest.version, "1.22.2");
   assert.ok(manifest.permissions.includes("mail"));
   assert.ok(manifest.settings.some((s) => s.key === "channel" && s.advanced === true && s.type === "choice"));
   for (const k of ["retentionDays", "healthMail", "silentHours"]) assert.ok(!manifest.settings.some((s) => s.key === k), k);
