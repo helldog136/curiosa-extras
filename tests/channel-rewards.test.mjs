@@ -86,8 +86,8 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.23.1");
-  assert.equal(manifest.minCore, "0.15.0");
+  assert.equal(manifest.version, "1.24.0");
+  assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
   assert.deepEqual(manifest.tabs.map((x) => x.id), ["use", "timers", "rewards", "sources"]);
@@ -739,8 +739,7 @@ test("l'onglet : avant activation une explication et un bouton ; ensuite liste, 
   let blocks = await RA.blocks(w.ctx, await A.context(w.ctx, { declare: false }));
   assert.ok(blocks.some((b) => b.type === "html" && b.html.includes('data-ck-act="rewardsEnable"')), "un bouton d'activation en ligne, sans carte à un seul bouton");
   assert.ok(!blocks.some((b) => b.type === "adminForm" && b.fields.length === 0), "aucune carte qui ne contient qu'un bouton");
-  const steps = blocks.find((b) => b.type === "table" && b.columns[0] === "Étape");
-  assert.equal(steps.rows.length, 3, "trois étapes au plus, avec l'état de chacune");
+  assert.ok(!blocks.some((b) => b.type === "table" && b.columns[0] === "Étape"), "R33 : plus de tableau d'étapes avec des états : le bouton dit quoi faire");
   assert.ok(blocks.every((b) => b.tab === "rewards"));
   await enable(w.ctx);
   const rw = await mk(w);
@@ -845,14 +844,14 @@ test("Historique : sans journal du cœur (cœur plus ancien), les échanges marc
 test("Historique : événements déclarés valides, en deux langues", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.ok(["reward.refunded", "reward.failed"].every((k) => manifest.logEvents.some((e) => e.key === k)));
-  assert.equal(manifest.minCore, "0.15.0");
+  assert.equal(manifest.minCore, "0.36.0");
 });
 
 /* ───────────── 1.12.0 : la création, la modification et le renommage s'ouvrent dans une fenêtre ───────────── */
 
 test("fenêtres des récompenses : « Nouvelle récompense », « Modifier » et « Renommer » s'ouvrent au-dessus de la liste (une seule à la fois), reviennent à l'onglet, repèrent la ligne enregistrée ; le test reste dans la page", async () => {
   const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
-  const { assertAdminPageErgonomics } = await import("./helpers/ergonomicsPending.mjs");
+  const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   const w = await setup();
   const rw = await mk(w);
   await A.actions.rewardCreate.run(w.ctx, { title: "Aspi", cost: "200", what: "custom", actionName: "Lancer l'aspirateur" });

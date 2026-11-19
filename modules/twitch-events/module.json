@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.15.0",
+  "minCore": "0.36.0",
   "id": "twitch-events",
   "name": {
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.13.1",
+  "version": "1.14.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",

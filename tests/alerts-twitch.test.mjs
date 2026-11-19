@@ -203,7 +203,9 @@ test("admin tab: types table with switches, search, edit window with errors unde
     const blocks = await def.adminPanel(w.ctx, { query: {} });
     const table = blocks.find((b) => b.type === "table" && b.tab === "twitch");
     assert.equal(table.rows.length, 10); assert.equal(table.searchable, true); assert.ok(table.rows.every((r) => r[4].switch));
-    assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pause") && blocks.some((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "clearQueue" && a.danger && a.confirm)));
+    assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pause"));
+    assert.ok(!blocks.some((b) => b.type === "table" && b.rowActions?.some((x) => x.action === "clearQueue")), "R33: nothing to empty, no button");
+    assert.ok(!blocks.some((b) => b.type === "banner" && /défilent|scroll/i.test(b.text)), "the usual state is not announced");
     // (1.18.0) Twitch activity 1.12.0 still installed (no hand-over service): the page says to update it, with its link; the full editor stays meanwhile
     assert.equal(blocks.find((b) => b.type === "links" && !b.tab).items[0].href, "/admin/instances/te");
     const dlg = (await def.adminPanel(w.ctx, { query: { edit: "cheer" } })).find((b) => b.presentation === "dialog");
@@ -261,7 +263,7 @@ test("service alerts.queue and the tools for assistants", async () => {
 });
 
 test("manifest: version, tab, four more settings (one advanced), the topic and its schema, FR and EN texts", () => {
-  assert.equal(manifest.version, "1.20.1");
+  assert.equal(manifest.version, "1.21.0");
   const t = manifest.consumes.find((c) => c.topic === "twitch.event");
   assert.ok(t.schema.find((f) => f.key === "id" && f.required) && t.schema.find((f) => f.key === "at" && f.type === "datetime"));
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");

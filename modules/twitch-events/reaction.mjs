@@ -213,24 +213,6 @@ export const actions = {
   },
 };
 
-/**
- * What the first tab says about the way to the screen: the steps and where each one stands (null when all is in place).
- * Whether the element sits in an overlay page cannot be read from here (the core exposes no overlay page to a module): that step has a link and NO state, never a checkmark.
- * With the overlay installed but without a copy, the button of the step sits right under the table (see `setUpBlocks`).
- */
-export async function checklist(ctx, { authorized, listening, authorizeHref }) {
-  const a = await alertsState(ctx), t = ctx.t, added = a.state === "ready" || a.state === "old";
-  if (authorized && listening && added) return null;
-  const done = (ok) => ({ text: ok ? t("cl_done") : t("cl_todo"), badge: ok ? "ok" : "warn" });
-  const rows = [
-    [t("cl_authorized"), done(authorized), !authorized && authorizeHref ? { text: t("cl_authorize_link"), href: authorizeHref } : ""],
-    [t("cl_listening"), done(listening), ""],
-    [t("cl_overlay"), done(added), added || a.state === "setup" ? "" : { text: t("cl_add_link"), href: CATALOGUE }],
-    ...(a.state === "ready" ? [[t("cl_placed"), { text: "—", title: t("cl_placed_title") }, { text: t("cl_placed_link"), href: OVERLAY_PAGES }]] : []),
-  ];
-  return { type: "table", columns: [t("cl_col_step"), t("cl_col_state"), t("cl_col_action")], pageSize: 0, truncate: [0], rowIds: rows.map((_, i) => ["authorized", "listening", "overlay", "placed"][i]), rows };
-}
-
 /** The one-click blocks under the table: the button when the overlay is installed without a copy, the core's install suggestion when it is not installed, the confirmation after the click. */
 export async function setUpBlocks(ctx, state, query, tab) {
   const t = ctx.t, out = [], at = tab ? { tab } : {};

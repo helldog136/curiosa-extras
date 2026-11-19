@@ -90,8 +90,8 @@ test("a subscription of another module with the same type and condition is repor
   await L.ensureListening(b.ctx, s, { now: NOW }); b.tw.subs.forEach((x) => { x.status = "enabled"; });
   assert.equal((await L.ensureListening(b.ctx, s, { now: NOW + 60_000 })).code, "taken");
   const page = await mod.adminPanel(b.ctx, { query: {} });
-  assert.match(page.find((x) => x.type === "banner").text, /Raid/);
-  assert.match(page.find((x) => x.tab === "twitch" && x.type === "markdown" && /Raid/.test(x.text ?? "") && /Un autre module/.test(x.text)).text, /rien n'arrive/);
+  assert.match(page.find((x) => x.type === "connection").reason, /Raid/);
+  assert.match(page.find((x) => x.tab === "twitch" && x.type === "markdown" && /Raid/.test(x.text ?? "") && /Un autre module/.test(x.text)).text, /Un autre module reçoit déjà ceci de Twitch/);
 });
 
 test("the page shows the real reason of each waiting type, in plain words, and 'Try again' works per type", async () => {
@@ -103,7 +103,7 @@ test("the page shows the real reason of each waiting type, in plain words, and '
   const page = await mod.adminPanel(ctx, { query: {} });
   const why = page.find((x) => x.tab === "twitch" && x.type === "markdown" && /Raid/.test(x.text));
   assert.match(why.text, /Raid : Twitch l'a arrêté, car l'autorisation a été retirée/);
-  assert.match(page.find((x) => x.type === "banner").text, /Raid/, "the banner names the type that waits");
+  assert.match(page.find((x) => x.type === "connection").reason, /Raid/, "the state card names the type that waits");
   const table = page.find((x) => x.tab === "twitch" && x.type === "table");
   assert.ok(table.rowActions.some((a) => a.action === "retry" && a.inMenu));
   const before = tw.subs.find((x) => x.type === "channel.raid").id;

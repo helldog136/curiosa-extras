@@ -10,7 +10,7 @@ import { searchText, rowPasses } from "@/core/adminkit/search";
 import { world, say, fr, en, C, SRC, S, entry, link, NOW } from "./helpers/botWorld.mjs";
 import { ownerWorld } from "./helpers/ownerSet.mjs";
 import { htmlOf, rowsOf, pills, formOfBlocks, plain, cellOf, tableOf, tableRow, rowId, dialogsOf, shownFields, foldedFields } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const DIR = new URL("../modules/twitch-bot", import.meta.url).pathname;
 const A = await import("../modules/twitch-bot/admin.mjs");
@@ -44,14 +44,14 @@ test("liste : UN tableau du cœur de 35 commandes, colonnes Commande / Réponse 
   assert.deepEqual([list.searchable, list.searchPlaceholder, list.truncate], [true, fr.search_commands, [0, 1]], "recherche en direct dès le départ, textes longs coupés (R15, R16)");
   assert.deepEqual(list.filters.map((f) => f.column), [2, 3], "pastilles d'origine et d'état");
   const count = (col) => Object.fromEntries([...new Set(list.rows.map((r) => cellOf(r[col])))].map((v) => [v, list.rows.filter((r) => cellOf(r[col]) === v).length]));
-  assert.deepEqual(count(2), { [fr.origin_custom]: 26, [fr.origin_builtin]: 6, [fr.origin_partner]: 3 });
+  assert.deepEqual(count(2), { [fr.origin_custom]: 26, "": 6, [fr.origin_partner]: 3 }, "une commande prête n'a pas d'étiquette : ce qui est le cas courant n'est pas écrit (R14)");
   assert.deepEqual(count(3), { [fr.state_on]: 19, [fr.state_off]: 13, [fr.state_hidden]: 3 });
   assert.equal(list.rows.every((r) => r.length === 4), true);
 });
 
 test("lignes : l'origine est une colonne écrite (pastille colorée), le rôle n'apparaît que s'il est restreint, texte complet en info-bulle", () => {
   assert.deepEqual(R("tip")[2], { text: fr.origin_custom, badge: "accent" });
-  assert.deepEqual(R("playing")[2], { text: fr.origin_builtin, badge: "neutral" });
+  assert.equal(R("playing")[2], "", "la commande prête : pas d'étiquette");
   assert.deepEqual(R("tesla")[2], { text: fr.origin_partner, badge: "ok" });
   assert.ok(cellOf(R("so")[0]).includes(fr.role_mods), "restreinte à la modération : le rôle est dit");
   for (const n of ["tip", "discord", "playing"]) assert.ok(!cellOf(R(n)[0]).includes("Tout le monde") && !cellOf(R(n)[0]).includes("("), `${n} : le rôle par défaut n'est jamais répété`);
@@ -126,7 +126,7 @@ test("partenaires et réseaux sans commande : pas de lignes « Pas encore activ�
   const s = plain((await A.panel(fresh.ctx, { query: {} })).find((b) => !b.tab && b.type === "html" && b.html.includes('class="ck-add"')).html);
   assert.match(s, /3 partenaires et 1 réseau n'ont pas encore de commande\./);
   assert.ok(!(await A.panel(world().ctx, { query: {} })).some((b) => !b.tab && b.type === "html" && b.html.includes('class="ck-add"')), "rien à ajouter : pas de bouton");
-  assert.deepEqual(commandsTable(await A.panel(fresh.ctx, { query: {} })).rows.filter((r) => cellOf(r[2]) !== fr.origin_builtin), [], "ni partenaire ni réseau non activé dans le tableau");
+  assert.deepEqual(commandsTable(await A.panel(fresh.ctx, { query: {} })).rows.filter((r) => cellOf(r[2]) !== ""), [], "ni partenaire ni réseau non activé dans le tableau");
   // un réseau sans commande : « Ajouter » ouvre la fenêtre de sa proposition (nom, texte), enregistrée en l'activant
   const net = dialogsOf(await A.panel(none.ctx, { query: { edit: "network:twitch-channel" } }));
   assert.equal(net.length, 0, "sans réseau de ce nom : pas de fenêtre");
@@ -407,7 +407,8 @@ test("pastilles d'origine : contraste AA (4,5:1) en clair comme en sombre ; le m
   for (const mode of ["light", "dark"]) for (const [origin, [bg, fg]] of Object.entries(KIT.PALETTE[mode])) assert.ok(contrast(bg, fg) >= 4.5, `${mode}/${origin} : ${contrast(bg, fg).toFixed(2)}`);
   const surface = { light: "#ffffff", dark: "#1e1d26" };
   for (const mode of ["light", "dark"]) for (const [origin, [bg]] of Object.entries(KIT.PALETTE[mode])) assert.ok(contrast(bg, surface[mode]) >= 1.04, `${mode}/${origin} se distingue du fond`);
-  for (const o of ["custom", "builtin", "partner", "network"]) assert.ok(fr[`origin_${o}`] && en[`origin_${o}`]);
+  for (const o of ["custom", "partner", "network"]) assert.ok(fr[`origin_${o}`] && en[`origin_${o}`]);
+  assert.ok(!("origin_builtin" in fr) && !("origin_builtin" in en), "plus de mot pour la valeur par défaut");
   assert.ok(KIT.CSS.includes('prefers-color-scheme:dark'), "sombre aussi");
 });
 
@@ -441,7 +442,7 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.23.1");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.24.0");
 });
 
 /* ───────────── "Started by": the timer and the chat | the timer only ───────────── */

@@ -7,7 +7,7 @@ import fs from "node:fs";
 import { world, fr, en, C, SRC } from "./helpers/botWorld.mjs";
 import { ownerWorld } from "./helpers/ownerSet.mjs";
 import { tableOf, dialogsOf, shownFields, foldedFields, cellOf } from "./helpers/ui.mjs";
-import { assertAdminPageErgonomics, adminPageErgonomicsProblems } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics, adminPageErgonomicsProblems } from "./helpers/ergonomics.mjs";
 import { opensInDialog, dialogsLast } from "@/core/adminkit/dialog";
 
 const DIR = new URL("../modules/twitch-bot", import.meta.url).pathname;
@@ -77,8 +77,8 @@ test("les listes sont des tableaux du cœur : recherche dès le départ, même c
 });
 
 test("version et compatibilité : 1.12.0 ; le cœur 0.6.7 est nécessaire (un bouton « Nouvelle … » en fenêtre y est un lien `?…`)", () => {
-  assert.equal(manifest.version, "1.23.1");
-  assert.equal(manifest.minCore, "0.15.0");
+  assert.equal(manifest.version, "1.24.0");
+  assert.equal(manifest.minCore, "0.36.0");
   assert.equal(manifest.dataVersion, 6, "aucune migration : mêmes données, mêmes réglages");
   const keys = manifest.settings.map((s) => s.key);
   assert.ok(["prefix", "onlyWhenLive", "timezone", "chatManage"].every((k) => keys.includes(k)), "mêmes réglages");
@@ -96,7 +96,7 @@ test("plus aucun morceau de page pour ranger un formulaire ou animer un interrup
 
 test("les textes de la fenêtre : mêmes clés en français et en anglais, ton neutre, libellés courts sans deux-points, pas de point d'exclamation", () => {
   const keys = ["delete_row_confirm", "delete_own_only", "edit_partner_title", "edit_network_help", "f_wait_all", "f_wait_user", "unit_seconds", "unit_messages", "f_text_example", "reset_help",
-    "rep_every_help", "rep_lines_help", "rep_when_help", "tm_save_btn", "tm_edit_title", "tm_delete_btn", "tm_delete_confirm", "tm_deleted_cmd", "tm_pick_status", "rw_rename_btn", "rw_save_btn", "rw_new_link"];
+    "rep_every_help", "rep_lines_help", "rep_when_help", "tm_save_btn", "tm_edit_title", "tm_delete_btn", "tm_delete_confirm", "tm_deleted_cmd", "rw_rename_btn", "rw_save_btn", "rw_new_link"];
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
   for (const k of keys) {
     assert.ok(fr[k] && en[k], k);

@@ -26,16 +26,21 @@ const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 /** The main button of the page: an accent link, the same as the one of the Twitch bot. */
 const primary = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
 /**
- * The button that sends the person to Twitch. `force`: the connector offers the link even when it believes the connection is fine (it only knows the permissions
- * a page has declared), and `scopes` carries exactly what is missing. When the connector gives no link, the way to its page stays: there is always a button.
+ * The address that sends the person to Twitch. `force`: the connector offers the link even when it believes the connection is fine (it only knows the permissions
+ * a page has declared), and `scopes` carries exactly what is missing. When the connector gives no link, the way to its page stays. { url, label } or null.
  */
-async function connectLinks(ctx, d, missing = d.missing ?? []) {
-  if (!d.channel) return [];
+async function connectTarget(ctx, d, missing = d.missing ?? [], { first = false } = {}) {
+  if (!d.channel) return null;
   const args = { channel: d.channel, slot: "main", force: true, scopes: missing, returnTo: `/admin/instances/${ctx.instance.id}` };
   let r = null;
   try { r = (await ctx.api.services.callAll(API, "connectLink", args)).find((x) => x.ok && x.value?.ok); } catch { r = null; }
-  if (r?.value?.url) return [primary(ctx.t("connect_btn"), r.value.url)];
-  return d.main?.adminPath ? [primary(ctx.t("connect_fallback"), d.main.adminPath)] : [];
+  if (r?.value?.url) return { url: r.value.url, label: ctx.t(first ? "connect_first_btn" : "connect_btn") };
+  return d.main?.adminPath ? { url: d.main.adminPath, label: ctx.t("connect_fallback") } : null;
+}
+/** The same, as a button block (used where there is no state card: the permissions of the optional types). */
+async function connectLinks(ctx, d, missing = d.missing ?? [], opts) {
+  const target = await connectTarget(ctx, d, missing, opts);
+  return target ? [primary(target.label, target.url)] : [];
 }
 /** Why it does not listen yet, in a sentence, and what to do. */
 export function problemText(ctx, code, d = {}, state = {}) {
@@ -62,28 +67,44 @@ export function reasonLines(ctx, state, enabled) {
     .map((ty) => `- ${t("types_why", { type: t(`type_${ty.id}`), reason: reasonOf(ctx, state.types[ty.id]) })}`);
 }
 
-async function statusBlocks(ctx, d, state) {
-  const t = ctx.t, listen = state.listen ?? {};
+const SETUP_CODES = new Set(["need_connect", "creds_missing", "no_channel"]);
+/**
+ * The state of the listening in the three words of the core (R33). Configured: how many types and when the last event came (one line). Degraded: what is wrong, and the fix.
+ * Not configured: the step to do. Nothing says that all is fine, and the state is checked when the page opens (the journal and the types have it too), never "not checked yet".
+ */
+async function connectionBlock(ctx, d, state) {
+  const t = ctx.t, s = settingsOf(ctx), listen = state.listen ?? {};
   let code = d.code !== "ready" ? d.code : listen.code ?? "unknown";
   if (code === "need_more" && d.code === "ready" && !d.blockedCore?.length) code = "unknown";   // granted since the last check: no alarm while the page re-checks
-  const out = [];
   const typesOn = Object.values(st.enabledOf(state)).filter(Boolean).length;
-  if (code === "listening") {
-    const last = state.lastEventAt ? t("status_last", { when: fmtDate(ctx, state.lastEventAt) }) : t("status_none_yet");
-    out.push({ type: "banner", tone: "success", text: `${t("status_listening", { n: typesOn })} ${last}` });
-  } else {
-    out.push({ type: "banner", tone: "warning", text: problemText(ctx, code, d, state) });
-    if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push(...(await connectLinks(ctx, d, d.missingCore)));
-    else if (code === "creds_missing" && d.main?.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) });
-    else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
+  const base = { type: "connection", id: "twitch", title: t("conn_title"), edit: { href: "?tab=twitch", label: t("conn_edit") } };
+  const check = { label: t("check_btn"), action: "check" };
+  const when = state.lastEventAt ? fmtDate(ctx, state.lastEventAt) : "";
+  const summary = `${t("conn_summary", { n: typesOn })}${when ? ` · ${t("status_last", { when })}` : ""}`;
+  if (code === "listening" && state.health?.code === "silent") return { ...base, state: "degraded", summary, reason: t("health_silent", { n: s.silentHours }), primary: check };
+  if (code === "listening") return { ...base, state: "configured", summary };
+  const reason = problemText(ctx, code, d, state);
+  if (SETUP_CODES.has(code)) {
+    const setup = code === "need_connect" ? await connectLinks(ctx, d, d.missingCore, { first: true })
+      : code === "creds_missing" ? (d.main?.adminPath ? [{ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) }] : [])
+      : [{ type: "markdown", text: t("no_channel_steps") }];
+    return { ...base, state: "notConfigured", reason, setup, edit: undefined };
   }
-  if (state.health?.code === "silent") out.push({ type: "banner", tone: "warning", text: t("health_silent", { n: settingsOf(ctx).silentHours }) });
+  if (code === "nothing_on") return { ...base, state: "degraded", summary: "", reason, primary: { label: t("conn_turn_on"), href: "?tab=twitch" } };
+  let primary = check;
+  if (["need_reconnect", "need_more"].includes(code)) {
+    const target = await connectTarget(ctx, d, d.missingCore);
+    if (target) primary = { label: target.label, href: target.url };
+  }
+  return { ...base, state: "degraded", summary, reason, primary };
+}
+
+async function statusBlocks(ctx, d, state) {
+  const t = ctx.t;
+  const out = [await connectionBlock(ctx, d, state)];
   const c = state.catchup;
   if (c && Date.now() - c.at < 86_400_000 && c.follows + c.subs > 0) out.push({ type: "markdown", text: t("catchup_note", { n: c.follows + c.subs, when: fmtDate(ctx, c.at) }) });
   if (state.health?.mail === "off") out.push({ type: "markdown", text: t("health_mail_off") });
-  if (state.revoked && Date.now() - state.revoked.at < 86_400_000) out.push({ type: "banner", tone: "warning", text: t("revoked_note", { when: fmtDate(ctx, state.revoked.at) }) });
-  // The "Check now" button is only worth its space when something is wrong (the Types tab has one too).
-  if (code !== "listening") out.push({ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] });
   return out;
 }
 
@@ -103,6 +124,16 @@ function optionsForm(ctx, s) {
 }
 
 /**
+ * The window of the OBS dock (`?dock=1`): its address, to copy once into OBS (the label says where it goes). The address is secret: the main button makes a new one, and
+ * the old one stops at once. Nothing about the dock stays on the page: it is a setup done once.
+ */
+async function dockDialog(ctx) {
+  const t = ctx.t;
+  return { type: "adminForm", action: "renewDock", presentation: "dialog", cancelHref: "?", title: t("dock_title_win"), submitLabel: t("dock_renew_btn"), danger: true,
+    fields: [{ name: "address", kind: "text", label: t("dock_copy_label"), value: dockapi.dockUrl(ctx, await dockapi.dockSecret(ctx)) }] };
+}
+
+/**
  * The blocks of the Twitch part, for the home of the listening. `shown`: { follow: true, … } the switches "Shown" of the overlay (null: the column is not given).
  * Blocks without `tab` go to the first tab (status, journal, dock, options); `tab: "twitch"` the types; `tab: "rewards"` the rewards.
  */
@@ -111,8 +142,8 @@ export async function panel(ctx, { query } = {}) {
   await loadOptions(ctx);
   const s = settingsOf(ctx);
   let [d, state, lines] = await Promise.all([diagnose(ctx, s, { declare: false }), st.readState(ctx), st.recent(ctx, 300)]);
-  // Back from Twitch with the permission granted: check at once, so the warning goes away without a click.
-  if (d.code === "ready" && ["need_more", "need_reconnect", "need_connect"].includes(state.listen?.code) && !d.blockedCore.length) {
+  // Back from Twitch with the permission granted, or never checked: check at once, so the state is known and a warning goes away without a click.
+  if (d.code === "ready" && ((["need_more", "need_reconnect", "need_connect"].includes(state.listen?.code) && !d.blockedCore.length) || !state.listen?.code || state.listen.code === "unknown")) {
     await cycle.check(ctx, s, { settle: true }).catch(() => null);
     [d, state] = await Promise.all([diagnose(ctx, s, { declare: false }), st.readState(ctx)]);
   }
@@ -121,10 +152,6 @@ export async function panel(ctx, { query } = {}) {
   // (1.18.0) the Reaction column only when the types differ (R14): the same "Text" on every line of a fresh setup is a title, not a cell
   const ready = !!sums, column = ready && new Set(es.TYPES.map((ty) => (ty.id === "redeem" && sums[ty.id]?.rewards ? "*" : rx.summaryText(ctx, sums[ty.id])))).size > 1;
   const editing = ready && typeof query?.reaction === "string" ? await rx.dialog(ctx, query.reaction) : null;
-  const code0 = d.code !== "ready" ? d.code : state.listen?.code ?? "unknown";
-  const authorized = !["need_connect", "need_reconnect", "need_more", "creds_missing", "no_channel"].includes(code0);
-  const authLink = authorized ? [] : await connectLinks(ctx, d);
-  const steps = await rx.checklist(ctx, { authorized, listening: code0 === "listening", authorizeHref: (/href="([^"]+)"/.exec(authLink[0]?.html ?? "")?.[1] ?? "").replace(/&amp;/g, "&") || null });
   const waiting = es.TYPES.some((ty) => enabled[ty.id] === true && (state.types?.[ty.id]?.code ?? "unknown") === "pending");
   const rows = lines.map((l) => [
     fmtDate(ctx, l.at),
@@ -150,24 +177,19 @@ export async function panel(ctx, { query } = {}) {
       // (1.18.0) the switch "Shown" of the overlay, next to the switch "Received": one line per type, one table (it was a second table in the overlay's tab)
       { text: shown ? t("tw_on") : t("tw_off"), switch: { on: shown, action: "setType", label: t("tw_switch_label", { type: t(`type_${ty.id}`) }), onText: t("tw_on"), offText: t("tw_off") } }];
   });
-  const typesCheck = (d.code !== "ready" ? d.code : state.listen?.code ?? "unknown") === "listening";   // otherwise the status area above has the button
   return [
     { type: "markdown", text: t("page_intro") },
     ...(await statusBlocks(ctx, d, state)),
-    ...(steps ? [steps] : []),
     { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
       rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
     ...(await rwAdmin.blocks(ctx, { query: query ?? {}, ready, enabled: enabled.redeem === true })),
-    { type: "heading", text: t("ev_dock_heading") },
-    { type: "markdown", text: t("dock_intro") },
-    { type: "copy", label: t("dock_copy_label"), text: dockapi.dockUrl(ctx, await dockapi.dockSecret(ctx)) },
-    { type: "table", columns: [t("dock_renew_title")], rows: [[t("dock_renew_help")]], rowIds: ["dock"], pageSize: 0, rowActions: [{ label: t("dock_renew_btn"), action: "renewDock", confirm: t("dock_renew_confirm"), danger: true }] },
+    { type: "links", items: [{ label: t("dock_open"), href: "?dock=1", presentation: "dialog" }] },
+    ...(query?.dock === "1" ? [await dockDialog(ctx)] : []),
     optionsForm(ctx, s),
     { type: "markdown", tab: "twitch", text: t("types_intro") },
     ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "twitch" })) : []),
     ...(reasonLines(ctx, state, enabled).length ? [{ type: "markdown", tab: "twitch", text: reasonLines(ctx, state, enabled).join("\n") }] : []),
     ...(waiting ? [{ type: "refreshWhile", tab: "twitch", pending: true, everySeconds: 3 }] : []),
-    ...(typesCheck ? [{ type: "adminForm", tab: "twitch", action: "check", submitLabel: t("check_btn"), submitStyle: "secondary", fields: [] }] : []),
     ...(editing ? [editing] : []),
     { type: "table", tab: "twitch", columns: [t("col_type"), t("col_state"), ...(column ? [t("col_reaction")] : []), t("col_on"), t("tw_col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0, truncate: column ? [2] : [], searchable: true, searchPlaceholder: t("search_types"),
       rowActions: ready ? [{ label: t("rx_edit_btn"), href: "?tab=twitch&reaction={id}", presentation: "dialog" }, { label: t("test_btn"), action: "testEvent", inMenu: true }, { label: t("retry_btn"), action: "retry", inMenu: true }] : [{ label: t("test_btn"), action: "testEvent" }, { label: t("retry_btn"), action: "retry", inMenu: true }] },
@@ -182,7 +204,7 @@ export const actions = {
   ...rwAdmin.actions,
   async check(ctx) {
     const r = await cycle.check(ctx, settingsOf(ctx), { settle: true });
-    return r.code === "listening" ? { ok: ctx.t("check_ok") } : { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };
+    return r.code === "listening" ? { ok: ctx.t("check_ok", { when: new Date().toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", timeZone: ctx.timezone }) }) } : { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };
   },
   /** The switch of a type: SAYS the wanted state (never inverts). Declares the permissions that become needed, then brings the subscriptions in line. */
   async setEnabled(ctx, values) {

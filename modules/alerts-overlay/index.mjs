@@ -580,10 +580,8 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       ...(waiting ?? []),
       ...ev,
       ...(m === "guest" && shown ? await guestBlocks(ctx) : []),
-      { type: "heading", text: ctx.t("adminTitle") },
-      { type: "markdown", text: ctx.t("adminHelp") },
-      { type: "copy", label: "POST", text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alex","username":"alex"}'` },
-      ...(hasToken ? [] : [{ type: "markdown", text: ctx.t("noToken") }]),
+      // The address to push an alert from another tool exists only once a push code is set: without one, the only line says where to set it (R33: no instruction that cannot work).
+      ...(hasToken ? [{ type: "copy", label: ctx.t("pushLabel"), text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alex","username":"alex"}'` }] : [{ type: "markdown", text: ctx.t("noToken") }]),
       { type: "adminForm", action: "test", title: ctx.t("testTitle"), submitLabel: ctx.t("testSubmit"), fields: [] },
       ...(await youtubeBlocks(ctx)),
       // the queue (first tab, after the push address, as before) and the Twitch events tab of the overlay

@@ -167,7 +167,7 @@ test("silence while live warns by e-mail at once and the page says it", async ()
   assert.equal(r.health, "silent");
   assert.equal(w.ctx.calls.mail.length, 1); assert.match(w.ctx.calls.mail[0].text, /3 heures/);
   const blocks = await mod.adminPanel(w.ctx, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "banner" && /3 heures/.test(b.text)));
+  assert.ok(blocks.some((b) => b.type === "connection" && b.state === "degraded" && /3 heures/.test(b.reason)));
   assert.equal(await mod.adminBadge(w.ctx), 1);
   const status = await mod.mcp.twitch_events_status(w.ctx);
   assert.equal(status.health.state, "silent"); assert.equal(status.health.warnedByMail, true);
@@ -193,7 +193,7 @@ async function signed(ctx, id) {
 
 test("manifest: permission mail, the channel setting (advanced), one-minute watch, FR and EN texts", async () => {
   // (1.18.0) the Twitch part of the alerts overlay: the channel stays a setting; retention, e-mails and silence are options of the first tab (twitch/settings.mjs)
-  assert.equal(manifest.version, "1.20.1");
+  assert.equal(manifest.version, "1.21.0");
   assert.ok(manifest.permissions.includes("mail"));
   assert.ok(manifest.settings.some((s) => s.key === "channel" && s.advanced === true && s.type === "choice"));
   for (const k of ["retentionDays", "healthMail", "silentHours"]) assert.ok(!manifest.settings.some((s) => s.key === k), k);

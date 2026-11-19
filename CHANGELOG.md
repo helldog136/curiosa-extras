@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.104.0 — 2026-11-19
+
+*En bref : Home Assistant, le Bot Twitch, l'Overlay d'alertes et Événements Twitch montrent un état en trois mots (Configuré, Dégradé, Non configuré), une ligne de résumé et un seul bouton « Modifier ». Les bandeaux « Tout va bien », les étapes déjà faites et les tableaux de consignes disparaissent.*
+
+*In short: Home Assistant, the Twitch bot, the Alerts overlay and Twitch events show a state in three words (Configured, Degraded, Not configured), one summary line and a single "Edit" button. The "Everything is fine" banners, the steps already done and the instruction tables are gone.*
+
+### Améliorations
+
+- **Home Assistant 1.4.0.** Une carte de connexion : « Maison · vu il y a 3 min » quand tout va bien, la raison et la marche à suivre sinon. Le changement d'appareil et la dissociation sont dans une fenêtre ; la page se met à jour toute seule. Disparus : la pastille d'appareil, les quatre paragraphes « Direct », l'étape suivante en bloc, le grand bouton d'arrêt tant que rien n'est associé.
+- **Bot Twitch 1.24.0.** La barre « Le bot écoute » devient une carte « Chat Twitch » : une ligne quand il répond, la raison et le lien « Autoriser de nouveau » sinon. Le mode de collaboration s'ouvre dans une fenêtre. Disparus : « Rien à faire », « Rien n'est cassé », l'étiquette « Prête », le tableau des trois étapes des récompenses.
+- **Overlay d'alertes 1.21.0.** Une carte « Écoute de Twitch » (types d'événements reçus, dernier événement), vérifiée à l'ouverture de la page. L'adresse du dock OBS est dans une fenêtre. Disparus : le bandeau d'état, le bouton « Vérifier maintenant », le tableau Fait / À faire, « La voix est prête ».
+- **Événements Twitch 1.14.0.** Même carte, même fenêtre de dock et mêmes mots que l'Overlay d'alertes.
+
+### Pour les développeurs
+
+- Bloc `connection` du cœur 0.36.0 : `minCore` 0.36.0 pour les quatre modules. Un test à trois états (`assertConnectionStates`) par module ; les tests de `channel-rewards` et `alerts-twitch-merge` repassent au kit strict ; `tests/ergonomics-baseline.json` perd 57 lignes de plus et `tests/banners-baseline.json` neuf.
+
+*(English)*
+
+- **Home Assistant 1.4.0.** One connection card: "Home · seen 3 min ago" when all is well, the reason and the fix otherwise. Changing the device and unpairing are in a window; the page updates itself. Gone: the device mark, the four "Live" paragraphs, the next-step block, the big stop button while nothing is paired.
+- **Twitch bot 1.24.0.** The "The bot is listening" bar becomes a "Twitch chat" card: one line when it answers, the reason and the "Authorize again" link otherwise. The collaboration mode opens in a window. Gone: "Nothing to do", "Nothing is broken", the "Ready" label, the three-step table of the rewards.
+- **Alerts overlay 1.21.0.** A "Listening to Twitch" card (event types received, last event), checked when the page opens. The OBS dock address is in a window. Gone: the status banner, the "Check now" button, the Done / To do table, "The voice is ready".
+- **Twitch events 1.14.0.** The same card, dock window and wording as the Alerts overlay.
+
 ## 1.103.0 — 2026-11-18
 
 *En bref : les pages du Connecteur Twitch, de Ma Chaîne Twitch, du Connecteur YouTube et des Actions du live YouTube montrent un état en trois mots (Configuré, Dégradé, Non configuré), une ligne de résumé et un seul bouton « Modifier ». Plus de « Reprise », plus de consigne déjà faite, plus de tableau d'adresses à garder, plus d'état répété.*

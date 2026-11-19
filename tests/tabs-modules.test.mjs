@@ -47,7 +47,7 @@ const CORE_060 = ["bluesky", "discord", "github", "mastodon", "reddit", "discord
   "calendar-manual"].map((d) => `modules/${d}`);
 const TV_SCALE = ["community-stats", "thanks-wall", "game-suggestions", "sponsor-ticker", "twitch-raid", "countdown", "events", "polls", "twitch-channel", "testimonials", "audience", "mascot", "planning"].map((d) => `modules/${d}`);   // overlay elements with the TV type scale: core 0.11.0
 // Modules dont le panneau rend le bloc « connection » (Configuré / Dégradé / Non configuré, R33) : cœur 0.36.0.
-const CONNECTION = ["discord-announcer", "game-covers", "supporters", "live-status", "twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions"].map((d) => `modules/${d}`);
+const CONNECTION = ["discord-announcer", "game-covers", "supporters", "live-status", "twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "twitch-bot", "twitch-events", "alerts-overlay", "home-assistant"].map((d) => `modules/${d}`);
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 

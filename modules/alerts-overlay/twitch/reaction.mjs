@@ -186,19 +186,3 @@ export const actions = {
   },
 };
 
-/**
- * What the first tab says about the way to the screen: the steps and where each one stands (null when all is in place).
- * Whether the element sits in an overlay page cannot be read from here (the core exposes no overlay page to a module): that step has a link and NO state, never a checkmark.
- * (1.18.0) The step "add the alerts overlay" is gone: the listening is in the overlay itself.
- */
-export async function checklist(ctx, { authorized, listening, authorizeHref }) {
-  const t = ctx.t;
-  if (authorized && listening) return null;
-  const done = (ok) => ({ text: ok ? t("cl_done") : t("cl_todo"), badge: ok ? "ok" : "warn" });
-  const rows = [
-    [t("cl_authorized"), done(authorized), !authorized && authorizeHref ? { text: t("cl_authorize_link"), href: authorizeHref } : ""],
-    [t("cl_listening"), done(listening), ""],
-    [t("cl_placed"), { text: "—", title: t("cl_placed_title") }, { text: t("cl_placed_link"), href: OVERLAY_PAGES }],
-  ];
-  return { type: "table", columns: [t("cl_col_step"), t("cl_col_state"), t("cl_col_action")], pageSize: 0, truncate: [0], rowIds: ["authorized", "listening", "placed"], rows };
-}

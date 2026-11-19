@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { world as evWorld, mod as evMod, en as evEn, fr as evFr } from "./helpers/eventsWorld.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const AL = new URL("../modules/alerts-overlay", import.meta.url).pathname;
 const json = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
@@ -120,7 +120,7 @@ test("test button: builds the alert with what is typed, saved or not; nothing is
 
 test("manifests: one module, no reaction service between modules; core 0.15.0; FR/EN parity", () => {
   assert.ok(!alMan.offers.some((x) => ["alerts.reaction", "alerts.reaction.editor"].includes(x.service)), "the protocol between the two halves is gone");
-  assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.15.0");
+  assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.36.0");
   assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
   for (const k of Object.keys(alEn).filter((k) => k.startsWith("rx_") || k.startsWith("cl_"))) assert.equal(vars(alEn[k]), vars(alFr[k]), k);
@@ -181,16 +181,6 @@ test("test from the window: sends the typed values to the overlay without saving
   const r = await evMod.adminActions.testReaction(w.ev, val("follow", { variants: gal(G(1)) }));
   assert.match(r.ok, /Test sent/); assert.equal(got.at(-1).image, G(1)); assert.equal((await tw.loadConfig(w.al)).types.follow.image, "");
   assert.match((await evMod.adminActions.testReaction(w.ev, val("follow", { seconds: "1" }))).errors.seconds, /2 to 60/);
-});
-
-test("checklist: ticks for Twitch authorized and listening, each with its link, and the placement step; nothing when all is done", async () => {
-  const w = both({});
-  const t1 = await evRx.checklist(w.ev, { authorized: false, listening: false, authorizeHref: "https://id.example.org/auth" });
-  assert.deepEqual(t1.rows.map((r) => [r[0], r[1].text, r[1].badge]), [["Twitch authorized", "To do", "warn"], ["Listening to Twitch", "To do", "warn"], ["Alerts placed in an overlay page", "—", undefined]]);
-  assert.equal(t1.rows[0][2].href, "https://id.example.org/auth"); assert.equal(t1.rows[2][2].href, "/admin/overlay-pages");
-  assert.equal(await evRx.checklist(w.ev, { authorized: true, listening: true }), null);
-  const t2 = await evRx.checklist(w.ev, { authorized: true, listening: false });
-  assert.deepEqual(t2.rows.map((r) => r[1].badge), ["ok", "warn", undefined], "the placement step has a link and no state");
 });
 
 test("summary wording: Text, GIF, 3 GIFs · at random, Video, files + sound, '—' without the service", () => {

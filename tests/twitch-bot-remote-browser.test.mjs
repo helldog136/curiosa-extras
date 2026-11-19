@@ -181,7 +181,7 @@ for (const [name, opts] of [["dock 280 px dark", { viewport: [280, 420], dock: t
     try {
       assert.equal(await flat(h), true, "no horizontal scroll");
       const off = await cardText(h);
-      assert.match(off, /Collaboration mode[\s\S]*Off — the bot talks as usual/);
+      assert.match(off, /Collaboration mode[\s\S]*Off/);
       assert.doesNotMatch(await h.page.locator(".tgw", { has: h.page.locator(CARD) }).innerText(), /Commands still answer|Sharing a chat/, "no sentence of help under the switch: it is in the ? bubble");
       const q = own(h).locator(".qm"); const qb = await q.boundingBox();
       assert.ok(qb.width >= 44 && qb.height >= 44 && qb.x + qb.width <= opts.viewport[0] + 0.5, "the ? bubble is a 44 px target inside the width");
@@ -268,7 +268,7 @@ test("collaboration card: choose the timers before and while on; the state line 
     assert.equal((await say(h.w.bot, "!hello", { chatterId: "1", login: "camille", name: "Camille" })).result, "sent", "commands still answer");
     // switch off: the choices stay
     await h.page.locator(CARD).click(); await h.page.waitForSelector(CARD + '[aria-checked="false"]');
-    assert.match(await cardText(h), /Off — the bot talks as usual/);
+    assert.match(await cardText(h), /Off/);
     assert.equal(await h.page.locator('.sgb[aria-checked="true"]:text-is("1 in 2")').count(), 1, "the choices are remembered");
   } finally { await h.close(); }
 });
@@ -292,7 +292,7 @@ test("collaboration card: when the save fails the words are under the switch, th
 test("in French the collaboration card says the same with 'vous' and short words", { skip }, async () => {
   const h = await openCard({ locale: "fr", viewport: [280, 420], dock: true });
   try {
-    assert.match(await cardText(h), /Mode collaboration[\s\S]*Désactivé — le bot parle comme d'habitude/);
+    assert.match(await cardText(h), /Mode collaboration[\s\S]*Désactivé/);
     assert.equal(await own(h).locator(".tgc .seglab").first().innerText(), "Timers quand le mode est activé");
     assert.equal(await own(h).locator(".mo .seglab").first().textContent(), "Quand le mode est activé, arrêt après");
     assert.equal(await own(h).locator(".tgc").first().getAttribute("aria-label"), "Timers quand le mode est activé");
