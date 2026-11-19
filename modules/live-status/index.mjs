@@ -90,8 +90,14 @@ export default ({
             if (gap === "app") blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "notConfigured", reason: t("twitchApp"), primary: { label: t("openConnector"), href: "/admin/modules/twitch-connector" } });
             else if (gap === "channel") blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "notConfigured", reason: t("twitchChannel"), primary: { label: t("openTwitch"), href: "/admin/modules/twitch-channel" } });
             else {
-                const channels = (await liveSources(ctx, { status: false })).map((x) => x.channel);
-                blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "configured", summary: channels.length ? t("sumTwitch", { list: channels.join(", ") }) : t("sumAlways"), edit });
+                // The state is the source's real one: a channel that Twitch cannot answer for (answers are kept a few minutes, like the visitors' ones) makes the card degraded.
+                const sources = await liveSources(ctx);
+                const channels = sources.map((x) => x.channel);
+                const broken = sources.find((x) => x.status && x.status.known !== true && x.status.error);
+                if (broken) {
+                    const refused = ["auth", "config", "forbidden", "scope"].includes(broken.status.error);
+                    blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "degraded", reason: t(refused ? "twitchRefused" : "twitchDown"), primary: { label: t("openConnector"), href: "/admin/modules/twitch-connector" }, edit });
+                } else blocks.push({ type: "connection", id: "twitch", title: t("twitchTitle"), state: "configured", summary: channels.length ? t("sumTwitch", { list: channels.join(", ") }) : t("sumAlways"), edit });
             }
         }
         if (yt.state === "unknown") {

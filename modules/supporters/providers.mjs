@@ -66,14 +66,14 @@ const PATREON = {
   steps: {
     fr: [
       "Connectez-vous à Patreon, puis ouvrez la page « développeurs » (patreon.com/portal/registration/register-clients).",
-      "Créez un « client » avec le nom de votre site. Le reste peut rester tel quel.",
+      "Créez un « client » avec le nom de votre site.",
       "Copiez le « Creator's Access Token » affiché sur la page du client.",
       "Collez-le dans l'onglet Réglages, champ « Code d'accès de la plateforme », puis enregistrez.",
       "Revenez ici : la carte de connexion se met à jour.",
     ],
     en: [
       "Log in to Patreon, then open the “developers” page (patreon.com/portal/registration/register-clients).",
-      "Create a “client” with your site's name. Everything else can stay as it is.",
+      "Create a “client” with your site's name.",
       "Copy the “Creator's Access Token” shown on the client's page.",
       "Paste it in the Settings tab, field “Access code of the platform”, then save.",
       "Come back here: the connection card updates.",

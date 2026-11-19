@@ -365,7 +365,8 @@ export default {
     const connection = await connect.panel(ctx, channel, async () => results, { carried, handover });
     if (!tracking) return connection;
     const connected = !!results.find((r) => r.metric === "followers" && !r.result.error);
-    return [...connection, ...(await analytics.panel(ctx, found?.creds ?? (await credentials(ctx)), connected))];
+    // Without a Twitch application nothing is measured: the connection card above says so (and where to fix it), so the tracking card says nothing more.
+    return [...connection, ...(await analytics.panel(ctx, found?.creds ?? (await credentials(ctx)), connected, { ready: st.ready, alone: connection.length === 0 }))];
   },
   adminActions: {
     async forgetAdopted(ctx) {

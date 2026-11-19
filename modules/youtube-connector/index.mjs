@@ -87,19 +87,22 @@ export default {
     const s = await status(ctx);
     const cur = await creds.read(ctx);
     const c = await accountConnection(ctx);
-    const blocks = [keyBlock(ctx, s), ...(await accountBlocks(ctx, c))];
+    const blocks = [keyBlock(ctx, s, cur), ...(await accountBlocks(ctx, c, query?.setup === "account", s.key !== "missing"))];
     if (query?.edit === "key") blocks.push(keyDialog(ctx, cur));
     if (query?.edit === "account") blocks.push(accountDialog(ctx, cur));
     return blocks;
   },
 };
 
-/** The access code: one block (state, quota of the day on one line, "Modify"). The quota only becomes a problem when it is used up. */
-function keyBlock(ctx, s) {
+/** The access code: one block (state, quota of the day on one line, "Modify"). The daily allowance is shown only when it is nearly used up, as a problem when it is used up. */
+function keyBlock(ctx, s, cur) {
   const head = { type: "connection", id: "key", title: ctx.t("key_title"), summary: "" };
   if (s.key === "missing") return { ...head, state: "notConfigured", reason: ctx.t("key_missing"), primary: { label: ctx.t("key_register"), href: "?edit=key" }, setup: [{ type: "markdown", text: ctx.t("key_help") }] };
+  // One line: which code is set (its last characters, never more). The daily allowance joins it only when it is nearly used up (once used up, the reason says it).
+  const near = s.quota.budget > 0 && !s.quota.exhausted && s.quota.used >= s.quota.budget * 0.8;
+  const which = ctx.t("key_summary", { tail: String(cur?.apiKey ?? "").slice(-4) });
   const base = {
-    ...head, summary: ctx.t("quota_summary", { used: s.quota.used.toLocaleString(ctx.locale), budget: s.quota.budget.toLocaleString(ctx.locale) }), edit: { href: "?edit=key" },
+    ...head, summary: near ? `${which} · ${ctx.t("quota_summary", { used: s.quota.used.toLocaleString(ctx.locale), budget: s.quota.budget.toLocaleString(ctx.locale) })}` : which, edit: { href: "?edit=key" },
     net: [{ host: HOST, label: "YouTube", ...(s.lastGoodAt ? { lastGoodAt: s.lastGoodAt } : {}) }],
   };
   if (s.key === "refused") return { ...base, state: "degraded", reason: ctx.t("key_refused"), primary: { label: ctx.t("key_fix"), href: "?edit=key" } };
@@ -111,7 +114,7 @@ function keyDialog(ctx, cur) {
   const has = !!cur.apiKey, carried = cur.carried.includes("apiKey");
   return {
     type: "adminForm", presentation: "dialog", action: "saveKey", cancelHref: "?", title: ctx.t("key_title"), submitLabel: ctx.t("key_save"),
-    fields: [{ name: "apiKey", label: ctx.t("f_key"), kind: "secret", help: ctx.t("f_key_help"), ...(has ? { value: "", valueHint: carried ? "carried" : "kept", ...(carried ? { valueSource: ctx.t("source_channel") } : {}) } : {}) }],
+    fields: [{ name: "apiKey", label: ctx.t("f_key"), kind: "secret", help: ctx.t("f_key_help"), ...(has ? { value: "", valueHint: "kept" } : {}) }],
     ...(carried ? { secondaryAction: { label: ctx.t("key_forget"), action: "forgetKey", confirm: ctx.t("key_forget_confirm") } } : {}),
   };
 }
@@ -131,7 +134,7 @@ const form = (action, label) => ({ type: "adminForm", action, submitLabel: label
 const lastReason = (ctx, c) => (c.last && c.last.code !== "disconnected" && c.last.code !== "write_missing" ? ctx.t(`last_${c.last.code}`) : "");
 
 /** The YouTube account (optional): one block, in the state that tells what the person can do now. No network call, never a token or a secret. */
-async function accountBlocks(ctx, c) {
+async function accountBlocks(ctx, c, asked = false, keySet = true) {
   const wanted = ctx.setting("chatReply") === true;
   const head = { type: "connection", id: "account", title: ctx.t("acc_title"), summary: "" };
   if (c.state === "connected") {
@@ -150,6 +153,8 @@ async function accountBlocks(ctx, c) {
     return [{ ...head, state: "degraded", reason: ctx.t("acc_stale"), edit: { href: "?edit=account" }, primary: c.configured ? { label: ctx.t("btn_connect"), action: "accountConnect" } : { label: ctx.t("acc_fix"), href: "?edit=account" } }];
   }
   if (!c.configured) {
+    // Optional and not started: one action, not a "not configured" card with a guide. The guide opens when the person asks for it (or once something was typed or failed).
+    if (!asked && !c.idSet && !c.secretSet && !lastReason(ctx, c)) return keySet ? [{ type: "links", items: [{ label: ctx.t("acc_start"), href: "?setup=account" }] }] : [];   // the access code comes first
     const reason = c.idSet && !c.idOk ? ctx.t("acc_bad_id") : c.secretSet && !c.secretOk ? ctx.t("acc_bad_secret") : lastReason(ctx, c) || ctx.t("acc_none");
     const primary = c.idSet || c.secretSet ? { label: ctx.t("acc_fix"), href: "?edit=account" } : { label: ctx.t("acc_register"), href: "?edit=account" };
     return [{ ...head, state: "notConfigured", reason, primary, setup: [{ type: "html", html: stepsHtml(ctx) }] }];

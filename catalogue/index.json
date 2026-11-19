@@ -746,7 +746,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
       "ref": "v1.105.1",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1033,21 +1033,21 @@
     {
       "id": "game-covers",
       "name": "Game covers",
-      "description": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks.",
+      "description": "Finds the cover of your video games, even when one source is down.",
       "i18n": {
         "en": {
           "name": "Game covers",
-          "description": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks."
+          "description": "Finds the cover of your video games, even when one source is down."
         },
         "fr": {
           "name": "Jaquettes de jeux",
-          "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics."
+          "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
       "ref": "v1.105.1",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
@@ -1524,7 +1524,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
       "ref": "v1.105.1",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2528,7 +2528,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/supporters",
       "ref": "v1.105.1",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤝",
@@ -2939,21 +2939,21 @@
     {
       "id": "twitch-channel",
       "name": "My Twitch channel",
-      "description": "Showcases your Twitch channel: header button, live status, latest clips. Once connected, it counts your followers and paying subscribers, and measures your lives and the views of your videos.",
+      "description": "Showcases your Twitch channel: header button, live status, latest clips, statistics.",
       "i18n": {
         "en": {
           "name": "My Twitch channel",
-          "description": "Showcases your Twitch channel: header button, live status, latest clips. Once connected, it counts your followers and paying subscribers, and measures your lives and the views of your videos."
+          "description": "Showcases your Twitch channel: header button, live status, latest clips, statistics."
         },
         "fr": {
           "name": "Ma Chaîne Twitch",
-          "description": "Met en avant votre chaîne Twitch : bouton, statut en direct, derniers clips. Une fois connectée, elle compte vos followers et abonnements payants, et mesure vos directs et les vues de vos vidéos."
+          "description": "Met en avant votre chaîne Twitch : bouton, statut en direct, derniers clips, statistiques."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.105.1",
-      "version": "2.6.0",
+      "version": "2.6.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3005,7 +3005,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-connector",
       "ref": "v1.105.1",
-      "version": "1.8.0",
+      "version": "1.8.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3286,7 +3286,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-connector",
       "ref": "v1.105.1",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3318,7 +3318,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-live-actions",
       "ref": "v1.105.1",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",

@@ -459,7 +459,7 @@ test("panneau, application réglée : une ligne et « Modifier » ; ni guide, ni
   assert.ok(!/Reprise|Carried|Prête|Ready|Incomplete/.test(JSON.stringify(p)), "no internal state word");
 });
 
-test("fenêtre « Modifier » : les valeurs réglées s'affichent comme réglées ; une valeur reprise le dit, et « Oublier l'application reprise » vit ici", async () => {
+test("fenêtre « Modifier » : les valeurs réglées s'affichent comme réglées ; une valeur reprise d'un autre module se montre comme les autres, et « Oublier l'application » vit ici", async () => {
   const own = mk({ settings: { appClientId: "abcd1234", appSecret: "SEC-RET" } });
   const w = dialog(await def.adminPanel(own.ctx, { query: { edit: "app" } }));
   assert.equal(w.presentation, "dialog");
@@ -469,9 +469,9 @@ test("fenêtre « Modifier » : les valeurs réglées s'affichent comme réglée
   const C = mk({ settings: {} });
   await C.methods.adopt({ clientId: "abcd1234", clientSecret: "SEC-RET", channel: "machaine", redirectUri: OLD });
   const carried = dialog(await def.adminPanel(C.ctx, { query: { edit: "app" } }));
-  assert.deepEqual(carried.fields.map((f) => [f.valueHint, f.valueSource]), [["carried", "Ma Chaîne Twitch"], ["carried", "Ma Chaîne Twitch"]]);
+  assert.deepEqual(carried.fields.map((f) => [f.valueHint, f.valueSource]), [["kept", undefined], ["kept", undefined]], "no internal word: a carried-over value reads like any kept value");
   assert.equal(carried.secondaryAction.action, "forgetApp");
-  assert.equal(carried.secondaryAction.label, "Oublier l'application reprise");
+  assert.equal(carried.secondaryAction.label, "Oublier l'application");
   assert.ok(carried.secondaryAction.confirm.includes("effacés"), "the confirmation says what is lost");
   const page = await def.adminPanel(C.ctx, { query: {} });
   assert.ok(!JSON.stringify(page).includes(fr.forget) && !JSON.stringify(page).includes(OLD), "not a loose button, not a table of addresses");

@@ -314,6 +314,6 @@ test("a corrected cover that was never asked for shows 'not copied yet' (pending
 });
 
 test("manifest 1.3.2: a corrective version, nothing else added (no permission, no host)", () => {
-  assert.equal(manifest.version, "1.5.0");
+  assert.equal(manifest.version, "1.5.1");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
 });

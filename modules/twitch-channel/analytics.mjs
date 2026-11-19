@@ -102,39 +102,41 @@ function sessionRow(ctx, s) {
  * « Mes directs » : the state of the tracking on one line (a `connection` block: since when it measures, what is wrong, « Erase the measures » in its menu), then the lives,
  * the game that wins the most followers and the most viewed videos. A section with nothing to show is not shown.
  */
-export async function panel(ctx, creds, connected) {
+export async function panel(ctx, creds, connected, { ready = true, alone = false } = {}) {
   const t = ctx.t;
   const st = await live.trackingState(ctx);
   const kept = await ctx.api.store.count(live.COLLECTIONS.sessions);
   const trouble = st.lastError && st.lastError.at > (st.lastOkAt ?? 0);
-  const out = [{
+  const out = ready ? [{
     type: "connection", id: "tracking", title: t("live_title"), summary: st.since ? t("live_since", { date: day(ctx, st.since) }) : t("live_waiting"), edit: { href: "?tab=settings" }, state: trouble ? "degraded" : "configured",
     ...(trouble ? { reason: t("live_trouble"), since: new Date(st.lastError.at).toISOString() } : {}),
     ...(kept ? { menu: [{ label: t("live_erase"), action: "eraseLive", confirm: t("live_eraseConfirm", { n: kept }), danger: true }] } : {}),
-  }];
+  }] : alone ? [{ type: "connection", id: "tracking", title: t("live_title"), summary: "", edit: { href: "?tab=settings" }, state: "notConfigured", reason: t("live_noApp") }] : [];
 
   const { sessions } = await live.listSessions(ctx, { limit: 8 });
   if (sessions.length) out.push({ type: "table", columns: [t("col_live"), t("col_result")], rows: sessions.map((s) => sessionRow(ctx, s)) });
 
   // the game that wins the most followers: only once the channel is connected (followers are counted through the connection)
   if (connected) {
-    out.push({ type: "heading", text: t("live_bestTitle") });
     const recent = (await live.listSessions(ctx, { since: Date.now() - 90 * DAY, limit: 600 })).sessions;
     const games = live.gamesOf(recent).filter((g) => g.followersPerHour != null).sort((a, b) => b.followersPerHour - a.followersPerHour).slice(0, 4);
-    if (games.length) out.push({ type: "table", columns: [t("col_game"), t("col_result")], rows: games.map((g) => [gameName(ctx, g.game), `${t("live_bestRate", { rate: signed(ctx, g.followersPerHour) })}\n${t("live_bestHours", { hours: num(ctx, g.hoursLive) })}`]) });
-    else out.push({ type: "markdown", text: t("live_bestNone") });
+    // Nothing to compare yet: no heading and no sentence that only explains the emptiness.
+    if (games.length) {
+      out.push({ type: "heading", text: t("live_bestTitle") });
+      out.push({ type: "table", columns: [t("col_game"), t("col_result")], rows: games.map((g) => [gameName(ctx, g.game), `${t("live_bestRate", { rate: signed(ctx, g.followersPerHour) })}\n${t("live_bestHours", { hours: num(ctx, g.hoursLive) })}`]) });
+    }
   }
 
   // the videos: read after the first measure; nothing is shown before that
   const lists = await live.readLists(ctx);
   if (lists) {
-    out.push({ type: "heading", text: t("live_videosTitle") });
     const vids = lists.videos ?? { items: [], error: null };
     const top = [...vids.items].sort((a, b) => b.views - a.views).slice(0, 8);
+    if (top.length || vids.error) out.push({ type: "heading", text: t("live_videosTitle") });
     if (top.length) {
       if (vids.error) out.push({ type: "markdown", text: t("live_videosStale") });
       out.push({ type: "table", columns: [t("col_video"), t("col_views")], rows: top.map((v) => [`${v.title || "—"}\n${t(`type_${v.type}`)} · ${shortDay(ctx, Date.parse(v.publishedAt))}`, t("live_views", { n: num(ctx, v.views) })]) });
-    } else out.push({ type: "markdown", text: t(vids.error ? "live_videosError" : "live_videosNone") });
+    } else if (vids.error) out.push({ type: "markdown", text: t("live_videosError") });
     const clips = (lists.clips?.items ?? []).slice(0, 5);
     if (clips.length) out.push({ type: "table", columns: [t("col_clip"), t("col_views")], rows: clips.map((c) => [`${c.title || "—"}\n${[c.game, shortDay(ctx, Date.parse(c.publishedAt))].filter(Boolean).join(" · ")}`, t("live_views", { n: num(ctx, c.views) })]) });
   }
