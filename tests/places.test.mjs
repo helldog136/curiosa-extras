@@ -40,7 +40,7 @@ const ROLLOUT = {
   "bandcamp": ["1.2.1", { main: "networks.accounts" }],
   "bluesky": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "calendar-ical": ["1.2.1", { sources: "calendar.schedule.sources" }],
-  "calendar-manual": ["1.3.1", { streams: "calendar.schedule.streams" }],
+  "calendar-manual": ["1.4.0", { streams: "calendar.schedule.streams" }],
   "commissions": ["1.1.2", { main: "community.commissions", packages: "community.commissions.packages" }],
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
@@ -48,7 +48,7 @@ const ROLLOUT = {
   "content-planner": ["1.1.2", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
-  "directory": ["1.2.3", { main: "content.directory" }],
+  "directory": ["1.3.0", { main: "content.directory" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
@@ -65,7 +65,7 @@ const ROLLOUT = {
   "kofi": ["1.2.1", { main: "networks.accounts" }],
   "legal-pages": ["1.1.3", { legal: "site.general.privacy" }],
   "live-status": ["1.6.1", { main: "live.golive" }],
-  "map": ["1.2.3", { main: "content.map", types: "content.map.types" }],
+  "map": ["1.3.0", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "maze-overlay": ["1.3.1", { look: "obs.overlays.maze", motion: "obs.overlays.maze" }],
   "partnerships": ["2.5.1", { main: "community.partners" }],
@@ -85,12 +85,12 @@ const ROLLOUT = {
   "stream-story": ["2.15.3", { main: "calendar.story", styles: "calendar.story.styles" }],
   "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
-  "testimonials": ["1.5.3", { main: "community.reviews", share: "community.reviews.share" }],
+  "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
   "thanks-wall": ["1.4.2", { wall: "community.supporters.wall" }],
   "threads": ["1.2.1", { main: "networks.accounts" }],
   "ticker-overlay": ["1.3.0", { main: "obs.overlays.ticker" }],
   "tiktok": ["1.2.1", { main: "networks.accounts" }],
-  "videos": ["1.2.3", { main: "content.videos", shelves: "content.videos.shelves" }],
+  "videos": ["1.3.0", { main: "content.videos", shelves: "content.videos.shelves" }],
   "x-twitter": ["1.2.1", { main: "networks.accounts" }],
   "youtube-channel": ["1.5.1", { main: "networks.youtube", stats: "networks.stats" }],
   "youtube-connector": ["1.5.2", { main: "networks.youtube" }],
@@ -99,8 +99,8 @@ const ROLLOUT = {
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
-/** Modules whose minimum core moved for the live search of their lists (R15, `searchable`, core 0.6.0), the one other reason besides the connection block. */
-const LIVE_SEARCH_CORE = { faq: "0.6.0" };
+/** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
+const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */

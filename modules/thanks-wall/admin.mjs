@@ -160,10 +160,9 @@ async function messageBlocks(ctx, wall, query) {
   const pages = Math.max(1, Math.ceil(filtered.length / LIMITS.adminPage));
   const page = Math.min(pages, Math.max(1, P.int(str(query.page), 1, 1, 100000)));
   const slice = filtered.slice((page - 1) * LIMITS.adminPage, page * LIMITS.adminPage);
-  if (all.length > LIMITS.adminPage || q) out.push({ type: "adminForm", action: "messageSearch", submitLabel: t("msgSearchButton"), fields: [{ name: "q", kind: "text", label: t("msgSearchLabel"), value: q, help: t("msgSearchHelp") }] });
-  if (!filtered.length) { out.push({ type: "markdown", text: t("msgSearchNone") }); return out; }
   out.push({
-    type: "table", columns: [t("colPerson"), t("colMessage")],
+    // Live search asked of the server (the list is paged): the table always comes back, with no row when nothing matches (R15).
+    type: "table", columns: [t("colPerson"), t("colMessage")], searchable: "server", searchPlaceholder: t("msgSearchLabel"), empty: t("msgSearchNone"), truncate: [0, 1],
     rows: slice.map((p) => [many ? `${p.shown} (${[...new Set(p.groups)].join(", ")})` : p.shown, data?.messages.has(p.id) ? P.pickText(data.messages.get(p.id).texts, ctx.locale, ctx.defaultLocale) : "—"]),
     rowIds: slice.map((p) => p.id), rowActions: can(ctx) ? [{ label: t("msgWrite"), href: "?msg={id}" }] : [],
   });
@@ -244,10 +243,6 @@ export const actions = {
   honorClear: { right: RIGHT, async run(ctx, values) {
     const r = await D.clearHonor(ctx, clean(values.id, 7));
     return r.ok ? back(ctx, ctx.t("honorRemoved")) : { error: ctx.t("errSave") };
-  } },
-  messageSearch: { right: RIGHT, async run(ctx, values) {
-    const q = clean(values.q, 100);
-    return { redirect: q ? `?q=${enc(q)}` : "?" };
   } },
   messageSave: { right: RIGHT, async run(ctx, values) {
     const texts = readTexts(ctx, "text", values);

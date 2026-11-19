@@ -112,10 +112,7 @@
   "statePublished": "Publié",
   "stateDraft": "Brouillon",
   "stateAll": "Tous les états",
-  "filterTitle": "Chercher dans mes lieux",
-  "filterQ": "Mot à chercher",
-  "filterState": "État",
-  "filterGo": "Chercher",
+  "filterQ": "Chercher dans mes lieux",
   "emptyAdmin": "Aucun lieu. Ajoutez le premier avec le formulaire ci-dessus.",
   "noMatch": "Aucun lieu ne correspond à cette recherche.",
   "checkOnOsm": "Vérifier la position sur OpenStreetMap",
@@ -214,5 +211,7 @@
   "reportFailed": "{n} lignes refusées :",
   "reportFull": "Le maximum de {max} lieux est atteint.",
   "reportMore": "Il reste {n} lignes. Renvoyez le même fichier : la ligne de départ {next} est déjà préremplie.",
-  "exportLabel": "Télécharger mes lieux (CSV)"
+  "exportLabel": "Télécharger mes lieux (CSV)",
+  "moveUp": "Monter",
+  "moveDown": "Descendre"
 }

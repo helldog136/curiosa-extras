@@ -68,7 +68,6 @@ export async function panel(ctx, { query: q0 } = {}) {
 
   if (all.length) blocks.push({ type: "links", items: STATUS_LIST.map((s) => ({ label: `${status === s ? "● " : ""}${ctx.t(`tab_${s}`)}${count[s] ? ` (${count[s]})` : ""}`, href: query({ status: s }) })) });
   if (all.length) blocks.push({ type: "links", items: [{ label: `${stars === null ? "● " : ""}${ctx.t("allStars")}`, href: query({ status, q: needle }) }, ...[5, 4, 3, 2, 1].map((n) => ({ label: `${stars === n ? "● " : ""}${ctx.t("nStarsShort", { n })}`, href: query({ status, stars: n, q: needle }) }))] });
-  if (all.length) blocks.push({ type: "adminForm", action: "search", submitLabel: ctx.t("searchButton"), fields: [{ name: "status", label: "status", kind: "hidden", value: status }, { name: "stars", label: "stars", kind: "hidden", value: stars ?? "" }, { name: "q", label: ctx.t("searchLabel"), kind: "text", value: needle }] });
 
   const list = all
     .filter((r) => r.status === status && (stars === null || r.rating === stars))
@@ -78,23 +77,25 @@ export async function panel(ctx, { query: q0 } = {}) {
   const page = Math.min(pages, L.num(q.page, 1, 1, 100000));
   const slice = list.slice((page - 1) * L.ADMIN_PER_PAGE, page * L.ADMIN_PER_PAGE);
 
-  if (!slice.length) blocks.push({ type: "markdown", text: ctx.t(all.length ? "emptyFilter" : "emptyAdmin") });
+  if (!all.length) blocks.push({ type: "markdown", text: ctx.t("emptyAdmin") });
   else {
     const actions = status === "pending"
-      ? [{ label: ctx.t("actApprove"), action: "approve" }, { label: ctx.t("actReject"), action: "reject" }, { label: ctx.t("actEdit"), href: "?edit={id}" }]
+      ? [{ label: ctx.t("actApprove"), action: "approve" }, { label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actReject"), action: "reject", inMenu: true }]
       : status === "approved"
-        ? [{ label: ctx.t("actFavorite"), action: "feature" }, { label: ctx.t("actUnpublish"), action: "unpublish" }, { label: ctx.t("actEdit"), href: "?edit={id}" }]
+        ? [{ label: ctx.t("actFavorite"), action: "feature" }, { label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actUnpublish"), action: "unpublish", inMenu: true }]
         : [{ label: ctx.t("actRestore"), action: "restore" }];
-    if (can(ctx, RIGHTS.delete)) actions.push({ label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true });
+    // At most two visible actions per row, the others in the "⋯" menu (R16).
+    if (can(ctx, RIGHTS.delete)) actions.push({ label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true, inMenu: true });
     blocks.push({
-      type: "table",
+      // Live search asked of the server (the list is paged): the table always comes back, with no row when nothing matches (R15).
+      type: "table", searchable: "server", searchPlaceholder: ctx.t("searchLabel"), empty: ctx.t("emptyFilter"), truncate: [3],
       // L'état se lit déjà sur l'onglet choisi : on ne le répète que pour les avis publiés (favori, modifié).
       columns: [ctx.t("colDate"), ctx.t("colName"), ctx.t("colRating"), ctx.t("colReview"), ...(status === "approved" ? [ctx.t("colState")] : []), ...(withEmail ? [ctx.t("colEmail")] : [])],
       rows: slice.map((r) => [L.isoDay(r.at), r.name, r.rating ? ctx.t("ratingShort", { n: r.rating }) : "—", excerpt(r.text, 120), ...(status === "approved" ? [`${word(ctx, r.status)}${r.featured ? ` · ★ ${ctx.t("favorite")}` : ""}${r.editedAt ? ` · ${ctx.t("edited")}` : ""}`] : []), ...(withEmail ? [r.email ?? "—"] : [])]),
       rowIds: slice.map((r) => r.id),
       rowActions: actions,
     });
-    blocks.push({ type: "markdown", text: ctx.t("rangeInfo", { from: (page - 1) * L.ADMIN_PER_PAGE + 1, to: (page - 1) * L.ADMIN_PER_PAGE + slice.length, total: list.length }) });
+    if (slice.length) blocks.push({ type: "markdown", text: ctx.t("rangeInfo", { from: (page - 1) * L.ADMIN_PER_PAGE + 1, to: (page - 1) * L.ADMIN_PER_PAGE + slice.length, total: list.length }) });
     const nav = [];
     if (page > 1) nav.push({ label: ctx.t("prevPage"), href: query({ status, stars, q: needle, page: page - 1 }) });
     if (page < pages) nav.push({ label: ctx.t("nextPage"), href: query({ status, stars, q: needle, page: page + 1 }) });
@@ -198,8 +199,6 @@ export const actions = {
       return { ok: ctx.t("okDeleted") };
     },
   },
-  // Chercher : un simple aller-retour vers la même page avec les filtres dans l'adresse.
-  search: async (ctx, values) => ({ redirect: query({ status: STATUS_LIST.includes(values.status) ? values.status : undefined, stars: /^[1-5]$/.test(String(values.stars ?? "")) ? values.stars : undefined, q: L.clean(values.q, 100) }) }),
   save: {
     right: RIGHTS.moderate,
     run: async (ctx, values) => {

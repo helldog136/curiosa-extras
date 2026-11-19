@@ -137,9 +137,10 @@ test("liste : 25 par page, recherche, filtres, état lisible ; jamais de montant
   assert.deepEqual(found.rows.map((r) => r[0]), ["Personne 07"]);
   const none = await Admin.panel(w.ctx, { query: { q: "introuvable" } });
   assert.ok(text(none).includes(fr.listNone));
-  const redirect = await Admin.actions.search(w.ctx, { q: "Ada", filter: "active" });
-  assert.equal(redirect.redirect, "?filter=active&q=Ada");
-  assert.equal((await Admin.actions.search(w.ctx, { q: "x", filter: "../pirate" })).redirect, "?filter=all&q=x");
+  const empty = find(none, "table", (b) => b.columns[0] === fr.colPerson)[0];
+  assert.deepEqual([empty.searchable, empty.rows.length, empty.empty], ["server", 0, fr.listNone], "the table comes back with no row: the field stays and the core says \"no result\"");
+  assert.equal(find(none, "adminForm", (b) => b.action === "search").length, 0, "no search button (R15)");
+  assert.equal(Admin.actions.search, undefined);
 });
 
 test("liste : filtres « sans réponse », « à relire », « arrêtés » ; l'état de chaque ligne dit ce que le public voit", async () => {
@@ -188,7 +189,7 @@ test("écran d'une personne : sans le droit de gérer, on voit mais on ne change
   const blocks = await Admin.panel(ro, { query: { p: people[0].pid } });
   assert.equal(find(blocks, "copy").length, 0);
   assert.ok(text(blocks).includes(fr.noRight));
-  for (const [name, a] of Object.entries(Admin.actions)) if (name !== "search") assert.ok(typeof a === "object" && a.right, `${name} déclare son droit`);
+  for (const [name, a] of Object.entries(Admin.actions)) assert.ok(typeof a === "object" && a.right, `${name} déclare son droit`);
   const rights = manifest.rights.map((r) => r.id);
   for (const a of Object.values(Admin.actions)) if (typeof a === "object") assert.ok(rights.includes(a.right), a.right);
   for (const r of manifest.rights) assert.deepEqual(r.default, { admin: true, editor: false }, "jamais accordé d'office aux éditeurs");

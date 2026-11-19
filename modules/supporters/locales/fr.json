@@ -64,8 +64,6 @@
   "filter_pending": "À relire",
   "filter_unfiled": "Pas dans Contacts",
   "searchLabel": "Chercher",
-  "searchHelp": "Un bout de nom ou de pseudo. Exemple : Luna.",
-  "searchButton": "Chercher",
   "colPerson": "Personne",
   "colTier": "Palier (chez la plateforme)",
   "colState": "État",

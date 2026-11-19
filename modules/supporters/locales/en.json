@@ -64,8 +64,6 @@
   "filter_pending": "To read",
   "filter_unfiled": "Not in Contacts",
   "searchLabel": "Search",
-  "searchHelp": "Part of a name or nickname. Example: Luna.",
-  "searchButton": "Search",
   "colPerson": "Person",
   "colTier": "Tier (on the platform)",
   "colState": "State",

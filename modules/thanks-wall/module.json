@@ -1,6 +1,6 @@
 {
   "apiVersion": 2,
-  "minCore": "0.11.0",
+  "minCore": "0.38.0",
   "id": "thanks-wall",
   "name": {
     "en": "Thank-you wall",

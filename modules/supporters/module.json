@@ -1,6 +1,6 @@
 {
   "apiVersion": 2,
-  "minCore": "0.36.0",
+  "minCore": "0.38.0",
   "id": "supporters",
   "name": {
     "en": "Supporters",

@@ -125,13 +125,12 @@ async function listBlocks(ctx, snap, query) {
   const page = Math.min(pages, int(str(query.page), 1, 1, 100000));
   const slice = rows.slice((page - 1) * LIMITS.adminPage, page * LIMITS.adminPage);
   out.push({ type: "links", items: FILTERS.map((f) => ({ label: `${f === filter ? "● " : ""}${t(`filter_${f}`)}`, href: `?filter=${f}` })) });
-  out.push({ type: "adminForm", action: "search", submitLabel: t("searchButton"), fields: [{ name: "q", kind: "text", label: t("searchLabel"), value: str(query.q).slice(0, 100), help: t("searchHelp") }, { name: "filter", kind: "hidden", value: filter }] });
-  if (!slice.length) { out.push({ type: "markdown", text: t("listNone") }); return out; }
   const names = await C.cardNames(ctx, slice.map((p) => p.contactId).filter(Boolean));
   const nameOf = (p) => p.name || (p.contactId ? (names.names.get(p.contactId)?.name ?? (names.state === "ok" ? t("nameGone") : t("nameInContacts"))) : "—");
   const tierNames = (p) => (p.tiers ?? []).map((k) => snap.tiers.get(k)?.data.name ?? "").filter(Boolean).slice(0, 2).join(", ") || "—";
   out.push({
-    type: "table", columns: [t("colPerson"), t("colTier"), t("colState"), t("colPublic")],
+    // Live search asked of the server (the list is paged): the table always comes back, with no row when nothing matches (R15).
+    type: "table", columns: [t("colPerson"), t("colTier"), t("colState"), t("colPublic")], searchable: "server", searchPlaceholder: t("searchLabel"), empty: t("listNone"), truncate: [0, 3],
     rows: slice.map((p) => [nameOf(p), tierNames(p), P.isActive(p, S.providerOfPerson(ctx, p), activeDays) ? t("stActive") : t("stEnded"), displayState(ctx, p, S.providerOfPerson(ctx, p))]),
     rowIds: slice.map((p) => p.pid), rowActions: [{ label: t("open"), href: "?p={id}" }],
   });
@@ -276,10 +275,6 @@ export const actions = {
     if (!r.ok) return { error: t(r.code === "no_token" ? "needToken" : r.code === "not_pull" ? "sync_not_pull" : `sync_${r.code}`) };
     return back_(t(r.partial ? "refreshPartial" : "refreshDone", { n: r.count ?? 0, added: r.added ?? 0, ended: r.ended ?? 0 }));
   } },
-  search: async (ctx, values) => {
-    const q = clean(values.q, 100), f = FILTERS.includes(str(values.filter)) ? str(values.filter) : "all";
-    return { redirect: `?filter=${f}${q ? `&q=${enc(q)}` : ""}` };
-  },
   personRenew: { right: RIGHT_MANAGE, async run(ctx, values) {
     const r = await O.consentLink(ctx, clean(values.pid, 40), { renew: true });
     return r.ok ? { ok: ctx.t("linkRenewed"), redirect: `?p=${clean(values.pid, 40)}` } : { error: ctx.t("personGone") };
