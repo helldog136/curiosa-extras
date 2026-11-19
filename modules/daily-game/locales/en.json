@@ -70,7 +70,7 @@
   "boardAlready": "You appear on the ranking as “{n}”.",
   "boardSent": "Your score is saved: you are number {n} this week.",
   "boardTop": "Your score is saved (you are not among the top ones yet).",
-  "boardOff": "The ranking is not available right now.",
+  "boardOff": "The ranking is not available.",
   "boardPrivacy": "Only the nickname and the score are kept, for up to 4 weeks. No address is stored.",
   "muted": "You cannot appear on the ranking.",
   "already": "Your score for today is already saved.",

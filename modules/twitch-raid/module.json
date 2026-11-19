@@ -6,7 +6,7 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.6.3",
+  "version": "2.6.4",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 70,
   "menuGroup": "tools",
@@ -312,8 +312,8 @@
         "en": "Text when nobody is live"
       },
       "help": {
-        "fr": "Par exemple « Personne n'est en direct pour le moment ». Laissé vide, une phrase simple est utilisée.",
-        "en": "For example “Nobody is live right now”. Left empty, a simple sentence is used."
+        "fr": "Par exemple « Personne n'est en direct ». Laissé vide, une phrase simple est utilisée.",
+        "en": "For example “Nobody is live”. Left empty, a simple sentence is used."
       }
     },
     {

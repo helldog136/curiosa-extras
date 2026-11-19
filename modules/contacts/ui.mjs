@@ -7,7 +7,7 @@ const { NETWORK_LOOK } = await import(`./networks.mjs${v}`);
 
 export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** Adresse d'admin relative avec ces paramètres (vides retirés). */
-export const href = (params) => { const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "")); const s = q.toString(); return s ? `?${s}` : "?"; };
+export const href = (params) => { const s = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&"); return s ? `?${s}` : "?"; };
 const safeImg = (u) => (typeof u === "string" && (/^https:\/\/[^\s"'<>]+$/i.test(u) || /^\/[A-Za-z0-9._~/%-]+(#[\w=.,:-]*)?$/.test(u)) ? u : null);
 const hue = (s) => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
 const initials = (name) => String(name ?? "?").trim().split(/\s+/).slice(0, 2).map((w) => [...w][0] ?? "").join("").toUpperCase() || "?";
@@ -97,7 +97,7 @@ export const cardList = (items, opts) => `<ul class="ct-cards">${items.map((c) =
 
 /** Onglets (Contacts, Organisations, Catégories). */
 export const tabs = (items, label) => `<nav aria-label="${esc(label)}"><ul class="ct-tabs">${items.map((i) => `<li><a href="${esc(i.href)}"${i.current ? ' aria-current="page"' : ""}>${esc(i.label)}</a></li>`).join("")}</ul></nav>`;
-/** Barre de recherche : formulaire GET sans bouton (Entrée lance la recherche ; les filtres en cours sont gardés en champs cachés). Une recherche en direct sur une liste paginée par le serveur demande un bloc du cœur qui n'existe pas encore. */
+/** Barre de recherche : formulaire GET sans bouton (Entrée lance la recherche ; les filtres en cours sont gardés en champs cachés). */
 export function searchBar({ q, hidden, label, placeholder }) {
   const keep = Object.entries(hidden).filter(([, v]) => v).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join("");
   return `<form class="ct-search" method="get" role="search"><label class="ct-sr" for="ct-q">${esc(label)}</label><input id="ct-q" type="search" name="q" value="${esc(q)}" placeholder="${esc(placeholder)}" maxlength="100" autocomplete="off" enterkeyhint="search">${keep}</form>`;

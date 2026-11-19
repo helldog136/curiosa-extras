@@ -7,11 +7,11 @@ import { fakePrivacySubject } from "./helpers/fakeContactBook.mjs";
 
 const manifest = readJson("module.json");
 
-test("manifeste : l'onglet « Utiliser » s'appelle « Mes contacts » / « My contacts » (un seul onglet renommé, aucun ajouté), minCore 0.2.2, deux fichiers d'export déclarés", () => {
+test("manifeste : l'onglet « Utiliser » s'appelle « Mes contacts » / « My contacts » (un seul onglet renommé, aucun ajouté), minCore 0.38.0, deux fichiers d'export déclarés", () => {
   assert.deepEqual(manifest.tabs, [{ id: "use", label: { fr: "Mes contacts", en: "My contacts" } }]);
   assert.ok(manifest.tabs.filter((t) => !["use", "settings", "sources", "general"].includes(t.id)).length <= 3, "tabs.reasonable : 3 onglets ajoutés au plus");
   assert.ok(manifest.tabs.every((t) => t.label.fr.length <= 20 && t.label.en.length <= 20), "noms courts");
-  assert.equal(manifest.minCore, "0.2.2");
+  assert.equal(manifest.minCore, "0.38.0");
   assert.deepEqual(Object.keys(def.adminDownloads).sort(), ["contacts", "importReport", "person", "template"]);
   assert.deepEqual(manifest.rights.map((r) => r.id), ["email.view", "export", "categories.create"]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional === true]), [["privacy.subject", true], ["twitch.api", true], ["youtube.api", true]], "connecteurs en dépendance FACULTATIVE");
@@ -71,7 +71,7 @@ test("téléphone : tout tableau des écrans de Contacts n'a qu'UNE colonne, auc
   await def.adminActions.importStart(ctx, { csv: "name\nA\n" });
   const all = [];
   for (const query of [{}, { kind: "org" }, { view: "categories" }, { view: "dupes" }, { view: "merge", a, b }, { view: "merge", keep: a, drop: b }, { view: "import" }, { contact: a }, { contact: a, erase: "1" }, { view: "erased" }]) all.push(...(await def.adminPanel(ctx, { query })));
-  for (const t of all.filter((x) => x.type === "table")) assert.equal(t.columns.length, 1, `tableau « ${t.columns[0]} » à une colonne`);
+  for (const t of all.filter((x) => x.type === "table" && !x.searchable)) assert.equal(t.columns.length, 1, `tableau « ${t.columns[0]} » à une colonne`); // le tableau enrichi de la liste (recherche serveur) devient des cartes sous 640 px : le cœur s'en charge
   assert.doesNotMatch(htmlOf(all), /<table/);
   const css = htmlOf(all.slice(0, 1));
   assert.match(css, /\.ct-cmp\{[^}]*grid-template-columns:1fr/);
@@ -105,7 +105,7 @@ test("catégories d'une fiche, simplement : la liste avec « Retirer », un choi
   assert.match(plain(await def.adminPanel(empty, { query: { contact: x.id } })), /Aucune catégorie n'existe encore\. Créez-en une dans l'onglet/);
   // La catégorie vue depuis Raid (`?category=`) liste les fiches ajoutées ainsi.
   const raid = (await svc.get(ctx, { id: a })).contact.categoryIds[0];
-  assert.match(htmlOf(await def.adminPanel(ctx, { query: { category: raid } })), /Marie Dupont/);
+  assert.match(JSON.stringify(await def.adminPanel(ctx, { query: { category: raid } })), /Marie Dupont/);
 });
 
 test("un module installé sans les connecteurs reste utilisable : aucun besoin dur autre que le contrat ; la page ne casse pas si `privacy.subject` n'existe pas", async () => {

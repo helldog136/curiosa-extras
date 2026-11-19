@@ -59,6 +59,6 @@ test("le disjoncteur du cœur protège YouTube et la page : après quelques éch
     const r = await O.complete(ctx, { limit: 12 });
     assert.equal(r.down, true);
     assert.ok(fake.calls.filter((u) => u.includes("oembed")).length <= 8);
-    assert.match((await def.adminActions.complete.run(ctx, {})).error, /YouTube ne répond pas pour le moment/);
+    assert.match((await def.adminActions.complete.run(ctx, {})).error, /YouTube ne répond pas/);
   });
 });

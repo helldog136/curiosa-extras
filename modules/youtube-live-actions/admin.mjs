@@ -181,12 +181,12 @@ function ruleForm(ctx, o, editing) {
     ...(editing ? [{ name: "id", kind: "hidden", value: editing.id }] : []),
     { name: "name", kind: "text", label: t("f_name"), value: cur.name, required: true, help: t("f_name_help") },
     { name: "type", kind: "select", label: t("f_type"), value: cur.type, options: R.TYPES.map((x) => ({ value: x, label: t(`type_${x}`) })) },
-    { name: "currency", kind: "select", label: t("f_currency"), value: cur.currency, options: [{ value: "*", label: t("any_currency") }, ...currencies.map((c) => ({ value: c, label: c }))], help: t("f_currency_help") },
+    { name: "currency", folded: true, kind: "select", label: t("f_currency"), value: editing ? cur.currency : "", options: [...(editing ? [] : [{ value: "", label: currencies[0] }]), { value: "*", label: t("any_currency") }, ...currencies.filter((c) => editing || c !== currencies[0]).map((c) => ({ value: c, label: c }))], help: t("f_currency_help") },
     { name: "min", kind: "text", label: t("f_min"), value: cur.type === "gift" ? String(cur.minCount ?? 1) : R.fromMicros(cur.minMicros || 0, lang(ctx)), help: t("f_min_help") },
-    { name: "cooldownSec", kind: "text", label: t("f_cooldown"), value: String(cur.cooldownSec ?? 30), help: t("f_cooldown_help") },
+    { name: "cooldownSec", folded: true, kind: "text", label: t("f_cooldown"), value: editing ? String(cur.cooldownSec ?? 30) : "", help: t("f_cooldown_help") },
     { name: "action", kind: "select", label: t("f_action"), value: isExample ? cur.action : R.EXAMPLE_KEYS[0], options: R.EXAMPLE_KEYS.map((k) => ({ value: k, label: k })), help: t("f_action_help") },
-    { name: "customAction", kind: "text", label: t("f_custom_action"), value: isExample ? "" : cur.action, help: t("f_custom_action_help") },
-    { name: "readMessage", kind: "checkbox", label: t("f_read"), value: cur.readMessage ? "on" : "", help: t("f_read_help") },
+    { name: "customAction", folded: true, kind: "text", label: t("f_custom_action"), value: isExample ? "" : cur.action, help: t("f_custom_action_help") },
+    { name: "readMessage", folded: true, kind: "checkbox", label: t("f_read"), value: cur.readMessage ? "on" : "", help: t("f_read_help") },
   ];
   return [
     { type: "heading", text: editing ? t("rules_edit_title", { name: editing.name }) : t("rules_add_title") },
@@ -325,7 +325,8 @@ export const actions = {
   saveRule: {
     right: "yt.manage",
     run: async (ctx, values) => {
-      const r = R.validateRule(values);
+      // New rule: the folded fields come empty (so « More options » stays closed): empty = the usual currency and 30 seconds.
+      const r = R.validateRule({ ...values, currency: values.currency === "" ? R.currenciesOf("")[0] : values.currency });
       if (!r.ok) return { errors: Object.fromEntries(Object.entries(r.errors).map(([field, key]) => [field, ctx.t(key)])) };
       const id = typeof values.id === "string" && values.id ? values.id : null;
       const prev = id ? (await S.listRules(ctx)).find((x) => x.id === id) : null;

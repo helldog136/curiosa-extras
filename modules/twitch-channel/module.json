@@ -6,7 +6,7 @@
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.6.2",
+  "version": "2.6.3",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 20,
   "platform": "twitch",

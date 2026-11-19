@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.24.2",
+  "version": "1.24.3",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",

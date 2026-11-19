@@ -2,10 +2,11 @@
 // 2.3.0: the three PAGE fingerprints (dockPage, denied, dockPageEn) were re-recorded for the new look (administration tokens); every DATA fingerprint (live, pick, refusals) is still the 2.1 one.
 // R33 final (dock_rm_none lost "pour l'instant"): dockPage and dockPageEn re-recorded again, data fingerprints untouched.
 // 2.6.2 (R33): dockPage and dockPageEn re-recorded for three shorter dock texts (dock_updated, dock_empty_hint, dock_rm_intro); the data fingerprints are untouched.
+// 1.106.0 (R33e): dockPage and dockPageEn re-recorded again, the dock text lost "pour le moment" / "right now"; data fingerprints untouched.
 export const GOLDEN = {
   "dockStatus": 200,
   "dockCsp": "default-src 'none'; script-src 'nonce-N'; style-src 'nonce-N'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
-  "dockPage": "a5f1bf66f70d15a5a3d089090135b050",
+  "dockPage": "4a81dd0c98032aa97e047d2199bd5350",
   "denied": [
     403,
     "7297c6e8aceb143bfaa373ef120fcf06"
@@ -68,5 +69,5 @@ export const GOLDEN = {
       "startedAt": 1792841400000
     }
   },
-  "dockPageEn": "dcaa781ab46f66250d989028a7b2280c"
+  "dockPageEn": "84a83d1f40e922ef8cbc0fb01d5f4960"
 };

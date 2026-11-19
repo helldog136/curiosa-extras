@@ -21,7 +21,7 @@
   "denied": "Vous n’avez pas le droit de faire cela. Demandez à la personne qui gère le site.",
   "downloadAll": "Télécharger tous mes événements (agenda .ics)",
   "editTitle": "Modifier « {name} »",
-  "empty": "Aucun événement prévu pour le moment. Revenez bientôt !",
+  "empty": "Aucun événement prévu. Revenez bientôt.",
   "emptyAdmin": "Vous n’avez pas encore de compte à rebours. Il suffit d’un nom, d’un jour et d’une heure : remplissez le formulaire ci-dessous.",
   "endDefault": "C’est parti !",
   "endLinkDefault": "Voir",

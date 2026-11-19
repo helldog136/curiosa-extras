@@ -60,7 +60,7 @@
   "memPhotos": "Voir les photos : {title}",
   "memPhotosLink": "Voir les photos",
   "memVideo": "Voir la vidéo : {title}",
-  "memUnavailable": "Les photos ou la vidéo ne sont pas disponibles pour le moment. Revenez un peu plus tard.",
+  "memUnavailable": "Les photos ou la vidéo ne sont pas disponibles. Revenez un peu plus tard.",
   "bannerCancelled": "Annulé : ce rendez-vous n'aura pas lieu.",
   "bannerPostponed": "Reporté : la nouvelle date n'est pas encore connue. Repassez voir cette page.",
   "bannerPast": "Ce rendez-vous a déjà eu lieu.",

@@ -70,7 +70,7 @@ beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCa
 afterEach(() => { mock.timers.reset(); globalThis.fetch = realFetch; });
 
 test("manifeste 1.3.2 : version corrective (1.3.0 + route cover/:slug), une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
-  assert.equal(manifest.version, "1.5.2");
+  assert.equal(manifest.version, "1.5.3");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
   assert.equal(manifest.dashboard, undefined, "rien qu'on ne puisse pas agir dessus : pas de carte ni de tâche");
   assert.deepEqual(manifest.logEvents.map((e) => e.key).slice(-2), ["cover.outage", "cover.back"]);
@@ -365,7 +365,7 @@ test("l'état des sources en mots simples : une carte (Configuré, puis Dégrad�
   for (const t of ["A", "B", "C"]) await svc.cover(c, `Titre ${t}`);
   const down = await mod.adminPanel(c, { query: {} });
   assert.equal(card(down).state, "degraded");
-  assert.equal(card(down).reason, "Aucune source ne répond pour le moment.");
+  assert.equal(card(down).reason, "Aucune source ne répond.");
   assert.deepEqual(card(down).primary, { label: "Tester le code", action: "testKey" }, "le moyen de réessayer est la correction proposée");
   assert.ok(!tabOf(down, "saved").some((b) => b.type === "banner" || b.type === "connection"), "l'autre onglet ne répète pas l'état");
   assert.ok(!JSON.stringify(down).includes(KEY));

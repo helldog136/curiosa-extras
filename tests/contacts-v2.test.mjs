@@ -174,41 +174,61 @@ async function seedBook(ctx, count = 0) {
   return { cat, ada: ada.id };
 }
 
-test("admin — liste : cartes (nom, organisation, pastilles de réseaux, photo), recherche en formulaire GET, filtres, « See more » sans doublon ni trou", async () => {
+const tableOf = (blocks) => blocks.find((b) => b.type === "table");
+const idsOf = (blocks) => tableOf(blocks).rowIds.map((id) => id);
+const namesOf = (blocks) => tableOf(blocks).rows.map((r) => (typeof r[0] === "string" ? r[0] : r[0].text));
+
+test("admin — liste : tableau du cœur avec recherche serveur (filtre toute la liste avant la page), filtres, pages sans doublon ni trou", async () => {
   const ctx = makeCtx();
   const { cat, ada } = await seedBook(ctx, 45);
   const blocks = await def.adminPanel(ctx, { query: {} });
   const html = htmlOf(blocks);
-  assert.match(html, /<form class="ct-search" method="get" role="search">/);
-  assert.match(html, /<label class="ct-sr" for="ct-q">Search the address book<\/label>/);
+  assert.equal(tableOf(blocks).searchable, "server");
+  assert.doesNotMatch(html, /<form class="ct-search"/, "la recherche est celle du cœur");
   assert.match(html, /47 cards/, "45 + Ada + Acme Studio");
-  assert.match(html, /bulk_044/, "les plus récentes d'abord");
-  const adaCard = htmlOf(await def.adminPanel(ctx, { query: { q: "ada" } }));
-  assert.match(adaCard, /Ada Example/);
-  assert.match(adaCard, /Producer · Acme Studio/);
-  assert.match(adaCard, /<img class="ct-photo" src="https:\/\/cdn\.example\.test\/ada\.png" alt=""/);
-  assert.match(adaCard, /<span class="ct-sr">YouTube<\/span>/);
-  // Pagination par liens : on suit « See more » jusqu'au bout.
+  assert.equal(tableOf(blocks).rows.length, 30);
+  assert.equal(namesOf(blocks)[0], "bulk_044", "les plus récentes d'abord");
+  // Recherche : toute la liste est filtrée AVANT la pagination, casse et accents ignorés.
+  const ada1 = await def.adminPanel(ctx, { query: { q: "  ADA " } });
+  assert.deepEqual(namesOf(ada1).slice(0, 1), ["Ada Example"]);
+  const adaRow = tableOf(ada1).rows[0];
+  assert.equal(adaRow[0].image.src, "https://cdn.example.test/ada.png");
+  assert.ok(adaRow[0].image.alt.includes("Ada Example"));
+  assert.equal(adaRow[1], "Producer · Acme Studio");
+  assert.match(adaRow[2], /YouTube/);
+  assert.deepEqual(tableOf(ada1).rowActions.map((a) => a.href), ["?contact={id}"], "une seule action de ligne, la fiche");
+  assert.match(htmlOf(ada1), /\d+ results?/);
+  const deep = await def.adminPanel(ctx, { query: { q: "bulk_000" } });
+  assert.deepEqual(namesOf(deep), ["bulk_000"], "un contact de la dernière page est trouvé par la recherche");
+  // Aucun résultat : le tableau reste, sans ligne (le cœur dit « Aucun résultat »).
+  const none = await def.adminPanel(ctx, { query: { q: "zzzzqq" } });
+  assert.equal(tableOf(none).searchable, "server");
+  assert.deepEqual(tableOf(none).rows, []);
+  // Pagination par liens qui gardent la recherche et les filtres.
+  const p1 = await def.adminPanel(ctx, { query: { q: "bulk" } });
+  const more = /href="(\?[^"]*)">See more</.exec(htmlOf(p1));
+  assert.ok(more && more[1] === "?page=2&amp;q=bulk", more?.[1]);
   const seen = [];
   let query = {};
   for (let guard = 0; guard < 10; guard++) {
-    const h = htmlOf(await def.adminPanel(ctx, { query }));
-    seen.push(...[...h.matchAll(/href="\?contact=([^"]+)"/g)].map((m) => decodeURIComponent(m[1])));
-    const more = /<a class="ct-btn" href="\?([^"]*)">See more<\/a>/.exec(h);
-    if (!more) break;
-    query = Object.fromEntries(new URLSearchParams(more[1].replace(/&amp;/g, "&")));
+    const b = await def.adminPanel(ctx, { query });
+    seen.push(...idsOf(b));
+    const m = /<a class="ct-btn" href="\?([^"]*)">See more<\/a>/.exec(htmlOf(b));
+    if (!m) break;
+    query = Object.fromEntries(new URLSearchParams(m[1].replace(/&amp;/g, "&")));
   }
   assert.equal(seen.length, 47);
   assert.equal(new Set(seen).size, 47, "aucun doublon");
-  // Recherche, filtres (catégorie, réseau, ?category= venu d'un autre module), organisations.
   assert.match(htmlOf(await def.adminPanel(ctx, { query: { q: "ada" } })), /1 result/);
-  for (const q of [{ cat }, { category: cat }]) assert.deepEqual([...htmlOf(await def.adminPanel(ctx, { query: q })).matchAll(/href="\?contact=([^"]+)"/g)].map((m) => m[1]), [encodeURIComponent(ada)]);
+  for (const q of [{ cat }, { category: cat }]) assert.deepEqual(idsOf(await def.adminPanel(ctx, { query: q })), [ada]);
   assert.match(htmlOf(await def.adminPanel(ctx, { query: { net: "youtube" } })), /1 card</);
-  const orgs = htmlOf(await def.adminPanel(ctx, { query: { kind: "org" } }));
-  assert.match(orgs, /Acme Studio/);
-  assert.doesNotMatch(orgs, /Ada Example/);
-  assert.match(orgs, /aria-current="page">Organisations</);
+  const orgs = await def.adminPanel(ctx, { query: { kind: "org" } });
+  assert.deepEqual(namesOf(orgs), ["Acme Studio"]);
+  assert.match(htmlOf(orgs), /aria-current="page">Organisations</);
+  // Carnet vide : la phrase « vide » ; filtre sans résultat : la phrase « aucune fiche ».
+  assert.match(tableOf(await def.adminPanel(makeCtx(), { query: {} })).empty, /address book is empty/);
 });
+
 
 test("admin — fiche : photo et son origine, comptes, encadré d'installation par SERVICE, texte d'avant avec « Ajouter comme compte », notes", async () => {
   const ctx = makeCtx({ locale: "fr" });
@@ -368,8 +388,8 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
   assert.deepEqual((await def.mcp.contact_categories(ctx, {})).items.map((x) => x.label), ["Raid target"]);
 });
 
-test("manifeste 2.1 : version, minCore 0.2.2, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", async () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.6.2", "0.2.2", 2, 2]);
+test("manifeste 2.1 : version, minCore 0.38.0, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", async () => {
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.7.0", "0.38.0", 2, 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   // The 1.x → 2.0 conversion is gone (dataFloor 2, bridge tag v1.50.0): what is left is an empty marker that never touches the data.

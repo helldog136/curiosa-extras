@@ -4,7 +4,7 @@
   "pageDescriptionEmpty": "Laissez le premier avis.",
   "seeAll": "Voir tous les avis",
   "empty": "Pas encore d'avis publié. Soyez la première personne à en laisser un !",
-  "emptyStars": "Aucun avis avec cette note pour le moment.",
+  "emptyStars": "Aucun avis avec cette note.",
   "leaveReview": "Laisser un avis",
   "countReviews": "{count} avis",
   "averageLabel": "Note moyenne : {avg} sur 5, d'après {count} notes",

@@ -89,8 +89,8 @@ test("vocabulaire réglable : titre, introduction, texte « personne en direct �
   const e = world({ partners: logins(3), live: lives(3), settings: { publicPage: true }, locale: "en", messages: { ...en } });
   const eh = await html(e); assert.equal(eh.p.title, "Live right now"); assert.match(eh.html, /Watch on Twitch/); assert.match(eh.html, /opens in a new tab/);
   const en0 = world({ partners: logins(3), live: {}, settings: { publicPage: true }, locale: "en", messages: { ...en } });
-  assert.match(text((await html(en0)).html), /Nobody is live right now\./);
-  assert.match(text((await html(site({ partners: logins(3), live: {} }))).html), /Personne n'est en direct pour le moment\./);
+  assert.match(text((await html(en0)).html), /Nobody is live\./);
+  assert.match(text((await html(site({ partners: logins(3), live: {} }))).html), /Personne n'est en direct\./);
   for (const k of ["pageTitle", "pageIntro", "emptyText", "watchLabel"]) assert.equal(manifest.settings.find((s) => s.key === k).translatable, true, `${k} est traduisible`);
 });
 
@@ -99,7 +99,7 @@ test("vide aimable : personne en direct → une phrase douce (pas d'erreur, pas 
     const { html: h } = await html(w);
     assert.equal(cards(h).length, 0);
     assert.match(h, /class="tr-grid"[^>]* hidden/); assert.match(h, /<div class="tr-empty" role="status">/);
-    assert.match(text(h), /Personne n'est en direct pour le moment\. Revenez dans un instant/);
+    assert.match(text(h), /Personne n'est en direct\. Revenez dans un instant/);
   }
   const r = await (await members(site({ live: {} }))).json();
   assert.deepEqual([r.state, r.picks], ["ok", []]);
@@ -128,7 +128,7 @@ test("Twitch en panne : dernière sélection connue (avec un mot), puis un messa
   clock = T0 + 12 * MIN; live.resetLive();
   const down = await html(w);
   assert.equal(cards(down.html).length, 0); assert.match(down.html, /class="tr-empty tr-unavail" role="status">/);
-  assert.match(text(down.html), /Les informations en direct ne sont pas disponibles pour le moment/);
+  assert.match(text(down.html), /Les informations en direct ne sont pas disponibles/);
   const jr = await members(w); const jb = await jr.json();
   assert.deepEqual([jr.status, jb.state, jr.headers.get("cache-control")], [200, "unavailable", "no-store"]);
   assert.ok(!JSON.stringify(jb).includes("network"), "la raison de la panne n'est pas publique");

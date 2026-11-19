@@ -94,10 +94,8 @@
       "R10 setting:overlayEndMinutes.label[fr] #ef55fa",
       "R13 description[en] #60371e",
       "R13 description[fr] #7f53fb",
-      "R13 locale:en:empty #8cfdc6",
       "R13 locale:en:endDefault #75c73a",
       "R13 locale:en:fEndMessageHelp #7dc62c",
-      "R13 locale:fr:empty #c44a9b",
       "R13 locale:fr:endDefault #0b433c",
       "R13 locale:fr:fEndMessageHelp #d2713c",
       "R13 setting:endMessage.help[en] #41f66e",
@@ -381,15 +379,13 @@
       "R13 locale:en:limitsText #704082",
       "R13 locale:en:msg_already #88c62c",
       "R13 locale:en:msg_thanks #a53b55",
-      "R13 locale:en:noPolls #dc0338",
       "R13 locale:fr:deleteOpenWarn_many #5d8d57",
       "R13 locale:fr:deleteOpenWarn_one #d82a9d",
       "R13 locale:fr:errPurged #2157d5",
       "R13 locale:fr:err_end_date #bc418f",
       "R13 locale:fr:limitsText #4773dc",
       "R13 locale:fr:msg_already #dfd013",
-      "R13 locale:fr:msg_thanks #a30416",
-      "R13 locale:fr:noPolls #eb3cdb"
+      "R13 locale:fr:msg_thanks #a30416"
     ],
     "sponsor-ticker": [
       "R13 setting:devMode.help[en] #aad9be",
