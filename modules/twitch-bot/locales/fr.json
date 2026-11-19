@@ -63,7 +63,7 @@
   "cmd_network_text": "Retrouvez-moi sur {reseau} : {lien}",
   "cmd_group_text": "Retrouvez-moi ici : {liste}",
   "fb_jeu": "un jeu qui reste à préciser",
-  "fb_titre": "pas de titre pour le moment",
+  "fb_titre": "pas de titre",
   "fb_uptime": "le direct n'a pas commencé",
   "fb_followers": "plein de",
   "fb_prochain_stream": "bientôt, restez à l'écoute",

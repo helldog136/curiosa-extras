@@ -130,7 +130,7 @@
   "dock_types_label": "Types",
   "dock_search": "Rechercher",
   "dock_search_none": "Aucune ligne ne correspond. Effacez la recherche.",
-  "dock_empty": "Aucun événement pour l'instant.",
+  "dock_empty": "Aucun événement.",
   "dock_empty_hint": "Les nouveaux événements apparaissent ici tout seuls.",
   "dock_loading": "Chargement…",
   "dock_pause": "Pause des alertes",
