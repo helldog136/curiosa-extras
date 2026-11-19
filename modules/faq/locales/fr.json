@@ -31,7 +31,7 @@
   "askSent": "Merci. Votre question est arrivée. L'équipe y répondra.",
   "askLimit": "Vous avez déjà posé plusieurs questions. Réessayez plus tard.",
   "askInvalid": "Votre question n'est pas passée. Écrivez-la en quelques mots, sans adresse de site.",
-  "askFull": "La boîte à questions est pleine pour le moment. Réessayez dans quelques jours.",
+  "askFull": "La boîte à questions est pleine. Réessayez dans quelques jours.",
   "trapLabel": "Ne pas remplir ce champ",
   "close": "Fermer",
   "noneYet": "Les premières réponses arrivent bientôt.",

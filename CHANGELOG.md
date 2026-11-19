@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.106.0 — 2026-11-19
+
+*En bref : la liste de Contacts se recherche en direct sur tout le carnet (cœur 0.38) ; fin des « pour le moment » à l'écran ; le formulaire de règle des Actions du direct YouTube replie ses réglages rares.*
+
+*In short: the Contacts list is searched live across the whole address book (core 0.38); no more "for now" on screen; the Live actions rule form folds its rare settings.*
+
+### Nouveautés
+
+- **Contacts.** La liste est un tableau avec un champ « Rechercher » qui filtre en direct tout le carnet (pas seulement la page affichée), sans accents ni majuscules. Les pages gardent la recherche et les filtres. Nécessite le cœur 0.38.0.
+
+### Améliorations
+
+- **Audience, Sondages, Compte à rebours, Jeu du jour, Annuaire, Événements, FAQ, Jaquettes de jeux, Suggestions de jeux, Carte, Idées, Histoire du stream, Avis, Bot Twitch, Chaîne Twitch, Raid Twitch, Vidéos.** Les phrases d'état disent ce qui est vrai (« Aucun sondage. », « Twitch ne répond pas. ») sans « pour le moment » ; une personne en sourdine apprend pourquoi elle ne peut pas voter ou changer de pseudo.
+- **Actions du direct YouTube.** Le formulaire d'une règle montre quatre champs (nom, type, seuil, action) ; devise, attente, action personnalisée et lecture du message sont repliés.
+
+### Pour les développeurs
+
+- Le kit de test du cœur 0.38.0 (`tests/helpers/ergonomics.mjs`) et `docs/ERGONOMIE-ADMIN.md` sont recopiés : la règle R33e refuse aussi « pour le moment », « for now », « for the moment » dans tous les textes visibles.
+
 ## 1.105.5 — 2026-11-19
 
 *En bref : fin de la passe sur les mots d'état : « pour l'instant », « pour le moment » (messages d'erreur), « Reprise » et les rappels « Pensez à… » disparaissent des écrans des extensions restantes ; chaque texte dit ce qui est vrai maintenant.*

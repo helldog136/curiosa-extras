@@ -62,7 +62,7 @@
   "f_min": "Minimum amount (or number of gifted memberships)",
   "f_min_help": "For example 5 or 2.50. For gifted memberships: the minimum number, for example 5. No effect for a new membership, nor when the currency is “all”.",
   "f_cooldown": "Cooldown (seconds)",
-  "f_cooldown_help": "Minimum time between two firings of this rule, for example 30. Use 0 for no delay.",
+  "f_cooldown_help": "Empty: 30 seconds. Use 0 for no delay.",
   "f_action": "Action",
   "f_action_help": "The name of the action linked in Home Assistant. This module knows neither your lights nor your scenes: only this name.",
   "f_custom_action": "Other action name",

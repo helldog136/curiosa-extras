@@ -214,6 +214,27 @@ export function searchIds(idx, { q, limit = LIMITS.search, offset = 0, ...filter
   scored.sort((x, y) => x[0] - y[0] || (x[1].n < y[1].n ? -1 : x[1].n > y[1].n ? 1 : 0) || x[1].t - y[1].t);
   return { total: scored.length, ids: scored.slice(offset, offset + limit).map(([, e]) => e.id) };
 }
+/**
+ * Recherche de la liste d'administration avec la règle du cœur (`ctx.search.matches` : casse et accents ignorés, chaque mot trouvé). Elle porte sur la LISTE ENTIÈRE
+ * (index en mémoire : nom, pseudos avec ou sans @, noms affichés, organisation ; ni e-mail ni téléphone, qui ne sont pas dans l'index), AVANT la pagination.
+ * Le plus exact d'abord, comme `searchIds`. `raw` : le texte tapé ; rend { total, ids } (`ids` : la page `offset`…`offset + limit`).
+ */
+export function searchPage(idx, search, raw, { limit = LIMITS.search, offset = 0, ...filter } = {}) {
+  const q = String(raw ?? "").replace(/(^|\s)@/g, "$1");
+  const ok = matcher(idx, filter);
+  const folded = searchKey(q);
+  const hits = [];
+  for (const e of idx.list) {
+    if (!ok(e)) continue;
+    const org = e.o ? idx.byId.get(e.o)?.n ?? "" : "";
+    const handles = keysOf(e).map((k) => k.slice(k.indexOf(":") + 1));
+    if (!search.matches([e.n, ...handles, ...handles.map((h) => h.replace(/^@/, "")), ...(e.h ? e.h.split(SEP) : []), org], q)) continue;
+    const s = scoreOf(idx, e, folded);
+    hits.push([s < 0 ? 3 : s, e]);
+  }
+  hits.sort((x, y) => x[0] - y[0] || (x[1].n < y[1].n ? -1 : x[1].n > y[1].n ? 1 : 0) || x[1].t - y[1].t);
+  return { total: hits.length, ids: hits.slice(offset, offset + limit).map(([, e]) => e.id) };
+}
 export const searchKey = (q) => fold(clean(typeof q === "string" ? q.slice(0, LIMITS.q) : "", LIMITS.q)).replace(/^@/, "");
 export async function search(ctx, a) {
   a = obj(a);

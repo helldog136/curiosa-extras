@@ -21,7 +21,7 @@
   "denied": "You are not allowed to do this. Ask the person who manages the site.",
   "downloadAll": "Download all my events (.ics calendar)",
   "editTitle": "Edit “{name}”",
-  "empty": "Nothing is planned right now. Come back soon!",
+  "empty": "Nothing is planned. Come back soon.",
   "emptyAdmin": "You have no countdown yet. All it takes is a name, a day and a time: fill in the form below.",
   "endDefault": "It’s on!",
   "endLinkDefault": "See more",

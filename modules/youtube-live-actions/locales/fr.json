@@ -62,7 +62,7 @@
   "f_min": "Montant minimum (ou nombre d'adhésions offertes)",
   "f_min_help": "Par exemple 5 ou 2,50. Pour des adhésions offertes : le nombre minimum, par exemple 5. Sans effet pour une nouvelle adhésion, ni quand la devise est « toutes ».",
   "f_cooldown": "Délai de recharge (secondes)",
-  "f_cooldown_help": "Temps minimum entre deux déclenchements de cette règle, par exemple 30. Mettez 0 pour aucun délai.",
+  "f_cooldown_help": "Vide : 30 secondes. Mettez 0 pour aucun délai.",
   "f_action": "Action",
   "f_action_help": "Le nom de l'action reliée dans Home Assistant. Ce module ne connaît ni vos lumières ni vos scènes : seulement ce nom.",
   "f_custom_action": "Autre nom d'action",

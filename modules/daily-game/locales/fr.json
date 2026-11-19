@@ -70,7 +70,7 @@
   "boardAlready": "Vous apparaissez au classement sous le pseudo « {n} ».",
   "boardSent": "Votre score est enregistré : vous êtes n° {n} cette semaine.",
   "boardTop": "Votre score est enregistré (vous n'êtes pas encore dans les premiers).",
-  "boardOff": "Le classement n'est pas disponible pour le moment.",
+  "boardOff": "Le classement n'est pas disponible.",
   "boardPrivacy": "Seuls le pseudo et le score sont gardés, jusqu'à 4 semaines. Aucune adresse n'est conservée.",
   "muted": "Vous ne pouvez pas apparaître au classement.",
   "already": "Votre score du jour est déjà enregistré.",

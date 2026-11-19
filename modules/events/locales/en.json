@@ -60,7 +60,7 @@
   "memPhotos": "See the photos: {title}",
   "memPhotosLink": "See the photos",
   "memVideo": "Watch the video: {title}",
-  "memUnavailable": "The photos or the video are not available right now. Please come back a little later.",
+  "memUnavailable": "The photos or the video are not available. Please come back a little later.",
   "bannerCancelled": "Cancelled: this will not take place.",
   "bannerPostponed": "Postponed: the new date is not known yet. Check this page again.",
   "bannerPast": "This already took place.",

@@ -88,7 +88,7 @@
   "forget_button": "Oublier cette jaquette",
   "forget_keep": "Garder la jaquette",
   "forget_gone": "Cette jaquette n'est plus gardée. Revenez à la liste.",
-  "outage": "Aucune source ne répond pour le moment.",
+  "outage": "Aucune source ne répond.",
   "sources_title": "Sources des jaquettes",
   "none_available": "Aucune source n'est disponible. Activez Steam dans l'onglet « Réglages », ou saisissez un code Rawg.",
   "col_source": "Source",

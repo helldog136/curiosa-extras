@@ -5,7 +5,7 @@
     "fr": "Jeu du jour",
     "en": "Daily game"
   },
-  "version": "1.2.2",
+  "version": "1.2.3",
   "menuGroup": "community",
   "minCore": "0.6.0",
   "description": {
