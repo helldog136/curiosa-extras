@@ -37,7 +37,7 @@ export default {
     const proposal = current ? null : proposePartner(item, list, t);
     const view = current ?? { kind: "partner", id: item.id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: { partenaire: item.title, adresse: item.address } };
     const out = [];
-    if (!entry.published) out.push({ type: "banner", tone: "info", text: t("entry_unpublished") });
+    if (!entry.published) out.push({ type: "banner", tone: "warning", text: t("entry_unpublished") });
     // Le bot ne répond pas encore (autorisation Twitch, site privé…) : on le dit ici aussi, avec le chemin vers la page qui explique quoi faire.
     // Une éditrice n'ouvre pas la page du bot (réservée aux administrateurs) : pas de lien pour elle, mais une phrase qui dit à qui s'adresser.
     const canOpenBot = role !== "editor";

@@ -31,7 +31,7 @@ afterEach(() => {});
 
 test("manifeste : version mineure, consomme live.event (schéma), permission topics, réglage « texte des messages » éteint par défaut, parité fr/en", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.22.0");
+  assert.equal(manifest.version, "1.22.1");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["live.event", "twitch.event"]);
   assert.ok(manifest.permissions.includes("topics"));
   assert.deepEqual((manifest.requires ?? []).filter((r) => !r.optional), [], "aucune dépendance forte");
@@ -44,11 +44,11 @@ test("manifeste : version mineure, consomme live.event (schéma), permission top
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const src = fs.readFileSync(`${DIR}/index.mjs`, "utf8");
   for (const m of src.matchAll(/\bt\("([A-Za-z0-9_]+)"/g)) assert.ok(m[1] in en && m[1] in fr, m[1]);
-  for (const k of ["kind_superchat", "kind_supersticker", "kind_member", "kind_gift", "ytTitle", "ytHelp", "ytTestTitle", "ytAbsent"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["kind_superchat", "kind_supersticker", "kind_member", "kind_gift", "ytTitle", "ytHelp"] ) assert.ok(fr[k] && en[k], k);
   for (const m of src.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)) assert.ok(manifest.settings.some((x) => x.key === m[1]), m[1]);
 });
 
-test("sans « Actions du live YouTube » : la page de l'overlay est celle d'avant (aucune lecture du sujet, aucun appel, mêmes libellés) et l'administration le dit en une phrase", async () => {
+test("sans « Actions du live YouTube » : la page de l'overlay est celle d'avant (aucune lecture du sujet, aucun appel, mêmes libellés) et l'administration n'en dit rien (R33)", async () => {
   const o = overlay({ provider: false });
   const out = await def.overlay(o.ctx);
   assert.ok(!/pullUrl|queued|fetch\(/.test(out.script));
@@ -56,7 +56,7 @@ test("sans « Actions du live YouTube » : la page de l'overlay est celle d'avan
   assert.deepEqual(Object.keys(cfg.labels), ["follow", "sub", "raid", "test", "alert"]);
   assert.deepEqual(Object.keys(cfg).sort(), ["duration", "eventsUrl", "labels", "neon"]);
   const blocks = await def.adminPanel(o.ctx);
-  assert.ok(blocks.some((b) => b.type === "markdown" && /installez « Actions du live YouTube »/.test(b.text)));
+  assert.ok(!blocks.some((b) => b.type === "markdown" && /YouTube/.test(b.text)), "no sentence about a module that is not there");
   assert.ok(!blocks.some((b) => b.type === "adminForm" && b.action === "testYoutube"));
   o.off();
 });

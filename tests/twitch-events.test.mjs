@@ -270,9 +270,10 @@ test("revocation: noted, and the listening is repaired", async () => {
 test("admin page: journal table with search and filters, types with switches, status line", async () => {
   const { ctx } = world({ alerts: true });
   await S.ensureSecret(ctx);
+  await deliver(ctx, TYPES.follow, EV.follow);
   await deliver(ctx, TYPES.resub, EV.resub);
   const blocks = await mod.adminPanel(ctx, { query: {} });
-  const table = blocks.find((b) => b.type === "table" && !b.tab && b.filters);
+  const table = blocks.find((b) => b.type === "table" && !b.tab && b.filters);   // the kind filter exists once there are two kinds in the journal (R33)
   assert.equal(table.searchable, true); assert.ok(table.filters.length === 1);
   assert.equal(table.rows[0][1].badge, "accent"); assert.match(table.rows[0][1].text, /Réabonnement/);
   assert.match(table.rows[0][3].text, /12 mois/);
