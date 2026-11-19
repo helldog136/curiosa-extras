@@ -15,25 +15,15 @@ const json = (p) => JSON.parse(fs.readFileSync(new URL(p, import.meta.url), "utf
 const botMan = json("../modules/twitch-bot/module.json"), botEn = json("../modules/twitch-bot/locales/en.json"), botFr = json("../modules/twitch-bot/locales/fr.json");
 const overlay = (instances = 0, offers = ["alerts.queue", "alerts.show"]) => ({ "alerts-overlay": { name: "Alerts overlay", offers: offers.map((service) => ({ service, version: 2 })), instances } });
 
-test("the steps of the Twitch part: authorized, listening, and the placement step as a link without a state (no checkmark, no badge); nothing when all is done", async () => {
-  const { ctx } = evWorld({ locale: "en" });
-  const t = await rx.checklist(ctx, { authorized: true, listening: false });
-  assert.deepEqual(t.rowIds, ["authorized", "listening", "placed"]);
-  const row = t.rows[2];
-  assert.equal(row[0], "Alerts placed in an overlay page"); assert.equal(row[1].badge, undefined); assert.equal(row[1].text, "—"); assert.match(row[1].title, /cannot tell/);
-  assert.deepEqual([row[2].text, row[2].href], ["Open the overlay pages →", "/admin/overlay-pages"]);
-  assert.equal(await rx.checklist(ctx, { authorized: true, listening: true }), null, "an undetectable step never keeps the list on screen");
-});
-
 test("FR and EN: same keys for the texts, no colon at the end, short", () => {
-  for (const [en, fr, keys] of [[evEn, evFr, ["cl_placed", "cl_placed_link", "cl_placed_title"]], [botEn, botFr, ["media_setup_btn", "media_setup_ok", "media_setup_denied", "media_setup_err", "media_suggest_reason"]]]) {
+  for (const [en, fr, keys] of [[botEn, botFr, ["media_setup_btn", "media_setup_ok", "media_setup_denied", "media_setup_err"]]]) {
     for (const k of keys) { assert.ok(en[k] && fr[k], k); assert.ok(!/:\s*$/.test(en[k]) && !/:\s*$/.test(fr[k])); }
   }
   assert.ok(botEn.media_setup_btn.length <= 60);
 });
 
 test("manifests: the bot keeps the permission, core 0.15.0", () => {
-  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.23.1", "0.15.0", true]);
+  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.24.0", "0.36.0", true]);
 });
 
 /* ───────────── Twitch bot ───────────── */
@@ -53,11 +43,11 @@ test("bot: installed overlay without a copy: the window has the button beside it
   assert.equal((await BM.pendingSetUp(w.ctx)), null, "nothing left to set up");
 });
 
-test("bot: not installed or without permission: no button; the core suggestion takes over; an editor is refused with a sentence", async () => {
+test("bot: not installed or without permission: no button; the field of the window says where to install it; an editor is refused with a sentence", async () => {
   const absent = bot({ installedModules: {} });
   const [form] = await windowsOf(absent.ctx);
   assert.equal(form.extraActions, undefined);
-  assert.ok((await botAdmin.panel(absent.ctx, { query: {} })).some((b) => b.type === "suggestInstall" && b.service === "alerts.show"));
+  assert.ok(!(await botAdmin.panel(absent.ctx, { query: {} })).some((b) => b.type === "suggestInstall"), "R33f: no install suggestion on a configured page; the field of the window says where to install it");
   const editor = bot({ person: { id: "u2", email: "e@example.test", role: "editor" } });
   assert.match((await botAdmin.actions.setUpAlerts(editor.ctx, {})).error, /Only the administration team/);
   assert.equal((await BM.pendingSetUp(editor.ctx)).module, "alerts-overlay", "still to set up");

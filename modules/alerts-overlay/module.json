@@ -5,10 +5,10 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.20.1",
+  "version": "1.21.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
-  "minCore": "0.15.0",
+  "minCore": "0.36.0",
   "description": {
     "en": "A pop-up for OBS that shows your alerts one by one. With Twitch, it receives your events, keeps a journal and gives an OBS dock.",
     "fr": "Une fenêtre pour OBS qui montre vos alertes une par une. Avec Twitch, elle reçoit vos événements, tient un journal et donne un dock OBS."
@@ -39,8 +39,8 @@
         "fr": "Code d'envoi"
       },
       "help": {
-        "en": "Whatever sends alerts must present it: Authorization: Bearer <token>. Without a token, nothing can push (except the test button).",
-        "fr": "Ce qui envoie les alertes doit le présenter : Authorization: Bearer <jeton>. Sans jeton, rien ne peut pousser (sauf le bouton de test)."
+        "en": "The tool that sends alerts presents it: Authorization: Bearer <token>.",
+        "fr": "L'outil qui envoie les alertes le présente : Authorization: Bearer <jeton>."
       }
     },
     {

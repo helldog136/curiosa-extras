@@ -7,6 +7,7 @@ import { world as botWorld, fr as botFr, en as botEn } from "./helpers/botWorld.
 
 const ALL = ["moderator:read:followers", "channel:read:subscriptions", "bits:read", "channel:read:hype_train", "channel:read:redemptions"];
 const without = (...x) => ALL.filter((s) => !x.includes(s));
+const connOf = (blocks) => blocks.find((b) => b.type === "connection");
 const authorize = (blocks) => blocks.filter((b) => b.type === "html" && /data-twitch-connect/.test(b.html)).map((b) => ({ tab: b.tab, href: /href="([^"]+)"/.exec(b.html)[1].replace(/&amp;/g, "&"), label: />([^<]+)<\/a>/.exec(b.html)[1] }));
 const warnings = (blocks) => blocks.filter((b) => b.type === "banner" && b.tone === "warning");
 // The state the page found when the owner opened it: the check ran, then the connector forgot what was declared (it only knows what a page declared).
@@ -18,32 +19,33 @@ async function opened(o) {
   return w;
 }
 
-test("a missing permission of a type that is on: the red box names it and the button is there, forced, with exactly what is missing", async () => {
+test("a missing permission of a type that is on: the state card names it and its button is there, forced, with exactly what is missing", async () => {
   const w = await opened({ tw: { scopes: without("bits:read", "channel:read:hype_train") } });
   const page = await mod.adminPanel(w.ctx, { query: {} });
-  const box = warnings(page)[0];
-  assert.match(box.text, /L'accord de Twitch manque pour : les bits, les trains de la hype\./);
-  assert.ok(!/Cliquez/.test(box.text), "no filler sentence");
-  const b = authorize(page).filter((x) => !x.tab);
-  assert.equal(b.length, 1); assert.equal(b[0].label, "Autoriser de nouveau avec Twitch");
+  const c = connOf(page);
+  assert.equal(c.state, "degraded");
+  assert.match(c.reason, /L'accord de Twitch manque pour : les bits, les trains de la hype\./);
+  assert.ok(!/Cliquez/.test(c.reason), "no filler sentence");
+  assert.equal(c.primary.label, "Autoriser de nouveau avec Twitch");
   const call = w.tw.links.at(-1);
   assert.equal(call.force, true); assert.deepEqual(call.scopes.slice().sort(), ["bits:read", "channel:read:hype_train"]);
-  assert.match(decodeURIComponent(b[0].href), /bits:read channel:read:hype_train|bits:read.*channel:read:hype_train/, "the link carries the union of the missing permissions");
-  assert.ok(page.some((x) => x.type === "adminForm" && x.action === "check" && !x.tab), "the check button stays, as the secondary one");
+  assert.match(decodeURIComponent(c.primary.href), /bits:read channel:read:hype_train|bits:read.*channel:read:hype_train/, "the link carries the union of the missing permissions");
+  assert.ok(!page.some((x) => x.type === "adminForm" && x.action === "check"), "no second check button: the card has it");
   assert.ok(!page.some((x) => x.type === "markdown" && /Rien n'est perdu/.test(x.text)));
 });
 
 test("same in English; and without a link from the connector there is still a way to its page", async () => {
   const w = await opened({ locale: "en", tw: { scopes: without("bits:read") } });
   const page = await mod.adminPanel(w.ctx, { query: {} });
-  assert.equal(authorize(page)[0].label, "Authorize again with Twitch");
+  assert.equal(connOf(page).primary.label, "Authorize again with Twitch");
   const w2 = await opened({ tw: { scopes: without("bits:read") } });
   const svc = w2.ctx.api.services;
   const orig = svc.callAll.bind(svc);
   svc.callAll = async (name, method, args) => (method === "connectLink" ? [{ ok: true, value: { ok: true, url: null, reason: "https" } }] : orig(name, method, args));
   const p2 = await mod.adminPanel(w2.ctx, { query: {} });
-  const link = authorize(p2).find((i) => i.href === "/admin/instances/connector");
-  assert.equal(link.label, "Ouvrir le Connecteur Twitch");
+  const c2 = connOf(p2);
+  assert.equal(c2.primary.href, "/admin/instances/connector");
+  assert.equal(c2.primary.label, "Ouvrir le Connecteur Twitch");
 });
 
 test("nothing missing: no authorize button and no warning", async () => {
@@ -51,6 +53,7 @@ test("nothing missing: no authorize button and no warning", async () => {
   await C.check(w.ctx, { retentionDays: 30 }, { now: NOW });
   const page = await mod.adminPanel(w.ctx, { query: {} });
   assert.equal(authorize(page).length, 0);
+  assert.equal(connOf(page).state, "configured");
   assert.equal(warnings(page).length, 0);
 });
 
@@ -118,7 +121,7 @@ test("a rejected pending age comes from Twitch (created_at), also for a subscrip
 });
 
 test("FR/EN parity of the touched messages", () => {
-  const keys = ["connect_btn", "connect_fallback", "listen_need_more", "state_pending_since", "reason_waiting", "reason_unconfirmed", "reason_unreachable", "reason_elsewhere", "listen_unknown"];
+  const keys = ["connect_btn", "connect_fallback", "listen_need_more", "state_pending_since", "reason_waiting", "reason_unconfirmed", "reason_unreachable", "reason_elsewhere", "connect_first_btn"];
   for (const k of keys) { assert.ok(fr[k] && en[k], k); assert.deepEqual(fr[k].match(/\{\w+\}/g) ?? [], en[k].match(/\{\w+\}/g) ?? [], k); }
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   assert.deepEqual(Object.keys(botFr).sort(), Object.keys(botEn).sort());
@@ -133,9 +136,8 @@ const html = (blocks) => blocks.filter((b) => b.type === "html").map((b) => b.ht
 test("bot: a missing chat permission shows the forced button with the missing permissions, no filler", async () => {
   const w = botWorld({ tw: { mainScopes: ["user:read:chat"] } });
   const page = await A_BOT.panel(w.ctx, { query: {} });
-  const h = html(page);
-  assert.match(h, /data-twitch-connect/); assert.match(h, /Autoriser de nouveau avec Twitch/);
-  assert.match(h, /title="Chez Twitch/, "the steps are in the tooltip");
+  const c = page.find((b) => b.type === "connection");
+  assert.equal(c.state, "degraded"); assert.match(c.primary.href, /id\.twitch\.tv/); assert.equal(c.primary.label, "Autoriser de nouveau avec Twitch");
   const call = w.tw.links.at(-1);
   assert.equal(call.force, true); assert.ok(call.scopes.length > 0 && call.scopes.every((s) => typeof s === "string"));
   assert.ok(!JSON.stringify(page).includes("Pour que le bot lise"));
@@ -143,8 +145,8 @@ test("bot: a missing chat permission shows the forced button with the missing pe
 
 test("bot: no link from the connector: the way to the connector stays", async () => {
   const w = botWorld({ tw: { mainScopes: ["user:read:chat"], noLink: true } });
-  const h = html(await A_BOT.panel(w.ctx, { query: {} }));
-  assert.match(h, /Ouvrir le Connecteur Twitch/); assert.match(h, /href="\/admin\/instances\/tw1"/);
+  const c = (await A_BOT.panel(w.ctx, { query: {} })).find((b) => b.type === "connection");
+  assert.equal(c.primary.label, "Ouvrir le Connecteur Twitch"); assert.equal(c.primary.href, "/admin/instances/tw1");
 });
 
 test("bot: nothing missing, no button", async () => {

@@ -31,7 +31,7 @@ afterEach(() => {});
 
 test("manifeste : version mineure, consomme live.event (schéma), permission topics, réglage « texte des messages » éteint par défaut, parité fr/en", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.20.1");
+  assert.equal(manifest.version, "1.21.0");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["live.event", "twitch.event"]);
   assert.ok(manifest.permissions.includes("topics"));
   assert.deepEqual((manifest.requires ?? []).filter((r) => !r.optional), [], "aucune dépendance forte");
@@ -56,7 +56,7 @@ test("sans « Actions du live YouTube » : la page de l'overlay est celle d'avan
   assert.deepEqual(Object.keys(cfg.labels), ["follow", "sub", "raid", "test", "alert"]);
   assert.deepEqual(Object.keys(cfg).sort(), ["duration", "eventsUrl", "labels", "neon"]);
   const blocks = await def.adminPanel(o.ctx);
-  assert.ok(blocks.some((b) => b.type === "markdown" && /installez le module « Actions du live YouTube »/.test(b.text)));
+  assert.ok(blocks.some((b) => b.type === "markdown" && /installez « Actions du live YouTube »/.test(b.text)));
   assert.ok(!blocks.some((b) => b.type === "adminForm" && b.action === "testYoutube"));
   o.off();
 });

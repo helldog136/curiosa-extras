@@ -42,7 +42,7 @@ const lines = (w) => w.ctx.dumpLog();
 test("le manifeste déclare ses événements et l'adresse du site, sans rien exiger de plus du cœur", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.minCore, "0.6.0", "le journal du cœur est écrit avec ctx.api.log?.write : un cœur plus ancien l'ignorerait de toute façon");
+  assert.equal(manifest.minCore, "0.36.0", "le bloc « connection » (cœur 0.36.0) dit l'état du lien : un cœur plus ancien l'ignorerait");
   assert.equal(manifest.returnAddresses, undefined, "aucun retour de connexion d'un service tiers : Home Assistant vient chercher, c'est lui qui connaît l'adresse");
   assert.equal(manifest.siteAddressUses.length, 1);
   const use = manifest.siteAddressUses[0];
@@ -138,10 +138,9 @@ test("sans journal du cœur (cœur plus ancien) le module marche comme avant", a
   assert.equal((await B.status(w.ctx)).enabled, false);
 });
 
-test("la page relie l'ancien journal à l'Historique du cœur, dans les deux langues", async () => {
+test("la page n'a ni second bouton ni phrase vers l'Historique du cœur (R33 : une information, une fois)", async () => {
   const w = world();
   const blocks = await A.panel(w.ctx);
-  const link = blocks.find((b) => b.type === "links" && b.items.some((i) => i.href === "?tab=history"));
-  assert.ok(link);
-  assert.ok(fr.jr_history && en.jr_history);
+  assert.ok(!blocks.some((b) => b.type === "links" && b.items.some((i) => i.href === "?tab=history")));
+  assert.ok(!("jr_history" in fr) && !("jr_central" in fr) && !("jr_history" in en) && !("jr_central" in en));
 });

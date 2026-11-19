@@ -143,9 +143,9 @@ test("the page reports the voices it sees (bounded), and the administration show
   assert.equal((await tw.loadReport(w.ctx)).voices.length, 60);
   assert.equal((await def.routes["tts-report"](new Request("https://x.test/r", { method: "POST", body: "x".repeat(9000) }), w.ctx)).status, 413);
   const tab = (blocks) => blocks.filter((b) => b.tab === "viewers");
-  const banner = async () => tab(await def.adminPanel(w.ctx, { query: {} })).find((b) => b.type === "banner").text;
-  assert.match(await banner(), /off/);
-  await tw.saveConfig(w.ctx, { tts: { on: true } }); assert.match(await banner(), /60 voices/);
+  const banner = async () => tab(await def.adminPanel(w.ctx, { query: {} })).find((b) => b.type === "banner")?.text;
+  assert.equal(await banner(), undefined, "R33: voice off, the switch says it: no banner");
+  await tw.saveConfig(w.ctx, { tts: { on: true } }); assert.equal(await banner(), undefined, "a voice that works is not announced");
   await post({ supported: true, voices: [] }); assert.match(await banner(), /no voice/);
   await post({ supported: false, voices: [] }); assert.match(await banner(), /cannot read aloud/);
   const w2 = world(); await tw.saveConfig(w2.ctx, { tts: { on: true } });
@@ -279,7 +279,7 @@ test("tools for assistants: read the voice and moderation, change them (bounded)
 });
 
 test("manifest: 1.8.0, optional journal, video settings (six, own tab), viewers tab, FR and EN texts in parity", () => {
-  assert.equal(manifest.version, "1.20.1");
+  assert.equal(manifest.version, "1.21.0");
   // (1.18.0) the Twitch part is inside: every Twitch need is optional (a site without Twitch installs nothing more)
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.api", true], ["twitch.live", true], ["twitch.rewards", true], ["twitch.events.handover", true]]);
   assert.equal(manifest.settings.filter((s) => s.type === "video" && s.tab === "media").length, 6);

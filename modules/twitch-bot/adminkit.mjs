@@ -112,7 +112,9 @@ export function bootstrap(ctx) {
 
 /* ───────────── Les morceaux de HTML ───────────── */
 
-export const originPill = (kind, text) => `<span class="ck-origin ${esc(kind)}">${esc(text)}</span>`;
+export const originPill = (kind, text) => (text ? `<span class="ck-origin ${esc(kind)}">${esc(text)}</span>` : "");
+/** The word of an origin. A ready-made command has none: what is the same on most rows is not a label (R14, R33). */
+export const originText = (t, origin) => (origin === "builtin" ? "" : t(`origin_${origin}`));
 /** Une pastille de filtre ; la première d'un groupe est enfoncée. */
 const pill = (key, p, pressed) => `<button type="button" class="ck-pill" data-ck-pill data-ck-key="${esc(key)}" data-ck-val="${esc(p.val)}" aria-pressed="${pressed ? "true" : "false"}">${esc(p.label)}${p.count !== undefined ? ` <b>${p.count}</b>` : ""}</button>`;
 

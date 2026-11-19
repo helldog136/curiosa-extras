@@ -150,7 +150,7 @@ test("the page: strict policy with a nonce, no inline handler, nothing from anot
 
 test("the page: every sentence exists in French and English with the same {words}", () => {
   for (const k of DK.KEYS) { assert.ok(en[`dock_${k}`] && fr[`dock_${k}`], k); assert.deepEqual((en[`dock_${k}`].match(/\{\w+\}/g) ?? []).sort(), (fr[`dock_${k}`].match(/\{\w+\}/g) ?? []).sort(), k); }
-  for (const k of ["dock_intro", "dock_copy_label", "dock_renew_btn", "dock_renew_confirm", "dock_renewed", "dock_denied"]) assert.ok(en[k] && fr[k], k);
+  for (const k of ["dock_open", "dock_title_win", "dock_copy_label", "dock_renew_btn", "dock_renew_confirm", "dock_renewed", "dock_denied"]) assert.ok(en[k] && fr[k], k);
 });
 
 test("the look: the raid docks' tokens are the same (this file is a copy, it must not drift)", async () => {
@@ -263,15 +263,14 @@ test("the whole script: a key that is no longer good stops the dock with one pla
 test("admin: the OBS dock tab says where to copy the address and how to add it in OBS; New address asks for confirmation and says what happens", async () => {
   const { ctx, k } = await site({ locale: "en" });
   const blocks = await mod.adminPanel(ctx, { query: {} });
-  // (1.18.0) the dock is in the first tab of the alerts overlay, under its own heading (the overlay has four tabs already)
-  const copy = blocks.find((b) => b.type === "copy" && !b.tab && /\/dock\?k=/.test(b.text));
-  assert.equal(copy.text, `https://site.example.org/m/ev/dock?k=${k}`);
-  assert.ok(blocks.some((b) => b.type === "heading" && !b.tab && b.text === "OBS dock"));
-  assert.match(blocks.find((b) => b.type === "markdown" && !b.tab && /Custom browser docks/.test(b.text)).text, /Custom browser docks/);
-  const renew = blocks.find((b) => b.type === "table" && !b.tab && b.rowIds?.[0] === "dock");
-  assert.ok(renew.rowActions[0].confirm.length > 20 && renew.rowActions[0].danger === true);
-  assert.equal(manifest.version, "1.20.1");
-  const { assertAdminPageErgonomics } = await import("./helpers/ergonomicsPending.mjs");
+  // R33: no instruction and no address on the page: a link opens the window of the dock (the address is its only field)
+  assert.ok(!blocks.some((b) => b.type === "copy" && /\/dock\?k=/.test(b.text)));
+  assert.deepEqual(blocks.find((b) => b.type === "links" && !b.tab && b.items[0].href === "?dock=1").items[0], { label: "OBS dock", href: "?dock=1", presentation: "dialog" });
+  const dlg = (await mod.adminPanel(ctx, { query: { dock: "1" } })).find((b) => b.presentation === "dialog" && b.action === "renewDock");
+  assert.equal(dlg.fields[0].value, `https://site.example.org/m/ev/dock?k=${k}`);
+  assert.deepEqual([dlg.title, dlg.submitLabel, dlg.danger, dlg.cancelHref], ["OBS dock", "Replace the address", true, "?"]);
+  assert.equal(manifest.version, "1.21.0");
+  const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   for (const locale of ["en", "fr"]) assertAdminPageErgonomics(await mod.adminPanel((await site({ locale })).ctx, { query: {} }));
 });
 
