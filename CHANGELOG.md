@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.105.1 — 2026-11-19
+
+*En bref : la page d'administration de la Mascotte n'affiche plus que ce qui sert : plus de bandeau « publiée », plus de phrases d'explication, des champs seulement quand ils attendent une saisie.*
+
+*In short: the Mascot administration page now shows only what is useful: no more "published" banner, no explanation sentences, fields only when they wait for input.*
+
+### Améliorations
+
+- **Mascotte 1.5.3.** Une mascotte publiée n'affiche plus de bandeau : le bouton « Remettre en brouillon » et le lien vers le site le disent. Les avertissements (brouillon, aucune phrase publiée, aucune page listée) restent, avec un lien vers l'onglet à corriger. L'image, sa description et sa forme n'apparaissent qu'avec « Ma propre image » ; le nom est une option repliée. L'animation ne demande que ce que son mode utilise. Les phrases ont une recherche, un interrupteur « Publiée / Brouillon » et s'ouvrent dans une fenêtre ; le formulaire d'ajout tient en trois champs. Disparus : les quatre bandeaux de la voix, les paragraphes d'explication des gabarits et de l'adresse de rappel, les étiquettes répétées sur chaque ligne.
+
+### Pour les développeurs
+
+- `tests/helpers/ergonomicsPending.mjs` est supprimé : plus aucune page n'ignore R33a et R33d. `tests/ergonomics-baseline.json` perd 19 lignes (la Mascotte n'en a plus), `tests/banners-baseline.json` deux.
+
+*(English)*
+
+- **Mascot 1.5.3.** A published mascot no longer shows a banner: the "Put back to draft" button and the link to the site say it. Warnings (draft, no published sentence, no page listed) stay, with a link to the tab to fix. The picture, its description and its shape only show with "My own picture"; the name is a folded option. The animation only asks for what its mode uses. Sentences have a search, a "Published / Draft" switch and open in a window; the add form is three fields. Gone: the four voice banners, the explanation paragraphs of the templates and of the reminder address, labels repeated on each row.
+- `tests/helpers/ergonomicsPending.mjs` is deleted: no page skips R33a and R33d any more. `tests/ergonomics-baseline.json` loses 19 lines (the Mascot has none left), `tests/banners-baseline.json` two.
+
 ## 1.105.0 — 2026-11-19
 
 *En bref : l'interrupteur de chaque type d'événement Twitch choisit désormais seulement l'alerte ; votre site écoute et enregistre toujours tout. Fin des faux e-mails « aucun événement pendant votre direct ».*
