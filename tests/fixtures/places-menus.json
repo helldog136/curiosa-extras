@@ -3,6 +3,7 @@
   "(section content)",
   "  - Questions fréquentes [Questions, Reçues]",
   "  - Kit presse",
+  "  - Liste de liens",
   "(section community)",
   "  - Contacts [Contacts, Formulaire]",
   "  - Partenaires [Partenaires, Sponsors]",
@@ -27,11 +28,12 @@
   "  - Chiffres",
   "  Twitch",
   "    - Activité Twitch",
-  "(own sections) Bandeau d'accueil (1) · Bandeau d'accueil (2) · Bandeau d'accueil (3) · Blog · Liste de liens · Pages"
+  "(own sections) Bandeau d'accueil (1) · Bandeau d'accueil (2) · Bandeau d'accueil (3) · Blog · Pages"
  ],
  "creator-14": [
   "(section content)",
   "  - Kit presse",
+  "  - Liste de liens",
   "(section community)",
   "  - Contacts [Contacts, Formulaire]",
   "En direct",
@@ -43,21 +45,23 @@
   "  - YouTube",
   "  - Autres comptes",
   "  - Chiffres",
-  "(own sections) Bandeau d'accueil · Blog (1) · Blog (2) · Liste de liens · Pages"
+  "(own sections) Bandeau d'accueil · Blog (1) · Blog (2) · Pages"
  ],
  "project-9": [
   "(section content)",
   "  - Kit presse",
+  "  - Liste de liens",
   "(section community)",
   "  - Contacts [Contacts, Formulaire]",
   "Réseaux",
   "  - Autres comptes",
   "  - Chiffres",
-  "(own sections) Bandeau d'accueil · Blog (1) · Blog (2) · Liste de liens · Mentions légales · Pages"
+  "(own sections) Bandeau d'accueil · Blog (1) · Blog (2) · Mentions légales · Pages"
  ],
  "collective-11": [
   "(section content)",
   "  - Questions fréquentes [Questions, Reçues]",
+  "  - Liste de liens",
   "(section community)",
   "  - Contacts",
   "  - Partenaires",
@@ -69,6 +73,6 @@
   "  - Discord",
   "  - Autres comptes",
   "  - Chiffres",
-  "(own sections) Blog · Liste de liens · Pages"
+  "(own sections) Blog · Pages"
  ]
 }
