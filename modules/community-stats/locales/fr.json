@@ -49,7 +49,7 @@
   "reason_auth": "{platform} demande votre autorisation : ouvrez votre module {platform} et reconnectez votre compte.",
   "reason_auth_twitch": "L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch ».",
   "reason_rate": "{platform} demande de patienter un peu.",
-  "reason_network": "{platform} ne répond pas pour l'instant.",
+  "reason_network": "{platform} ne répond pas.",
   "reason_hidden": "{platform} cache ce chiffre : rendez-le public dans votre compte {platform}.",
   "reason_hidden_youtube": "YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio.",
   "reason_config": "Le nom du compte {platform} est introuvable : ouvrez votre module {platform} et vérifiez-le.",

@@ -49,7 +49,7 @@
   "reason_auth": "{platform} needs your permission: open your {platform} module and reconnect your account.",
   "reason_auth_twitch": "The Twitch authorization must be renewed: open the Twitch connector and click “Authorize again with Twitch”.",
   "reason_rate": "{platform} asks you to wait a little.",
-  "reason_network": "{platform} is not answering right now.",
+  "reason_network": "{platform} is not answering.",
   "reason_hidden": "{platform} hides this number: make it public in your {platform} account.",
   "reason_hidden_youtube": "YouTube hides your subscriber count: make it public in YouTube Studio.",
   "reason_config": "The {platform} account name was not found: open your {platform} module and check it.",

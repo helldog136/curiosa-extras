@@ -109,7 +109,7 @@ test("textes : fr et en alignés, toutes les clés utilisées existent, libellé
     PLATFORMS[id].labels.en.forEach((l) => assert.ok(Object.values(en).includes(l), `${id} : ${l}`));
     for (const [k, v] of Object.entries({ ...fr, ...Object.fromEntries(Object.entries(en).map(([a, b]) => [`en.${a}`, b])) })) if (/^(en\.)?(err_|stats_|stat_|col_)/.test(k)) assert.ok(!JARGON.test(v), `${id}.${k} : « ${v} »`);
     const s = manifest.settings.find((x) => x.key === "trackStats");
-    for (const v of [s.label.fr, s.label.en, s.help.fr, s.help.en]) assert.ok(!JARGON.test(v), `${id} : ${v}`);
+    for (const v of [s.label.fr, s.label.en, ...(s.help ? [s.help.fr, s.help.en] : [])]) assert.ok(!JARGON.test(v), `${id} : ${v}`);
   }
 });
 

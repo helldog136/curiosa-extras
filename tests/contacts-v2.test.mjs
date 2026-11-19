@@ -119,7 +119,7 @@ test("trou noir : un module « privacy.subject » muet ne bloque ni l'effacement
   const t = Date.now();
   const r = await def.adminActions.remove(ctx, { id: x.id });
   assert.ok(Date.now() - t < 1000);
-  assert.match(r.ok, /Did not answer in time: Mute/);
+  assert.match(r.ok, /did not answer in time: Mute/);
   assert.equal(good.refs.has(x.id), false);
   assert.equal(D.privacyMs(makeCtx()), 8000, "8 s par fournisseur en vrai");
 });
@@ -317,7 +317,7 @@ test("admin — catégories : créer (droit), renommer, « Mettre dans… », su
   assert.equal((await def.adminActions.deleteCategory(ctx, { id: cat })).ok, "Catégorie supprimée. Les fiches ne sont pas supprimées.");
   assert.equal((await svc.get(ctx, { id: ada })).ok, true);
   assert.deepEqual((await svc.get(ctx, { id: ada })).contact.categoryIds, []);
-  assert.match(textOf(await def.adminPanel(ctx, { query: { view: "categories" } })), /Aucune catégorie pour l(&#39;|')instant/);
+  assert.match(textOf(await def.adminPanel(ctx, { query: { view: "categories" } })), /Aucune catégorie\./);
 });
 
 test("accessibilité du HTML de l'admin (FR et EN) : images avec alt, liens avec un texte, champ de recherche étiqueté, onglets nommés, ids uniques, titres", async () => {

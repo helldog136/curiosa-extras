@@ -95,7 +95,7 @@
   "tidyIntro": "After cards were merged or deleted in Contacts. Your messages and spotlights follow the merged card; those of a deleted card are removed.",
   "tidyButton": "Check my messages",
   "tidyDone": "Done. Merged cards followed: {followed}. Deleted cards cleaned up: {removed}.",
-  "tidyNothing": "Everything is up to date.",
+  "tidyNothing": "Nothing to update.",
   "ovTitle": "Thank-yous",
   "ovHeading": "Thank you!",
   "ovDemoName": "Sample person {n}",

@@ -39,7 +39,11 @@ export function readModules(base = root) {
 }
 
 export const readBaseline = (file = BASELINE) => (fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null);
-const render = (modules) => `${JSON.stringify({ $comment: COMMENT, version: 2, modules }, null, 2)}\n`;
+// `justified` : { module: { "<ligne de la base>": "raison écrite" } }. Chaque ligne R33* qui reste dans la base doit y être expliquée (tests/ergonomics.test.mjs) ; --write ne garde que les raisons des lignes qui existent encore.
+const render = (modules, justified = {}) => {
+  const kept = Object.fromEntries(Object.entries(justified).map(([m, o]) => [m, Object.fromEntries(Object.entries(o).filter(([k]) => modules[m]?.includes(k)))]).filter(([, o]) => Object.keys(o).length));
+  return `${JSON.stringify({ $comment: COMMENT, version: 2, modules, ...(Object.keys(kept).length ? { justified: kept } : {}) }, null, 2)}\n`;
+};
 
 /** { name: écarts[] } pour tous les modules du dépôt. */
 export function currentGaps(base = root) {
@@ -97,7 +101,7 @@ function main() {
       }
     }
     fs.mkdirSync(path.dirname(BASELINE), { recursive: true });
-    fs.writeFileSync(BASELINE, render(next));
+    fs.writeFileSync(BASELINE, render(next, previous?.justified));
     const count = (m) => Object.values(m).reduce((n, l) => n + l.length, 0);
     console.log(`${path.relative(root, BASELINE)} écrit : ${count(next)} écart(s) connu(s)${previous ? ` (avant : ${count(previous.modules ?? {})})` : ""} dans ${Object.keys(next).length} module(s).`);
     return 0;

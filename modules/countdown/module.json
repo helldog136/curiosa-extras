@@ -5,7 +5,7 @@
     "fr": "Compte à rebours",
     "en": "Countdown"
   },
-  "version": "1.4.1",
+  "version": "1.4.2",
   "menuGroup": "content",
   "minCore": "0.11.0",
   "description": {
@@ -57,316 +57,316 @@
         {
           "value": "Europe/Paris",
           "label": {
-            "fr": "Belgique, France, Allemagne, Espagne, Italie, Pays-Bas… (Europe/Paris)",
-            "en": "Belgium, France, Germany, Spain, Italy, Netherlands… (Europe/Paris)"
+            "fr": "Belgique, France, Allemagne, Espagne, Italie, Pays-Bas…",
+            "en": "Belgium, France, Germany, Spain, Italy, Netherlands…"
           }
         },
         {
           "value": "Europe/London",
           "label": {
-            "fr": "Londres, Dublin (Europe/London)",
-            "en": "London, Dublin (Europe/London)"
+            "fr": "Londres, Dublin",
+            "en": "London, Dublin"
           }
         },
         {
           "value": "Europe/Lisbon",
           "label": {
-            "fr": "Lisbonne (Europe/Lisbon)",
-            "en": "Lisbon (Europe/Lisbon)"
+            "fr": "Lisbonne",
+            "en": "Lisbon"
           }
         },
         {
           "value": "Europe/Athens",
           "label": {
-            "fr": "Athènes, Helsinki, Kiev, Bucarest (Europe/Athens)",
-            "en": "Athens, Helsinki, Kyiv, Bucharest (Europe/Athens)"
+            "fr": "Athènes, Helsinki, Kiev, Bucarest",
+            "en": "Athens, Helsinki, Kyiv, Bucharest"
           }
         },
         {
           "value": "Europe/Moscow",
           "label": {
-            "fr": "Moscou (Europe/Moscow)",
-            "en": "Moscow (Europe/Moscow)"
+            "fr": "Moscou",
+            "en": "Moscow"
           }
         },
         {
           "value": "Europe/Istanbul",
           "label": {
-            "fr": "Istanbul (Europe/Istanbul)",
-            "en": "Istanbul (Europe/Istanbul)"
+            "fr": "Istanbul",
+            "en": "Istanbul"
           }
         },
         {
           "value": "Atlantic/Reykjavik",
           "label": {
-            "fr": "Reykjavik (Atlantic/Reykjavik)",
-            "en": "Reykjavik (Atlantic/Reykjavik)"
+            "fr": "Reykjavik",
+            "en": "Reykjavik"
           }
         },
         {
           "value": "Africa/Casablanca",
           "label": {
-            "fr": "Casablanca (Africa/Casablanca)",
-            "en": "Casablanca (Africa/Casablanca)"
+            "fr": "Casablanca",
+            "en": "Casablanca"
           }
         },
         {
           "value": "Africa/Algiers",
           "label": {
-            "fr": "Alger, Tunis (Africa/Algiers)",
-            "en": "Algiers, Tunis (Africa/Algiers)"
+            "fr": "Alger, Tunis",
+            "en": "Algiers, Tunis"
           }
         },
         {
           "value": "Africa/Lagos",
           "label": {
-            "fr": "Lagos, Kinshasa, Douala (Africa/Lagos)",
-            "en": "Lagos, Kinshasa, Douala (Africa/Lagos)"
+            "fr": "Lagos, Kinshasa, Douala",
+            "en": "Lagos, Kinshasa, Douala"
           }
         },
         {
           "value": "Africa/Cairo",
           "label": {
-            "fr": "Le Caire (Africa/Cairo)",
-            "en": "Cairo (Africa/Cairo)"
+            "fr": "Le Caire",
+            "en": "Cairo"
           }
         },
         {
           "value": "Africa/Johannesburg",
           "label": {
-            "fr": "Johannesburg (Africa/Johannesburg)",
-            "en": "Johannesburg (Africa/Johannesburg)"
+            "fr": "Johannesburg",
+            "en": "Johannesburg"
           }
         },
         {
           "value": "Africa/Nairobi",
           "label": {
-            "fr": "Nairobi (Africa/Nairobi)",
-            "en": "Nairobi (Africa/Nairobi)"
+            "fr": "Nairobi",
+            "en": "Nairobi"
           }
         },
         {
           "value": "America/St_Johns",
           "label": {
-            "fr": "Terre-Neuve (Saint-Jean) (America/St_Johns)",
-            "en": "Newfoundland (St. John's) (America/St_Johns)"
+            "fr": "Terre-Neuve (Saint-Jean)",
+            "en": "Newfoundland (St. John's)"
           }
         },
         {
           "value": "America/Halifax",
           "label": {
-            "fr": "Halifax (America/Halifax)",
-            "en": "Halifax (America/Halifax)"
+            "fr": "Halifax",
+            "en": "Halifax"
           }
         },
         {
           "value": "America/New_York",
           "label": {
-            "fr": "New York, Montréal, Toronto (America/New_York)",
-            "en": "New York, Montreal, Toronto (America/New_York)"
+            "fr": "New York, Montréal, Toronto",
+            "en": "New York, Montreal, Toronto"
           }
         },
         {
           "value": "America/Chicago",
           "label": {
-            "fr": "Chicago, Winnipeg (America/Chicago)",
-            "en": "Chicago, Winnipeg (America/Chicago)"
+            "fr": "Chicago, Winnipeg",
+            "en": "Chicago, Winnipeg"
           }
         },
         {
           "value": "America/Denver",
           "label": {
-            "fr": "Denver, Calgary (America/Denver)",
-            "en": "Denver, Calgary (America/Denver)"
+            "fr": "Denver, Calgary",
+            "en": "Denver, Calgary"
           }
         },
         {
           "value": "America/Phoenix",
           "label": {
-            "fr": "Phoenix (America/Phoenix)",
-            "en": "Phoenix (America/Phoenix)"
+            "fr": "Phoenix",
+            "en": "Phoenix"
           }
         },
         {
           "value": "America/Los_Angeles",
           "label": {
-            "fr": "Los Angeles, Vancouver (America/Los_Angeles)",
-            "en": "Los Angeles, Vancouver (America/Los_Angeles)"
+            "fr": "Los Angeles, Vancouver",
+            "en": "Los Angeles, Vancouver"
           }
         },
         {
           "value": "America/Anchorage",
           "label": {
-            "fr": "Anchorage (America/Anchorage)",
-            "en": "Anchorage (America/Anchorage)"
+            "fr": "Anchorage",
+            "en": "Anchorage"
           }
         },
         {
           "value": "Pacific/Honolulu",
           "label": {
-            "fr": "Honolulu (Pacific/Honolulu)",
-            "en": "Honolulu (Pacific/Honolulu)"
+            "fr": "Honolulu",
+            "en": "Honolulu"
           }
         },
         {
           "value": "America/Mexico_City",
           "label": {
-            "fr": "Mexico (America/Mexico_City)",
-            "en": "Mexico City (America/Mexico_City)"
+            "fr": "Mexico",
+            "en": "Mexico City"
           }
         },
         {
           "value": "America/Bogota",
           "label": {
-            "fr": "Bogota, Lima, Quito (America/Bogota)",
-            "en": "Bogota, Lima, Quito (America/Bogota)"
+            "fr": "Bogota, Lima, Quito",
+            "en": "Bogota, Lima, Quito"
           }
         },
         {
           "value": "America/Santiago",
           "label": {
-            "fr": "Santiago (America/Santiago)",
-            "en": "Santiago (America/Santiago)"
+            "fr": "Santiago",
+            "en": "Santiago"
           }
         },
         {
           "value": "America/Sao_Paulo",
           "label": {
-            "fr": "São Paulo, Brasilia (America/Sao_Paulo)",
-            "en": "São Paulo, Brasilia (America/Sao_Paulo)"
+            "fr": "São Paulo, Brasilia",
+            "en": "São Paulo, Brasilia"
           }
         },
         {
           "value": "America/Argentina/Buenos_Aires",
           "label": {
-            "fr": "Buenos Aires (America/Argentina/Buenos_Aires)",
-            "en": "Buenos Aires (America/Argentina/Buenos_Aires)"
+            "fr": "Buenos Aires",
+            "en": "Buenos Aires"
           }
         },
         {
           "value": "Asia/Dubai",
           "label": {
-            "fr": "Dubaï, Abou Dabi (Asia/Dubai)",
-            "en": "Dubai, Abu Dhabi (Asia/Dubai)"
+            "fr": "Dubaï, Abou Dabi",
+            "en": "Dubai, Abu Dhabi"
           }
         },
         {
           "value": "Asia/Karachi",
           "label": {
-            "fr": "Karachi, Tachkent (Asia/Karachi)",
-            "en": "Karachi, Tashkent (Asia/Karachi)"
+            "fr": "Karachi, Tachkent",
+            "en": "Karachi, Tashkent"
           }
         },
         {
           "value": "Asia/Kolkata",
           "label": {
-            "fr": "Inde (Delhi, Bombay) (Asia/Kolkata)",
-            "en": "India (Delhi, Mumbai) (Asia/Kolkata)"
+            "fr": "Inde (Delhi, Bombay)",
+            "en": "India (Delhi, Mumbai)"
           }
         },
         {
           "value": "Asia/Dhaka",
           "label": {
-            "fr": "Dacca (Asia/Dhaka)",
-            "en": "Dhaka (Asia/Dhaka)"
+            "fr": "Dacca",
+            "en": "Dhaka"
           }
         },
         {
           "value": "Asia/Bangkok",
           "label": {
-            "fr": "Bangkok, Hanoï (Asia/Bangkok)",
-            "en": "Bangkok, Hanoi (Asia/Bangkok)"
+            "fr": "Bangkok, Hanoï",
+            "en": "Bangkok, Hanoi"
           }
         },
         {
           "value": "Asia/Jakarta",
           "label": {
-            "fr": "Jakarta (Asia/Jakarta)",
-            "en": "Jakarta (Asia/Jakarta)"
+            "fr": "Jakarta",
+            "en": "Jakarta"
           }
         },
         {
           "value": "Asia/Singapore",
           "label": {
-            "fr": "Singapour, Kuala Lumpur (Asia/Singapore)",
-            "en": "Singapore, Kuala Lumpur (Asia/Singapore)"
+            "fr": "Singapour, Kuala Lumpur",
+            "en": "Singapore, Kuala Lumpur"
           }
         },
         {
           "value": "Asia/Hong_Kong",
           "label": {
-            "fr": "Hong Kong (Asia/Hong_Kong)",
-            "en": "Hong Kong (Asia/Hong_Kong)"
+            "fr": "Hong Kong",
+            "en": "Hong Kong"
           }
         },
         {
           "value": "Asia/Shanghai",
           "label": {
-            "fr": "Pékin, Shanghai, Taipei (Asia/Shanghai)",
-            "en": "Beijing, Shanghai, Taipei (Asia/Shanghai)"
+            "fr": "Pékin, Shanghai, Taipei",
+            "en": "Beijing, Shanghai, Taipei"
           }
         },
         {
           "value": "Asia/Manila",
           "label": {
-            "fr": "Manille (Asia/Manila)",
-            "en": "Manila (Asia/Manila)"
+            "fr": "Manille",
+            "en": "Manila"
           }
         },
         {
           "value": "Asia/Seoul",
           "label": {
-            "fr": "Séoul (Asia/Seoul)",
-            "en": "Seoul (Asia/Seoul)"
+            "fr": "Séoul",
+            "en": "Seoul"
           }
         },
         {
           "value": "Asia/Tokyo",
           "label": {
-            "fr": "Tokyo, Osaka (Asia/Tokyo)",
-            "en": "Tokyo, Osaka (Asia/Tokyo)"
+            "fr": "Tokyo, Osaka",
+            "en": "Tokyo, Osaka"
           }
         },
         {
           "value": "Australia/Perth",
           "label": {
-            "fr": "Perth (Australia/Perth)",
-            "en": "Perth (Australia/Perth)"
+            "fr": "Perth",
+            "en": "Perth"
           }
         },
         {
           "value": "Australia/Adelaide",
           "label": {
-            "fr": "Adélaïde (Australia/Adelaide)",
-            "en": "Adelaide (Australia/Adelaide)"
+            "fr": "Adélaïde",
+            "en": "Adelaide"
           }
         },
         {
           "value": "Australia/Sydney",
           "label": {
-            "fr": "Sydney, Melbourne (Australia/Sydney)",
-            "en": "Sydney, Melbourne (Australia/Sydney)"
+            "fr": "Sydney, Melbourne",
+            "en": "Sydney, Melbourne"
           }
         },
         {
           "value": "Pacific/Auckland",
           "label": {
-            "fr": "Auckland, Wellington (Pacific/Auckland)",
-            "en": "Auckland, Wellington (Pacific/Auckland)"
+            "fr": "Auckland, Wellington",
+            "en": "Auckland, Wellington"
           }
         },
         {
           "value": "Pacific/Fiji",
           "label": {
-            "fr": "Fidji (Pacific/Fiji)",
-            "en": "Fiji (Pacific/Fiji)"
+            "fr": "Fidji",
+            "en": "Fiji"
           }
         },
         {
           "value": "UTC",
           "label": {
-            "fr": "Heure universelle (UTC) (UTC)",
-            "en": "Universal time (UTC) (UTC)"
+            "fr": "Heure universelle (UTC)",
+            "en": "Universal time (UTC)"
           }
         }
       ],
@@ -389,8 +389,8 @@
         "en": "Other time zone (official name)"
       },
       "help": {
-        "fr": "Seulement si le vôtre n'est pas dans la liste, par exemple Asia/Kolkata ou America/Montreal. Il remplace le choix ci-dessus.",
-        "en": "Only if yours is not in the list, for example Asia/Kolkata or America/Montreal. It replaces the choice above."
+        "fr": "Seulement si le vôtre n'est pas dans la liste, par exemple Atlantic/Azores ou Africa/Tunis. Il remplace le choix ci-dessus.",
+        "en": "Only if yours is not in the list, for example Atlantic/Azores or Africa/Tunis. It replaces the choice above."
       }
     },
     {

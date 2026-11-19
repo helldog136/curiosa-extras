@@ -292,7 +292,7 @@ test("au hasard : personne en ligne → jusqu'à 6 tentatives avec 100 AUTRES no
   const small = await search.findRandom(ctx, P(250), {}, { rng: seeded(2) });
   assert.equal(small.state, "none"); assert.equal(api.calls.length, 3, "100 + 100 + 50, puis il n'y a plus personne à tirer");
   // le message du dock est celui demandé
-  assert.equal(fr.dock_rm_none, "Personne n'a été trouvé en ligne pour l'instant, réessayez."); assert.equal(fr.dock_limited, "Trop de recherches, patientez quelques secondes.");
+  assert.equal(fr.dock_rm_none, "Personne n'a été trouvé en ligne, réessayez."); assert.equal(fr.dock_limited, "Trop de recherches, patientez quelques secondes.");
 });
 
 test("au hasard : sur 100 chaînes, un seul tirage (tout le monde est demandé)", async () => {

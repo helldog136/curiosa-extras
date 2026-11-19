@@ -40,6 +40,15 @@ for (const m of modules) {
   });
 }
 
+test("chaque écart R33 qui reste dans la base est justifié par écrit, et chaque justification vise un écart existant", () => {
+  const justified = baseline.justified ?? {};
+  const lines = Object.entries(baseline.modules).flatMap(([name, keys]) => keys.filter((k) => k.startsWith("R33")).map((k) => [name, k]));
+  const missing = lines.filter(([name, k]) => !String(justified[name]?.[k] ?? "").trim().length);
+  assert.deepEqual(missing.map(([n, k]) => `${n} | ${k}`), [], "ligne R33 sans raison : corrigez l'écart, ou écrivez sa raison dans baseline.justified");
+  const orphans = Object.entries(justified).flatMap(([name, o]) => Object.keys(o).filter((k) => !baseline.modules[name]?.includes(k)).map((k) => `${name} | ${k}`));
+  assert.deepEqual(orphans, [], "justification sans écart : retirez-la de baseline.justified");
+});
+
 test("la base ne s'allonge pas : comparée à la branche de base du dépôt (quand elle est disponible)", () => {
   const ref = process.env.ERGONOMICS_BASE_REF ?? "origin/master";
   const shown = spawnSync("git", ["show", `${ref}:tests/ergonomics-baseline.json`], { cwd: root, encoding: "utf8" });

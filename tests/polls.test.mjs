@@ -483,7 +483,7 @@ test("administration : créer (erreurs sous les champs, avec exemple), puis lien
 test("administration : panneau vide, copie d'un sondage, modification (choix verrouillés après des votes), zone horaire de la création conservée", async () => {
   const c = ctx();
   const empty = await def.adminPanel(c, { query: {} });
-  assert.ok(flat(empty).includes("pas encore de sondage"));
+  assert.ok(flat(empty).includes("pas de sondage"));
   const day = new Date(Date.now() + 20 * 86_400_000).toISOString().slice(0, 10);
   const { id, slug } = await make(c, { endDate: day, endTime: "20:00" });
   const rec = (await c.api.store.get(id)).data;

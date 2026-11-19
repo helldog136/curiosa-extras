@@ -172,7 +172,7 @@ test("Twitch ne connaît pas ce pseudo (faute de frappe) : erreur sous le champ,
   assert.equal(dumpOf(book).contacts.length, 0);
   api.reply = { ok: false, error: "network" };
   const r = await act(ctx, "find", { q: "@alise_tv" });
-  assert.match(r.ok, /alise_tv est ajoutée.*Le nom et la photo n'ont pas pu être repris sur Twitch pour l'instant/);
+  assert.match(r.ok, /alise_tv est ajoutée.*Le nom et la photo n'ont pas pu être récupérés sur Twitch/);
   assert.equal(byHandle(book, "alise_tv").name, "alise_tv", "sans Twitch : le pseudo sert de nom");
 });
 
@@ -389,9 +389,9 @@ test("trou noir : Twitch ne répond jamais → l'ajout aboutit sans nom ni photo
   api.reply = { ok: false, error: "rate" };
   assert.match((await act(ctx, "find", { q: "@carol_tv" })).ok, /Twitch demande de patienter/);
   api.reply = { ok: true, status: 500, json: {} };
-  assert.match((await act(ctx, "find", { q: "@dave_tv" })).ok, /n'ont pas pu être repris sur Twitch/);
+  assert.match((await act(ctx, "find", { q: "@dave_tv" })).ok, /n'ont pas pu être récupérés sur Twitch/);
   api.reply = { ok: true, status: 200, json: { data: "n'importe quoi" } };
-  assert.match((await act(ctx, "find", { q: "@erin_tv" })).ok, /n'ont pas pu être repris sur Twitch/);
+  assert.match((await act(ctx, "find", { q: "@erin_tv" })).ok, /n'ont pas pu être récupérés sur Twitch/);
   assert.equal(dumpOf(book).contacts.length, 5);
 });
 

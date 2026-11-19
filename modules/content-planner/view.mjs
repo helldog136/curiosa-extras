@@ -82,7 +82,7 @@ export function card(ctx, idea, today, link, opts = {}) {
 /** Les quatre endroits, avec leur nombre ; l'endroit ouvert est marqué (`aria-current`). */
 export function tabs(ctx, current, counts, linkFor) {
   const t = ctx.t;
-  const items = PLACES.map((p) => `<li><a class="cp-tab" href="${esc(linkFor(p))}"${p === current ? ' aria-current="page"' : ""}>${esc(t(`tab_${p}`))}<span class="cp-n">${counts[p] ?? 0}</span></a></li>`);
+  const items = PLACES.map((p) => `<li><a class="cp-tab" href="${esc(linkFor(p))}"${p === current ? ' aria-current="page"' : ""}>${esc(t(`tab_${p}`))}${counts[p] ? `<span class="cp-n">${counts[p]}</span>` : ""}</a></li>`);
   return { type: "html", html: `<nav aria-label="${esc(t("tabsLabel"))}"><ul class="cp-nav">${items.join("")}</ul></nav>` };
 }
 

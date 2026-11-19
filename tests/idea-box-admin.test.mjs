@@ -122,7 +122,7 @@ test("à relire : le lien direct du tableau de bord ne montre que ces idées, av
 test("état vide : une phrase qui dit où les idées arrivent", async () => {
   const t = tableOf(await panel(ctxFor()));
   assert.deepEqual(t.rows, []);
-  assert.equal(t.empty, "Aucune idée pour l'instant. Elles apparaissent ici dès qu'une personne en propose une sur la page /idees.");
+  assert.equal(t.empty, "Aucune idée. Elles apparaissent ici dès qu'une personne en propose une sur la page /idees.");
 });
 
 /* ───────────── Les gestes ───────────── */

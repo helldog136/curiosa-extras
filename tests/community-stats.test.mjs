@@ -245,7 +245,7 @@ test("explications des chiffres manquants : une raison humaine ET une action, pr
   assert.match(reasonText(ctx, s("auth", "twitch")), /L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch »/);
   assert.match(reasonText(ctx, s("auth", "bluesky")), /Bluesky demande votre autorisation.*reconnectez/);
   assert.match(reasonText(ctx, s("rate", "github")), /^GitHub demande de patienter un peu\.$/);
-  assert.match(reasonText(ctx, s("network", "reddit")), /^Reddit ne répond pas pour l'instant\.$/);
+  assert.match(reasonText(ctx, s("network", "reddit")), /^Reddit ne répond pas\.$/);
   assert.match(reasonText(ctx, s("config", "mastodon")), /Le nom du compte Mastodon est introuvable : ouvrez votre module Mastodon et vérifiez-le/);
   assert.match(reasonText(make({ locale: "en" }).ctx, s("hidden", "youtube")), /make it public in YouTube Studio/);
 });

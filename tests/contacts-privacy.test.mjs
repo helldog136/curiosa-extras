@@ -100,14 +100,14 @@ test("effacement : un module muet est dit « n'a pas répondu à temps » (page 
   const t = Date.now();
   const r = await def.adminActions.erase(ctx, { id, confirm: "1" });
   assert.ok(Date.now() - t < 1500);
-  assert.equal(r.ok, "Fiche supprimée. N'a pas répondu à temps : Partenariats muet (sa référence est peut-être restée).");
+  assert.equal(r.ok, "Fiche supprimée. Ces modules n'ont pas répondu à temps : Partenariats muet. Ouvrez-les pour vérifier leur référence.");
   const page = await def.adminPanel(ctx, { query: { view: "erased" } });
-  assert.match(plain(page), /Partenariats muet : n'a pas répondu à temps \(sa référence est peut-être restée\)\./);
+  assert.match(plain(page), /Partenariats muet : n'a pas répondu à temps\. Ouvrez ce module pour vérifier sa référence\./);
   assert.match(plain(page), /good-one : 1 référence effacée\./);
   assert.ok(page.some((b) => b.type === "banner" && b.tone === "warning"), "un avertissement quand un module n'a pas répondu");
   for (let i = 0; i < 25; i++) { const x = await svc.create(ctx, { name: `Temp ${i}` }); await PV.erasePerson(ctx, x.id); }
   assert.equal((await PV.reports(ctx)).length, 20);
-  assert.match(textOf(await def.adminPanel(makeCtx({ locale: "en" }), { query: { view: "erased" } })), /No erasure yet\./);
+  assert.match(textOf(await def.adminPanel(makeCtx({ locale: "en" }), { query: { view: "erased" } })), /No erasure\./);
 });
 
 test("fiche : section « Données personnelles » (télécharger tout ce que le site sait, effacer partout) ; le service `erase` du contrat garde son comportement", async () => {

@@ -12,7 +12,7 @@ test("page vide : une phrase claire, aucun plantage, le script de confort est an
   const ctx = ctxFor();
   const r = await page(ctx);
   assert.equal(r.title, "Galeries photos");
-  assert.match(body(r), /Aucun album pour l(?:'|&#39;)instant/);
+  assert.match(body(r), /Aucun album n(?:'|&#39;)est publié/);
   assert.deepEqual(r.scripts, ["gallery.js"]);
   assert.doesNotMatch(body(r), /gal-consent/, "pas de mention de consentement sans photo à montrer");
 });

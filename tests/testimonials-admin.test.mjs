@@ -29,7 +29,7 @@ test("panneau : avis à valider d'abord, bandeau clair, actions adaptées à cha
   await seed(ctx, { name: "Publié", status: "approved", featured: true });
   await seed(ctx, { name: "Refusé", status: "rejected" });
   const blocks = await def.adminPanel(ctx, { query: {} });
-  assert.equal(blocks[0].type, "banner"); assert.match(blocks[0].text, /Avis à lire : 1\./);
+  assert.ok(!blocks.some((b) => b.type === "banner"), "le nombre d'avis à valider est sur l'onglet, pas dans un bandeau");
   const t = table(blocks);
   assert.deepEqual(t.rows.map((r) => r[1]), ["Attente"]);
   assert.deepEqual(t.columns, ["Date", "Prénom ou pseudo", "Note", "Avis"], "pas de colonne e-mail sans le droit");

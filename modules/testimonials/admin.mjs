@@ -54,8 +54,6 @@ export async function panel(ctx, { query: q0 } = {}) {
   const withEmail = can(ctx, RIGHTS.email);
   const blocks = [];
 
-  if (count.pending) blocks.push({ type: "banner", tone: "info", text: ctx.t("bannerPending", { count: count.pending }) });
-  else if (!all.length) blocks.push({ type: "markdown", text: ctx.t("emptyAdmin") });
 
   // Modifier ou ajouter : le formulaire s'ouvre en haut de page.
   const editing = q.edit ? all.find((r) => r.id === String(q.edit)) : undefined;
@@ -65,10 +63,10 @@ export async function panel(ctx, { query: q0 } = {}) {
 
   const published = all.filter(L.isPublic);
   const stats = L.summarize(published);
-  blocks.push({ type: "heading", text: ctx.t("adminTitle", { count: all.length }) });
+  blocks.push({ type: "heading", text: ctx.t("adminTitle") });
   if (stats.rated >= 1) blocks.push({ type: "markdown", text: ctx.t("adminStats", { avg: L.formatAverage(stats.average, ctx.locale), rated: stats.rated, published: published.length }) });
 
-  blocks.push({ type: "links", items: STATUS_LIST.map((s) => ({ label: `${status === s ? "● " : ""}${ctx.t(`tab_${s}`, { count: count[s] })}`, href: query({ status: s }) })) });
+  blocks.push({ type: "links", items: STATUS_LIST.map((s) => ({ label: `${status === s ? "● " : ""}${ctx.t(`tab_${s}`)}${count[s] ? ` (${count[s]})` : ""}`, href: query({ status: s }) })) });
   blocks.push({ type: "links", items: [{ label: `${stars === null ? "● " : ""}${ctx.t("allStars")}`, href: query({ status, q: needle }) }, ...[5, 4, 3, 2, 1].map((n) => ({ label: `${stars === n ? "● " : ""}${ctx.t("nStarsShort", { n })}`, href: query({ status, stars: n, q: needle }) }))] });
   blocks.push({ type: "adminForm", action: "search", submitLabel: ctx.t("searchButton"), fields: [{ name: "status", label: "status", kind: "hidden", value: status }, { name: "stars", label: "stars", kind: "hidden", value: stars ?? "" }, { name: "q", label: ctx.t("searchLabel"), kind: "text", value: needle, help: ctx.t("searchHelp") }] });
 

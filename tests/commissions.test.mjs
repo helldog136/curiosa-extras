@@ -166,7 +166,7 @@ test("demande : fermé ou complet, personne ne peut envoyer (même en forçant l
   const [o] = await orders(ctx);
   o.status = "accepted"; await data.saveOrder(ctx, o);
   assert.equal((await submit(ctx, { ...good, email: "b@example.org" }, { ip: "9.9.9.9" })).res.status, 409, "plus de place : complet tout seul");
-  assert.match(JSON.stringify(await def.page(ctx, { segments: [] })), /Complet pour le moment/);
+  assert.match(JSON.stringify(await def.page(ctx, { segments: [] })), /Complet/);
   assert.ok(!JSON.stringify(await def.page(ctx, { segments: [] })).includes("<form"));
 });
 test("demande : limites de débit (visiteur, adresse, site), plafond de demandes en attente et de commandes gardées", async () => {
@@ -216,7 +216,7 @@ test("page : « 2 places libres », « Complet, réouverture le … », date de 
   await data.writeQueue(ctx, { mode: "full", reopenOn: "2027-03-12", message: `<img src=x onerror=alert(1)> Noël` });
   data.bust(ctx);
   const t = await pageText(ctx, []);
-  assert.match(t, /Complet pour le moment/); assert.match(t, /12 mars 2027/);
+  assert.match(t, /Complet/); assert.match(t, /12 mars 2027/);
   assert.ok(!t.includes("<img src=x") && t.includes("&lt;img"));
   await data.writeQueue(ctx, { reopenOn: "n'importe quoi" });
   assert.equal((await data.readQueue(ctx)).reopenOn, "");
