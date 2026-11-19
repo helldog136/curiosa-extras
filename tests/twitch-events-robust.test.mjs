@@ -127,7 +127,7 @@ test("e-mail to the owner: once per problem after the grace delay, again after a
   await C.check(w.ctx, S0, { now: NOW + 13 * MIN });
   assert.equal(sent().length, 1);
   assert.equal(sent()[0].to, "owner");
-  assert.match(sent()[0].subject, /ne reçoit plus/);
+  assert.match(sent()[0].subject, /n'arrivent plus/);
   assert.match(sent()[0].text, /La connexion à Twitch a expiré/); assert.match(sent()[0].text, /\/admin\/instances\/id-ev/);
   assert.ok(!/secret|token|jeton/i.test(sent()[0].text), "nothing private in the mail");
   await C.check(w.ctx, S0, { now: NOW + 3 * HOUR });
@@ -174,6 +174,48 @@ test("silence while live warns by e-mail at once and the page says it", async ()
   assert.ok(!JSON.stringify(status).match(/secret|token/i));
 });
 
+test("silence: never without a start the module knows about; a stale start is forgotten", async () => {
+  const live = { liveSince: NOW, lastEventAt: NOW };
+  // the types that tell the live state are not listened to: the stream state is unknown
+  assert.equal(HE.silent({ ...live, types: { online: { code: "off" }, offline: { code: "off" } } }, { silentHours: 3 }, NOW + 9 * HOUR), false);
+  assert.equal(HE.silent({ ...live, types: { online: { code: "listening" }, offline: { code: "off" } } }, { silentHours: 3 }, NOW + 9 * HOUR), false);
+  assert.equal(HE.silent({ ...live, types: { online: { code: "listening" }, offline: { code: "listening" } } }, { silentHours: 3 }, NOW + 9 * HOUR), true, "live and really silent: it still warns");
+  // a start older than 48 hours (its end never came) is not a live stream
+  assert.equal(HE.silent({ liveSince: NOW, lastEventAt: NOW }, { silentHours: 3 }, NOW + 49 * HOUR), false);
+  const w = world(); await up(w);
+  await S.updateState(w.ctx, (d) => { d.liveSince = NOW - 3 * 24 * HOUR; d.lastEventAt = NOW - 2 * 24 * HOUR; });
+  const r = await C.check(w.ctx, S0, { now: NOW + 5 * HOUR });
+  assert.equal(r.health, "ok");
+  assert.equal(w.ctx.calls.mail.length, 0, "no mail for a stream that ended days ago");
+  assert.equal((await S.readState(w.ctx)).liveSince, undefined, "the stale start is cleared");
+});
+
+test("silence: the end of the stream clears it without a \"back\" e-mail, and the next stream can warn again", async () => {
+  const w = world(); await up(w); await S.ensureSecret(w.ctx);
+  await S.updateState(w.ctx, (d) => { d.liveSince = NOW; d.lastEventAt = NOW; });
+  assert.equal((await C.check(w.ctx, S0, { now: NOW + 4 * HOUR })).health, "silent");
+  assert.equal(w.ctx.calls.mail.length, 1);
+  await deliver(w.ctx, TYPES.offline, EV.offline, { now: NOW + 5 * HOUR, at: NOW + 5 * HOUR });
+  assert.equal((await S.readState(w.ctx)).liveSince, null);
+  const r = await C.check(w.ctx, S0, { now: NOW + 5 * HOUR + MIN });
+  assert.equal(r.health, "ok");
+  assert.equal(w.ctx.calls.mail.length, 1, "the end of a silence is not news");
+  assert.equal((await S.readState(w.ctx)).health, undefined, "the warning and its mail flag are reset");
+  await S.updateState(w.ctx, (d) => { d.liveSince = NOW + 6 * HOUR; d.lastEventAt = NOW + 6 * HOUR; });
+  assert.equal((await C.check(w.ctx, S0, { now: NOW + 10 * HOUR })).health, "silent");
+  assert.equal(w.ctx.calls.mail.length, 2, "a new stream with a new silence warns again");
+});
+
+test("silence mail: exact, short, no reassurance, same keys in both languages", async () => {
+  const { fr, en } = await import("./helpers/eventsWorld.mjs");
+  for (const [lang, m] of [["fr", fr], ["en", en]]) {
+    for (const k of ["mail_body_problem", "mail_body_back", "health_silent", "mail_subject_problem", "mail_subject_back"]) assert.ok(m[k], `${lang} ${k}`);
+    assert.ok(!/rien n'est perdu|nothing is lost|follows and subs|Ce qui se passe|What happens|Que faire|What to do/i.test(`${m.mail_body_problem}${m.mail_body_back}`), `${lang}: no reassurance or labels`);
+    assert.ok(/\{link\}/.test(m.mail_body_problem) && /\{what\}/.test(m.mail_body_problem) && /\{since\}/.test(m.mail_body_problem));
+  }
+  assert.match(fr.health_silent, /\{n\} heures/); assert.match(en.health_silent, /\{n\} hours/);
+});
+
 test("graceful: the webhook asks Twitch to try again (503, Retry-After) when the site cannot store, never loses an event, and answers 204 to a replay", async () => {
   const { ctx } = world(); await S.ensureSecret(ctx);
   const add = ctx.api.store.add;
@@ -193,7 +235,7 @@ async function signed(ctx, id) {
 
 test("manifest: permission mail, the channel setting (advanced), one-minute watch, FR and EN texts", async () => {
   // (1.18.0) the Twitch part of the alerts overlay: the channel stays a setting; retention, e-mails and silence are options of the first tab (twitch/settings.mjs)
-  assert.equal(manifest.version, "1.21.0");
+  assert.equal(manifest.version, "1.22.0");
   assert.ok(manifest.permissions.includes("mail"));
   assert.ok(manifest.settings.some((s) => s.key === "channel" && s.advanced === true && s.type === "choice"));
   for (const k of ["retentionDays", "healthMail", "silentHours"]) assert.ok(!manifest.settings.some((s) => s.key === k), k);

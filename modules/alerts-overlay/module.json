@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.21.0",
+  "version": "1.22.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.36.0",

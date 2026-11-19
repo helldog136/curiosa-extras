@@ -144,19 +144,30 @@ export async function panel(ctx, { query } = {}) {
     who(ctx, l),
     { text: detail(ctx, l), title: l.text ? `${detail(ctx, l)} — ${l.text}` : undefined },
   ]);
-  const typeRows = es.TYPES.map((ty) => {
+  const stateOf = (ty) => {
     const entry = state.types?.[ty.id] ?? {}, code = entry.code ?? "unknown";
-    const on = enabled[ty.id] === true;
+    // (1.15.0) every type shows what it really does: listening or not. The switch of a row is its alert; it never stops the listening.
+    const on = code !== "off";
+    const alert = enabled[ty.id] === true;
     const waited = code === "pending" && entry.since ? Math.max(1, Math.round((Date.now() - entry.since) / 60_000)) : 0;
-    const label = !on ? t("state_off") : waited ? t("state_pending_since", { n: waited }) : t(`state_${code}`);
+    const label = !on ? t("state_off_perm") : waited ? t("state_pending_since", { n: waited }) : t(`state_${code}`);
     const tone = !on ? "neutral" : code === "listening" ? "ok" : ["pending", "unknown"].includes(code) ? "info" : "warn";
     const mark = !on ? "" : code === "listening" ? "✓ " : tone === "warn" ? "! " : "… ";   // colour, text AND a sign
-    const why = on && code !== "listening" && entry.reason ? reasonOf(ctx, entry) : undefined;
+    const why = on && alert && code !== "listening" && entry.reason ? reasonOf(ctx, entry) : undefined;
+    return { label, tone, text: `${mark}${label}`, why };
+  };
+  // R14: what is the same on every row is a title, not a label. The state column only shows the rows that differ from the usual one, and is dropped when all rows agree.
+  const states = es.TYPES.map(stateOf), counts = new Map();
+  for (const x of states) counts.set(x.label, (counts.get(x.label) ?? 0) + 1);
+  const usual = [...counts.entries()].sort((x, y) => y[1] - x[1])[0]?.[0], showState = counts.size > 1;
+  const typeRows = es.TYPES.map((ty, i) => {
+    const sx = states[i], alert = enabled[ty.id] === true;
     const perms = ty.scopes.length ? ty.scopes.map((x) => t(SCOPE_KEY[x])).join(", ") : t("scope_none");
-    return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, perms, { text: `${mark}${label}`, badge: tone, ...(why ? { title: why } : {}) },
+    return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, perms,
+      ...(showState ? [sx.label === usual ? "" : { text: sx.text, badge: sx.tone, ...(sx.why ? { title: sx.why } : {}) }] : []),
       // (1.12.0) channel points: the cell leads to the Rewards tab, where each reward has its own reaction (R25)
       ...(ready ? [ty.id === "redeem" ? { text: `${rx.summaryText(ctx, sums[ty.id])}${sums[ty.id]?.rewards ? ` · ${t("rw_count", { n: sums[ty.id].rewards })}` : ""}`, href: "?tab=rewards", title: t("rw_count_title") } : { text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),   // no column of identical dashes when the overlay is missing (R14)
-      { text: on ? t("on") : t("off"), switch: { on, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: t("on"), offText: t("off") } }];
+      { text: alert ? t("on") : t("off"), switch: { on: alert, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: t("on"), offText: t("off") } }];
   });
   return [
     { type: "markdown", text: t("page_intro") },
@@ -175,7 +186,7 @@ export async function panel(ctx, { query } = {}) {
     ...(waiting ? [{ type: "refreshWhile", tab: "types", pending: true, everySeconds: 3 }] : []),
     ...(al.state !== "ready" && al.state !== "setup" ? [{ type: "links", tab: "types", items: [{ label: t(al.state === "old" ? "rx_state_old" : "rx_state_absent"), href: al.adminPath }] }] : []),
     ...(editing ? [editing] : []),
-    { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), t("col_state"), ...(ready ? [t("col_reaction")] : []), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0, truncate: ready ? [1, 3] : [1], searchable: true, searchPlaceholder: t("search_types"),
+    { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), ...(showState ? [t("col_state")] : []), ...(ready ? [t("col_reaction")] : []), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0, truncate: ready ? [1, showState ? 3 : 2] : [1], searchable: true, searchPlaceholder: t("search_types"),
       rowActions: ready ? [{ label: t("rx_edit_btn"), href: "?tab=types&reaction={id}", presentation: "dialog" }, { label: t("test_btn"), action: "test", inMenu: true }, { label: t("retry_btn"), action: "retry", inMenu: true }] : [{ label: t("test_btn"), action: "test" }, { label: t("retry_btn"), action: "retry", inMenu: true }] },
   ];
 }
@@ -190,7 +201,7 @@ export const actions = {
     const r = await cycle.check(ctx, settingsOf(ctx), { settle: true });
     return r.code === "listening" ? { ok: ctx.t("check_ok", { when: new Date().toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", timeZone: ctx.timezone }) }) } : { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };
   },
-  /** The switch of a type: SAYS the wanted state (never inverts). Declares the permissions that become needed, then brings the subscriptions in line. */
+  /** The alert switch of a type: SAYS the wanted state (never inverts). It never stops the listening; it declares the permission the alert needs, then brings the subscriptions in line. */
   async setEnabled(ctx, values) {
     const id = String(values.id ?? "");
     if (!es.typeOf(id)) return fail(ctx, "err_unknown_type");

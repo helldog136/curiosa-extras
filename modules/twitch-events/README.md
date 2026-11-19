@@ -32,7 +32,7 @@ they read the topic if they want to. Needs the Twitch connector (`twitch.api` v3
 
 - **Events** tab: a status line ("Your site is listening to Twitch", or the one thing to fix), a *Check now* button, then the journal: live search, filter by type (colored AND written badge),
   *Replay the alert* and *Remove from the journal* on each line, an empty state that says what to do.
-- **Event types** tab: one row per type with a switch, what it covers, the Twitch permission it needs, its state and a *Send a test* button (realistic sample, invented names).
+- **Event types** tab: one row per type with its alert switch (it never stops the listening: every event is recorded, a type with its alert off is flagged `muted`), what it covers, the Twitch permission it needs, its state and a *Send a test* button (realistic sample, invented names).
 - When a Twitch permission is missing, the page says which ("Twitch's permission is missing for: bits, hype trains") and shows *Allow again at Twitch*.
 - One setting: how long the journal is kept (30 days by default). A channel choice appears in advanced mode when the site has several channels.
 
@@ -60,7 +60,7 @@ Subscriptions (checked every minute, recreated when Twitch cut them): `channel.f
 
 ## Twitch permissions (scopes)
 
-Asked through the connector (`wantScopes`, version 1.4.0 of the connector adds `bits:read`, `channel:read:hype_train`, `channel:read:redemptions`), only for the types that are switched on:
+Asked through the connector (`wantScopes`, version 1.4.0 of the connector adds `bits:read`, `channel:read:hype_train`, `channel:read:redemptions`), only for the types with their alert switched on (listening itself needs no switch: stream start and end are always listened to):
 followers `moderator:read:followers`; subs, resubs, gifts `channel:read:subscriptions`; bits `bits:read`; hype train `channel:read:hype_train`; reward alerts `channel:read:redemptions`; raids and stream start/end: none.
 After the update the owner must **allow again at Twitch** once (the page says which permissions are missing and gives the button); types whose permission is granted keep working meanwhile.
 

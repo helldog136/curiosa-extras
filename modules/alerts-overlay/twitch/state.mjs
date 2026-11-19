@@ -45,11 +45,12 @@ export const enabledOf = (state) => Object.fromEntries(es.TYPES.map((t) => [t.id
 /* ───────────── Journal ───────────── */
 const KEEP = ["kind", "name", "login", "anonymous", "tier", "gifted", "months", "streak", "count", "cumulative", "amount", "viewers", "text", "title", "level", "total", "goal", "progress", "expiresAt", "trainType", "shared", "top", "streamType", "bestLevel", "rewardId"];
 /** What is stored: the normalised event minus anything not listed above, plus the bookkeeping. `source`: twitch | test | replay | catchup. */
-export function toDoc(id, ev, { source = "twitch", of = null, now = Date.now(), missed = false } = {}) {
+export function toDoc(id, ev, { source = "twitch", of = null, now = Date.now(), missed = false, muted = false } = {}) {
   const d = { id, at: Number.isFinite(ev.at) ? ev.at : now, receivedAt: now, source };
   for (const k of KEEP) if (ev[k] !== undefined && ev[k] !== null && ev[k] !== "") d[k] = ev[k];
   if (of) d.of = String(of).slice(0, 100);
   if (missed) d.missed = true;
+  if (muted) d.muted = true;   // (1.22) recorded and counted, but its alert is switched off: the overlay does not play it
   return d;
 }
 /**

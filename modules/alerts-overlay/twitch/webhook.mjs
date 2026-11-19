@@ -57,7 +57,9 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
     if (!ev) return { response: reply(204), done: none };
     const enabled = st.enabledOf(state);
     const group = es.groupOf(ev.kind);
-    if (!group || enabled[group] !== true) return { response: reply(204), done: none };
+    if (!group) return { response: reply(204), done: none };
+    const muted = enabled[group] !== true;   // (1.22) a type with its alert off is still recorded (counters, goals, live state); it is only not played
+
     // (1.20.0) every hype message moves the live state of the train (progress inside a level, countdown), written after the answer like the rest of the state
     const isHype = String(ev.kind).startsWith("hype_");
     const noteTrain = (d) => { if (isHype) d.hype = hype.noteHype(d.hype, ev, { id: v1.id, receivedAt: now }); };
@@ -68,7 +70,7 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
       m.hype = { level: ev.level };
     } else if (ev.kind === "hype_begin") m.hype = { level: ev.level };
     else if (ev.kind === "hype_end") m.hype = null;
-    const r = await st.record(ctx, v1.id, ev, { now });
+    const r = await st.record(ctx, v1.id, ev, { now, muted });
     if (r.stored && ev.kind === "sub" && ev.login) learnSub(ctx, ev.login).catch(() => {});   // a sub we saw is not "new" for a later catch-up
     const done = r.stored ? st.updateState(ctx, (d) => { d.last = { ...(d.last ?? {}), [ev.kind]: ev.at }; d.lastEventAt = now; if (ev.kind === "online") d.liveSince = ev.at; if (ev.kind === "offline") d.liveSince = null; noteTrain(d); }).catch(() => {}) : none;
     return { response: reply(204), done };

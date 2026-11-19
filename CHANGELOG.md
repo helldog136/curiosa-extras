@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.105.0 — 2026-11-19
+
+*En bref : l'interrupteur de chaque type d'événement Twitch choisit désormais seulement l'alerte ; votre site écoute et enregistre toujours tout. Fin des faux e-mails « aucun événement pendant votre direct ».*
+
+*In short: the switch of each Twitch event type now only chooses the alert; your site always listens to and records everything. No more false "no event during your stream" e-mails.*
+
+### Corrections
+
+- **Overlay d'alertes 1.22.0 et Événements Twitch 1.15.0.** Éteindre une alerte n'arrête plus l'écoute : l'événement est enregistré (compteurs, objectifs) mais pas joué. Le début et la fin du direct sont toujours écoutés. Une permission n'est demandée que pour les alertes allumées. Un type qui était éteint garde son alerte éteinte et se met à être écouté tout seul, sans rien faire. L'avertissement de silence n'a lieu que si le direct est connu comme en cours (début de moins de 48 h) ; la fin du direct l'efface, sans e-mail de retour. Le texte de l'e-mail et du bandeau est plus court et dit quoi faire ; le tableau des types n'affiche l'état que des lignes qui diffèrent des autres.
+
+*(English)*
+
+- **Alerts overlay 1.22.0 and Twitch events 1.15.0.** Switching an alert off no longer stops the listening: the event is recorded (counters, goals) but not played. Stream start and end are always listened to. A permission is only asked for alerts that are on. A type that was off keeps its alert off and starts being listened to on its own, with nothing to do. The silence warning only runs when the stream is known to be live (start under 48 hours old); the end of the stream clears it, with no "back" e-mail. The e-mail and banner texts are shorter and say what to do; the types table only shows the state of the rows that differ from the others.
+
 ## 1.104.0 — 2026-11-19
 
 *En bref : Home Assistant, le Bot Twitch, l'Overlay d'alertes et Événements Twitch montrent un état en trois mots (Configuré, Dégradé, Non configuré), une ligne de résumé et un seul bouton « Modifier ». Les bandeaux « Tout va bien », les étapes déjà faites et les tableaux de consignes disparaissent.*

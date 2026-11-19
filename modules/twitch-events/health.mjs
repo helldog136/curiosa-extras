@@ -8,9 +8,17 @@ export const GRACE_MS = { default: 10 * 60_000, twitch_down: 30 * 60_000, slow: 
 export const REPEAT_MS = 24 * 3_600_000;
 const PROBLEMS = ["need_reconnect", "need_connect", "creds_missing", "site_private", "refused", "twitch_down", "twitch_busy", "no_channel", "channel_unknown", "slow", "need_more", "revoked"];
 
-/** Live for a while without any event: the stream is probably quiet, but also what a dropped listening looks like. `silentHours` 0 = never. */
+/** The live state is only trusted for this long: a stream start that was never followed by an end (missed, or its subscription was off) is forgotten. */
+export const STALE_LIVE_MS = 48 * 3_600_000;
+/**
+ * Live for a while without any event: the stream is probably quiet, but also what a dropped listening looks like. `silentHours` 0 = never.
+ * (1.15.0) Only when the module KNOWS the stream is live: the start and the end of the stream are both listened to, and the start is recent. Otherwise a stale start would
+ * make every quiet night a "silence during your stream".
+ */
 export function silent(state, { silentHours }, now = Date.now()) {
   if (!silentHours || typeof state.liveSince !== "number" || !state.liveSince) return false;
+  if (now - state.liveSince > STALE_LIVE_MS) return false;
+  if (state.types && (state.types.online?.code !== "listening" || state.types.offline?.code !== "listening")) return false;
   return now - Math.max(state.lastEventAt ?? 0, state.liveSince) > silentHours * 3_600_000;
 }
 /** The one code that describes the situation now: a problem of the listening, "silent", or "ok". */
@@ -28,14 +36,16 @@ export function assess(state, s, now = Date.now()) {
 export async function run(ctx, s, now = Date.now()) {
   const out = { code: "ok", mailed: null, mail: null };
   try {
-    const state = await st.readState(ctx);
+    let state = await st.readState(ctx);
+    if (typeof state.liveSince === "number" && state.liveSince && now - state.liveSince > STALE_LIVE_MS) state = await st.updateState(ctx, (x) => { delete x.liveSince; });   // a start never followed by an end
     const code = assess(state, s, now);
     out.code = code;
     const worked = !!state.okAt;
     const problem = code !== "ok" && (worked || code === "silent");
     const h = state.health ?? null;
     if (!problem) {
-      if (h?.notified) { out.mailed = "back"; out.mail = await send(ctx, s, "back", { since: h.since }, now); }
+      // the end of a silence (the stream ended, or events came back) is not news: only a real problem of the listening gets a "back" e-mail
+      if (h?.notified && h.code !== "silent") { out.mailed = "back"; out.mail = await send(ctx, s, "back", { since: h.since }, now); }
       if (h) await st.updateState(ctx, (x) => { delete x.health; });
       return out;
     }
