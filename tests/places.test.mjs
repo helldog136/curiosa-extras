@@ -53,7 +53,7 @@ const ROLLOUT = {
   "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
-  "faq": ["1.1.3", { main: "content.faq", inbox: "content.faq.inbox" }],
+  "faq": ["1.2.0", { main: "content.faq", inbox: "content.faq.inbox" }],
   "gallery": ["1.3.2", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
   "game-covers": ["1.6.0", { covers: "community.games.covers", kept: "community.games.covers" }],
   "game-suggestions": ["1.11.3", { main: "community.games" }],
@@ -99,6 +99,8 @@ const ROLLOUT = {
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
+/** Modules whose minimum core moved for the live search of their lists (R15, `searchable`, core 0.6.0), the one other reason besides the connection block. */
+const LIVE_SEARCH_CORE = { faq: "0.6.0" };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
@@ -255,7 +257,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
     const { places, version, minCore: nowCore, ...rest } = now;
     const { version: oldVersion, minCore: oldCore, ...oldRest } = old;
-    assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0"), `${id}: minCore only moves for the connection block (0.36.0)`);
+    assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0") || LIVE_SEARCH_CORE[id] === nowCore, `${id}: minCore only moves for the connection block (0.36.0) or the live search (0.6.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
     if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
@@ -265,7 +267,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     // What an older core needs to keep showing the module in the same place.
     assert.equal(now.adminMenu, old.adminMenu, `${id}: adminMenu kept for cores older than 0.31.0`);
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);
-    assert.ok(now.minCore === old.minCore || now.minCore === "0.36.0" || (id === "contacts" && now.minCore === "0.38.0"), `${id}: minCore unchanged (0.36.0 for the connection block)`);
+    assert.ok(now.minCore === old.minCore || now.minCore === "0.36.0" || (id === "contacts" && now.minCore === "0.38.0") || LIVE_SEARCH_CORE[id] === now.minCore, `${id}: minCore unchanged (0.36.0 for the connection block, 0.6.0 for the live search)`);
   }
   // The modules that stay without a place are untouched.
   for (const id of Object.keys(NOT_PLACED)) assert.equal(manifests[id].places, undefined, `${id}: ${NOT_PLACED[id]}`);

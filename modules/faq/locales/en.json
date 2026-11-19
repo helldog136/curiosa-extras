@@ -138,5 +138,6 @@
   "linkOrderThemes": "Change the order of the categories",
   "orderTitle": "Order: {name}",
   "orderHelp": "Click “↑ Up” or “↓ Down” to move a line. The order is the one of the public page.",
-  "orderDone": "Done"
+  "orderDone": "Done",
+  "linkOrderIn": "Change the order in “{name}”"
 }

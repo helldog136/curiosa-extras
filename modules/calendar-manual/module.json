@@ -6,7 +6,7 @@
     "en": "Hand-written streams",
     "fr": "Streams saisis à la main"
   },
-  "version": "1.3.1",
+  "version": "1.4.0",
   "menuGroup": "tools",
   "description": {
     "en": "Write your streams here (day, time, games, every week) and your site shows them: the schedule, the chat bot… No Google account or calendar to set up.",
