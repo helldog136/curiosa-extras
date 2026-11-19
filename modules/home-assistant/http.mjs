@@ -24,7 +24,9 @@ export async function readJson(request) {
         const { done, value } = await reader.read();
         if (done) break;
         size += value.byteLength;
-        if (size > MAX_BODY) { await reader.cancel().catch(() => {}); return { status: 413 }; }
+        // Stop reading but do not cancel: cancelling closes the stream, and the runtime keeps feeding a multipart (FormData) body after that
+        // ("ReadableStream is already closed", an unhandled rejection that can bring the process down). The host disposes of the unread body.
+        if (size > MAX_BODY) { reader.releaseLock(); return { status: 413 }; }
         chunks.push(value);
       }
       raw = Buffer.concat(chunks).toString("utf8");

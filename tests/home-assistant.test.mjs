@@ -176,6 +176,24 @@ test("appairage : méthode, corps et taille", async () => {
   w.done();
 });
 
+test("appairage : un corps multipart trop gros est refusé sans activité asynchrone parasite", async () => {
+  // Cancelling the body reader made Node's fetch keep enqueueing the FormData chunks into a closed stream (unhandled rejection, intermittent on Node 24).
+  const rejections = [];
+  const onRejection = (e) => rejections.push(e);
+  process.on("unhandledRejection", onRejection);
+  try {
+    const w = world();
+    for (let i = 0; i < 20; i++) {
+      const form = new FormData();
+      form.set("code", "A".repeat(9000));
+      assert.equal((await directTransport(def, w.ctx, { ip: `198.51.100.${10 + i}` })("pair", { method: "POST", body: form })).status, 413);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    w.done();
+  } finally { process.off("unhandledRejection", onRejection); }
+  assert.deepEqual(rejections.map((e) => e?.message), []);
+});
+
 test("re-appairage : le nouvel appareil remplace l'ancien, qui reçoit 401", async () => {
   const w = world();
   const first = await pairUp(w);
