@@ -560,5 +560,19 @@
       "R9 right:yt.manage.help[en] #b3f667",
       "R9 right:yt.manage.help[fr] #e0ee27"
     ]
+  },
+  "justified": {
+    "calendar-ical": {
+      "R33b setting:url": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. calendar-ical also stays at minCore 0.2.5 (the Planning migration installs it), so it cannot require the block."
+    },
+    "discord-announcer": {
+      "R33b setting:webhookUrl": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The webhook address is typed once; the Discord card shows the state."
+    },
+    "game-covers": {
+      "R33b setting:rawgKey": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The key is optional; the sources card shows Configured/Degraded/Not configured."
+    },
+    "supporters": {
+      "R33b setting:accessToken": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The platform access code is typed once; the connection card shows the state."
+    }
   }
 }

@@ -215,6 +215,13 @@ test("R32 : une bannière « info » ou « succès » sans lien ne dit rien à f
   assert.deepEqual(gone, [], `Banner fixed or gone: remove it from the baseline with node tests/helpers/banners.mjs --write\n${gone.join("\n")}`);
 });
 
+test("R32 : chaque bannière qui reste dans la base est justifiée par écrit, et chaque justification vise une bannière connue", () => {
+  const known = readBannerBaseline();
+  const justified = known.justified ?? {};
+  assert.deepEqual(known.known.filter((id) => !String(justified[id] ?? "").trim()), [], "banner without a written reason: fix it, or write why in banners-baseline.json \"justified\"");
+  assert.deepEqual(Object.keys(justified).filter((id) => !known.known.includes(id)), [], "reason for a banner that is not in the baseline: remove it from \"justified\"");
+});
+
 test("R32 : le détecteur voit une bannière sans lien et ignore avertissements et bannières avec lien", () => {
   const dir = makeTempDir("banners-");
   fs.mkdirSync(path.join(dir, "modules/demo"), { recursive: true });

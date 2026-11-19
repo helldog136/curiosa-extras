@@ -72,9 +72,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   if (process.argv.includes("--write")) {
     const prev = readBannerBaseline()?.known ?? [];
     const ids = found.map((b) => b.id);
+    const kept = Object.fromEntries(Object.entries(readBannerBaseline()?.justified ?? {}).filter(([id]) => ids.includes(id)));
     const { fresh } = compareBanners(found, prev);
     if (fresh.length && prev.length && !process.argv.includes("--reset")) { console.error(`Refused: ${fresh.length} new banner(s) without an action:\n- ${fresh.join("\n- ")}\nFix them (a link, a status badge, a tooltip) instead of listing them.`); process.exit(1); }
-    fs.writeFileSync(BASELINE, `${JSON.stringify({ comment: "KNOWN informational banners without a link (R32). This list only shrinks: fix one, then node tests/helpers/banners.mjs --write.", known: ids }, null, 2)}\n`);
+    fs.writeFileSync(BASELINE, `${JSON.stringify({ comment: "KNOWN informational banners without a link (R32). This list only shrinks: fix one, then node tests/helpers/banners.mjs --write.", known: ids, ...(Object.keys(kept).length ? { justified: kept } : {}) }, null, 2)}\n`);
     console.log(`${ids.length} known banner(s) written.`);
   } else for (const b of found) console.log(`${b.tone.padEnd(8)} ${b.id}`);
 }
