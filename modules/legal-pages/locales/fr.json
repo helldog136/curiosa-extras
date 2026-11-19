@@ -65,7 +65,7 @@
   "note.thirdParty": "Un contenu venu d'un autre site peut déposer ses cookies et reçoit l'adresse IP de votre public. En Belgique et en France, demandez d'abord leur accord. Ce modèle n'ajoute pas de bandeau de consentement. Pour éviter un bandeau, remplacez ce contenu par un simple lien.",
   "note.list": "Une liste d'e-mails demande l'accord clair de chaque personne, et chaque message doit proposer de se désabonner. Ce modèle l'écrit dans la page, mais c'est à vous de le respecter.",
   "note.list.CA": "Au Canada, la Loi canadienne anti-pourriel demande l'accord de chaque personne et un lien pour se désabonner dans chaque message. Ce modèle l'écrit dans la page, mais c'est à vous de le respecter.",
-  "note.keep": "Vous vous engagez à effacer les messages reçus {period} après votre dernier échange avec la personne. Pensez à faire le ménage dans votre carnet d'adresses.",
+  "note.keep": "Vous vous engagez à effacer les messages reçus {period} après votre dernier échange avec la personne. Faites le ménage dans votre carnet d'adresses en conséquence.",
   "note.sellsHere": "Vous vendez sur votre site : ce modèle ne rédige pas vos conditions de vente ni l'information sur le droit de rétractation. Elles sont à écrire à part.",
   "note.addressVisible": "Votre adresse sera visible par tout le monde. Si c'est votre domicile, vous pouvez préférer ne pas la montrer (étape « Adresse et téléphone »).",
   "st.country.title": "Où habitez-vous (ou où est basée votre association ou votre société) ?",
