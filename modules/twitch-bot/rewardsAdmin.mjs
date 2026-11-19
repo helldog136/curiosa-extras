@@ -160,7 +160,7 @@ function journalBlocks(ctx, s, entries, names, advanced) {
 /** Tous les blocs de l'onglet (déjà marqués pour l'onglet). `info` : le décor de admin.mjs ({ s, d }). */
 export async function blocks(ctx, info, query = {}) {
   const t = ctx.t, s = info.s, state = await st.readState(ctx);
-  const out = [K.bootstrap(ctx), { type: "heading", text: t("rw_title") }, { type: "markdown", text: t("rw_intro") }];
+  const out = [K.bootstrap(ctx), { type: "markdown", text: t("rw_intro") }];   // no title: the tab already has its name (R33)
   const namedList = await A.named(ctx, s).catch(() => []), names = A.names(t, namedList), advanced = adv(info);
   if (state.rewardsOn !== true) {
     if (can(ctx)) out.push(K.inlineActions(ctx, K.actionButton({ label: t("rw_enable_btn"), act: "rewardsEnable", cls: "primary", fail: t("err_toggle") })));

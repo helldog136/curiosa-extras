@@ -139,7 +139,6 @@
   "entry_open_bot": "See all the bot's commands",
   "entry_saved_unpublished": "Saved. The command will wait until the page is published.",
   "entry_bot_not_ready_editor": "The bot is not listening to your chat yet: this command will not answer until that is fixed. Ask whoever administers the site to open the bot's page.",
-  "rw_title": "Channel point rewards",
   "rw_intro": "Your viewers spend their channel points to start a chat reply or an action at your place.",
   "rw_enable_btn": "Turn rewards on",
   "rw_enabled": "Rewards are on.",

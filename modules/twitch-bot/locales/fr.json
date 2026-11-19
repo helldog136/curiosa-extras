@@ -139,7 +139,6 @@
   "entry_open_bot": "Voir toutes les commandes du bot",
   "entry_saved_unpublished": "Enregistré. La commande attendra que la fiche soit publiée.",
   "entry_bot_not_ready_editor": "Le bot n'écoute pas encore votre chat : cette commande ne répondra pas tant que ce n'est pas réglé. Demandez à la personne qui administre le site d'ouvrir la page du bot.",
-  "rw_title": "Récompenses en points de chaîne",
   "rw_intro": "Vos viewers dépensent leurs points de chaîne pour lancer une réponse dans le chat ou une action chez vous.",
   "rw_enable_btn": "Activer les récompenses",
   "rw_enabled": "Récompenses activées.",

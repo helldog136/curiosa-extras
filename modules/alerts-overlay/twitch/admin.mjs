@@ -192,16 +192,18 @@ export async function panel(ctx, { query } = {}) {
       // (1.22) the alert of the type: the one switch of the row
       { text: shown ? t("tw_on") : t("tw_off"), switch: { on: shown, action: "setType", label: t("tw_switch_label", { type: t(`type_${ty.id}`) }), onText: "", offText: t("tw_off") } }];   // the usual state (on) is not written on every row (R14)
   });
+  const status = await statusBlocks(ctx, d, state);
+  const setup = status[0]?.state === "notConfigured";   // setup first: nothing to list, nothing to keep, no options to change yet (R33)
   return [
-    ...(await statusBlocks(ctx, d, state)),
+    ...status,
     // an empty journal is one plain sentence and its one action (R18, R33): no empty table, no box
     ...(rows.length ? [{ type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), ...(new Set(lines.map((l) => l.kind)).size > 1 ? { filters: [{ column: 1, allLabel: t("filter_all") }] } : {}), truncate: [3], pageSize: 50,
-      rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] }] : [{ type: "markdown", text: t("empty") }, { type: "links", items: [{ label: t("empty_test"), href: "?tab=twitch" }] }]),
+      rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] }] : setup ? [] : [{ type: "markdown", text: t("empty") }, { type: "links", items: [{ label: t("empty_test"), href: "?tab=twitch" }] }]),
     ...(await rwAdmin.blocks(ctx, { query: query ?? {}, ready, enabled: enabled.redeem === true })),
-    { type: "markdown", text: optionsSummary(ctx, s) },
-    { type: "links", items: [{ label: t("dock_open"), href: "?dock=1", presentation: "dialog" }, { label: t("opt_title"), href: "?journal=1", presentation: "dialog" }] },
+    ...(setup ? [] : [{ type: "markdown", text: optionsSummary(ctx, s) }]),
+    { type: "links", items: [{ label: t("dock_open"), href: "?dock=1", presentation: "dialog" }, ...(setup ? [] : [{ label: t("opt_title"), href: "?journal=1", presentation: "dialog" }])] },
     ...(query?.dock === "1" ? [await dockDialog(ctx)] : []),
-    ...(query?.journal === "1" ? [optionsDialog(ctx, s)] : []),
+    ...(query?.journal === "1" && !setup ? [optionsDialog(ctx, s)] : []),
     { type: "markdown", tab: "twitch", text: t("types_intro") },
     ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "twitch" })) : []),
     ...(reasonLines(ctx, state, enabled).length ? [{ type: "markdown", tab: "twitch", text: reasonLines(ctx, state, enabled).join("\n") }] : []),
