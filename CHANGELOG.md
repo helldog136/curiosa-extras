@@ -18,14 +18,14 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Pour les développeurs
 
-- `tests/helpers/ergonomicsPending.mjs` est supprimé (plus aucun test ne l'utilise). Chaque ligne R33 qui reste dans `tests/ergonomics-baseline.json` et chaque bannière de `tests/banners-baseline.json` porte maintenant une raison écrite (`justified`) ; un test l'exige. La base d'ergonomie passe de 536 à 485 lignes, dont 4 lignes R33 (réglages secrets déclarés dans le manifeste), et la base des bannières de 13 à 1.
+- `tests/helpers/ergonomicsPending.mjs` est supprimé (plus aucun test ne l'utilise). Chaque ligne R33 qui reste dans `tests/ergonomics-baseline.json` et chaque bannière de `tests/banners-baseline.json` porte maintenant une raison écrite (`justified`) ; un test l'exige. La base d'ergonomie passe de 536 à 485 lignes, dont 4 lignes R33 (réglages secrets déclarés dans le manifeste), et la base des bannières de 13 à 1. Le kit d'ergonomie et le document `docs/ERGONOMIE-ADMIN.md` sont recopiés à l'identique depuis le cœur 0.37.0 (règle R19 : au plus 10 pastilles par groupe).
 
 *(English)*
 
 - **Contacts, Content notebook, Reviews, Photo galleries, Directory, Polls, Countdown.** No more reassuring sentences ("Your address book is private…"), no more counters at 0, no more explanation paragraphs under a working screen. The Contacts search has no button any more: Enter runs it. The Countdown time zones read without their technical name.
 - **Every visible text states the exact state.** "For now", "in principle", "maybe" and the "Ready" or "taken over" states are replaced by what is true now, in 24 extensions.
 - **Fewer banners without an action.** Banners that asked for nothing become a plain line or a warning.
-- `tests/helpers/ergonomicsPending.mjs` is deleted (no test uses it). Every R33 line left in `tests/ergonomics-baseline.json` and every banner in `tests/banners-baseline.json` now has a written reason (`justified`), and a test requires it. The ergonomics baseline goes from 536 to 485 lines, 4 of them R33 (secret settings declared in the manifest), and the banners baseline from 13 to 1.
+- `tests/helpers/ergonomicsPending.mjs` is deleted (no test uses it). Every R33 line left in `tests/ergonomics-baseline.json` and every banner in `tests/banners-baseline.json` now has a written reason (`justified`), and a test requires it. The ergonomics baseline goes from 536 to 485 lines, 4 of them R33 (secret settings declared in the manifest), and the banners baseline from 13 to 1. The ergonomics kit and `docs/ERGONOMIE-ADMIN.md` are copied identically from core 0.37.0 (rule R19: at most 10 chips per group).
 
 ## 1.105.3 — 2026-11-19
 
