@@ -10,7 +10,7 @@
   "colSubject": "Announcement",
   "colResult": "Result",
   "resultOk": "sent",
-  "resultFailed": "failed ({status}) after {attempts} attempt(s): {error}",
+  "resultFailed": "failed ({status})",
   "platformTwitch": "Twitch",
   "platformYoutube": "YouTube",
   "platformBoth": "Twitch and YouTube",
@@ -18,10 +18,10 @@
   "liveDefault": "🔴 Live on {platform}: {title}",
   "notSet": "No sending address is set: nothing is sent.",
   "badAddress": "The sending address is not a valid Discord address.",
-  "setAddress": "Set the sending address",
-  "setupSteps": "In Discord: channel settings, Integrations, then create a sending address. Paste it in “Discord channel sending address” (Settings tab).",
+  "setupSteps": "In Discord: channel settings, Integrations, then create a sending address. Paste it in “Discord channel sending address” below.",
   "sumBase": "Site news and Twitch lives",
   "sumYoutube": "Site news, Twitch and YouTube lives",
   "lastFailed": "The last send failed.",
-  "lastFailedCode": "The last send failed (code {status})."
+  "lastFailedCode": "The last send failed (code {status}).",
+  "resultTries": "{attempts} tries"
 }

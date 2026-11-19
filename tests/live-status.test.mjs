@@ -47,7 +47,7 @@ const player = (ctx) => def.sections.player(ctx);
 
 test("live-status : manifeste valide, deux sources FACULTATIVES (twitch.live, youtube.live), n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.6.0");
+  assert.equal(m.version, "1.6.1");
   assert.equal(m.id, "live-status", "l'identifiant ne change pas : les sites existants gardent leur instance");
   assert.equal(m.platform, "twitch", "la plateforme déclarée ne change pas (regroupement visuel seulement)");
   assert.equal(m.minCore, "0.36.0", "le bloc « connection » demande le cœur 0.36.0");
@@ -211,8 +211,17 @@ test("admin : une carte d'état par source ; sans application Twitch ou sans cha
   const noChannel = conns(await def.adminPanel(wire({ provider: { clientId: "cid", clientSecret: "sec" }, messages: m }).ctx));
   assert.deepEqual([noChannel[0].state, noChannel[0].reason, noChannel[0].primary.href], ["notConfigured", "INDIQUEZ", "/admin/modules/twitch-channel"], "lien vers Ma Chaîne Twitch");
   assert.equal(conns(await def.adminPanel(wire({ provider: {}, messages: m }).ctx))[0].reason, "RELIEZ", "ni l'un ni l'autre : d'abord le Connecteur");
+  stubTwitch({ live: false });
   const ready = conns(await def.adminPanel(wire({ messages: m }).ctx));
   assert.deepEqual([ready[0].state, ready[0].summary, ready[0].edit.href, ready[0].setup], ["configured", "Chaînes : machaine", "?tab=settings", undefined]);
+  // the card tells the source's real state: Twitch not answering, or refusing the application, is not "configured"
+  tw.resetCache(); stubTwitch({ fail: true });
+  const down = conns(await def.adminPanel(wire({ messages: { ...m, twitchDown: "SANS REPONSE" } }).ctx));
+  assert.deepEqual([down[0].state, down[0].reason, down[0].primary.href], ["degraded", "SANS REPONSE", "/admin/modules/twitch-connector"]);
+  tw.resetCache(); stubTwitch({ status: 401 });
+  const refused = conns(await def.adminPanel(wire({ messages: { ...m, twitchRefused: "REFUSEE" } }).ctx));
+  assert.deepEqual([refused[0].state, refused[0].reason], ["degraded", "REFUSEE"]);
+  tw.resetCache(); stubTwitch({ live: false });
   const always = conns(await def.adminPanel(wire({ provider: {}, own: { playerWhen: "always" }, messages: m }).ctx));
   assert.deepEqual([always[0].state, always[0].summary], ["configured", "TOUJOURS"], "« toujours » : le lecteur s'affiche quoi qu'il arrive");
   // Ni Ma Chaîne Twitch ni Chaîne YouTube : une seule carte « à configurer » avec la proposition d'installer l'une ou l'autre (les deux sources sont facultatives).

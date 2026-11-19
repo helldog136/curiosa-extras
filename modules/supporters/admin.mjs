@@ -32,13 +32,20 @@ export async function panel(ctx, { query = {} } = {}) {
   const snap = await D.snapshot(ctx, { fresh: true });
   const t = ctx.t, out = [];
   out.push(...connectionBlocks(ctx, snap));
-  out.push({ type: "markdown", text: t("sumLine", S.summary(ctx, snap)) });
+  const line = countsLine(ctx, S.summary(ctx, snap));
+  if (line) out.push({ type: "markdown", text: line });
   out.push(...await listBlocks(ctx, snap, query));
   out.push(...tierBlocks(ctx, snap));
   out.push(...await contactsBlocks(ctx, snap));
   out.push(...importBlocks(ctx));
   out.push(...tidyBlocks(ctx, snap));
   return out;
+}
+
+/** One line of the counters that are not zero ("Supporters: 14 · Nicknames to read: 2"); nothing at all when there is nobody yet. "Active" only when it differs from the total. */
+function countsLine(ctx, c) {
+  if (!c.total) return "";
+  return [["sumTotal", c.total], ["sumActive", c.active !== c.total ? c.active : 0], ["sumPending", c.pending], ["sumShown", c.shown]].filter(([, n]) => n > 0).map(([k, n]) => ctx.t(k, { n })).join(" · ");
 }
 
 /* ───────────── 1. La connexion ───────────── */
@@ -88,7 +95,7 @@ function displayState(ctx, p, provider) {
 
 async function listBlocks(ctx, snap, query) {
   const t = ctx.t, out = [{ type: "heading", text: t("listTitle") }];
-  if (!snap.people.size) { out.push({ type: "markdown", text: t("listEmpty") }); return out; }
+  if (!snap.people.size) return [];   // nobody yet: no heading and no sentence to say so (the connection card and the import are the actions)
   const { activeDays } = S.knobs(ctx);
   const filter = FILTERS.includes(str(query.filter)) ? str(query.filter) : "all";
   const q = fold(clean(str(query.q), 100));
@@ -165,9 +172,8 @@ async function personScreen(ctx, pid) {
 
 function tierBlocks(ctx, snap) {
   const t = ctx.t, out = [{ type: "heading", text: t("tiersTitle") }];
-  out.push({ type: "markdown", text: t("tiersIntro") });
   const tiers = [...snap.tiers.values()].map((r) => r.data).sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
-  if (!tiers.length) { out.push({ type: "markdown", text: t("tiersNone") }); return out; }
+  if (!tiers.length) return [];   // nothing to label yet: tiers appear after the first refresh, notification or import
   out.push({
     type: "table", columns: [t("colTierName"), t("colTierLabel")],
     rows: tiers.map((x) => [x.name, P.pickText(x.label, ctx.locale, ctx.defaultLocale) || t("tierNoLabel")]),
@@ -197,6 +203,7 @@ async function tierScreen(ctx, k) {
 /* ───────────── 4. Contacts ───────────── */
 
 async function contactsBlocks(ctx, snap) {
+  if (!snap.people.size) return [];   // nobody to file in Contacts yet
   const t = ctx.t, out = [{ type: "heading", text: t("contactsTitle") }];
   const book = await C.providers(ctx);
   if (!book.length) {
@@ -218,10 +225,9 @@ async function contactsBlocks(ctx, snap) {
 
 function importBlocks(ctx) {
   const t = ctx.t, out = [{ type: "heading", text: t("importTitle") }];
-  out.push({ type: "markdown", text: t("importIntro", { rows: LIMITS.csvRows }) });
-  if (!can(ctx, RIGHT_MANAGE)) return out;
+  if (!can(ctx, RIGHT_MANAGE)) return [{ type: "markdown", text: t("importNoRight") }];
   out.push({ type: "adminForm", action: "importFile", submitLabel: t("importButton"), fields: [
-    { name: "file", kind: "file", accept: ".csv,.tsv,.txt", maxBytes: LIMITS.csvBytes, label: t("importFileLabel"), help: t("importFileHelp") },
+    { name: "file", kind: "file", accept: ".csv,.tsv,.txt", maxBytes: LIMITS.csvBytes, label: t("importFileLabel"), help: t("importFileHelp", { rows: LIMITS.csvRows }) },
     { name: "paste", kind: "textarea", label: t("importPasteLabel"), help: t("importPasteHelp"), value: "" },
     { name: "replace", kind: "checkbox", label: t("importReplace"), help: t("importReplaceHelp"), value: "" },
   ] });

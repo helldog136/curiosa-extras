@@ -72,7 +72,7 @@ async function appBlock(ctx, creds, list, own) {
 
 /** The window "Modify": the two fields, a value that is set is shown as set; forgetting a carried-over application is its secondary action. */
 function appDialog(ctx, creds, own) {
-  const kept = (field, has, tail) => (has ? { value: "", valueHint: creds.carried.includes(field) ? "carried" : "kept", ...(creds.carried.includes(field) ? { valueSource: ctx.t("source_channel") } : {}), ...(tail ? { valueTail: tail } : {}) } : {});
+  const kept = (field, has, tail) => (has ? { value: "", valueHint: "kept", ...(tail ? { valueTail: tail } : {}) } : {});
   return {
     type: "adminForm", presentation: "dialog", action: "saveApp", cancelHref: "?", title: ctx.t("app_title"), submitLabel: ctx.t("app_save"),
     fields: [
