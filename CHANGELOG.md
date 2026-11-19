@@ -4,6 +4,26 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.108.2 — 2026-11-19
+
+*In short: Home Assistant 1.4.2 refuses an oversized request body more cleanly. Nothing changes for you.*
+
+### For developers
+
+- **home-assistant 1.4.2.** `readJson` (pair, pull, ack) no longer calls `reader.cancel()` when a body exceeds 4 KB; it releases the reader and answers 413. Cancelling closed the stream while Node's fetch (undici) kept enqueueing the chunks of a multipart (`FormData`) body, which raised `ERR_INVALID_STATE: ReadableStream is already closed` as an unhandled rejection. Node 24 reports it as "generated asynchronous activity after the test ended" and failed `tests/conformance.test.mjs` and `tests/hot-update-all.test.mjs` intermittently. New test: `tests/home-assistant.test.mjs` ("un corps multipart trop gros…").
+- **`tests/hot-update-all.test.mjs`**: while an already published release is replayed (home-assistant 1.4.1 still cancels the reader), cancelling a body reader only releases it, so the same undici rejection no longer fails the N-1 → N replay on Node 24.
+
+## 1.108.1 — 2026-11-19
+
+*In short: nothing changes for you. The repository's tests and automated checks now run on Node 24.*
+
+### For developers
+
+- **CI and starter CI on Node 24.** `ci.yml`, `release.yml` and `starter/.github/workflows/ci.yml` use `node-version: 24`; `actions/checkout` and `actions/setup-node` move from v4 to v5 (the first majors that run on Node 24; v4 ran on Node 20, which GitHub deprecates). No module changes.
+- **`tests/overlay-idle.test.mjs` no longer hangs on Node 24.** Cause: the browser was closed by a root-level `test.after`, and the file awaits imports (top-level await) between its first test and the idle tests; a root hook runs as soon as the tests registered so far are done, which on Node 24 was before the idle tests launched Chromium, so it closed nothing and Chromium kept the test process alive. The close is now an `after` hook of the suite that holds those tests, and Chromium gets its own temporary folder (it removed its `.org.chromium.Chromium.*` folder just after `close()` and sometimes tripped the TMPDIR guard, on Node 22 too).
+- **`tests/twitch-events-dock-layout.test.mjs`**: the "one replay" check now clicks the same button twice (a handle, not a selector); on Node 24 the second click by selector reached the new first row and sent a second replay.
+- **`scripts/test.mjs`** accepts `TEST_REPORTER` (for example `tap`) for the inner `node --test`: Node 24 prints the `spec` report when output is not a terminal, and `tests/tmp-hygiene.test.mjs` reads the TAP summary.
+
 ## 1.108.0 — 2026-11-19
 
 *In short: the Link list now has its own entry in the Content section of the admin menu, instead of being hidden under Extensions.*

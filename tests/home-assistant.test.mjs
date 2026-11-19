@@ -65,7 +65,7 @@ const dump = (w) => JSON.stringify(w.ctx.dumpStore());
 test("le manifeste est valide et déclare le contrat exact", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.4.1"); assert.equal(manifest.minCore, "0.36.0");
+  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.4.2"); assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
@@ -174,6 +174,24 @@ test("appairage : méthode, corps et taille", async () => {
   assert.equal(big.status, 413);
   for (const r of [big, await send("pair", { method: "POST", body: "x" })]) { assert.equal(r.headers.get("cache-control"), "no-store"); assert.match(r.headers.get("content-type"), /^application\/json/); }
   w.done();
+});
+
+test("appairage : un corps multipart trop gros est refusé sans activité asynchrone parasite", async () => {
+  // Cancelling the body reader made Node's fetch keep enqueueing the FormData chunks into a closed stream (unhandled rejection, intermittent on Node 24).
+  const rejections = [];
+  const onRejection = (e) => rejections.push(e);
+  process.on("unhandledRejection", onRejection);
+  try {
+    const w = world();
+    for (let i = 0; i < 20; i++) {
+      const form = new FormData();
+      form.set("code", "A".repeat(9000));
+      assert.equal((await directTransport(def, w.ctx, { ip: `198.51.100.${10 + i}` })("pair", { method: "POST", body: form })).status, 413);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    w.done();
+  } finally { process.off("unhandledRejection", onRejection); }
+  assert.deepEqual(rejections.map((e) => e?.message), []);
 });
 
 test("re-appairage : le nouvel appareil remplace l'ancien, qui reçoit 401", async () => {

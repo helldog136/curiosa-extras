@@ -2,7 +2,7 @@
 // This file walks over EVERY overlay element declared by a module of this repository, renders it in its idle state (no draw, no poll, no data, nothing planned...)
 // and checks that nothing visible is produced. A new element must either be added to IDLE (with a real idle render) or to EXEMPT (with the reason): the coverage test fails otherwise.
 // The editor preview (`ov-demo=1`) must still show a sample so the element can be placed: it is checked here for the elements that render on the server.
-import test from "node:test";
+import test, { describe, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,6 +11,7 @@ import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { El } from "./helpers/remoteDom.mjs";
 import { vevent, calendar, feedTopics } from "./helpers/icalFeed.mjs";
+import { makeTempDir, removeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const ROOT = process.env.CURIOSA_EXTRAS_DIR ?? path.join(here, "..");
@@ -151,9 +152,13 @@ try {
   const lib = await import(pathToFileURL(path.join(core, "scripts/visual/lib/playwright.mjs")).href);
   kit = { css: K.lookCss(K.appliedLook({ preset: "readable" }, { style: { text: "light", background: "transparent" }, skin: false }, true)), chromium: lib.loadPlaywright().chromium, exe: lib.chromiumPath(), args: lib.CHROMIUM_ARGS, browser: null };
 } catch { kit = null; }
-test.after(async () => { await kit?.browser?.close(); });
+// The browser is closed by an `after` hook of the SUITE below, never by a root-level `test.after`: this file registers a test, then awaits imports (top-level await),
+// then registers the idle tests. A root hook runs as soon as the tests registered so far are done, so it can run BEFORE the idle tests launch Chromium (on Node 24 it did,
+// every time): it then closed nothing and Chromium kept the test process alive, so the file never exited. A suite hook runs after the tests of that suite, whatever the timing.
 async function paintedWithKit(html) {
-  kit.browser ??= await kit.chromium.launch({ executablePath: kit.exe, args: kit.args });
+  // Chromium gets its own TMPDIR: it removes its `.org.chromium.Chromium.*` folder a moment AFTER close() returns, which sometimes tripped the TMPDIR guard of `npm test`.
+  kit.tmp ??= makeTempDir("overlay-idle-chromium-");
+  kit.browser ??= await kit.chromium.launch({ executablePath: kit.exe, args: kit.args, env: { ...process.env, TMPDIR: kit.tmp } });
   const ctx = await kit.browser.newContext({ javaScriptEnabled: false, viewport: { width: 900, height: 300 } });
   try {
     const p = await ctx.newPage();
@@ -165,15 +170,18 @@ async function paintedWithKit(html) {
   } finally { await ctx.close(); }
 }
 
-for (const [key, run] of Object.entries(IDLE)) {
-  test(`idle: ${key} shows nothing (no text, no placeholder, empty hidden frame); the editor preview still shows a sample`, async () => {
-    const r = await run();
-    assert.equal(visibleText(r.idle), "", `${key}: visible text while idle: « ${visibleText(r.idle)} »`);
-    if (r.panel) assert.ok(panelHidden(r.idle, r.panel), `${key}: the panel #${r.panel} must be hidden when empty (no background, no border)`);
-    if (r.demo !== undefined) {
-      assert.notEqual(visibleText(r.demo), "", `${key}: the preview must show a sample`);
-      if (r.panel) assert.ok(!panelHidden(r.demo, r.panel), `${key}: the preview panel is visible`);
-    }
-    if (kit) assert.deepEqual(await paintedWithKit(r.idle), [], `${key}: with the core appearance kit (0.17.0), the idle page paints nothing`);
-  });
-}
+describe("idle elements in the real browser", () => {
+  after(async () => { await kit?.browser?.close(); if (kit?.tmp) removeTempDir(kit.tmp); });
+  for (const [key, run] of Object.entries(IDLE)) {
+    test(`idle: ${key} shows nothing (no text, no placeholder, empty hidden frame); the editor preview still shows a sample`, async () => {
+      const r = await run();
+      assert.equal(visibleText(r.idle), "", `${key}: visible text while idle: « ${visibleText(r.idle)} »`);
+      if (r.panel) assert.ok(panelHidden(r.idle, r.panel), `${key}: the panel #${r.panel} must be hidden when empty (no background, no border)`);
+      if (r.demo !== undefined) {
+        assert.notEqual(visibleText(r.demo), "", `${key}: the preview must show a sample`);
+        if (r.panel) assert.ok(!panelHidden(r.demo, r.panel), `${key}: the preview panel is visible`);
+      }
+      if (kit) assert.deepEqual(await paintedWithKit(r.idle), [], `${key}: with the core appearance kit (0.17.0), the idle page paints nothing`);
+    });
+  }
+});

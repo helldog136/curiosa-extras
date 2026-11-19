@@ -52,7 +52,7 @@ function runWrapper(body, env = {}) {
   const scratch = makeTempDir("hyg-wrap-");
   const file = path.join(scratch, "fake.test.mjs");
   fs.writeFileSync(file, `import test from "node:test";\nimport fs from "node:fs";\nimport os from "node:os";\nimport path from "node:path";\ntest("faux", () => { ${body} });\n`);
-  const r = node(["scripts/test.mjs", file], { TMPDIR: scratch, ...env });
+  const r = node(["scripts/test.mjs", file], { TMPDIR: scratch, TEST_REPORTER: "tap", ...env }); // tap: the summary lines read below ("# pass 1") exist on every Node (Node 24 defaults to spec off a terminal)
   return { r, remaining: () => entries(scratch).filter((n) => n !== "fake.test.mjs") };
 }
 
