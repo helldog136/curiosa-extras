@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { def, model as M, store as S, assets as A, publishedCtx, manifest, get } from "./helpers/mascotKit.mjs";
 import { makeBrowser } from "./helpers/mascotDom.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const UUID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const PIC = (n, ext = "png") => `/uploads/${UUID(n)}.${ext}`;
@@ -178,7 +178,7 @@ test("administration: the preview of the corner shows the first picture, the Ani
   assert.ok(html.html.includes(PIC(1)) && html.html.includes("Animation (first picture)"));
   const link = blocks.find((b) => b.type === "links" && b.tab === "animation");
   assert.deepEqual(link.items.map((i) => i.href), ["/?mascot=voir"]);
-  assertAdminPageErgonomics(blocks.filter((b) => !["saveLook", "savePhrase"].includes(b.action)));
+  assertAdminPageErgonomics(blocks);
   const fr = await def.adminPanel(Object.assign(await world({ idle: IDLE }, {}), {}), { query: {} });
   assert.ok(fr.length > 0);
 });

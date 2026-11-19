@@ -369,27 +369,6 @@
       "R9 locale:en:mapPrivacy #503fcf",
       "R9 locale:fr:mapPrivacy #4f99ea"
     ],
-    "mascot": [
-      "R10 setting:delay.label[en] #aca87a",
-      "R10 setting:show.label[en] #c5b48d",
-      "R13 description[en] #5be374",
-      "R13 description[fr] #9dd41f",
-      "R13 locale:en:elementDemo #e2e611",
-      "R13 locale:en:errTextEmpty #e12e2a",
-      "R13 locale:en:previewSample #b6fab7",
-      "R13 locale:en:textHelp #a0b02a",
-      "R13 locale:fr:elementDemo #e651b3",
-      "R13 locale:fr:errImage #a5e061",
-      "R13 locale:fr:errTextEmpty #42ca62",
-      "R13 locale:fr:previewNoAlt #3eca22",
-      "R13 locale:fr:previewSample #0a0f13",
-      "R13 locale:fr:textHelp #50bc46",
-      "R13 overlayElement:mascot.description[en] #0eb56c",
-      "R13 overlayElement:mascot.description[fr] #82ff6e",
-      "R13 setting:show.help[fr] #c9df68",
-      "R33e locale:en:uiNormal #3eece5",
-      "R33e locale:fr:uiNormal #3819b6"
-    ],
     "maze-overlay": [
       "R10 setting:extraWall.label[en] #8f3c40",
       "R10 setting:extraWall.label[fr] #22755a",

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import * as K from "./helpers/mascotKit.mjs";
 import { runStage } from "./helpers/mascotStageDom.mjs";
-import { assertAdminPageErgonomics } from "./helpers/ergonomicsPending.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const { model: M, store: S, def, get } = K;
 const UUID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -314,9 +314,8 @@ test("admin: the Animation and Voice tabs stay inside the field budgets, in both
     for (const mode of ["none", "blips", "speech", "custom"]) {
       await S.saveConfig(ctx, { voice: { mode } });
       const blocks = await def.adminPanel(ctx, { query: {} });
-      // The "Look" and "Add a sentence" forms were already over the budget before 1.2.0 (known gap, not touched here).
-      assertAdminPageErgonomics(blocks.filter((b) => !["saveLook", "savePhrase"].includes(b.action)), { errors: [ctx.t("errAnFps", { min: 1, max: 24 }), ctx.t("errVolume", { min: 1, max: 100, example: 40 }), ctx.t("errAnHeavy", { size: "4 MB", max: "3 MB" })] });
-      for (const b of blocks.filter((x) => x.type === "adminForm" && !["saveLook", "savePhrase"].includes(x.action))) assert.ok(visible(b) <= 5, `${b.action}: ${visible(b)} visible fields`);
+      assertAdminPageErgonomics(blocks, { errors: [ctx.t("errAnFps", { min: 1, max: 24 }), ctx.t("errVolume", { min: 1, max: 100, example: 40 }), ctx.t("errAnHeavy", { size: "4 MB", max: "3 MB" })] });
+      for (const b of blocks.filter((x) => x.type === "adminForm")) assert.ok(visible(b) <= 5, `${b.action}: ${visible(b)} visible fields`);
       const v = form(blocks, "saveVoice");
       if (mode === "none") assert.equal(v, undefined, "nothing to set for no voice"); else assert.ok(v && visible(v) <= 5);
     }
@@ -403,7 +402,7 @@ test("admin: reading speed and voice are checked, with the example under the fie
   assert.deepEqual((await S.loadConfig(ctx)).voice.speech, { lang: "fr", name: "Google français", rate: "fast", pitch: "high" });
   assert.ok((await def.adminActions.saveVoice.run(ctx, { lang: "xx" })).errors.lang);
   const example = (await def.adminPanel(ctx, { query: {} })).find((b) => b.type === "markdown" && /2 s ·/.test(b.text));
-  assert.match(example.text, /20 caractères : 2 s · 60 caractères : 3\.2 s/);
+  assert.match(example.text, /Temps de lecture : 20 caractères = 2 s · 60 caractères = 3\.2 s/);
 });
 
 test("admin: people without the right to edit see the previews and no form", async () => {

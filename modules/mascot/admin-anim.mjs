@@ -26,12 +26,13 @@ export function previewFrame(ctx, tab) {
 
 function animForm(ctx, config, which) {
   const a = config.anim[which];
+  // Only what the chosen way needs is asked: the picture for "One animated picture", the speed for "Several pictures", "play once" for any animation of the waiting state.
   const fields = [
     { name: "which", kind: "hidden", label: "which", value: which },
     { name: "mode", kind: "segmented", label: ctx.t("anModeLabel"), value: a.mode, options: M.ANIM_MODES.map((m) => ({ value: m, label: ctx.t(`anMode_${m}`) })) },
-    { name: "gif", kind: "image", label: ctx.t("anGifLabel"), value: a.gif, help: ctx.t("anGifHelp") },
-    { name: "fps", kind: "number", label: ctx.t("anFpsLabel"), value: a.fps || "", min: M.ANIM.fps[0], max: M.ANIM.fps[1], step: 1, placeholder: String(M.ANIM.fps[2]), unit: ctx.t("anFpsUnit"), folded: true },
-    ...(which === "idle" ? [{ name: "once", kind: "switch", label: ctx.t("anOnceLabel"), value: a.once ? "on" : "", folded: true }] : []),
+    ...(a.mode === "gif" ? [{ name: "gif", kind: "image", label: ctx.t("anGifLabel"), value: a.gif, help: ctx.t("anGifHelp") }] : []),
+    ...(a.mode === "frames" ? [{ name: "fps", kind: "number", label: ctx.t("anFpsLabel"), value: a.fps || "", min: M.ANIM.fps[0], max: M.ANIM.fps[1], step: 1, placeholder: String(M.ANIM.fps[2]), unit: ctx.t("anFpsUnit"), folded: true }] : []),
+    ...(which === "idle" && a.mode !== "none" ? [{ name: "once", kind: "switch", label: ctx.t("anOnceLabel"), value: a.once ? "on" : "", folded: true }] : []),
   ];
   return { type: "adminForm", action: "saveAnim", tab: "animation", title: ctx.t(`an_${which}`), submitLabel: ctx.t("anSave"), fields };
 }
@@ -44,7 +45,7 @@ function framesBlocks(ctx, config, which) {
     type: "table", tab: "animation", searchable: true, columns: [ctx.t("anColNumber"), ctx.t("anColSize")], empty: ctx.t("anNoFrames"),
     rowIds: a.frames.map((f) => `${which}|${f.src}`),
     rows: a.frames.map((f, i) => [{ text: ctx.t("anFrameName", { n: i + 1 }), image: { src: f.src, alt: ctx.t("anFrameAlt", { n: i + 1 }) } }, f.bytes ? kb(f.bytes) : ""]),
-    rowActions: [{ label: ctx.t("anUp"), action: "frameUp" }, { label: ctx.t("anDown"), action: "frameDown" }, { label: ctx.t("anRemove"), action: "frameRemove", danger: true, confirm: ctx.t("anRemoveConfirm") }],
+    rowActions: [{ label: ctx.t("anUp"), action: "frameUp" }, { label: ctx.t("anDown"), action: "frameDown", inMenu: true }, { label: ctx.t("anRemove"), action: "frameRemove", danger: true, confirm: ctx.t("anRemoveConfirm") }],
   });
   if (a.frames.length < M.ANIM.frames) {
     out.push({ type: "adminForm", action: "addFrame", tab: "animation", title: ctx.t("anAddTitle"), submitLabel: ctx.t("anAdd"), fields: [{ name: "which", kind: "hidden", label: "which", value: which }, { name: "image", kind: "image", label: ctx.t("anFrameLabel"), value: "", help: ctx.t("anFrameHelp", { max: M.ANIM.frames }) }] });
@@ -95,7 +96,9 @@ async function saveAnim(ctx, values) {
   const errors = {};
   let gif = old.gif, gifBytes = old.gifBytes;
   const typed = String(values.gif ?? "").trim();
-  if (mode === "gif") {
+  if (values.gif === undefined) {
+    // The picture is not on the form (the mode was not "One animated picture" when it was shown): choosing the mode only changes the mode.
+  } else if (mode === "gif") {
     const url = M.uploadImage(typed);
     if (!typed) errors.gif = ctx.t("errAnGifEmpty");
     else if (!url) errors.gif = ctx.t("errAnGifBad");
@@ -112,14 +115,14 @@ async function saveAnim(ctx, values) {
     else { const k = await keep(ctx, url); if (k.error) errors.gif = k.error; else if (k.bytes > M.ANIM.bytes) errors.gif = ctx.t("errAnHeavy", { size: kb(k.bytes), max: kb(M.ANIM.bytes) }); else { gif = url; gifBytes = k.bytes; } }
   }
   const fpsRaw = String(values.fps ?? "").trim();
-  let fps = 0;
+  let fps = values.fps === undefined ? old.fps : 0;
   if (fpsRaw) {
     const n = Number(fpsRaw);
     if (!Number.isInteger(n) || n < M.ANIM.fps[0] || n > M.ANIM.fps[1]) errors.fps = ctx.t("errAnFps", { min: M.ANIM.fps[0], max: M.ANIM.fps[1] });
     else fps = n;
   }
   if (Object.keys(errors).length) return { errors };
-  const next = M.normalizeAnim({ ...old, mode, gif, gifBytes, fps, once: values.once === "on" });
+  const next = M.normalizeAnim({ ...old, mode, gif, gifBytes, fps, once: which === "idle" && old.mode !== "none" ? values.once === "on" : values.once === undefined ? old.once : values.once === "on" });
   const saved = await S.saveConfig(ctx, { anim: { ...config.anim, [which]: next } });
   if (old.gif && old.gif !== next.gif && !stillUsed(saved, old.gif)) await release(ctx, old.gif);
   return { ok: ctx.t("anSaved") };
@@ -224,16 +227,15 @@ function voiceForm(ctx, config) {
 export function voiceBlocks(ctx, config, canEdit) {
   const mode = config.voice.mode;
   const out = [{ type: "heading", text: ctx.t("voiceTitle"), tab: "voice" }, { type: "markdown", text: ctx.t("voiceIntro"), tab: "voice" }];
-  out.push({ type: "banner", tone: mode === "none" ? "info" : "success", text: ctx.t(`voState_${mode}`), tab: "voice" });
   out.push(previewFrame(ctx, "voice"));
   if (!canEdit) return out;
   out.push({
     type: "adminForm", action: "saveVoiceMode", tab: "voice", title: ctx.t("voModeTitle"), submitLabel: ctx.t("voModeSave"),
     fields: [{ name: "mode", kind: "segmented", label: ctx.t("voModeLabel"), value: mode, options: M.VOICE_MODES.map((m) => ({ value: m, label: ctx.t(`voMode_${m}`) })) }],
   });
+  if ((mode === "custom" || (mode === "blips" && config.voice.blips.preset === "custom")) && !M.soundOf(config.voice, ctx.setting("voiceFile"))) out.push({ type: "banner", tone: "warning", text: ctx.t("voCustomMissing"), tab: "voice" });
   const form = voiceForm(ctx, config);
   if (form) out.push(form);
-  if (mode === "custom" || (mode === "blips" && config.voice.blips.preset === "custom")) out.push({ type: "markdown", text: ctx.t(M.soundOf(config.voice, ctx.setting("voiceFile")) ? "voCustomReady" : "voCustomMissing"), tab: "voice" });
   return out;
 }
 
