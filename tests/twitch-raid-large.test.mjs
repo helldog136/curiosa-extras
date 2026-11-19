@@ -292,7 +292,7 @@ test("au hasard : personne en ligne → jusqu'à 6 tentatives avec 100 AUTRES no
   const small = await search.findRandom(ctx, P(250), {}, { rng: seeded(2) });
   assert.equal(small.state, "none"); assert.equal(api.calls.length, 3, "100 + 100 + 50, puis il n'y a plus personne à tirer");
   // le message du dock est celui demandé
-  assert.equal(fr.dock_rm_none, "Personne n'a été trouvé en ligne pour l'instant, réessayez."); assert.equal(fr.dock_limited, "Trop de recherches, patientez quelques secondes.");
+  assert.equal(fr.dock_rm_none, "Personne n'a été trouvé en ligne, réessayez."); assert.equal(fr.dock_limited, "Trop de recherches, patientez quelques secondes.");
 });
 
 test("au hasard : sur 100 chaînes, un seul tirage (tout le monde est demandé)", async () => {
@@ -550,7 +550,7 @@ test("vie privée : le dock n'expose ni notes, ni secret, ni identifiant de fich
   for (const t of seen) { assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note"); assert.ok(!t.includes(`"${ids[3]}"`), "aucun identifiant de fiche"); }
   for (const t of seen.slice(0, -2)) if (!t.includes("<script")) assert.ok(!t.includes(secret.slice(0, 12)) || t.length < 0, "le secret ne revient jamais dans les données");
   assert.ok(/une minute/.test(manifest.privacy.fr) && /one minute/.test(manifest.privacy.en) && /Contacts/.test(manifest.privacy.fr) && /adresse/.test(manifest.privacy.fr));
-  assert.equal(manifest.version, "2.6.2");
+  assert.equal(manifest.version, "2.6.3");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "manage_link", "dock_nr_category_gone", "dock_nr_contacts_missing"]) assert.ok(fr[k] && en[k], k);
 });

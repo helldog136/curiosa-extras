@@ -5,7 +5,7 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.9.1",
+  "version": "1.9.2",
   "menuGroup": "community",
   "minCore": "0.11.0",
   "description": {
@@ -427,8 +427,8 @@
         "en": "Seconds between two on-screen updates"
       },
       "help": {
-        "fr": "De 3 à 30. L'écran ralentit tout seul quand rien ne change.",
-        "en": "From 3 to 30. The screen slows down by itself when nothing changes."
+        "fr": "De 3 à 30. Sans nouveauté, l'écran ralentit tout seul.",
+        "en": "From 3 to 30. With no news, the screen slows down by itself."
       }
     },
     {

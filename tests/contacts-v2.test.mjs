@@ -119,7 +119,7 @@ test("trou noir : un module « privacy.subject » muet ne bloque ni l'effacement
   const t = Date.now();
   const r = await def.adminActions.remove(ctx, { id: x.id });
   assert.ok(Date.now() - t < 1000);
-  assert.match(r.ok, /Did not answer in time: Mute/);
+  assert.match(r.ok, /did not answer in time: Mute/);
   assert.equal(good.refs.has(x.id), false);
   assert.equal(D.privacyMs(makeCtx()), 8000, "8 s par fournisseur en vrai");
 });
@@ -317,7 +317,7 @@ test("admin — catégories : créer (droit), renommer, « Mettre dans… », su
   assert.equal((await def.adminActions.deleteCategory(ctx, { id: cat })).ok, "Catégorie supprimée. Les fiches ne sont pas supprimées.");
   assert.equal((await svc.get(ctx, { id: ada })).ok, true);
   assert.deepEqual((await svc.get(ctx, { id: ada })).contact.categoryIds, []);
-  assert.match(textOf(await def.adminPanel(ctx, { query: { view: "categories" } })), /Aucune catégorie pour l(&#39;|')instant/);
+  assert.match(textOf(await def.adminPanel(ctx, { query: { view: "categories" } })), /Aucune catégorie\./);
 });
 
 test("accessibilité du HTML de l'admin (FR et EN) : images avec alt, liens avec un texte, champ de recherche étiqueté, onglets nommés, ids uniques, titres", async () => {
@@ -369,7 +369,7 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
 });
 
 test("manifeste 2.1 : version, minCore 0.2.2, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", async () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.6.1", "0.2.2", 2, 2]);
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.6.2", "0.2.2", 2, 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   // The 1.x → 2.0 conversion is gone (dataFloor 2, bridge tag v1.50.0): what is left is an empty marker that never touches the data.

@@ -244,7 +244,7 @@ test("remettre en ordre : un message sur une fiche fusionnée la suit ; sur une 
   assert.deepEqual([...data.messages.keys()].sort(), [keep.id, stay.id].sort());
   assert.equal(data.messages.get(keep.id).texts.fr, "Message de la fiche absorbée");
   assert.deepEqual(data.honors.map((h) => [h.month, h.contactId]), [[P.addMonths(now, 1), keep.id]], "la mise à l'honneur de la fiche supprimée a disparu, l'autre a suivi");
-  assert.ok((await run(ctx, "tidy", {})).ok.includes("Tout est à jour"), "rejouer ne change rien");
+  assert.ok((await run(ctx, "tidy", {})).ok.includes("Rien à mettre à jour"), "rejouer ne change rien");
 });
 
 test("remettre en ordre : Contacts muet → une phrase, et rien n'est retiré par erreur", async () => {

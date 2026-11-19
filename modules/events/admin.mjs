@@ -138,7 +138,7 @@ async function afterBlocks(ctx, ev) {
     fields.push({ name: "albumId", kind: "select", label: ctx.t("fAlbum"), value: ev.albumId, options, help: alb.more ? ctx.t("pickMore") : ctx.t("fAlbumHelp") });
   } else {
     if (ev.albumId) fields.push({ name: "albumId", kind: "hidden", label: "album", value: ev.albumId });
-    blocks.push({ type: "banner", tone: alb.state === "absent" ? "info" : "warning", text: ctx.t(alb.state === "absent" ? "albumsAbsent" : "albumsDown") });
+    if (alb.state !== "absent") blocks.push({ type: "banner", tone: "warning", text: ctx.t("albumsDown") });
     if (alb.state === "absent") blocks.push({ type: "suggestInstall", service: L.GALLERY, reason: ctx.t("albumsSuggest") });
   }
   fields.push({ name: "albumLink", kind: "url", label: ctx.t("fAlbumLink"), value: ev.albumLink, help: ctx.t("fAlbumLinkHelp") });
@@ -148,7 +148,7 @@ async function afterBlocks(ctx, ev) {
     fields.push({ name: "videoId", kind: "select", label: ctx.t("fLibVideo"), value: ev.videoId, options, help: vid.more ? ctx.t("pickMore") : ctx.t("fLibVideoHelp") });
   } else {
     if (ev.videoId) fields.push({ name: "videoId", kind: "hidden", label: "video", value: ev.videoId });
-    blocks.push({ type: "banner", tone: vid.state === "absent" ? "info" : "warning", text: ctx.t(vid.state === "absent" ? "videosAbsent" : "videosDown") });
+    if (vid.state !== "absent") blocks.push({ type: "banner", tone: "warning", text: ctx.t("videosDown") });
     if (vid.state === "absent") blocks.push({ type: "suggestInstall", service: L.VIDEOS, reason: ctx.t("videosSuggest") });
   }
   blocks.push({ type: "adminForm", action: "saveEvent", title: ctx.t("afterTitle"), submitLabel: ctx.t("save"), fields });
@@ -178,7 +178,7 @@ async function editPanel(ctx, data, ev, more) {
   const later = ev.series ? data.events.filter((e) => e.series === ev.series && e.startMs > ev.startMs).length : 0;
   blocks.push({ type: "heading", text: ev.title });
   if (ev.broken) blocks.push({ type: "banner", tone: "warning", text: ctx.t("brokenHelp") });
-  if (ev.note) blocks.push({ type: "banner", tone: "info", text: ctx.t(`note_${ev.note}`) });
+  if (ev.note) blocks.push({ type: "banner", tone: "warning", text: ctx.t(`note_${ev.note}`) });
   blocks.push(essentialForm(ctx, data, ev, later));
   const links = [{ label: ctx.t(more ? "lessOptions" : "moreOptions"), href: `${here(ctx)}?edit=${ev.id}${more ? "" : "&more=1"}` }];
   const href = ev.status === "published" ? U.eventHref(ctx, ev, false) : null;
@@ -282,7 +282,7 @@ async function filesBlocks(ctx) {
   const rep = meta.report;
   if (rep && Date.now() - Date.parse(rep.at) < 2 * D.DAY) {
     blocks.push(t({ type: "heading", text: ctx.t(rep.dry ? "reportTitleDry" : "reportTitleDone") }));
-    blocks.push(t({ type: "banner", tone: rep.errors.length || rep.noTitleColumn ? "warning" : "info", text: reportSummary(ctx, rep) }));
+    blocks.push(t(rep.errors.length || rep.noTitleColumn ? { type: "banner", tone: "warning", text: reportSummary(ctx, rep) } : { type: "markdown", text: reportSummary(ctx, rep) }));
     if (rep.errors.length) blocks.push(t({ type: "table", columns: [ctx.t("repLine"), ctx.t("repColumn"), ctx.t("repProblem")], rows: rep.errors.slice(0, 20).map((e) => [String(e.line), String(e.column ?? ""), message(ctx, e)]) }));
   }
   blocks.push(t({

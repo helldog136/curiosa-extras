@@ -164,7 +164,7 @@ test("liste : formulaire « J'ai une idée ! » en tête, quatre endroits avec l
   await def.adminActions.moveIdea(ctx, { id: `${b}~doing` });
   const blocks = await def.adminPanel(ctx, { query: {} });
   const f = form(blocks, "quickAdd");
-  assert.equal(f.submitLabel, "J'ai une idée !");
+  assert.equal(f.submitLabel, "Ajouter l'idée");
   assert.equal(f.fields.length, 1, "un seul champ : le titre");
   assert.equal(blocks.indexOf(f) < blocks.findIndex((x) => x.type === "html" && x.html.includes('<ul class="cp-list">')), true);
   const page = html(blocks);

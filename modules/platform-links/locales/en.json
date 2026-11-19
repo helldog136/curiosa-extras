@@ -54,7 +54,7 @@
   "p_leave_message": "This link opens another page: {label}.",
   "p_leave_title": "You are leaving the site",
   "p_message": "This link leads to a site for adults only (18 and over).",
-  "p_missing_message": "It may have been removed or changed. You can go back to the site.",
+  "p_missing_message": "It was removed or its address changed. You can go back to the site.",
   "p_missing_title": "This link no longer exists",
   "p_title": "Before you continue",
   "p_to": "You are about to open: {label} ({host})",

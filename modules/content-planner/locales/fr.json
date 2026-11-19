@@ -1,7 +1,6 @@
 {
-  "private": "Privé : seule votre équipe voit ce cahier.",
   "untitled": "(sans titre)",
-  "quickAdd": "J'ai une idée !",
+  "quickAdd": "Ajouter l'idée",
   "quickTitle": "Le titre de votre idée",
   "quickHelp": "Quelques mots suffisent, par exemple « Tutoriel sur le montage ». Le reste viendra après.",
   "added": "C'est noté dans « Idées » : « {title} ». Ouvrez-la quand vous voudrez pour la compléter.",

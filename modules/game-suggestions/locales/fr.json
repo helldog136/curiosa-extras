@@ -41,7 +41,7 @@
   "coversDown": "Le site de jaquettes est injoignable : réessayez plus tard.",
   "coversPartial": " Déjà trouvées avant l'arrêt : {found}.",
   "coversDone": "Recherche terminée : {found} jaquette(s) trouvée(s), {none} sans résultat.",
-  "coversAmbiguous": "Pour ces suggestions, la jaquette est peut-être celle d'un autre jeu.",
+  "coversAmbiguous": "Pour ces suggestions, le nom ressemble à celui d'un autre jeu : vérifiez la jaquette.",
   "coverWrong": "Ce n'est pas le bon jeu ?",
   "coversMore": " Il en reste {left} à essayer : relancez la recherche.",
   "rawgBanner": "Les jaquettes ne sont pas encore reliées au site : les suggestions n'auront pas d'image. Ouvrez le module « Jaquettes de jeux » une seule fois.",

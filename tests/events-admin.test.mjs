@@ -137,7 +137,7 @@ test("fichiers : export téléchargeable, import avec « vérifier d'abord », r
   const csv = "titre;date;heure\nAtelier A;15/03/2031;14h\nSans date;;\nBon;2031-04-01;\n";
   assert.match((await act(ctx, "importCsv", { file: "", dry: "on" })).errors.file, /Choisissez un fichier/);
   assert.match((await act(ctx, "importCsv", { file: "foo,bar\n1,2", dry: "on" })).errors.file, /colonnes/);
-  assert.match((await act(ctx, "importCsv", { file: csv, dry: "on" })).ok, /2 lignes sur 3 sont prêtes/);
+  assert.match((await act(ctx, "importCsv", { file: csv, dry: "on" })).ok, /2 lignes sur 3 peuvent être importées/);
   assert.equal(rows(ctx, "ev_events").length, 0);
   const shown = (await A.panel(ctx, { query: {} })).filter((b) => b.tab === "more");
   assert.ok(shown.some((b) => b.type === "heading" && /Rapport de vérification/.test(b.text)));

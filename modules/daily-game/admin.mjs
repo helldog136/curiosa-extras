@@ -123,7 +123,7 @@ export async function adminPanel(ctx, { query } = {}) {
     const out = await D.outlook(ctx, { count: 7, fresh: true });
     const todayItem = out.days[0]?.id ? items.find((i) => i.id === out.days[0].id) : null;
     if (!out.pool.length && !out.left.days) blocks.push({ type: "banner", tone: "warning", text: ctx.t("bannerNone") });
-    else if (out.left.days < 7) blocks.push({ type: "banner", tone: out.left.days < 3 ? "warning" : "info", text: ctx.t("bannerLow", { count: out.left.days }) });
+    else if (out.left.days < 7) blocks.push({ type: "banner", tone: "warning", text: ctx.t("bannerLow", { count: out.left.days }) });
     blocks.push({ type: "heading", text: ctx.t("todayTitle", { date: longDay(out.day, ctx.locale) }) });
     blocks.push({ type: "markdown", text: todayItem ? ctx.t("todayIs", { title: titleOf(ctx, todayItem) }) : ctx.t("todayNone") });
     if (out.pool.length || out.left.days) {

@@ -37,7 +37,7 @@ test("manifeste : valide, widget avec page, droits, outils pour les assistants, 
   assert.ok(r.ok, r.ok ? "" : r.error);
   const m = r.manifest;
   assert.equal(m.id, "countdown");
-  assert.equal(m.version, "1.4.1");
+  assert.equal(m.version, "1.4.2");
   assert.equal(m.minCore, "0.11.0");
   assert.equal(m.apiVersion, 2);
   assert.equal(m.type, "widget");
@@ -103,7 +103,7 @@ test("textes : français et anglais alignés, toutes les clés utilisées existe
 
 test("textes : les messages d'erreur donnent un exemple et disent quoi faire", () => {
   for (const k of ["err_date", "err_time", "err_zone", "err_link", "err_title"]) assert.match(FR[k], /exemple/i, k);
-  assert.match(FR.err_zone, /Asia\/Tokyo/);
+  assert.match(FR.err_zone, /Atlantic\/Azores/);
   assert.match(FR.err_time, /21:00/);
 });
 
@@ -748,7 +748,7 @@ test("assistants : changement d'heure signalé ; erreurs lisibles (messages expo
   assert.equal(r.event.warning, "This time does not exist on that day (clocks go forward): the next valid time is used.");
   assert.match(r.notes[0], /n’existe pas/);
   await assert.rejects(() => mod.mcp.event_create(ctx, { title: "X", date: "2099-02-30", time: "10:00" }), (e) => e.expose === true && /Choisissez un jour/.test(e.message));
-  await assert.rejects(() => mod.mcp.event_create(ctx, { title: "X", date: "2099-01-01", time: "10:00", timezone: "Mars/Olympus" }), (e) => e.expose === true && /Asia\/Tokyo/.test(e.message));
+  await assert.rejects(() => mod.mcp.event_create(ctx, { title: "X", date: "2099-01-01", time: "10:00", timezone: "Mars/Olympus" }), (e) => e.expose === true && /Atlantic\/Azores/.test(e.message));
   await assert.rejects(() => mod.mcp.event_update(ctx, { id: "inconnu", title: "Y" }), (e) => e.expose === true);
   await assert.rejects(() => mod.mcp.event_delete(ctx, { id: "inconnu" }), (e) => e.expose === true);
 });

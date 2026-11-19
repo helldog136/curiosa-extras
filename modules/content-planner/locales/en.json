@@ -1,7 +1,6 @@
 {
-  "private": "Private: only your team sees this notebook.",
   "untitled": "(untitled)",
-  "quickAdd": "I have an idea!",
+  "quickAdd": "Add the idea",
   "quickTitle": "The title of your idea",
   "quickHelp": "A few words are enough, for example “Video editing tutorial”. The rest can come later.",
   "added": "Noted in “Ideas”: “{title}”. Open it whenever you like to fill it in.",

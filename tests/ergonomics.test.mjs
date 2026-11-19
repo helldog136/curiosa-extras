@@ -40,6 +40,15 @@ for (const m of modules) {
   });
 }
 
+test("chaque écart R33 qui reste dans la base est justifié par écrit, et chaque justification vise un écart existant", () => {
+  const justified = baseline.justified ?? {};
+  const lines = Object.entries(baseline.modules).flatMap(([name, keys]) => keys.filter((k) => k.startsWith("R33")).map((k) => [name, k]));
+  const missing = lines.filter(([name, k]) => !String(justified[name]?.[k] ?? "").trim().length);
+  assert.deepEqual(missing.map(([n, k]) => `${n} | ${k}`), [], "ligne R33 sans raison : corrigez l'écart, ou écrivez sa raison dans baseline.justified");
+  const orphans = Object.entries(justified).flatMap(([name, o]) => Object.keys(o).filter((k) => !baseline.modules[name]?.includes(k)).map((k) => `${name} | ${k}`));
+  assert.deepEqual(orphans, [], "justification sans écart : retirez-la de baseline.justified");
+});
+
 test("la base ne s'allonge pas : comparée à la branche de base du dépôt (quand elle est disponible)", () => {
   const ref = process.env.ERGONOMICS_BASE_REF ?? "origin/master";
   const shown = spawnSync("git", ["show", `${ref}:tests/ergonomics-baseline.json`], { cwd: root, encoding: "utf8" });
@@ -204,6 +213,13 @@ test("R32 : une bannière « info » ou « succès » sans lien ne dit rien à f
   t.diagnostic(`⚠ ${known.known.length - gone.length} known banner(s) without an action to resolve`);
   assert.deepEqual(fresh, [], `NEW banner without an action (R32): give it a link (href), turn it into a status badge with a tooltip, or remove it.\n${fresh.join("\n")}`);
   assert.deepEqual(gone, [], `Banner fixed or gone: remove it from the baseline with node tests/helpers/banners.mjs --write\n${gone.join("\n")}`);
+});
+
+test("R32 : chaque bannière qui reste dans la base est justifiée par écrit, et chaque justification vise une bannière connue", () => {
+  const known = readBannerBaseline();
+  const justified = known.justified ?? {};
+  assert.deepEqual(known.known.filter((id) => !String(justified[id] ?? "").trim()), [], "banner without a written reason: fix it, or write why in banners-baseline.json \"justified\"");
+  assert.deepEqual(Object.keys(justified).filter((id) => !known.known.includes(id)), [], "reason for a banner that is not in the baseline: remove it from \"justified\"");
 });
 
 test("R32 : le détecteur voit une bannière sans lien et ignore avertissements et bannières avec lien", () => {

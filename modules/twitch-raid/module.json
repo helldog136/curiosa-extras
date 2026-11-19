@@ -6,7 +6,7 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.6.2",
+  "version": "2.6.3",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 70,
   "menuGroup": "tools",

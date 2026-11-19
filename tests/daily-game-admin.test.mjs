@@ -30,7 +30,7 @@ test("départ : « Par où commencer ? » propose les gabarits ; seuls ceux qui 
 test("gabarit « Culture jeu vidéo » : 30 questions publiées en un clic, le choix de départ disparaît", async () => {
   clockAt(NOON);
   const ctx = ctxFor();
-  assert.equal((await act(ctx, "applyTemplate", { id: "games" })).ok, "Parfait : 30 questions sont prêtes et publiées.");
+  assert.equal((await act(ctx, "applyTemplate", { id: "games" })).ok, "30 questions sont publiées.");
   assert.equal(qs(ctx).length, 30);
   assert.ok(qs(ctx).every((q) => q.status === "published" && q.by === "pack" && /^games:\d+$/.test(q.pack)));
   const blocks = await panel(ctx);
@@ -46,7 +46,7 @@ test("gabarit « Vide » : rien n'est ajouté, le choix ne revient pas ; gabarit
   assert.equal(qs(ctx).length, 0);
   const blocks = await panel(ctx);
   assert.ok(!textOf(blocks).includes("Par où commencer"));
-  assert.match(textOf(blocks), /Aucune question n'est prête/);
+  assert.match(textOf(blocks), /Aucune question n.est publiée/);
   assert.match((await act(ctx, "applyTemplate", { id: "inconnu" })).error, /n'existe plus/);
 });
 

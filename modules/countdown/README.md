@@ -35,7 +35,7 @@ Votre adresse OBS actuelle ne change pas.
 
 - Vous écrivez l'heure **là où l'événement a lieu** (par exemple 21 h à Paris). Le module garde « le jour, l'heure et le nom du fuseau », jamais un décalage fixe : le passage à l'heure d'été ou d'hiver est donc toujours juste, même si l'événement a lieu dans plusieurs mois.
 - Si vous choisissez une heure qui **n'existe pas** (la nuit du passage à l'heure d'été, 2 h 30 saute à 3 h 30) ou qui existe **deux fois** (retour à l'heure d'hiver), le module vous le dit et choisit comme le font les agendas.
-- Pour un fuseau qui n'est pas dans la liste, écrivez son nom officiel (Asia/Kolkata, America/Montreal…).
+- Pour un fuseau qui n'est pas dans la liste, écrivez son nom officiel (Atlantic/Azores, Africa/Tunis…).
 - Pour une **journée entière** (anniversaire, convention), cochez « Toute la journée » : pas d'heure, et la date ne bouge pas d'un pays à l'autre.
 
 ## Ce que voit une personne

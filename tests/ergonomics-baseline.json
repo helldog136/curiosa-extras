@@ -44,7 +44,6 @@
       "R13 locale:fr:explain_delivered #df3688",
       "R13 locale:fr:mailStatusBody #5383c2",
       "R13 locale:fr:modeHelp_open #05c054",
-      "R33e locale:fr:trackUnknown #470a4d",
       "R9 locale:en:csvHeader #f7260c",
       "R9 locale:fr:csvHeader #17a721",
       "R9 locale:fr:modeHelp_closed #9ff9b3",
@@ -78,11 +77,7 @@
       "R13 locale:fr:impColumns #65a5c2",
       "R13 locale:fr:privacyHelp #7fed3b",
       "R13 locale:fr:templateRows #8a71ff",
-      "R13 right:email.view.help[fr] #039d2f",
-      "R33e locale:fr:deletedSilent #058c84",
-      "R33e locale:fr:eraseSilent #c02829",
-      "R33e locale:fr:impStaging #c87e3b",
-      "R33e locale:fr:privReportWarn #1ebfb1"
+      "R13 right:email.view.help[fr] #039d2f"
     ],
     "content-planner": [
       "R10 group:rhythm.addLabel[en] #440190",
@@ -90,19 +85,13 @@
       "R11 setting:stepModel.help[en] #768f7f",
       "R11 setting:stepModel.help[fr] #033077",
       "R13 description[en] #2503ad",
-      "R13 description[fr] #2e3e9a",
-      "R13 locale:en:quickAdd #1299c1",
-      "R13 locale:fr:quickAdd #8cc6d8"
+      "R13 description[fr] #2e3e9a"
     ],
     "countdown": [
       "R10 locale:en:whereLabel #5d76a1",
       "R10 locale:fr:whereLabel #c80cbb",
       "R10 setting:keep.option:never[fr] #5ec7ae",
       "R10 setting:overlayEndMinutes.label[fr] #ef55fa",
-      "R10 setting:timezone.option:America/Argentina/Buenos_Aires[en] #e3254f",
-      "R10 setting:timezone.option:America/Argentina/Buenos_Aires[fr] #e3254f",
-      "R10 setting:timezone.option:Europe/Paris[en] #7b2b43",
-      "R10 setting:timezone.option:Europe/Paris[fr] #d44c5a",
       "R13 description[en] #60371e",
       "R13 description[fr] #7f53fb",
       "R13 locale:en:empty #8cfdc6",
@@ -112,8 +101,7 @@
       "R13 locale:fr:endDefault #0b433c",
       "R13 locale:fr:fEndMessageHelp #d2713c",
       "R13 setting:endMessage.help[en] #41f66e",
-      "R13 setting:endMessage.help[fr] #70d420",
-      "R33e locale:fr:notFound #965d68"
+      "R13 setting:endMessage.help[fr] #70d420"
     ],
     "directory": [
       "R10 locale:en:sortLabel #242324",
@@ -133,8 +121,6 @@
       "R13 setting:mapConsent.help[fr] #54153e",
       "R13 setting:photos.help[en] #b10c9b",
       "R13 setting:photos.help[fr] #9015ce",
-      "R33g locale:en:tidyNothing #b2c4c3",
-      "R33g locale:fr:tidyNothing #af2a87",
       "R9 locale:fr:adminHideHow #2c2c86"
     ],
     "discord-announcer": [
@@ -148,10 +134,7 @@
       "R10 setting:timezone.option:Europe/Paris[fr] #443217",
       "R13 description[en] #0bc8a5",
       "R13 description[fr] #92b234",
-      "R13 locale:en:emptyUpcoming #f5d89d",
-      "R13 locale:fr:emptyUpcoming #4030d4",
-      "R13 locale:fr:fToSeriesHelp #cb1f12",
-      "R33g overlayElement:next.description[fr] #93e633"
+      "R13 locale:fr:fToSeriesHelp #cb1f12"
     ],
     "faq": [
       "R10 locale:en:mailAdmin #799a56",
@@ -161,14 +144,10 @@
       "R13 description[en] #8a8739",
       "R13 description[fr] #323525",
       "R13 locale:en:askPrivacy #ce49f8",
-      "R13 locale:en:askSent #6ed7ca",
       "R13 locale:en:questionHelp #fb2660",
       "R13 locale:en:voteThanks #596e16",
-      "R13 locale:fr:askSent #46ff94",
       "R13 locale:fr:voteThanks #e52197",
-      "R13 setting:fallback.help[fr] #90b98c",
-      "R33e locale:fr:askIntro #cfc645",
-      "R33e locale:fr:askSent #46ff94"
+      "R13 setting:fallback.help[fr] #90b98c"
     ],
     "gallery": [
       "R10 locale:en:mailAdmin #74b79d",
@@ -179,19 +158,15 @@
       "R10 setting:maxSide.label[fr] #4d5f4b",
       "R10 setting:sort.option:manual[fr] #64a196",
       "R13 locale:en:confirmDeleteAlbum #a1e675",
-      "R13 locale:en:listEmpty #e76961",
       "R13 locale:en:noPageBanner #356c3b",
       "R13 locale:en:okFilesOldPhoto #09c4ab",
       "R13 locale:fr:confirmDeleteAlbum #af1035",
       "R13 locale:fr:errFileExpired #2f2011",
       "R13 locale:fr:legacyPhotoNote #053d96",
-      "R13 locale:fr:listEmpty #d92c1b",
       "R13 locale:fr:okFilesOldPhoto #9cfc88",
       "R13 setting:allowedHosts.help[fr] #262909",
       "R13 setting:maxPhotoKB.help[en] #74c286",
       "R13 setting:maxPhotoKB.help[fr] #3c50d5",
-      "R33e locale:fr:errNotFound #c30923",
-      "R33g setting:forwardToContacts.help[fr] #870414",
       "R9 locale:fr:legacyPhotoNote #053d96"
     ],
     "game-covers": [
@@ -205,9 +180,6 @@
       "R13 locale:fr:test_unreachable #53ba0e",
       "R33b setting:rawgKey"
     ],
-    "game-suggestions": [
-      "R33e locale:fr:coversAmbiguous #877014"
-    ],
     "guestbook": [
       "R10 locale:en:mailAdmin #e1cfb0",
       "R10 locale:en:mailBody #a1a435",
@@ -220,7 +192,6 @@
       "R13 locale:en:thanksPending #953d2d",
       "R13 locale:en:thanksPublished #408f35",
       "R13 locale:en:welcomeText #4a9598",
-      "R13 locale:fr:empty #b25cb2",
       "R13 locale:fr:thanksPending #bd5a43",
       "R13 locale:fr:thanksPublished #f19abd",
       "R13 locale:fr:welcomeText #91db23"
@@ -266,7 +237,6 @@
       "R13 locale:en:f.otherCollect.help #78eccd",
       "R13 locale:en:f.regNumber.label.FR #109a44",
       "R13 locale:en:note.sellsHere #b92e16",
-      "R13 locale:en:note.thirdParty #f2897e",
       "R13 locale:en:public.index.intro #93a3e4",
       "R13 locale:en:st.address.help.FR #45764a",
       "R13 locale:en:st.business.help.FR #ab8461",
@@ -294,15 +264,11 @@
       "R13 locale:fr:f.otherCollect.help #c3ae79",
       "R13 locale:fr:f.regNumber.label.FR #8d43ad",
       "R13 locale:fr:note.sellsHere #2afe31",
-      "R13 locale:fr:note.thirdParty #267df4",
       "R13 locale:fr:public.index.intro #0fcdcd",
       "R13 locale:fr:st.address.help.CA #8e6cee",
       "R13 locale:fr:st.address.help.CA_QC #8e6cee",
       "R13 locale:fr:st.address.help.FR #c73233",
       "R13 locale:fr:st.business.help.FR #228283",
-      "R33e locale:en:note.thirdParty #f2897e",
-      "R33e locale:fr:note.thirdParty #267df4",
-      "R33e locale:fr:rem.removed.collector #e78429",
       "R9 locale:en:doc.cookies.essential #888a18",
       "R9 locale:en:doc.cookies.noneExceptThirdParty #85077c",
       "R9 locale:en:doc.cookies.thirdParty #7dcda5",
@@ -317,7 +283,6 @@
       "R9 locale:en:f.listTool.help #56852c",
       "R9 locale:en:f.sellsWhere.label #6f78a4",
       "R9 locale:en:f.thirdPartyNames.label #7d7106",
-      "R9 locale:en:note.thirdParty #f2897e",
       "R9 locale:en:o.sells.elsewhere #712ccb",
       "R9 locale:en:st.address.help.CH #512eb0",
       "R9 locale:fr:doc.cookies.essential #4bace9",
@@ -335,7 +300,6 @@
       "R9 locale:fr:f.listTool.help #a6da9f",
       "R9 locale:fr:f.sellsWhere.label #57fefd",
       "R9 locale:fr:f.thirdPartyNames.label #bb3fd6",
-      "R9 locale:fr:note.thirdParty #267df4",
       "R9 locale:fr:o.sells.elsewhere #769535",
       "R9 locale:fr:st.address.help.CH #d09f87"
     ],
@@ -364,7 +328,6 @@
       "R13 locale:fr:errPos_range #d959f3",
       "R13 locale:fr:fMapLinkHelp #03c22d",
       "R13 locale:fr:importIntro #60a21c",
-      "R33g locale:en:noPoints #a4dbae",
       "R9 locale:en:mapHelp #e2c7d4",
       "R9 locale:en:mapPrivacy #503fcf",
       "R9 locale:fr:mapPrivacy #4f99ea"
@@ -383,20 +346,16 @@
     ],
     "planning": [
       "R10 locale:en:alsoToday #41b66c",
-      "R10 locale:en:coversAmbiguous #715887",
       "R10 locale:en:gamesLabel #3cf946",
       "R10 locale:fr:alsoToday #400e63",
       "R10 locale:fr:gamesLabel #b69c9f",
       "R10 setting:channelUrl.label[en] #74965b",
       "R10 setting:channelUrl.label[fr] #cc64ab",
-      "R11 setting:channelUrl.help[en] #9a4a0d",
-      "R11 setting:channelUrl.help[fr] #f59f94",
       "R13 locale:en:coversNone #411456",
       "R13 locale:en:imageEmptyHint #f4c35e",
       "R13 locale:fr:coversNone #fdde11",
       "R13 locale:fr:imageEmptyHint #7a3b5c",
-      "R13 overlayElement:week.description[fr] #c9d17f",
-      "R33e locale:fr:coversAmbiguous #547be6"
+      "R13 overlayElement:week.description[fr] #c9d17f"
     ],
     "platform-links": [
       "R13 description[en] #ae27b3",
@@ -408,8 +367,7 @@
       "R13 setting:originEnabled.help[fr] #e456f2",
       "R13 setting:warnAdult.help[en] #01011b",
       "R13 setting:warnAdult.help[fr] #4c4d96",
-      "R13 setting:warnMessage.help[en] #232efa",
-      "R33e locale:fr:p_missing_message #84cc54"
+      "R13 setting:warnMessage.help[en] #232efa"
     ],
     "polls": [
       "R10 locale:en:localLabel #52606d",
@@ -431,9 +389,7 @@
       "R13 locale:fr:limitsText #4773dc",
       "R13 locale:fr:msg_already #dfd013",
       "R13 locale:fr:msg_thanks #a30416",
-      "R13 locale:fr:noPolls #eb3cdb",
-      "R33g locale:fr:nowWaiting #e130d3",
-      "R33g setting:obsRefreshSeconds.help[fr] #c57097"
+      "R13 locale:fr:noPolls #eb3cdb"
     ],
     "sponsor-ticker": [
       "R13 setting:devMode.help[en] #aad9be",
@@ -446,14 +402,10 @@
     "stream-story": [
       "R10 locale:en:ui_event_chosen #8a67c8",
       "R10 locale:fr:ui_event_chosen #702cb3",
-      "R13 locale:en:ui_cover_ambiguous_named #5b3a6c",
       "R13 locale:en:ui_prep_stream_gone #095042",
-      "R13 locale:fr:ui_cover_ambiguous_named #dfd9a7",
       "R13 locale:fr:ui_cover_no_key #ee35d0",
       "R13 locale:fr:ui_members_help #8c2c2d",
-      "R13 locale:fr:ui_prep_stream_gone #4c5941",
-      "R33e locale:fr:ui_cover_ambiguous #a5e4df",
-      "R33e locale:fr:ui_cover_ambiguous_named #dfd9a7"
+      "R13 locale:fr:ui_prep_stream_gone #4c5941"
     ],
     "supporters": [
       "R10 right:people.manage.label[en] #a3f59d",
@@ -518,9 +470,7 @@
       "R13 setting:hide.help[en] #46a4e0",
       "R13 setting:hide.help[fr] #cf4948",
       "R13 setting:title.help[en] #9c2d99",
-      "R13 setting:title.help[fr] #fa92d2",
-      "R33g locale:en:tidyNothing #59bc54",
-      "R33g locale:fr:tidyNothing #63d506"
+      "R13 setting:title.help[fr] #fa92d2"
     ],
     "ticker-overlay": [
       "R13 overlayElement:banner.description[en] #1aa062",
@@ -569,13 +519,11 @@
     ],
     "twitch-raid": [
       "R10 setting:category.label[fr] #8470f1",
-      "R13 locale:en:add_twitch_later #cd836b",
       "R13 locale:en:add_twitch_rate #229aba",
       "R13 locale:en:dock_nr_choose #6f1444",
       "R13 locale:en:pub_intro #0439fd",
       "R13 locale:en:renew_confirm #27d990",
       "R13 locale:fr:add_err_chars #2a42d2",
-      "R13 locale:fr:add_twitch_later #0004be",
       "R13 locale:fr:dock_nr_choose #560f71",
       "R13 locale:fr:pub_intro #1f4751",
       "R13 locale:fr:renew_confirm #ffa025",
@@ -611,5 +559,19 @@
       "R9 right:yt.manage.help[en] #b3f667",
       "R9 right:yt.manage.help[fr] #e0ee27"
     ]
+  },
+  "justified": {
+    "calendar-ical": {
+      "R33b setting:url": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. calendar-ical also stays at minCore 0.2.5 (the Planning migration installs it), so it cannot require the block."
+    },
+    "discord-announcer": {
+      "R33b setting:webhookUrl": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The webhook address is typed once; the Discord card shows the state."
+    },
+    "game-covers": {
+      "R33b setting:rawgKey": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The key is optional; the sources card shows Configured/Degraded/Not configured."
+    },
+    "supporters": {
+      "R33b setting:accessToken": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The platform access code is typed once; the connection card shows the state."
+    }
   }
 }

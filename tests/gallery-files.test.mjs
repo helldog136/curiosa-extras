@@ -11,7 +11,7 @@ const here = (ctx, url) => ctx.dumpFiles().find((f) => f.url === url);
 test("le manifeste demande la permission « files », le cœur 0.2.13, et le dit dans la déclaration de vie privée (500 caractères au plus, FR et EN)", () => {
   assert.ok(manifest.permissions.includes("files"));
   assert.equal(manifest.minCore, "0.6.0");
-  assert.equal(manifest.version, "1.3.1");
+  assert.equal(manifest.version, "1.3.2");
   for (const lang of ["fr", "en"]) assert.ok(manifest.privacy[lang].length <= 500, `${lang} : ${manifest.privacy[lang].length}`);
   assert.match(manifest.privacy.fr, /supprimés du serveur avec la photo ou l'album/);
   assert.match(manifest.privacy.en, /deleted from the server with the photo or album/);
@@ -140,7 +140,7 @@ test("un refus de suppression du cœur ne casse rien : la photo a déjà quitté
   const [p] = await data.loadPhotos(ctx, a.album);
   ctx.api.files = { ...ctx.api.files, owns: ctx.api.files.owns, remove: async () => ({ ok: false, reason: "failed" }) };
   const r = await act(ctx, "removePhoto", { id: `${a.id}.${p.id}` });
-  assert.match(r.ok, /Photo supprimée\. Fichiers qui n'ont pas pu être effacés pour l'instant : 2\./);
+  assert.match(r.ok, /Photo supprimée\. Fichiers qui n'ont pas pu être effacés : 2\./);
   assert.equal((await data.getAlbum(ctx, a.id)).total, 0);
   ctx.api.files = { ...ctx.api.files, owns: async () => { throw new Error("boum"); } };
   const b = await makeAlbum(ctx, { title: "B", n: 0 });
@@ -255,13 +255,13 @@ test("après une suppression l'écran change : le résultat honnête voyage dans
   const [fresh] = await data.loadPhotos(ctx, a.album);
   const r1 = await act(ctx, "removePhoto", { id: `${a.id}.${fresh.id}` });
   assert.equal(r1.redirect, `?album=${a.id}&gone=p-2-0-0`);
-  const banner = (blocks) => blocks.find((b) => b.type === "banner" && /supprimée/i.test(b.text));
+  const banner = (blocks) => blocks.find((b) => (b.type === "banner" || b.type === "markdown") && /supprimée/i.test(b.text));
   assert.match(banner(await def.adminPanel(ctx, { query: { album: a.id, gone: "p-2-0-0" } })).text, /Photo supprimée\. Ses fichiers ont été effacés du disque\./);
   const r2 = await act(ctx, "removePhoto", { id: `${a.id}.${old}` });
   assert.equal(r2.redirect, `?album=${a.id}&gone=p-0-2-0`);
   const b2 = banner(await def.adminPanel(ctx, { query: { album: a.id, gone: "p-0-1-0" } }));
   assert.match(b2.text, /avant la mise à jour du site : ce module ne peut pas effacer son fichier d'origine/);
-  assert.equal(b2.tone, "info");
+  assert.equal(b2.type, "markdown");
   const failed = banner(await def.adminPanel(ctx, { query: { gone: "p-0-0-2" } }));
   assert.equal(failed.tone, "warning");
   const r3 = await act(ctx, "removeAlbum", { id: a.id });
