@@ -48,7 +48,7 @@
   "obsFinal": "Final result",
   "obsEnds": "Ends:",
   "adminTitle": "My polls",
-  "adminEmpty": "You have no poll. Fill in the form below: a question, a few choices, and you are set. The link to share appears right after.",
+  "adminEmpty": "No poll. Fill in the form below.",
   "newPoll": "New poll",
   "create": "Create the poll",
   "save": "Save",

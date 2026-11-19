@@ -48,7 +48,7 @@
   "obsFinal": "Résultat final",
   "obsEnds": "Fin :",
   "adminTitle": "Mes sondages",
-  "adminEmpty": "Vous n'avez pas de sondage. Remplissez le formulaire ci-dessous : une question, quelques choix, et c'est prêt. Le lien à partager apparaît juste après.",
+  "adminEmpty": "Aucun sondage. Remplissez le formulaire ci-dessous.",
   "newPoll": "Nouveau sondage",
   "create": "Créer le sondage",
   "save": "Enregistrer",

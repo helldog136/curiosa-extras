@@ -66,9 +66,9 @@ export async function panel(ctx, { query: q0 } = {}) {
   blocks.push({ type: "heading", text: ctx.t("adminTitle") });
   if (stats.rated >= 1) blocks.push({ type: "markdown", text: ctx.t("adminStats", { avg: L.formatAverage(stats.average, ctx.locale), rated: stats.rated, published: published.length }) });
 
-  blocks.push({ type: "links", items: STATUS_LIST.map((s) => ({ label: `${status === s ? "● " : ""}${ctx.t(`tab_${s}`)}${count[s] ? ` (${count[s]})` : ""}`, href: query({ status: s }) })) });
-  blocks.push({ type: "links", items: [{ label: `${stars === null ? "● " : ""}${ctx.t("allStars")}`, href: query({ status, q: needle }) }, ...[5, 4, 3, 2, 1].map((n) => ({ label: `${stars === n ? "● " : ""}${ctx.t("nStarsShort", { n })}`, href: query({ status, stars: n, q: needle }) }))] });
-  blocks.push({ type: "adminForm", action: "search", submitLabel: ctx.t("searchButton"), fields: [{ name: "status", label: "status", kind: "hidden", value: status }, { name: "stars", label: "stars", kind: "hidden", value: stars ?? "" }, { name: "q", label: ctx.t("searchLabel"), kind: "text", value: needle, help: ctx.t("searchHelp") }] });
+  if (all.length) blocks.push({ type: "links", items: STATUS_LIST.map((s) => ({ label: `${status === s ? "● " : ""}${ctx.t(`tab_${s}`)}${count[s] ? ` (${count[s]})` : ""}`, href: query({ status: s }) })) });
+  if (all.length) blocks.push({ type: "links", items: [{ label: `${stars === null ? "● " : ""}${ctx.t("allStars")}`, href: query({ status, q: needle }) }, ...[5, 4, 3, 2, 1].map((n) => ({ label: `${stars === n ? "● " : ""}${ctx.t("nStarsShort", { n })}`, href: query({ status, stars: n, q: needle }) }))] });
+  if (all.length) blocks.push({ type: "adminForm", action: "search", submitLabel: ctx.t("searchButton"), fields: [{ name: "status", label: "status", kind: "hidden", value: status }, { name: "stars", label: "stars", kind: "hidden", value: stars ?? "" }, { name: "q", label: ctx.t("searchLabel"), kind: "text", value: needle }] });
 
   const list = all
     .filter((r) => r.status === status && (stars === null || r.rating === stars))
@@ -104,7 +104,6 @@ export async function panel(ctx, { query: q0 } = {}) {
   if (status === "pending" && slice.length) blocks.push({ type: "markdown", text: ctx.t("moderationTip") });
 
   blocks.push({ type: "heading", text: ctx.t("exportTitle") });
-  blocks.push({ type: "markdown", text: ctx.t("exportHelp") });
   blocks.push({ type: "download", name: "reviews", label: ctx.t("exportButton"), params: { emails: "0" } });
   if (withEmail) blocks.push({ type: "download", name: "reviews", label: ctx.t("exportButtonEmails"), params: { emails: "1" } });
 
