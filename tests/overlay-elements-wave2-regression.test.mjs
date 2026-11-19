@@ -36,11 +36,13 @@ test("Mur des remerciements : page publique (mur, groupes, pages, mise à l'honn
   reset();
   const before = golden("thanks-wall-1.0.2.json"), now = await thanksSnapshot(ROOT);
   // La description du catalogue a été raccourcie et simplifiée (mode simple, R9) : elle ne fait plus partie de ce qui doit rester identique.
-  const noDescription = (m) => { const { description, ...rest } = m; return rest; };
+  // 1.5.0: the minimum core moved (live search of the message list, 0.38.0) and rare settings are folded (`rare`): neither changes what the wall renders.
+  const noDescription = (m) => { const { description, minCore, ...rest } = m; return { ...rest, settings: (rest.settings ?? []).map(({ rare, ...x }) => x) }; };
   assert.deepEqual(noDescription(now.manifest), noDescription(before.manifest), "le manifeste n'a changé que par version, minCore, overlayElements, description et le droit « routes »");
   assert.deepEqual(now.top, before.top); assert.deepEqual(now.routes, before.routes, "aucune page publique ajoutée : seule la route de l'élément est nouvelle");
   for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], before.pages[k], `page « ${k} »`);
-  for (const k of ["admin", "mcpStatus", "mcpPeople", "noBook"]) assert.deepEqual(now[k], before[k], k);
+  for (const k of ["mcpStatus", "mcpPeople", "noBook"]) assert.deepEqual(now[k], before[k], k);
+  assert.equal(now.admin.filter((b) => b.type === "table").length, before.admin.filter((b) => b.type === "table").length, "the administration shows the same tables (the list now carries its live search)");
   assert.equal(fingerprint(now.pages), fingerprint(before.pages), "empreinte des pages publiques");
   const wall = JSON.stringify(before.pages.wall);
   assert.ok(wall.includes("Toujours là, merci") && /À l(?:'|&#39;)honneur/.test(wall), "les empreintes couvrent le petit mot et la mise à l'honneur");
