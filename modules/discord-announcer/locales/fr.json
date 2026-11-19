@@ -10,7 +10,7 @@
   "colSubject": "Annonce",
   "colResult": "Résultat",
   "resultOk": "envoyé",
-  "resultFailed": "échec ({status}) après {attempts} essai(s) : {error}",
+  "resultFailed": "échec ({status})",
   "platformTwitch": "Twitch",
   "platformYoutube": "YouTube",
   "platformBoth": "Twitch et YouTube",
@@ -18,10 +18,10 @@
   "liveDefault": "🔴 En direct sur {platform} : {title}",
   "notSet": "Aucune adresse d'envoi n'est réglée : rien n'est envoyé.",
   "badAddress": "L'adresse d'envoi n'est pas une adresse Discord valable.",
-  "setAddress": "Régler l'adresse d'envoi",
-  "setupSteps": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Collez-la dans « Adresse d'envoi du salon Discord » (onglet Réglages).",
+  "setupSteps": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Collez-la dans « Adresse d'envoi du salon Discord » ci-dessous.",
   "sumBase": "Nouveautés du site et directs Twitch",
   "sumYoutube": "Nouveautés du site, directs Twitch et YouTube",
   "lastFailed": "Le dernier envoi a échoué.",
-  "lastFailedCode": "Le dernier envoi a échoué (code {status})."
+  "lastFailedCode": "Le dernier envoi a échoué (code {status}).",
+  "resultTries": "{attempts} essais"
 }

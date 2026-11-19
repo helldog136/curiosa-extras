@@ -6,10 +6,10 @@
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": {
-    "en": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks.",
-    "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics."
+    "en": "Finds the cover of your video games, even when one source is down.",
+    "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne."
   },
   "privacy": {
     "en": "Collects nothing about your visitors, who never contact RAWG, Twitch or Steam: your site's server fetches each cover once, keeps a copy (300 at most) and shows it from its own address. The server sends the game title to RAWG (with your code, if set), to Twitch (through the Twitch connector, if set up) and to Steam's public store. A Twitch copy lasts 24 hours at most; the others 30 days by default.",

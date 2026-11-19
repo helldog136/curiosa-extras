@@ -30,11 +30,11 @@ const ctx = (settings = {}, o = {}) => fakeCtx({ key: "tw", locale: "fr", messag
 const bare = (settings = {}) => fakeCtx({ key: "tw", locale: "fr", messages: fr, settings: { channel: "MaChaine", ...settings } });   // sans Connecteur
 const helix = (path) => tw.log.filter((c) => c.path === `/helix/${path}`).length;
 
-test("manifeste : valide ; « Ma Chaîne Twitch », identifiant conservé ; 2.6.0, minCore 0.36.0, données en version 2 ; n'offre plus twitch.api, exige le Connecteur (v3) ; anciens réglages masqués", () => {
+test("manifeste : valide ; « Ma Chaîne Twitch », identifiant conservé ; 2.6.1, minCore 0.36.0, données en version 2 ; n'offre plus twitch.api, exige le Connecteur (v3) ; anciens réglages masqués", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifestJson.id, "twitch-channel");
   assert.deepEqual(manifestJson.name, { en: "My Twitch channel", fr: "Ma Chaîne Twitch" });
-  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.6.0", "0.36.0", 2]);
+  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.6.1", "0.36.0", 2]);
   assert.deepEqual(manifestJson.offers.map((o) => [o.service, o.each]), [["twitch.live", true], ["event.source", true]]);
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional ?? false]), [["twitch.api", 3, false]]);
   assert.deepEqual(manifestJson.legacySettings, [{ key: "clientId" }, { key: "clientSecret", secret: true }, { key: "useCredentialsOf" }]);

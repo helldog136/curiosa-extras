@@ -26,5 +26,7 @@
   "twitchChannel": "No Twitch channel is set: the player is not shown.",
   "sumTwitch": "Channels: {list}",
   "sumAlways": "Player always shown",
-  "sumYoutube": "Lives read from the YouTube channel"
+  "sumYoutube": "Lives read from the YouTube channel",
+  "twitchRefused": "Twitch refuses the site's application: your Twitch lives are not announced.",
+  "twitchDown": "Twitch does not answer: your Twitch lives are not announced."
 }

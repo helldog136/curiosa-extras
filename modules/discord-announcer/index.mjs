@@ -183,6 +183,9 @@ export async function announce(ctx, now = Date.now()) {
   return { sent, skipped };
 }
 
+/** "failed (404) · 3 tries · Unknown Webhook": only what is known; no dangling separator when the error has no text. */
+const failure = (ctx, d) => [ctx.t("resultFailed", { status: d.status ?? "—" }), (d.attempts ?? 1) > 1 ? ctx.t("resultTries", { attempts: d.attempts }) : "", String(d.error ?? "").trim()].filter(Boolean).join(" · ");
+
 export default {
   tasks: { announce: { everyMinutes: 1, run: (ctx) => announce(ctx).then(() => undefined) } },
 
@@ -201,7 +204,8 @@ export default {
     const title = ctx.t("adminTitle");
     const blocks = [];
     if (!ok) {
-      blocks.push({ type: "connection", id: "webhook", title, state: "notConfigured", reason: ctx.t(url ? "badAddress" : "notSet"), primary: { label: ctx.t("setAddress"), ...toEdit },
+      // The guide and the field live together: the card opens in the Settings tab, where the address is typed.
+      blocks.push({ type: "connection", tab: "settings", id: "webhook", title, state: "notConfigured", reason: ctx.t(url ? "badAddress" : "notSet"),
         setup: [{ type: "markdown", text: ctx.t("setupSteps") }] });
     } else if (last && last.ok === false) {
       blocks.push({ type: "connection", id: "webhook", title, state: "degraded", reason: ctx.t(last.status ? "lastFailedCode" : "lastFailed", { status: last.status ?? "" }), primary: { label: ctx.t("testSubmit"), action: "test" }, edit: toEdit });
@@ -213,7 +217,7 @@ export default {
       blocks.push({
         type: "table",
         columns: [ctx.t("colDate"), ctx.t("colSubject"), ctx.t("colResult")],
-        rows: log.map((r) => [String(r.data.at).slice(0, 16).replace("T", " "), String(r.data.subject), r.data.ok ? ctx.t("resultOk") : ctx.t("resultFailed", { status: r.data.status ?? "—", attempts: r.data.attempts ?? 1, error: r.data.error ?? "" })]),
+        rows: log.map((r) => [String(r.data.at).slice(0, 16).replace("T", " "), String(r.data.subject), r.data.ok ? ctx.t("resultOk") : failure(ctx, r.data)]),
       });
     }
     return blocks;

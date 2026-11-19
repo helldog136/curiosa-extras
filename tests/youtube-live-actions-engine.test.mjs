@@ -254,7 +254,7 @@ test("réponse dans le chat : seulement si le connecteur sait écrire ; sinon ri
   w.yt.say(cmd(w, "!start", { who: "Emma", owner: true, id: "s2" }));
   await w.read(16_000);
   assert.equal(await houseOn(w), true);
-  assert.equal(posted.length, 1); assert.equal(posted[0].liveChatId, "Cg0KC2xpdmVjaGF0MQ"); assert.ok(/reprit|repris/i.test(posted[0].text));
+  assert.equal(posted.length, 1); assert.equal(posted[0].liveChatId, "Cg0KC2xpdmVjaGF0MQ"); assert.ok(/remis en marche/i.test(posted[0].text));
   w.done();
 });
 
