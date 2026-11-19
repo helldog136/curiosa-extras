@@ -4,6 +4,32 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.105.2 — 2026-11-19
+
+*En bref : les pages du Bot Twitch, de l'Overlay d'alertes, d'Événements Twitch et de Home Assistant n'affichent plus ce qui ne sert à rien : une seule rangée de filtres, plus de colonne ni d'étiquette identiques sur chaque ligne, un seul bouton pour le mode collaboration, plus de journal ni de phrase vides.*
+
+*In short: the Twitch bot, Alerts overlay, Twitch events and Home Assistant pages no longer show what is of no use: one row of filters, no column or label that is the same on every line, one button for collaboration mode, no empty journal or sentence.*
+
+### Améliorations
+
+- **Bot Twitch 1.24.1.** Les commandes n'ont qu'une rangée de filtres, et seulement quand elle a deux choix ; la colonne « Origine » disparaît quand toutes les commandes viennent du même endroit ; « Active » n'est plus écrit à côté de chaque interrupteur (les timers et les récompenses de même). Le mode collaboration éteint n'a qu'un bouton, « Activer le mode collaboration ». Le journal vide, son sous-titre et « Aucune commande reconnue. » disparaissent. Les états des timers sont dits exactement (« Compte à partir du prochain message du chat » au lieu de « Prêt »). Les titres qui répétaient le nom de l'onglet sont retirés.
+- **Overlay d'alertes 1.22.1.** « Journal et e-mails » n'est plus un formulaire déplié avec trois champs déjà remplis : une ligne de résumé et une fenêtre. Les phrases sur le code d'envoi et sur les Super Chats YouTube, le cadre vide « Aucun événement… » (une phrase et une action à la place), « Allumé » sur chaque alerte et les titres qui répétaient leur bouton sont retirés.
+- **Événements Twitch 1.15.1.** Un seul message pour dire que tout est dans l'Overlay d'alertes et qu'il faut retirer cette extension.
+- **Home Assistant 1.4.1.** La phrase sous le test (« Simule un échange… ») et « leurs points rendus » sont retirées ; le journal vide ne montre plus rien ; « Repris » devient « Tout remis en marche ».
+
+### Pour les développeurs
+
+- `tests/ergonomics-baseline.json` perd une ligne, `tests/banners-baseline.json` en perd deux. Tests à trois états pour le Bot Twitch, l'Overlay d'alertes et Home Assistant.
+- L'adresse de la source navigateur OBS (« URL de la source navigateur OBS : … ») est dessinée par le cœur pour tout module d'overlay : elle ne peut pas être masquée depuis ce dépôt.
+
+*(English)*
+
+- **Twitch bot 1.24.1.** Commands have one row of filters, and only when it has two choices; the "Origin" column disappears when all the commands come from the same place; "Active" is no longer written next to every switch (timers and rewards too). Collaboration mode when off has one button, "Start collaboration mode". The empty journal, its subtitle and "No command recognized." are gone. Timer states are exact ("Starts counting at the next chat message" instead of "Ready"). Titles that repeated the tab name are removed.
+- **Alerts overlay 1.22.1.** "Journal and e-mails" is no longer an unfolded form with three filled fields: one summary line and a window. The sentences about the push code and YouTube Super Chats, the empty box "No event…" (one sentence and one action instead), "On" on every alert and the titles that repeated their button are removed.
+- **Twitch events 1.15.1.** One message to say everything is in the Alerts overlay and that this extension can be removed.
+- **Home Assistant 1.4.1.** The sentence under the test ("Simulates…") and "their points given back" are removed; the empty journal shows nothing; "Resumed" becomes "Everything back on".
+- For developers: `tests/ergonomics-baseline.json` loses one line, `tests/banners-baseline.json` two. Three-state tests for the Twitch bot, the Alerts overlay and Home Assistant. The OBS browser source address ("OBS browser source URL: …") is drawn by the core for every overlay module: it cannot be hidden from this repository.
+
 ## 1.105.1 — 2026-11-19
 
 *En bref : la page d'administration de la Mascotte n'affiche plus que ce qui sert : plus de bandeau « publiée », plus de phrases d'explication, des champs seulement quand ils attendent une saisie.*
