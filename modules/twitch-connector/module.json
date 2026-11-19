@@ -6,7 +6,7 @@
     "en": "Twitch connector",
     "fr": "Connecteur Twitch"
   },
-  "version": "1.8.0",
+  "version": "1.8.1",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 10,
   "platform": "twitch",
@@ -69,10 +69,6 @@
       "label": {
         "en": "E-mail me when Twitch needs a new authorization",
         "fr": "Me prévenir par e-mail si Twitch refuse l'accès"
-      },
-      "help": {
-        "en": "One e-mail per problem, one when it is fixed.",
-        "fr": "Un e-mail par problème, un au retour."
       }
     }
   ],

@@ -10,7 +10,6 @@
   "test_invalid": "This code does not have the right format (letters, digits, dashes, at least 8 characters). Copy it again from rawg.io/apidocs.",
   "health_label": "RAWG (game covers)",
   "todo_title": "Covers to check",
-  "todo_empty": "No cover to check.",
   "todo_more": "… and {count} older titles.",
   "col_asked": "Title asked",
   "col_found": "Game found",

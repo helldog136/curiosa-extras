@@ -96,9 +96,9 @@ async function listScreen(ctx) {
   const out = [...(await connectionBlocks(ctx))];
 
   const todo = await fx.readToCheck(ctx);
-  out.push({ type: "heading", text: ctx.t("todo_title") });
-  if (!todo.length) out.push({ type: "markdown", text: ctx.t("todo_empty") });
-  else {
+  // Nothing to check: no heading and no sentence that says everything is fine.
+  if (todo.length) {
+    out.push({ type: "heading", text: ctx.t("todo_title") });
     const shown = todo.slice(0, 25);
     out.push({
       type: "table", columns: [ctx.t("col_asked"), ctx.t("col_found"), ctx.t("col_source"), ctx.t("col_seen")], searchable: true, searchPlaceholder: ctx.t("search_list"), truncate: [0, 1],

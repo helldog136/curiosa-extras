@@ -29,6 +29,9 @@ test("assistant : Patreon réglé → UNE carte « Configuré » d'une ligne (ja
   assert.equal(find(blocks, "adminForm", (b) => b.action === "refresh").length, 0, "plus de bouton à côté de la carte");
   assert.deepEqual(card(blocks).net[0].host, "www.patreon.com");
   assert.equal(find(blocks, "netHealth").length, 0);
+  const quiet = text(blocks);
+  assert.ok(!/(^|\s)0 (soutiens|actifs|pseudos)|visibles sur la page : 0|Actifs : 0/.test(quiet), "no counter at zero");
+  assert.ok(!find(blocks, "markdown").some((b) => /Le public ne voit que|Pas encore de palier/.test(b.text)), "no reassurance, no empty-tiers sentence");
   const none = makeWorld({ settings: { accessToken: "" } });
   const setupCard = card(await Admin.panel(none.ctx, { query: {} }));
   assert.equal(setupCard.state, "notConfigured");

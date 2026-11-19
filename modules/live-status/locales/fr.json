@@ -26,5 +26,7 @@
   "twitchChannel": "Aucune chaîne Twitch n'est indiquée : le lecteur n'est pas affiché.",
   "sumTwitch": "Chaînes : {list}",
   "sumAlways": "Lecteur toujours affiché",
-  "sumYoutube": "Directs lus depuis Chaîne YouTube"
+  "sumYoutube": "Directs lus depuis Chaîne YouTube",
+  "twitchRefused": "Twitch refuse l'application du site : vos directs Twitch ne sont pas annoncés.",
+  "twitchDown": "Twitch ne répond pas : vos directs Twitch ne sont pas annoncés."
 }

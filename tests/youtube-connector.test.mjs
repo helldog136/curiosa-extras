@@ -148,7 +148,7 @@ test("quota épuisé : 403 quotaExceeded (pas un 429) → « quota » jusqu'à m
   const panel = await def.adminPanel(c.ctx);
   const block = panel.find((b) => b.type === "connection" && b.id === "key");
   assert.equal(block.state, "degraded");
-  assert.match(block.reason, /La limite YouTube du jour est épuisée, reprise (aujourd'hui|demain|le .*) à \d{1,2} h/);
+  assert.match(block.reason, /La limite YouTube du jour est atteinte\. Elle repart (aujourd'hui|demain|le .*) à \d{1,2} h/);
   assert.ok(!panel.some((b) => b.type === "banner" || b.type === "netHealth"), "the service health is folded into the block");
   assert.deepEqual(block.net.map((i) => [i.host, i.label]), [["www.googleapis.com", "YouTube"]]);
 });
@@ -308,13 +308,13 @@ test("panneau, code d'accès réglé : une ligne (la limite du jour) et « Modif
   const c = makeConnector();
   const panel = await def.adminPanel(c.ctx, { query: {} });
   const k = keyBlock(panel);
-  assert.equal(k.summary.replace(/\s/g, " "), "Limite du jour : 0 sur 9 000");
+  assert.match(k.summary, /^Code …\w{4}$/, "one line: which code; far from the limit, no counter");
   assert.deepEqual({ ...k, summary: "" }, { type: "connection", id: "key", title: "Code d'accès YouTube", summary: "", edit: { href: "?edit=key" }, net: [{ host: "www.googleapis.com", label: "YouTube" }], state: "configured" });
   assert.ok(!panel.some((b) => b.type === "banner" || b.type === "markdown" || b.type === "netHealth" || b.type === "heading"));
   assert.ok(!JSON.stringify(panel).includes(KEY));
 });
 
-test("fenêtre « Modifier » du code d'accès : une valeur réglée s'affiche comme réglée, une valeur reprise le dit et « Oublier » vit ici ; saisir ou laisser vide", async () => {
+test("fenêtre « Modifier » du code d'accès : une valeur réglée s'affiche comme réglée, une valeur reprise se montre comme les autres et « Oublier » vit ici ; saisir ou laisser vide", async () => {
   const own = makeConnector();
   const w = dialog(await def.adminPanel(own.ctx, { query: { edit: "key" } }));
   assert.deepEqual(w.fields.map((f) => [f.name, f.kind, f.value, f.valueHint]), [["apiKey", "secret", "", "kept"]]);
@@ -322,7 +322,8 @@ test("fenêtre « Modifier » du code d'accès : une valeur réglée s'affiche c
   const C = makeConnector({ apiKey: null });
   await C.methods.adopt({ apiKey: KEY });
   const carried = dialog(await def.adminPanel(C.ctx, { query: { edit: "key" } }));
-  assert.deepEqual([carried.fields[0].valueHint, carried.fields[0].valueSource], ["carried", "Chaîne YouTube"]);
+  assert.deepEqual([carried.fields[0].valueHint, carried.fields[0].valueSource], ["kept", undefined]);
+  assert.equal(carried.secondaryAction.label, "Oublier le code d'accès");
   assert.equal(carried.secondaryAction.action, "forgetKey");
   assert.ok(carried.secondaryAction.confirm.includes("effacé"), "the confirmation says what is lost");
   assert.equal(keyBlock(await def.adminPanel(C.ctx, { query: {} })).state, "configured");
@@ -344,9 +345,13 @@ test("fenêtre « Modifier » du code d'accès : une valeur réglée s'affiche c
 });
 
 test("compte YouTube : à configurer (étapes, ID client à enregistrer), prêt à connecter, connecté, à reconnecter : un seul bloc, un seul état, aucun doublon", async () => {
-  const none = accountBlock(await def.adminPanel(makeConnector().ctx, { query: {} }));
+  const untouched = await def.adminPanel(makeConnector().ctx, { query: {} });
+  assert.equal(accountBlock(untouched), undefined, "optional and not started: no card, no guide, no \"not configured\"");
+  assert.deepEqual(untouched.filter((b) => b.type === "links"), [{ type: "links", items: [{ label: "Connecter un compte YouTube", href: "?setup=account" }] }]);
+  assert.deepEqual((await def.adminPanel(makeConnector({ apiKey: null }).ctx, { query: {} })).filter((b) => b.type === "links"), [], "no access code yet: that comes first");
+  const none = accountBlock(await def.adminPanel(makeConnector().ctx, { query: { setup: "account" } }));
   assert.equal(none.state, "notConfigured");
-  assert.equal(none.reason, "Facultatif : sert à répondre dans le chat, ou si YouTube refuse la lecture.");
+  assert.equal(none.reason, "Sert à répondre dans le chat, ou si YouTube refuse la lecture.");
   assert.equal(none.primary.href, "?edit=account");
   assert.match(none.setup[0].html, /<ol/);
   const GOOD = { oauthClientId: "123456789-abcdefgh.apps.googleusercontent.com", oauthClientSecret: "client-secret-1" };

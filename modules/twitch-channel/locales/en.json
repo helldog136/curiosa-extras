@@ -1,6 +1,6 @@
 {
-  "forget": "Forget the carried-over channel",
-  "forgotten": "Carried-over channel forgotten.",
+  "forget": "Forget the channel",
+  "forgotten": "Channel forgotten.",
   "field_channel": "channel",
   "ov_followers": "Followers",
   "ov_paying": "Paying subscriptions",
@@ -56,9 +56,7 @@
   "live_bestTitle": "The game that makes you gain the most followers",
   "live_bestRate": "{rate} followers per live hour",
   "live_bestHours": "over {hours} h live",
-  "live_bestNone": "Not enough lives yet to compare your games: at least 1 hour live on a game is needed.",
   "live_videosTitle": "Your most viewed videos",
-  "live_videosNone": "No video found on your channel.",
   "live_videosError": "The views of your videos are not available: Twitch is not answering.",
   "live_videosStale": "Last known views: Twitch is not answering.",
   "live_views": "{n} views",
@@ -73,7 +71,7 @@
   "noConnector": "The Twitch connector is not installed: nothing is read from Twitch (live, clips, figures).",
   "suggestReason": "connects your site to Twitch (live, clips, figures of your channel)",
   "handover_conflict": "This channel used another Twitch application. Reconnect it: the authorization given to the other application is removed.",
-  "handover_incomplete": "The Twitch application could not be carried over completely: complete it in the Twitch connector.",
+  "handover_incomplete": "The Twitch application was not copied completely: complete it in the Twitch connector.",
   "cb_noConnector": "The Twitch connector is not installed. Install it from the administration, then click “Connect my Twitch channel” again.",
   "cb_down": "Your site could not finish the connection. Go back to the administration and click “Connect my Twitch channel” again.",
   "connectorMissing": "The Twitch connector is not available right now. Try again in a moment.",
@@ -85,12 +83,13 @@
   "events_setup_update": "To see your Twitch schedule, update the Twitch connector (Extensions, Check for updates).",
   "frozen": "Some figures are frozen: Twitch refuses the current authorization.",
   "authorizeAgain": "Authorize again with Twitch",
-  "forget_confirm": "Forget the carried-over channel? This module no longer knows your channel until you type it in the settings.",
+  "forget_confirm": "Forget the channel? This module no longer knows your channel until you type it in the settings.",
   "disconnect_confirm": "Disconnect your channel? Your figures from Twitch stop until you connect it again.",
   "channel_summary": "Channel {channel}",
   "stat_line_followers": "{n} followers",
   "stat_line_paying": "{n} paying subscribers",
   "open_connector": "Open the Twitch connector",
   "conn_none": "Your channel is not connected to Twitch.",
-  "live_waiting": "Waiting for the first live"
+  "live_waiting": "Waiting for the first live",
+  "live_noApp": "Nothing is measured: the Twitch application is not set up."
 }
