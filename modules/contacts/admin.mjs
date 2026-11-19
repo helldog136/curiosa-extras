@@ -35,6 +35,8 @@ function photoOrigin(ctx, c) {
 }
 
 // ── Liste (contacts ou organisations) ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// Un tableau du cœur avec recherche serveur (`searchable: "server"`, cœur 0.38.0) : le cœur remplace `?q=` pendant la frappe, ce panneau filtre TOUTE la liste
+// avec `ctx.search.matches` AVANT de la paginer (`?page=n`), puis rend les lignes de la page. Aucune correspondance : le tableau reste (rows: []).
 async function listPage(ctx, q) {
   const t = ctx.t;
   const idx = await B.getIndex(ctx);
@@ -44,45 +46,56 @@ async function listPage(ctx, q) {
   const network = N.NETWORKS.includes(q.net) ? q.net : undefined;
   const review = q.review === "1";
   const orgId = q.org && idx.byId.get(q.org)?.k & 1 ? q.org : undefined;
-  const text = B.searchKey(q.q);
-  const base = { kind, cat: cat ?? undefined, net: network, review: review ? "1" : undefined, org: orgId, q: text ? String(q.q).slice(0, 100) : undefined };
+  const text = ctx.search.query(q.q);
+  const base = { kind, cat: cat ?? undefined, net: network, review: review ? "1" : undefined, org: orgId, q: text || undefined };
   const filter = { kind, cat, network, review, orgId };
-  let ids, total, more = null;
+  const page = Math.max(1, Math.min(100_000, Math.trunc(Number(q.page)) || 1));
+  const offset = (page - 1) * PAGE;
+  let ids, total;
   if (text) {
-    const offset = Math.max(0, Math.min(1_000_000, Math.trunc(Number(q.at)) || 0));
-    const r = B.searchIds(idx, { q: text, limit: PAGE, offset, ...filter });
+    const r = B.searchPage(idx, ctx.search, text, { limit: PAGE, offset, ...filter });
     ids = r.ids; total = r.total;
-    if (offset + PAGE < total) more = U.href({ ...base, at: offset + PAGE });
   } else {
-    const r = B.indexPage(idx, { cursor: q.after, limit: PAGE, tag: "admin", reverse: true, ...filter });
-    ids = r.ids;
     const ok = B.matcher(idx, filter);
-    total = 0; for (const e of idx.list) if (ok(e)) total++;
-    if (r.next) more = U.href({ ...base, after: r.next });
+    const all = [];
+    for (let i = idx.list.length - 1; i >= 0; i--) if (ok(idx.list[i])) all.push(idx.list[i].id);
+    total = all.length; ids = all.slice(offset, offset + PAGE);
   }
+  const more = offset + PAGE < total ? U.href({ page: page + 1, ...base }) : null;
   const recs = await B.readMany(ctx, ids);
   const cards = ids.filter((id) => recs.has(id)).map((id) => B.card(ctx, idx, recs.get(id)));
   // Filtres : « à vérifier », catégories, réseaux présents dans le carnet.
   let toReview = 0;
   const nets = new Set();
   for (const e of idx.list) { if (e.k & 2) toReview++; if (e.a) for (const k of e.a.split("\u0001")) nets.add(k.slice(0, k.indexOf(":"))); }
-  const toggle = (k, val, current) => U.href({ ...base, [k]: current ? undefined : val, after: undefined, at: undefined });
+  const toggle = (k, val, current) => U.href({ ...base, [k]: current ? undefined : val, page: undefined });
   const chipItems = [];
   if (toReview || review) chipItems.push({ label: t("filterReview", { count: fmt(ctx, toReview) }), href: toggle("review", "1", review), current: review });
   const cats = B.liveCategories(idx).sort((a, b) => N.fold(a.name).localeCompare(N.fold(b.name))).slice(0, 40);
   for (const k of cats) chipItems.push({ label: k.name, color: B.categoryView(k).color, href: toggle("cat", k.id, cat === k.id), current: cat === k.id });
   for (const n of N.NETWORKS.filter((x) => nets.has(x))) chipItems.push({ label: t(`net_${n}`), network: n, href: toggle("net", n, network === n), current: network === n });
   const filtered = !!(cat || network || review || orgId || text);
-  const parts = [
+  const head = [
     nav(ctx, kind === "org" ? "orgs" : "contacts"),
-    U.searchBar({ q: base.q ?? "", hidden: { kind, cat: base.cat, net: network, review: base.review, org: orgId }, label: t("searchLabel"), placeholder: t("searchPlaceholder") }),
     U.chips(chipItems, t("filtersLabel")),
     `<div class="ct-actions"><a class="ct-btn" href="?new=${kind === "org" ? "org" : "person"}">${U.esc(t(kind === "org" ? "addOrg" : "addPerson"))}</a>${filtered ? `<a class="ct-btn ct-ghost" href="${kind === "org" ? "?kind=org" : "?"}">${U.esc(t("filterAll"))}</a>` : ""}</div>`,
-    total > 0 || text ? `<p class="ct-count" role="status">${U.esc(text ? plural(ctx, total, "results") : plural(ctx, total, "count"))}</p>` : "",
-    cards.length ? U.cardList(cards, { t, netName: netName(ctx), linkOf: (c) => `?contact=${encodeURIComponent(c.id)}` }) : `<p class="ct-empty">${U.esc(t(idx.list.length ? "emptySearch" : "emptyBook"))}</p>`,
-    more || q.after || q.at ? `<p class="ct-more">${more ? `<a class="ct-btn" href="${U.esc(more)}">${U.esc(t("seeMore"))}</a>` : ""}${q.after || q.at ? `<a class="ct-btn ct-ghost" href="${U.esc(U.href({ ...base }))}">${U.esc(t("backToStart"))}</a>` : ""}</p>` : "",
+    total > 0 ? `<p class="ct-count" role="status">${U.esc(text ? plural(ctx, total, "results") : plural(ctx, total, "count"))}</p>` : "",
   ];
-  return [first(parts.join(""))];
+  // Une colonne n'existe que si une ligne de la page la remplit (R14) ; la fiche s'ouvre par l'action de ligne « Ouvrir la fiche », toujours au même endroit (R16).
+  const roleOf = (c) => (c.kind === "org" ? t("kindOrg") : [c.role, c.orgName].filter(Boolean).join(" · "));
+  const accountsOf = (c) => [...new Set(c.accounts.map((a) => t(`net_${a.network}`)))].join(" · ");
+  const showRole = cards.some((c) => roleOf(c)), showAccounts = cards.some((c) => accountsOf(c)), showState = cards.some((c) => c.status === "to_review");
+  const columns = [t("colName"), ...(showRole ? [t("colRole")] : []), ...(showAccounts ? [t("colAccounts")] : []), ...(showState ? [t("colState")] : [])];
+  const rows = cards.map((c) => [
+    c.photo?.url ? { text: c.name, image: { src: c.photo.url, alt: t("photoAlt", { name: c.name }) } } : c.name,
+    ...(showRole ? [roleOf(c)] : []),
+    ...(showAccounts ? [accountsOf(c)] : []),
+    ...(showState ? [c.status === "to_review" ? { text: t("statusBadge"), badge: "warn" } : ""] : []),
+  ]);
+  const truncate = columns.map((_, i) => i).filter((i) => i > 0 && i < columns.length - (showState ? 1 : 0));
+  const table = { type: "table", columns, rows, rowIds: cards.map((c) => c.id), rowActions: [{ label: t("openCard"), href: "?contact={id}" }], searchable: "server", searchPlaceholder: t("searchPlaceholder"), pageSize: 0, truncate, empty: t(idx.list.length ? "emptySearch" : "emptyBook") };
+  const foot = more || page > 1 ? `<p class="ct-more">${more ? `<a class="ct-btn" href="${U.esc(more)}">${U.esc(t("seeMore"))}</a>` : ""}${page > 1 ? `<a class="ct-btn ct-ghost" href="${U.esc(U.href({ ...base }))}">${U.esc(t("backToStart"))}</a>` : ""}</p>` : "";
+  return [first(head.join("")), table, ...(foot ? [html(foot)] : [])];
 }
 
 // ── Fiche ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

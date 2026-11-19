@@ -180,10 +180,11 @@ test("admin : la source « partenariats » a un libellé dans les deux langues ;
   for (const l of ["en", "fr"]) assert.ok(JSON.parse(fs.readFileSync(`${DIR}/locales/${l}.json`, "utf8")).source_partnerships);
   const c = ctx();
   await svc.create(c, { name: "<b>Ada</b>", email: "a@x.org" });
-  // 2.0 : la liste est faite de cartes (bloc html, texte échappé par le module) ; l'origine se lit sur la fiche.
-  const list = (await def.adminPanel(c, { query: {} })).map((b) => b.html ?? "").join("");
-  assert.match(list, /&lt;b&gt;Ada&lt;\/b&gt;/);
-  assert.doesNotMatch(list, /<b>Ada/);
+  // 2.7 : la liste est un tableau du cœur (le nom est une cellule de texte, jamais du HTML) ; l'origine se lit sur la fiche.
+  const blocks = await def.adminPanel(c, { query: {} });
+  const table = blocks.find((b) => b.type === "table");
+  assert.deepEqual(table.rows.map((r) => (typeof r[0] === "string" ? r[0] : r[0].text)), ["<b>Ada</b>"]);
+  assert.doesNotMatch(blocks.map((b) => b.html ?? "").join(""), /<b>Ada/);
   const id = (await svc.find(c, {})).contacts[0].id;
   const card = (await def.adminPanel(c, { query: { contact: id } })).map((b) => b.html ?? b.text ?? "").join("");
   assert.match(card, /Partnerships/);

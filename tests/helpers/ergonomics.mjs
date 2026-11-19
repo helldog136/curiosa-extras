@@ -99,9 +99,9 @@ export const FORBIDDEN_STATUS = [
  */
 export const CONDITIONAL_WORDS = [
   // français
-  "si ce n'est pas deja fait", "si ce n'est pas encore fait", "si ce n'etait pas deja fait", "en principe", "normalement", "en general", "peut-etre", "peuvent-etre", "le cas echeant", "si besoin", "au besoin", "eventuel", "eventuelle", "eventuels", "eventuelles", "eventuellement",
+  "si ce n'est pas deja fait", "si ce n'est pas encore fait", "si ce n'etait pas deja fait", "en principe", "normalement", "en general", "peut-etre", "peuvent-etre", "le cas echeant", "si besoin", "au besoin", "eventuel", "eventuelle", "eventuels", "eventuelles", "eventuellement", "pour l'instant", "pour le moment",
   // anglais
-  "if not already", "if you have not already", "if you haven't already", "in principle", "normally", "usually", "maybe", "perhaps", "if needed", "if any", "if necessary", "possibly",
+  "if not already", "if you have not already", "if you haven't already", "in principle", "normally", "usually", "maybe", "perhaps", "if needed", "if any", "if necessary", "possibly", "for now", "for the moment",
 ];
 /**
  * R33e / R33g — exceptions JUSTIFIÉES. `term` : l'expression autorisée (déjà pliée : minuscules, sans accents) ; `text` : la regex que le texte entier doit vérifier ;
@@ -499,6 +499,21 @@ function imageSrcProblem(src, hosts) {
  * @param {{ errors?: string[], skip?: string[], imageHosts?: string[], state?: "configured" | "degraded" | "notConfigured" }} [opts] `state` (R33b, R33f) : l'état que montre cette page (le faux contexte du module est réglé pour lui) : « configured » interdit alors les consignes de mise en place et les champs déjà remplis ; `errors` : messages d'erreur que la page peut afficher (R22) ; `imageHosts` : les `imageHosts` du manifeste (pour contrôler l'hôte des vignettes) ; `skip` : règles à ne pas contrôler (par exemple ["R15"], avec la raison dans votre test)
  * @returns {{ rule: string, message: string }[]}
  */
+/** The keys of a block whose string value is a text the person reads (not an address, a name, a value or a type). */
+const VISIBLE_KEYS = new Set(["text", "title", "label", "help", "summary", "reason", "submitLabel", "empty", "placeholder", "description", "hint", "message", "intro", "note", "confirm", "example", "allLabel", "searchPlaceholder", "onText", "offText", "lead", "caption", "alt"]);
+/** Every visible text of a block (headings, paragraphs, form labels and helps, table cells, buttons, banners…), at most a few hundred; HTML is read as text. */
+export function visibleTexts(block) {
+  const out = [];
+  const walk = (node, key, depth) => {
+    if (out.length > 400 || depth > 8 || node === null || node === undefined) return;
+    if (typeof node === "string") { if (key === "html" || VISIBLE_KEYS.has(key) || key === "") { const t = key === "html" ? stripTags(node) : node; if (t.trim()) out.push(t); } return; }
+    if (Array.isArray(node)) { for (const x of node) walk(x, typeof x === "string" ? (key === "rows" || key === "columns" || key === "" ? "" : key) : key, depth + 1); return; }
+    if (typeof node === "object") for (const [k, v] of Object.entries(node)) walk(v, k, depth + 1);
+  };
+  walk(block, "", 0);
+  return out;
+}
+
 export function adminPageErgonomicsProblems(blocks, opts = {}) {
   const list = Array.isArray(blocks) ? blocks.filter(Boolean) : [];
   const out = [];
@@ -507,6 +522,8 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
   let previousStatus = null; // R33c : le texte d'état du bloc précédent
   const closeSection = () => { if (sectionFields > SECTION_FIELDS_MAX) add("R4", `la section « ${sectionTitle} » montre ${sectionFields} champs (${SECTION_FIELDS_MAX} au plus) : replier ou découper en onglets`); sectionFields = 0; };
   for (const b of list) {
+    // R33e — a visible text that hedges or postpones ("for now", "normally", "maybe"): say what is true now (the list is at the top of this file).
+    for (const t of visibleTexts(b)) for (const c of conditionalWording(t)) add("R33e", `formulation conditionnelle ou approximative « ${c} » : dire ce qui est vrai maintenant : « ${excerpt(t, 60)} »`);
     // R33c — deux lignes d'état qui disent la même chose (bandeaux, textes, résumés) se suivent : n'en garder qu'une.
     const statusText = b.type === "banner" ? b.text : b.type === "connection" ? b.summary : b.type === "markdown" ? b.text : null;
     if (statusText !== null) {

@@ -133,14 +133,14 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
   assert.match(h, /Venez saluer la bande !/); assert.match(h, /Y aller/); assert.match(h, /Personne pour l(?:'|&#39;)instant/);
   assert.ok(!/Voici qui est en direct/.test(h), "le mot par défaut ne remplace pas le sien");
   const blank = pub.texts(site({ publicPage: true, pageTitle: "   ", pageIntro: "", emptyText: undefined }).ctx);
-  assert.equal(blank.title, "En direct en ce moment"); assert.match(blank.intro, /Voici qui est/); assert.equal(blank.empty, "Personne n'est en direct pour le moment.");
+  assert.equal(blank.title, "En direct en ce moment"); assert.match(blank.intro, /Voici qui est/); assert.equal(blank.empty, "Personne n'est en direct.");
   // Sans le réglage dans la langue courante, l'anglais a ses propres mots neutres.
   const wEn = site({ publicPage: true }, { locale: "en", messages: { ...en } });
   assert.equal((await page(wEn)).title, "Live right now");
 });
 
 test("mise à jour à chaud : version 2.2.3, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.6.3");
+  assert.equal(manifest.version, "2.6.4");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));

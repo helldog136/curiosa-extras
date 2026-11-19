@@ -88,7 +88,7 @@
   "forget_button": "Forget this cover",
   "forget_keep": "Keep the cover",
   "forget_gone": "This cover is no longer kept. Go back to the list.",
-  "outage": "No source is answering right now.",
+  "outage": "No source is answering.",
   "sources_title": "Cover sources",
   "none_available": "No source is available. Turn on Steam in the “Settings” tab, or enter a Rawg code.",
   "col_source": "Source",

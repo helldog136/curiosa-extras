@@ -171,7 +171,7 @@ test("le tableau des règles se lit en une phrase ; les devises ajoutées en ré
   assert.equal(table.rowIds.length, 2);
   assert.deepEqual(table.rowActions.map((a) => a.action ?? "href"), ["href", "toggleRule", "removeRule"]);
   assert.ok(table.rowActions[2].danger && table.rowActions[2].confirm);
-  const cur = find(blocks, "adminForm", (b) => b.action === "saveRule")[0].fields.find((f) => f.name === "currency").options.map((o) => o.value);
+  const cur = find(blocks, "adminForm", (b) => b.action === "saveRule")[0].fields.find((f) => f.name === "currency").options.map((o) => o.label);
   assert.ok(cur.includes("ISK") && cur.includes("UAH") && cur.includes("EUR") && !cur.includes("PAS-UNE-DEVISE"));
   w.done();
 });
@@ -284,4 +284,22 @@ test("la page se recharge plus vite pendant qu'une action attend la maison, et p
   assert.equal(A.reloadMs({ ...o, state: { ...o.state, status: "reading", nextPollAt: o.now }, journal: [] }), 4_400 > 4000 ? 4_000 : 0);
   assert.equal(A.reloadMs({ ...o, state: { ...o.state, status: "idle", nextDetectAt: o.now + 100 }, journal: [{ status: "sent", at: o.now - 1000 }] }), 4_000);
   w.done();
+});
+
+test("R4 : le formulaire de règle montre 4 champs au plus, les réglages rares sont repliés (le chemin court : nom, type, seuil, action)", async () => {
+  const w = await world();
+  const form = find(await w.panel(), "adminForm", (b) => b.action === "saveRule")[0];
+  const shown = form.fields.filter((f) => f.kind !== "hidden" && !f.folded).map((f) => f.name);
+  assert.deepEqual(shown, ["name", "type", "min", "action"]);
+  assert.deepEqual(form.fields.filter((f) => f.folded).map((f) => f.name), ["currency", "cooldownSec", "customAction", "readMessage"]);
+});
+
+test("règle neuve : les champs repliés arrivent vides (le repli reste fermé) et vide veut dire EUR et 30 secondes", async () => {
+  const w = await world();
+  const form = find(await w.panel(), "adminForm", (b) => b.action === "saveRule")[0];
+  assert.deepEqual(form.fields.filter((f) => f.folded && f.kind !== "checkbox").map((f) => f.value), ["", "", ""], "aucune valeur préremplie : « Plus d'options » ne s'ouvre pas");
+  const r = await act(w, "saveRule", { name: "Vite", type: "superchat", currency: "", min: "5", cooldownSec: "", action: "lumieres:rouge", customAction: "" });
+  assert.equal(r.errors, undefined);
+  const saved = (await S.listRules(w.ctx)).find((x) => x.name === "Vite");
+  assert.deepEqual([saved.currency, saved.cooldownSec], ["EUR", 30]);
 });

@@ -42,7 +42,7 @@ Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[r
 3. **Configuré = replié.** Une fois la mise en place terminée, ses champs ne sont plus affichés : une ligne de résumé (ce qui est configuré, quel compte) et **un seul** bouton « Modifier » qui ouvre une fenêtre (`EditDialog`) avec les champs. Un secret déjà réglé n'apparaît jamais comme un champ vide ; la fenêtre dit « Laisser vide pour garder l'actuel ».
 4. **Un champ n'apparaît que s'il attend une saisie** : mise en place à faire, fenêtre de modification, ou section avancée repliée. Un champ déjà rempli et rarement changé n'est pas visible.
 5. **Les consignes de mise en place vivent là où la mise en place se fait.** « Collez cette adresse dans X » n'existe que tant que l'étape n'est pas faite (ou dans la fenêtre de modification, ou une info-bulle). Après coup, elle disparaît ; pas de tableau d'adresses « à garder ».
-6. **Exact, pas approximatif.** Un texte dit ce qui est vrai dans l'état actuel : jamais « si ce n'est pas déjà fait », « normalement », « en principe ». Si le code connaît l'état, l'écran montre l'état, pas une consigne conditionnelle.
+6. **Exact, pas approximatif.** Un texte dit ce qui est vrai dans l'état actuel : jamais « si ce n'est pas déjà fait », « normalement », « en principe », « pour l'instant ». Si le code connaît l'état, l'écran montre l'état, pas une consigne conditionnelle.
 7. **Aucun doublon.** Une information n'est montrée qu'une fois ; deux lignes d'état qui disent la même chose n'en font qu'une.
 8. **Pas de remplissage** (prolonge R32) : ni réassurance, ni explication de l'évidence, ni « Vous n'avez rien à faire », ni paragraphe sous un contrôle qui marche. Un détail précis va dans la bulle « ? », jamais seule source d'une information indispensable.
 9. **Un avertissement qui évite une perte reste visible** (R24, R32).
@@ -111,7 +111,7 @@ Le cœur fournit ces briques **une fois**, pour ses pages **et** pour les module
 
 | Besoin | Règle | Page du cœur (composant) | Module |
 |---|---|---|---|
-| Recherche en direct, sans seuil, « Aucun résultat → Effacer la recherche » | R15 | `LiveSearch` (mode page : lignes déjà dans la page ; mode serveur : liste paginée) | `table` : `searchable: true` |
+| Recherche en direct, sans seuil, « Aucun résultat → Effacer la recherche » | R15 | `LiveSearch` (mode page : lignes déjà dans la page ; mode serveur : liste paginée) | `table` : `searchable: true` ; liste paginée par le module : `searchable: "server"` (cœur 0.38.0, `?q=` après 250 ms, le module filtre avec `ctx.search`) |
 | Pastilles de filtre avec leur nombre | R15, R30 | `LiveSearch` (`filters`) ou liens | `table` : `filters: [{ column }]` |
 | Colonne d'origine colorée ET écrite | R14, R30 | `BADGE` (pastille) | cellule `{ text, badge }` |
 | Interrupteur d'état dans la ligne, retour d'action, retour arrière si échec | R17 | `Switch` (effet immédiat), `SwitchField` (dans un formulaire) | cellule `{ switch }`, champ `kind: "switch"` |

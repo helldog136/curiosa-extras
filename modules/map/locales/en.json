@@ -69,7 +69,7 @@
   "next": "Next page",
   "pagerLabel": "Pages",
   "pageOf": "Page {page} of {pages}",
-  "externalDown": "Some places (those that come from elsewhere on the site) could not be loaded right now.",
+  "externalDown": "Some places (those that come from elsewhere on the site) could not be loaded.",
   "adminSummary": "Published: **{published}**. Drafts: **{drafts}**. Maximum: {max}.",
   "openPublic": "Open the public page",
   "formAdd": "Add a place",

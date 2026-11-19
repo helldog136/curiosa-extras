@@ -430,7 +430,7 @@ test("Contacts absent : message clair en haut, proposition d'installer par servi
   const t0 = performance.now();
   const r = await within(act(mute.ctx, "find", { q: "@alice_tv" }));
   assert.notEqual(r, HUNG); assert.ok(performance.now() - t0 < 1500);
-  assert.match(r.errors.q, /Contacts ne répond pas pour le moment/);
+  assert.match(r.errors.q, /Contacts ne répond pas/);
   mute.book.faults.hang.add("search");
   const p = await within(panel(mute.ctx, { add: "Camille" }), 6000);
   assert.notEqual(p, HUNG);

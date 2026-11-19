@@ -74,7 +74,7 @@ test("YouTube ne répond pas : repli propre, le titre se saisit à la main", asy
   const ctx = ctxFor();
   await withFakeFetch(platform({}, { down: true }).routes, async () => {
     const r = await act(ctx, "add", { url: `https://youtu.be/${YT}`, title: "" });
-    assert.deepEqual(Object.keys(r.errors), ["title"]); assert.match(r.errors.title, /YouTube ne répond pas pour le moment.*Exemple/);
+    assert.deepEqual(Object.keys(r.errors), ["title"]); assert.match(r.errors.title, /YouTube ne répond pas.*Exemple/);
     assert.equal((await D.snapshot(ctx, { fresh: true })).items.length, 0);
     const ok = await act(ctx, "add", { url: `https://youtu.be/${YT}`, title: "  Mon titre écrit à la main " });
     assert.match(ok.ok, /titre que vous avez écrit/); assert.match(ok.ok, /miniature n'a pas pu être gardée/);

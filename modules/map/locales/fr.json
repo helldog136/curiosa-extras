@@ -69,7 +69,7 @@
   "next": "Page suivante",
   "pagerLabel": "Pages",
   "pageOf": "Page {page} sur {pages}",
-  "externalDown": "Certains lieux (ceux qui viennent d'ailleurs sur le site) n'ont pas pu être chargés pour le moment.",
+  "externalDown": "Certains lieux (ceux qui viennent d'ailleurs sur le site) n'ont pas pu être chargés.",
   "adminSummary": "Publiés : **{published}**. Brouillons : **{drafts}**. Maximum : {max}.",
   "openPublic": "Ouvrir la page publique",
   "formAdd": "Ajouter un lieu",
