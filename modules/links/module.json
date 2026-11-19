@@ -5,7 +5,7 @@
     "en": "Link list",
     "fr": "Liste de liens"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "instances": "multiple",
@@ -17,6 +17,8 @@
     "pages",
     "sections"
   ],
+  "menuGroup": "content",
+  "adminMenu": "Contenu",
   "icon": "🔗",
   "description": {
     "en": "A list of links with icons — your sites, your projects, your favourite pages. Social networks have their own modules.",

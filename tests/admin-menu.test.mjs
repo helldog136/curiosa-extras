@@ -33,6 +33,9 @@ const EXPECTED = {
   "youtube-channel": ["Réseaux.YouTube", 20],
   "youtube-live-actions": ["Réseaux.YouTube", undefined],
 };
+// Content modules that sit in a core section by path (a path of one segment: the section itself). Links is a list of links that open elsewhere:
+// without a path the core files it under "Only in Extensions", where nobody looks for it (2026-11).
+const SECTION_PATHS = { links: "Contenu" };
 const RESERVED_ROOTS = ["site", "admin", "administration", "account", "compte"];
 
 test("every adminMenu, adminMenuOrder and adminMenuLabels of the repository is valid", () => {
@@ -86,7 +89,7 @@ test("a module under a network group is about that network only (a module for se
 });
 
 test("no other module declares a menu path (profile-link modules and tools keep their section)", () => {
-  const others = Object.entries(manifests).filter(([id, m]) => !(id in EXPECTED) && (m.adminMenu !== undefined || m.adminMenuOrder !== undefined || m.adminMenuLabels !== undefined)).map(([id]) => id);
+  const others = Object.entries(manifests).filter(([id, m]) => !(id in EXPECTED) && !(id in SECTION_PATHS) && (m.adminMenu !== undefined || m.adminMenuOrder !== undefined || m.adminMenuLabels !== undefined)).map(([id]) => id);
   assert.deepEqual(others, []);
 });
 
@@ -116,5 +119,39 @@ test("with the core's tree builder, the entries land once, in the expected group
     assert.deepEqual(ofGroup("Discord"), ["discord", "discord-announcer"]);
     assert.deepEqual(ofGroup("YouTube"), ["youtube-connector", "youtube-channel", "youtube-live-actions"]);
     assert.equal(nets.count, items.length, "each entry appears once");
+  }
+});
+
+test("Links declares the Content section as its menu path, so it is in the sidebar by default (it was only in Extensions)", () => {
+  for (const [id, menu] of Object.entries(SECTION_PATHS)) {
+    assert.equal(manifests[id].adminMenu, menu, `${id}: adminMenu`);
+    assert.equal(manifests[id].menuGroup, "content", `${id}: menuGroup stays the fallback of an older core`);
+    assert.equal(manifests[id].adminMenuOrder, undefined, `${id}: default order`);
+  }
+});
+
+test("a list of links that open elsewhere is pinned to the menu by default, in Content, next to Blog and Pages", { skip: !core }, async () => {
+  const place = await import("@/core/modules/menuPlacement");
+  const links = manifests.links;
+  assert.equal(place.defaultPlacement(links), "menu");
+  assert.equal(place.resolvePlacement(links, undefined), "menu", "nothing chosen yet: the default");
+  assert.equal(place.resolvePlacement(links, "integrations"), "integrations", "a choice stored by the person still wins");
+  assert.equal(place.defaultSection(links), "content");
+  // The same manifest without the path is the trap: the core's rule files a links list under Extensions.
+  const { adminMenu, ...bare } = links;
+  assert.equal(place.defaultPlacement(bare), "integrations");
+  const tree = core.buildMenuTree([
+    { id: "links", moduleId: "links", name: links.name.fr, badge: 0, error: false, placement: "menu", menuPath: core.parseMenuPath(links.adminMenu), menuOrder: 100, groupLabels: {} },
+  ], "fr");
+  assert.deepEqual(Object.keys(tree.sections), ["content"]);
+  assert.deepEqual(tree.sections.content.entries.map((e) => e.id), ["links"]);
+  assert.equal(tree.groups.length, 0, "no new group: it joins the Content section");
+});
+
+test("two entries of the admin menu never share a name or a first word (R12): the label of Links is unique", () => {
+  const firstWord = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[\s'’-]+/)[0];
+  for (const lang of ["en", "fr"]) {
+    const clash = Object.entries(manifests).filter(([id, m]) => id !== "links" && firstWord(m.name[lang]) === firstWord(manifests.links.name[lang])).map(([id]) => id);
+    assert.deepEqual(clash, [], `${lang}: no module starts with "${firstWord(manifests.links.name[lang])}"`);
   }
 });

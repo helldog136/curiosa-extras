@@ -4,6 +4,14 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.108.0 — 2026-11-19
+
+*In short: the Link list now has its own entry in the Content section of the admin menu, instead of being hidden under Extensions.*
+
+### Improvements
+
+- **Link list.** Its entry is in the admin menu, in "Content" next to Blog and Pages, so you find the list of links (and rename a button) without searching in Extensions. If you had chosen "Only in Extensions" for a list, pick it again on the list's page: the core cannot tell that choice from the old default. Needs Curiosa 0.13.0 to take effect; on an older Curiosa nothing changes. No setting, no new permission.
+
 ## 1.107.0 — 2026-11-19
 
 *In short: secrets (Discord address, Rawg code, platform access code) live behind "Edit" instead of a field; live search on the long lists; one switch per row where a verb button stood; fewer fields on the Calendar and Thanks wall forms.*
