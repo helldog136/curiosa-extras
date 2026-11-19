@@ -11,6 +11,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 ### For developers
 
 - **home-assistant 1.4.2.** `readJson` (pair, pull, ack) no longer calls `reader.cancel()` when a body exceeds 4 KB; it releases the reader and answers 413. Cancelling closed the stream while Node's fetch (undici) kept enqueueing the chunks of a multipart (`FormData`) body, which raised `ERR_INVALID_STATE: ReadableStream is already closed` as an unhandled rejection. Node 24 reports it as "generated asynchronous activity after the test ended" and failed `tests/conformance.test.mjs` and `tests/hot-update-all.test.mjs` intermittently. New test: `tests/home-assistant.test.mjs` ("un corps multipart trop gros…").
+- **`tests/hot-update-all.test.mjs`**: while an already published release is replayed (home-assistant 1.4.1 still cancels the reader), cancelling a body reader only releases it, so the same undici rejection no longer fails the N-1 → N replay on Node 24.
 
 ## 1.108.1 — 2026-11-19
 
