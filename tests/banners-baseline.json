@@ -11,8 +11,6 @@
     "gallery/admin.mjs gone.text",
     "game-covers/panel.mjs saved_${saved}",
     "map/admin.mjs lines.join(\" \")",
-    "mascot/admin-anim.mjs voState_${mode}",
-    "mascot/admin.mjs statusLive",
     "testimonials/admin.mjs bannerPending",
     "twitch-bot/entry.mjs entry_unpublished",
     "videos/admin.mjs bannerMissing"

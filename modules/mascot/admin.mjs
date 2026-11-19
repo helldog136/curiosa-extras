@@ -77,10 +77,10 @@ ${image && !alt ? `<p style="margin:12px 0 0;color:var(--v-fg)"><strong>${esc(ct
 function statusBlocks(ctx, config, phrases, set, canPublish) {
   const live = phrases.filter((p) => p.state === "published").length;
   const out = [];
+  // Only what needs attention is said; a published mascot with a sentence and a page shows nothing here, its "Put back to draft" button and the link to the site say the rest.
   if (!config.published) out.push({ type: "banner", tone: "warning", text: ctx.t("statusDraft") });
-  else if (!live) out.push({ type: "banner", tone: "warning", text: ctx.t("statusSilent") });
-  else if (set.where === "some" && !set.pages.length) out.push({ type: "banner", tone: "warning", text: ctx.t("statusNoPage") });
-  else out.push({ type: "banner", tone: "success", text: ctx.t("statusLive") });
+  else if (!live) out.push({ type: "banner", tone: "warning", text: ctx.t("statusSilent"), href: query({ tab: "phrases" }) });
+  else if (set.where === "some" && !set.pages.length) out.push({ type: "banner", tone: "warning", text: ctx.t("statusNoPage"), href: query({ tab: "settings" }) });
   if (canPublish) {
     out.push({ type: "adminForm", action: config.published ? "unpublish" : "publish", submitLabel: ctx.t(config.published ? "unpublishButton" : "publishButton"), fields: [{ name: "go", kind: "hidden", label: "go", value: "1" }] });
   }
@@ -91,12 +91,14 @@ function statusBlocks(ctx, config, phrases, set, canPublish) {
 function lookForm(ctx, config) {
   const locales = ctx.locales.slice(0, 12);
   const many = locales.length > 1;
+  const own = config.look === "image";
+  // The picture, its description and its shape are asked only once "My own picture" is chosen; the name is a rare option.
   const fields = [
-    { name: "look", kind: "select", label: ctx.t("lookLabel"), value: config.look, options: [{ value: "builtin", label: ctx.t("lookBuiltin") }, { value: "image", label: ctx.t("lookImage") }], help: ctx.t("lookHelp") },
-    { name: "image", kind: "image", label: ctx.t("imageLabel"), value: config.image, help: ctx.t("imageHelp") },
-    { name: "crop", kind: "select", label: ctx.t("cropLabel"), value: config.crop, options: [{ value: "round", label: ctx.t("cropRound") }, { value: "square", label: ctx.t("cropSquare") }] },
-    ...locales.map((l) => ({ name: `name_${l}`, kind: "text", label: many ? ctx.t("nameLabelLang", { lang: langLabel(ctx, l) }) : ctx.t("nameLabel"), value: config.names[l] ?? "", help: l === locales[0] ? ctx.t("nameHelp", { max: M.LIMITS.name }) : undefined })),
-    ...locales.map((l) => ({ name: `alt_${l}`, kind: "text", label: many ? ctx.t("altLabelLang", { lang: langLabel(ctx, l) }) : ctx.t("altLabel"), value: config.alts[l] ?? "", help: l === locales[0] ? ctx.t("altHelp", { max: M.LIMITS.alt }) : undefined })),
+    { name: "look", kind: "segmented", label: ctx.t("lookLabel"), value: config.look, options: [{ value: "builtin", label: ctx.t("lookBuiltin") }, { value: "image", label: ctx.t("lookImage") }] },
+    ...(own ? [{ name: "image", kind: "image", label: ctx.t("imageLabel"), value: config.image, help: ctx.t("imageHelp") }] : []),
+    ...(own ? locales.map((l) => ({ name: `alt_${l}`, kind: "text", label: many ? ctx.t("altLabelLang", { lang: langLabel(ctx, l) }) : ctx.t("altLabel"), value: config.alts[l] ?? "", help: l === locales[0] ? ctx.t("altHelp") : undefined, example: ctx.t("altExample") })) : []),
+    ...(own ? [{ name: "crop", kind: "segmented", label: ctx.t("cropLabel"), value: config.crop, options: [{ value: "round", label: ctx.t("cropRound") }, { value: "square", label: ctx.t("cropSquare") }], folded: true }] : []),
+    ...locales.map((l) => ({ name: `name_${l}`, kind: "text", label: many ? ctx.t("nameLabelLang", { lang: langLabel(ctx, l) }) : ctx.t("nameLabel"), value: config.names[l] ?? "", help: l === locales[0] ? ctx.t("nameHelp") : undefined, example: ctx.t("nameExample"), folded: true })),
   ];
   // `cancelHref`: an edit form keeps its values after saving (instead of emptying) and offers "cancel".
   return { type: "adminForm", action: "saveLook", submitLabel: ctx.t("saveLook"), title: ctx.t("lookTitle"), cancelHref: "?", fields };
@@ -107,22 +109,22 @@ function phraseForm(ctx, editing) {
   const langs = ["", ...ctx.locales.slice(0, 12)];
   return {
     type: "adminForm", action: "savePhrase", title: ctx.t(editing ? "editTitle" : "addTitle"), submitLabel: ctx.t(editing ? "saveEdit" : "addButton"),
-    cancelHref: editing ? query({ tab: "phrases" }) : undefined,
+    ...(editing ? { presentation: "dialog", cancelHref: query({ tab: "phrases" }) } : {}),
     fields: [
       ...(editing ? [{ name: "id", kind: "hidden", label: "id", value: editing.id }] : []),
-      { name: "text", kind: "textarea", label: ctx.t("textLabel"), value: p.text, required: true, help: ctx.t("textHelp", { max: M.LIMITS.text, ex1: M.example(ctx.locale, "event"), ex2: M.example(ctx.locale, "date") }) },
+      { name: "text", kind: "textarea", label: ctx.t("textLabel"), value: p.text, required: true, help: ctx.t("textHelp", { max: M.LIMITS.text }), example: ctx.t("textExample", { ex1: M.example(ctx.locale, "event"), ex2: M.example(ctx.locale, "date") }) },
       { name: "kind", kind: "select", label: ctx.t("kindLabel"), value: p.kind, options: M.KINDS.map((k) => ({ value: k, label: ctx.t(`kind_${k}`) })), help: ctx.t("kindHelp") },
       { name: "lang", kind: "select", label: ctx.t("langLabel"), value: p.lang, options: langs.map((l) => ({ value: l, label: langLabel(ctx, l) })) },
-      { name: "pages", kind: "textarea", label: ctx.t("pagesLabel"), value: p.pages.join("\n"), help: ctx.t("pagesHelp") },
-      { name: "link", kind: "text", label: ctx.t("linkLabel"), value: p.link, help: ctx.t("linkHelp") },
-      { name: "state", kind: "select", label: ctx.t("stateLabel"), value: p.state, options: M.STATES.map((s) => ({ value: s, label: ctx.t(`state_${s}`) })) },
+      { name: "pages", kind: "textarea", label: ctx.t("pagesLabel"), value: p.pages.join("\n"), help: ctx.t("pagesHelp"), example: "/events", folded: true },
+      { name: "link", kind: "text", label: ctx.t("linkLabel"), value: p.link, help: ctx.t("linkHelp"), example: "/events", folded: true },
+      { name: "state", kind: "select", label: ctx.t("stateLabel"), value: p.state, options: M.STATES.map((s) => ({ value: s, label: ctx.t(`state_${s}`) })), folded: true },
     ],
   };
 }
 
 function phraseBlocks(ctx, phrases, q, canEdit) {
   const tab = "phrases";
-  const out = [{ type: "heading", text: ctx.t("phrasesTitle", { count: phrases.length, max: M.LIMITS.phrases }), tab }, { type: "markdown", text: ctx.t("phrasesHelp", { vars: M.VARIABLES.map((x) => `\`{${x.names[ctx.locale === "fr" ? 0 : 1]}}\``).join(", "), alias: `\`${M.example(ctx.locale === "fr" ? "en" : "fr", "event")}\`` }), tab }];
+  const out = [{ type: "heading", text: ctx.t("phrasesTitle", { count: phrases.length, max: M.LIMITS.phrases }), tab }, { type: "markdown", text: ctx.t("phrasesHelp", { vars: M.VARIABLES.map((x) => `\`{${x.names[ctx.locale === "fr" ? 0 : 1]}}\``).join(", ") }), tab }];
   const editing = canEdit && q.edit ? phrases.find((p) => p.id === String(q.edit)) : undefined;
   if (canEdit) out.push({ ...phraseForm(ctx, editing), tab });
   const pages = Math.max(1, Math.ceil(phrases.length / PER_PAGE));
@@ -131,10 +133,12 @@ function phraseBlocks(ctx, phrases, q, canEdit) {
   if (!slice.length) out.push({ type: "markdown", text: ctx.t("phrasesEmpty"), tab });
   else {
     out.push({
-      type: "table", tab, columns: [ctx.t("colPhrase"), ctx.t("colDetails")],
-      rows: slice.map((p) => [short(p.text, 90), [ctx.t(`kind_${p.kind}`), langLabel(ctx, p.lang), p.pages.length ? p.pages.join(" ") : null, ctx.t(`state_${p.state}`)].filter(Boolean).join(" · ")]),
+      type: "table", tab, searchable: true, truncate: [0], columns: [ctx.t("colPhrase"), ctx.t("colDetails"), ctx.t("stateLabel")],
+      // What every row shares is not repeated: "All languages" and the pages only show when set.
+      rows: slice.map((p) => [p.text, [ctx.t(`kind_${p.kind}`), p.lang ? langLabel(ctx, p.lang) : null, p.pages.length ? p.pages.join(" ") : null].filter(Boolean).join(" · "),
+        canEdit ? { text: ctx.t(`state_${p.state}`), switch: { on: p.state === "published", action: "setPhraseState", label: ctx.t("swLabel", { text: short(p.text, 40) }), onText: ctx.t("state_published"), offText: ctx.t("state_draft") } } : ctx.t(`state_${p.state}`)]),
       rowIds: slice.map((p) => p.id),
-      rowActions: canEdit ? [{ label: ctx.t("actEdit"), href: query({ tab, edit: "{id}" }) }, { label: ctx.t("actToggle"), action: "togglePhrase" }, { label: ctx.t("actDelete"), action: "removePhrase", confirm: ctx.t("confirmDelete"), danger: true }] : undefined,
+      rowActions: canEdit ? [{ label: ctx.t("actEdit"), href: query({ tab, edit: "{id}" }), presentation: "dialog" }, { label: ctx.t("actDelete"), action: "removePhrase", confirm: ctx.t("confirmDelete"), danger: true }] : undefined,
     });
     const nav = [];
     if (page > 1) nav.push({ label: ctx.t("prevPage"), href: query({ tab, page: page - 1 }) });
@@ -142,7 +146,7 @@ function phraseBlocks(ctx, phrases, q, canEdit) {
     if (nav.length) out.push({ type: "links", items: nav, tab });
   }
   if (canEdit) {
-    out.push({ type: "heading", text: ctx.t("templatesTitle"), tab }, { type: "markdown", text: ctx.t("templatesHelp"), tab });
+    out.push({ type: "heading", text: ctx.t("templatesTitle"), tab });
     out.push({
       type: "table", tab, columns: [ctx.t("colTemplate"), ctx.t("colAbout")],
       rows: T.TEMPLATES.map((id) => [ctx.t(`tpl_${id}`), ctx.t(`tpl_${id}_about`)]), rowIds: [...T.TEMPLATES],
@@ -169,31 +173,35 @@ export async function adminPanel(ctx, { query: q0 } = {}) {
   if (canEdit) blocks.push(lookForm(ctx, config));
   blocks.push(...AN.animationBlocks(ctx, config, canEdit), ...AN.voiceBlocks(ctx, config, canEdit));
   blocks.push(...phraseBlocks(ctx, phrases, q, canEdit));
-  blocks.push({ type: "markdown", text: ctx.t("settingsHelp"), tab: "settings" }, { type: "copy", text: `${ctx.api.siteUrl}/?mascot=voir`, label: ctx.t("copyReview"), tab: "settings" });
+  blocks.push({ type: "copy", text: `${ctx.api.siteUrl}/?mascot=voir`, label: ctx.t("copyReview"), tab: "settings" });
   return blocks;
 }
 
 // ── The actions ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function saveLook(ctx, values) {
   const errors = {};
+  const config = await S.loadConfig(ctx);
   const look = values.look === "image" ? "image" : "builtin";
-  const image = M.safeImage(values.image);
-  const names = {}, alts = {};
+  // A field that was not on the form (the picture, its description and its shape only show with "My own picture", the name is folded) keeps what is stored.
+  const sent = values.image !== undefined;
+  const image = sent ? M.safeImage(values.image) : config.image;
+  const names = { ...config.names }, alts = { ...config.alts };
   for (const l of ctx.locales.slice(0, 12)) {
-    const name = M.oneLine(values[`name_${l}`], 500), alt = M.oneLine(values[`alt_${l}`], 500);
-    if ([...name].length > M.LIMITS.name) errors[`name_${l}`] = ctx.t("errNameLong", { max: M.LIMITS.name });
-    if ([...alt].length > M.LIMITS.alt) errors[`alt_${l}`] = ctx.t("errAltLong", { max: M.LIMITS.alt });
-    if (name) names[l] = name;
-    if (alt) alts[l] = alt;
+    for (const [key, list, max, err] of [[`name_${l}`, names, M.LIMITS.name, "errNameLong"], [`alt_${l}`, alts, M.LIMITS.alt, "errAltLong"]]) {
+      if (values[key] === undefined) continue;
+      const text = M.oneLine(values[key], 500);
+      if ([...text].length > max) errors[key] = ctx.t(err, { max });
+      if (text) list[l] = text; else delete list[l];
+    }
   }
-  if (look === "image") {
+  if (look === "image" && sent) {
     // The error of the picture goes under "Which face" (the image field of the core shows no message under itself): it is the field just above.
     if (String(values.image ?? "").trim() && !image) errors.look = ctx.t("errImage");
     else if (!image) errors.look = ctx.t("errImageEmpty");
     if (!alts[ctx.defaultLocale] && !errors[`alt_${ctx.defaultLocale}`]) errors[`alt_${ctx.defaultLocale}`] = ctx.t("errAltEmpty");
   }
   if (Object.keys(errors).length) return { errors };
-  await S.saveConfig(ctx, { look, image, crop: values.crop === "square" ? "square" : "round", names, alts });
+  await S.saveConfig(ctx, { look, image, crop: values.crop === undefined ? config.crop : values.crop === "square" ? "square" : "round", names, alts });
   return { ok: ctx.t("lookSaved") };
 }
 
@@ -209,18 +217,21 @@ async function savePhrase(ctx, values) {
   if (checked.errors) return { errors: Object.fromEntries(Object.entries(checked.errors).map(([k, e]) => [k, t(ctx, e)])) };
   if (values.id) {
     const done = await S.updatePhrase(ctx, values.id, checked.value);
-    return done ? { ok: ctx.t("phraseSaved"), redirect: "?tab=phrases" } : { error: ctx.t("errGone") };
+    // Edited in a window: a plain success closes it and the saved row shows "Saved." (a redirect would close it without that).
+    return done ? { ok: ctx.t("phraseSaved") } : { error: ctx.t("errGone") };
   }
   const r = await S.addPhrase(ctx, checked.value);
   if (r.full) return { errors: { text: ctx.t("errFull", { max: M.LIMITS.phrases }) } };
   return { ok: ctx.t("phraseAdded"), redirect: "?tab=phrases" };
 }
 
-async function togglePhrase(ctx, values) {
+/** The switch of a row SAYS the wanted state (`enabled` "1" or "0"): a double click never undoes the first one. */
+async function setPhraseState(ctx, values) {
   const p = await S.findPhrase(ctx, values.id);
   if (!p) return { error: ctx.t("errGone") };
-  await S.updatePhrase(ctx, p.id, { kind: p.kind, lang: p.lang, text: p.text, pages: p.pages, link: p.link, state: p.state === "published" ? "draft" : "published" });
-  return { ok: ctx.t(p.state === "published" ? "nowDraft" : "nowPublished"), redirect: "?tab=phrases" };
+  const state = values.enabled === "1" ? "published" : "draft";
+  if (p.state !== state) await S.updatePhrase(ctx, p.id, { kind: p.kind, lang: p.lang, text: p.text, pages: p.pages, link: p.link, state });
+  return { ok: ctx.t(state === "published" ? "nowPublished" : "nowDraft") };
 }
 
 async function removePhrase(ctx, values) {
@@ -239,7 +250,7 @@ async function applyTemplate(ctx, values) {
 export const adminActions = {
   saveLook: { right: RIGHTS.edit, run: saveLook },
   savePhrase: { right: RIGHTS.edit, run: savePhrase },
-  togglePhrase: { right: RIGHTS.edit, run: togglePhrase },
+  setPhraseState: { right: RIGHTS.edit, run: setPhraseState },
   removePhrase: { right: RIGHTS.edit, run: removePhrase },
   applyTemplate: { right: RIGHTS.edit, run: applyTemplate },
   publish: { right: RIGHTS.publish, run: (ctx) => setPublished(ctx, true) },
