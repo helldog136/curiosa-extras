@@ -46,7 +46,7 @@ export const routes = {
     if (request.method !== "POST") return notAllowed("POST");
     const key = ctx.instance.key;
     const provider = R.providerOf(ctx);
-    const token = clean(ctx.setting("accessToken"), 600);
+    const token = await D.tokenOf(ctx);
     if (provider.id !== "kofi" || !token) return json({ ok: false }, 404);
     if (limited(`${key}|k|g`, 240, 60_000)) return json({ ok: false }, 429, { "retry-after": "30" });
     const fp = who(ctx, request, "kofi");

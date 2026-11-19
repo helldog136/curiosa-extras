@@ -18,10 +18,16 @@
   "liveDefault": "🔴 En direct sur {platform} : {title}",
   "notSet": "Aucune adresse d'envoi n'est réglée : rien n'est envoyé.",
   "badAddress": "L'adresse d'envoi n'est pas une adresse Discord valable.",
-  "setupSteps": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Collez-la dans « Adresse d'envoi du salon Discord » ci-dessous.",
+  "setupSteps": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Choisissez ensuite « Ajouter l'adresse ».",
   "sumBase": "Nouveautés du site et directs Twitch",
   "sumYoutube": "Nouveautés du site, directs Twitch et YouTube",
   "lastFailed": "Le dernier envoi a échoué.",
   "lastFailedCode": "Le dernier envoi a échoué (code {status}).",
-  "resultTries": "{attempts} essais"
+  "resultTries": "{attempts} essais",
+  "addAddress": "Ajouter l'adresse",
+  "saveAddress": "Enregistrer l'adresse",
+  "fieldAddress": "Adresse d'envoi du salon Discord",
+  "fieldAddressExample": "https://discord.com/…/votre-code",
+  "savedAddress": "Adresse enregistrée.",
+  "errAddress": "Collez l'adresse d'envoi donnée par Discord, elle commence par https://discord.com"
 }

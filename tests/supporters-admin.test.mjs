@@ -38,7 +38,7 @@ test("assistant : Patreon réglé → UNE carte « Configuré » d'une ligne (ja
   const steps = setupCard.setup.filter((b) => b.type === "markdown" && /^\*\*\d\.\*\*/.test(b.text));
   assert.equal(steps.length, R.PROVIDERS.patreon.steps.fr.length);
   assert.ok(steps[0].text.startsWith("**1.**"));
-  assert.deepEqual(setupCard.primary, { label: "Saisir le code d'accès", href: "?tab=settings" });
+  assert.deepEqual(setupCard.primary, { label: "Saisir le code d'accès", href: "?edit=token" });
   const en_ = makeWorld({ locale: "en", settings: { accessToken: "" } });
   assert.ok(text(await Admin.panel(en_.ctx, { query: {} })).includes("Creator's Access Token"));
 });
@@ -67,13 +67,13 @@ test("assistant : fichier → pas de carte de connexion ; pas de bandeau « page
   assert.equal(find(blocks, "connection").length, 0, "un import n'a pas besoin de clé");
   assert.ok(!find(blocks, "banner").some((b) => /page publique/.test(b.text)), "la page publique éteinte est le réglage par défaut : aucune phrase pour le dire");
   const p = makeWorld({ settings: { accessToken: "" } });
-  assert.equal(card(await Admin.panel(p.ctx, { query: {} })).primary.href, "?tab=settings");
+  assert.equal(card(await Admin.panel(p.ctx, { query: {} })).primary.href, "?edit=token");
 });
 
 test("assistant : « Vérifier et actualiser » avec une erreur volontaire (mauvaise clé) → message en mots simples, carte « Dégradé » ; puis avec la bonne clé → succès chiffré", async () => {
-  const { ctx, settings } = makeWorld();
+  const { ctx } = makeWorld();
   const pat = fakePatreon({ tiers: [{ id: 1, title: "A", cents: 100 }], members: [{ id: 1, name: "Ada", status: "active_patron", since: "2025-01-01", tiers: [1] }] });
-  settings.accessToken = "mauvaise-cle";
+  await D.saveToken(ctx, "mauvaise-cle");
   await kit.withFakeFetch({ "*": pat.reply }, async () => {
     const bad = await Admin.actions.refresh.run(ctx, {});
     assert.equal(bad.error, fr.sync_token);
@@ -81,8 +81,8 @@ test("assistant : « Vérifier et actualiser » avec une erreur volontaire (mauv
     D.forget(ctx);
     const degraded = card(await Admin.panel(ctx, { query: {} }));
     assert.equal(degraded.state, "degraded"); assert.equal(degraded.reason, fr.sync_token);
-    assert.deepEqual(degraded.primary, { label: "Corriger le code d'accès", href: "?tab=settings" }, "un code refusé se corrige dans les réglages");
-    settings.accessToken = "tok-creator";
+    assert.deepEqual(degraded.primary, { label: "Corriger le code d'accès", href: "?edit=token" }, "un code refusé se corrige dans les réglages");
+    await D.saveToken(ctx, "tok-creator");
     const good = await Admin.actions.refresh.run(ctx, {});
     assert.match(good.ok, /1 soutiens lus \(1 nouveaux, 0 arrêtés\)/);
     D.forget(ctx);
@@ -97,8 +97,8 @@ test("connexion en trois états (R33) : à configurer, configurée, dégradée",
   const { assertConnectionStates } = await import((await import("node:url")).pathToFileURL((await import("node:path")).join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/ergonomics.mjs")).href);
   const notConfigured = await Admin.panel(makeWorld({ settings: { accessToken: "" } }).ctx, { query: {} });
   const configured = await Admin.panel(makeWorld().ctx, { query: {} });
-  const { ctx, settings } = makeWorld();
-  settings.accessToken = "mauvaise-cle";
+  const { ctx } = makeWorld();
+  await D.saveToken(ctx, "mauvaise-cle");
   await kit.withFakeFetch({ "*": fakePatreon({ tiers: [], members: [] }).reply }, async () => { await Admin.actions.refresh.run(ctx, {}); });
   D.forget(ctx);
   const degraded = await Admin.panel(ctx, { query: {} });
@@ -365,15 +365,35 @@ test("panneau : FR et EN complets, parité exacte, et aucune clé de traduction 
 });
 
 test("secrets : la clé de la plateforme est un réglage « secret » ; aucun champ de formulaire du module ne la demande ; elle n'est ni dans le stockage, ni dans les blocs, ni dans les réponses", async () => {
-  const s = manifest.settings.find((x) => x.key === "accessToken");
-  assert.equal(s.type, "secret");
+  assert.equal(manifest.settings.some((x) => x.key === "accessToken"), false, "kept in the store behind \"Edit\" (R33)");
+  assert.deepEqual(manifest.legacySettings, [{ key: "accessToken", secret: true }]);
   assert.ok(!manifest.settings.some((x) => x.type !== "secret" && /token|secret|key|clé|jeton/i.test(x.key)), "aucun autre réglage ne ressemble à un secret");
   const { ctx } = makeWorld({ settings: { provider: "kofi", accessToken: "kofi-verify-token" } });
   await def.routes.kofi(kofiRequest(), ctx);
-  const everything = text([await Admin.panel(ctx, { query: {} }), ctx.dumpStore(), await Mcp.default.supporters_status(ctx), await Mcp.default.supporters_list(ctx, {})]);
+  const everything = text([await Admin.panel(ctx, { query: {} }), ctx.dumpStore().filter((r) => r.collection !== "access"), await Mcp.default.supporters_status(ctx), await Mcp.default.supporters_list(ctx, {})]);
   assert.ok(!everything.includes("kofi-verify-token"));
   const fields = JSON.stringify(Object.values(Admin.actions).length);
   void fields;
   const all = text(await Admin.panel(ctx, { query: {} }));
   assert.ok(!/"kind":"(password|secret)"/.test(all) && !all.includes('"name":"accessToken"'));
+});
+
+test("the access code is typed in a window: shown as kept, empty keeps it, a bad code is refused under the field, nothing without the right; handed over once from the former setting", async () => {
+  const { ctx } = makeWorld();
+  assert.equal(find(await Admin.panel(ctx, { query: {} }), "adminForm", (b) => b.action === "saveToken").length, 0, "closed: no field on the page");
+  const dialog = find(await Admin.panel(ctx, { query: { edit: "token" } }), "adminForm", (b) => b.action === "saveToken")[0];
+  assert.deepEqual([dialog.presentation, dialog.fields.length, dialog.fields[0].kind, dialog.fields[0].valueHint, dialog.fields[0].value], ["dialog", 1, "secret", "kept", undefined]);
+  assert.deepEqual(ctx.calls.legacyCleared, ["accessToken"], "handed over, then cleared");
+  assert.equal((await Admin.actions.saveToken.run(ctx, { accessToken: "" })).redirect, "?");
+  assert.match((await Admin.actions.saveToken.run(ctx, { accessToken: "with space" })).errors.accessToken, /sans espace/);
+  assert.equal(await D.tokenOf(ctx), "tok-creator");
+  assert.equal((await Admin.actions.saveToken.run(ctx, { accessToken: "another-code-123" })).redirect, "?");
+  assert.equal(await D.tokenOf(ctx), "another-code-123");
+  assert.equal((await ctx.api.store.list("access")).length, 1, "one document");
+  const none = makeWorld({ settings: { accessToken: "" } });
+  const first = find(await Admin.panel(none.ctx, { query: { edit: "token" } }), "adminForm", (b) => b.action === "saveToken")[0];
+  assert.equal(first.fields[0].valueHint, undefined, "nothing set: an empty field");
+  assert.ok((await Admin.actions.saveToken.run(none.ctx, { accessToken: "" })).errors.accessToken);
+  const locked = makeWorld({ can: false });
+  assert.equal(find(await Admin.panel(locked.ctx, { query: { edit: "token" } }), "adminForm", (b) => b.action === "saveToken").length, 0, "no right: no window");
 });

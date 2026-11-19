@@ -18,7 +18,7 @@ export default {
   async supporters_status(ctx) {
     const snap = await D.snapshot(ctx, { fresh: true });
     const provider = R.providerOf(ctx), st = D.stateOf(snap), c = S.summary(ctx, snap);
-    const token = !!clean(ctx.setting("accessToken"), 600);
+    const token = !!(await D.tokenOf(ctx));
     const needsToken = provider.mode !== "file" && !token;
     const down = provider.mode === "pull" && st.syncCode && !["ok", "partial"].includes(st.syncCode);
     return {

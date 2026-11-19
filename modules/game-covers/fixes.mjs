@@ -13,7 +13,7 @@ const q = new URL(import.meta.url).search;
 const { titleKey } = await import(new URL("./match.mjs" + q, import.meta.url).href);
 const hosts = await import(new URL("./hosts.mjs" + q, import.meta.url).href);
 
-export const COL = { fixes: "fixes", todo: "todo", auto: "autoCovers", key: "adoptedKey", state: "keyState", handover: "handover", meta: "coverMeta", bytes: "coverBytes" };
+export const COL = { fixes: "fixes", todo: "todo", auto: "autoCovers", key: "adoptedKey", own: "ownKey", state: "keyState", handover: "handover", meta: "coverMeta", bytes: "coverBytes" };
 export const MAX_FIXES = 1000;
 /** Jaquettes trouvées toutes seules, gardées pour survivre aux redémarrages et aux pannes. Le tableau de l'administration les montre toutes (il n'a pas de recherche côté serveur) : 1 000 + 1 000 + 100 lignes au plus. */
 export const MAX_AUTO = 1000;

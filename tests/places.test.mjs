@@ -49,13 +49,13 @@ const ROLLOUT = {
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.2.3", { main: "content.directory" }],
-  "discord-announcer": ["1.4.1", { main: "networks.discord", golive: "live.golive" }],
+  "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
   "faq": ["1.1.3", { main: "content.faq", inbox: "content.faq.inbox" }],
   "gallery": ["1.3.2", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
-  "game-covers": ["1.5.3", { covers: "community.games.covers", kept: "community.games.covers" }],
+  "game-covers": ["1.6.0", { covers: "community.games.covers", kept: "community.games.covers" }],
   "game-suggestions": ["1.11.3", { main: "community.games" }],
   "github": ["1.3.2", { main: "networks.accounts", stats: "networks.stats" }],
   "hero": ["1.1.0", { banner: "site.home.banners" }],
@@ -83,7 +83,7 @@ const ROLLOUT = {
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
   "stream-story": ["2.15.3", { main: "calendar.story", styles: "calendar.story.styles" }],
-  "supporters": ["1.3.2", { main: "community.supporters" }],
+  "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.5.3", { main: "community.reviews", share: "community.reviews.share" }],
   "thanks-wall": ["1.4.2", { wall: "community.supporters.wall" }],
@@ -99,7 +99,7 @@ const ROLLOUT = {
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
-const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions"]);
+const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];

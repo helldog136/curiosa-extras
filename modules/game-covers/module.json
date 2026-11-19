@@ -6,7 +6,7 @@
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": {
     "en": "Finds the cover of your video games, even when one source is down.",
     "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne."
@@ -176,19 +176,6 @@
     }
   ],
   "settings": [
-    {
-      "key": "rawgKey",
-      "type": "secret",
-      "optional": true,
-      "label": {
-        "en": "Free Rawg access code (optional)",
-        "fr": "Code d'accès gratuit Rawg (facultatif)"
-      },
-      "help": {
-        "en": "Free at rawg.io/apidocs.",
-        "fr": "Gratuit sur rawg.io/apidocs."
-      }
-    },
     {
       "key": "useTwitch",
       "type": "boolean",
@@ -363,6 +350,12 @@
           }
         }
       }
+    }
+  ],
+  "legacySettings": [
+    {
+      "key": "rawgKey",
+      "secret": true
     }
   ]
 }

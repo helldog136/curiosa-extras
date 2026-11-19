@@ -5,7 +5,7 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.4.1",
+  "version": "1.5.0",
   "adminMenu": "Réseaux.Discord",
   "menuGroup": "connections",
   "platform": "discord",
@@ -120,7 +120,6 @@
       "order": 200,
       "fromTab": "settings",
       "settings": [
-        "webhookUrl",
         "mention",
         "prefix",
         "freshHours"
@@ -150,22 +149,6 @@
     }
   ],
   "settings": [
-    {
-      "key": "webhookUrl",
-      "type": "secret",
-      "label": {
-        "en": "Discord channel sending address",
-        "fr": "Adresse d'envoi du salon Discord"
-      },
-      "help": {
-        "en": "In Discord: channel settings, Integrations, then create a sending address.",
-        "fr": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi."
-      },
-      "example": {
-        "en": "https://discord.com/…/your-code",
-        "fr": "https://discord.com/…/votre-code"
-      }
-    },
     {
       "key": "mention",
       "type": "text",
@@ -331,6 +314,12 @@
         "en": "Announce your YouTube lives (YouTube channel)",
         "fr": "Annoncer vos directs YouTube (Chaîne YouTube)"
       }
+    }
+  ],
+  "legacySettings": [
+    {
+      "key": "webhookUrl",
+      "secret": true
     }
   ]
 }

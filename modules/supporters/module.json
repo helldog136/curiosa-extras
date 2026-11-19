@@ -6,7 +6,7 @@
     "en": "Supporters",
     "fr": "Soutiens"
   },
-  "version": "1.3.2",
+  "version": "1.4.0",
   "menuGroup": "community",
   "description": {
     "en": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted.",
@@ -175,19 +175,6 @@
           }
         }
       ]
-    },
-    {
-      "key": "accessToken",
-      "type": "secret",
-      "optional": true,
-      "label": {
-        "en": "Access code of the platform",
-        "fr": "Code d'accès de la plateforme"
-      },
-      "help": {
-        "en": "Patreon: your creator access code. Ko-fi: your verification code.",
-        "fr": "Patreon : le code d'accès de votre page. Ko-fi : votre code de vérification."
-      }
     },
     {
       "key": "publicPage",
@@ -553,6 +540,12 @@
           }
         }
       }
+    }
+  ],
+  "legacySettings": [
+    {
+      "key": "accessToken",
+      "secret": true
     }
   ]
 }
