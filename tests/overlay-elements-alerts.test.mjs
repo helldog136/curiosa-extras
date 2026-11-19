@@ -41,7 +41,7 @@ const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 test("manifeste : valide au sens du cœur 0.5.0, un élément « alertes » (garde ses proportions), libellés et descriptions en français et en anglais", () => {
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.21.0");
+  assert.equal(manifestJson.version, "1.22.0");
   assert.equal(manifestJson.minCore, "0.36.0");
   const [el, ...others] = manifestJson.overlayElements;
   assert.deepEqual(others.map((e) => [e.id, e.fit]), [["alerts-stage", "fluid"], ["hype-train", "fluid"], ["session-counter", "fluid"]], "1.12.0: « Alertes en grand », a free frame for placed texts; 1.20.0: the hype train and the session counter (animated)");

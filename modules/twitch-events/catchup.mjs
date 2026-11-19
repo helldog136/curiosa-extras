@@ -16,7 +16,7 @@ const near = (lines, kind, login, at, ms) => lines.some((l) => l.kind === kind &
 
 /** Followers newer than `since` that the journal does not have (same login within 10 s). Returns the number added. */
 async function followers(ctx, d, since, now) {
-  if (!d.enabled.follow || (d.missing ?? []).includes("moderator:read:followers") || !d.main?.scopes?.includes("moderator:read:followers")) return { added: 0, skipped: "scope" };
+  if ((d.missing ?? []).includes("moderator:read:followers") || !d.main?.scopes?.includes("moderator:read:followers")) return { added: 0, skipped: "scope" };
   const lines = await st.recent(ctx, 300);
   let after, added = 0;
   for (let page = 0; page < LIMITS.followPages; page++) {
@@ -31,7 +31,7 @@ async function followers(ctx, d, since, now) {
       const ev = es.normalise("channel.follow", { user_name: row.user_name, user_login: row.user_login, followed_at: row.followed_at }, new Date(now).toISOString());
       if (!ev || near(lines, "follow", ev.login, at, 10_000)) continue;
       if (added >= LIMITS.lines) break;
-      const res = await st.record(ctx, `catchup-follow-${String(row.user_id ?? ev.login).slice(0, 30)}-${at}`, ev, { source: "catchup", missed: true, now });
+      const res = await st.record(ctx, `catchup-follow-${String(row.user_id ?? ev.login).slice(0, 30)}-${at}`, ev, { source: "catchup", missed: true, muted: d.enabled.follow !== true, now });
       if (res.stored) added++;
     }
     after = r.json?.pagination?.cursor;
@@ -42,7 +42,7 @@ async function followers(ctx, d, since, now) {
 
 /** Subscribers we did not know: names now minus the baseline. The first run only learns the baseline (nothing is invented). */
 async function subscribers(ctx, d, now) {
-  if (!d.enabled.sub || !d.main?.scopes?.includes("channel:read:subscriptions")) return { added: 0, skipped: "scope" };
+  if (!d.main?.scopes?.includes("channel:read:subscriptions")) return { added: 0, skipped: "scope" };
   const names = [], rows = [];
   let after;
   for (let page = 0; page < LIMITS.subPages; page++) {
@@ -62,7 +62,7 @@ async function subscribers(ctx, d, now) {
     for (const row of rows) {
       if (known.has(row.login) || near(lines, "sub", row.login, now, 3 * 86_400_000) || near(lines, "resub", row.login, now, 3 * 86_400_000) || added >= LIMITS.lines) continue;
       const ev = { kind: "sub", name: row.name, login: row.login, tier: row.tier, ...(row.gifted ? { gifted: true } : {}), at: now };
-      const res = await st.record(ctx, `catchup-sub-${row.login}-${Math.floor(now / 3_600_000)}`, ev, { source: "catchup", missed: true, now });
+      const res = await st.record(ctx, `catchup-sub-${row.login}-${Math.floor(now / 3_600_000)}`, ev, { source: "catchup", missed: true, muted: d.enabled.sub !== true, now });
       if (res.stored) added++;
     }
   }

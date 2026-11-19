@@ -106,8 +106,10 @@ test("a subscription pending for 3 minutes is deleted and created again ONCE, th
   await C.check(w.ctx, { retentionDays: 30 }, { now: NOW + 60_000 });
   assert.equal(dels() - d0, first.length, "not again");
   const page = await mod.adminPanel(w.ctx, { query: {} });
-  const row = page.find((x) => x.tab === "twitch" && x.type === "table").rows.find((x) => x[0].text === fr.type_raid);
-  assert.match(row[1].text, /En attente de Twitch depuis \d+ min/); assert.ok(row[1].title, "the reason is in the tooltip");
+  const table = page.find((x) => x.tab === "twitch" && x.type === "table");
+  assert.ok(!table.columns.includes(fr.col_state), "(1.22) every row waits the same way: that is a title, not a column (R14)");
+  const why = page.find((x) => x.tab === "twitch" && x.type === "markdown" && x.text.includes(fr.type_raid));
+  assert.ok(why, "the reason of each type that waits is written under the title");
   const log = w.ctx.calls.log ?? [];
   const raidLines = log.filter((l) => l.action === "type.state" && l.target === "raid");
   assert.equal(raidLines.length, 1, "one line for the change, not one per minute");

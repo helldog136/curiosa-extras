@@ -58,10 +58,12 @@ export async function diagnose(ctx, s, { declare = true, now = Date.now() } = {}
   if (!isPublicSite(ctx.api.siteUrl)) return { code: "site_private", ...base };
   const missing = lacks(main, need);
   const blocked = es.TYPES.filter((t) => enabled[t.id] && lacks(main, t.scopes).length).map((t) => t.id);
+  // (1.22) listening is separate from the alert: every type whose permission is already granted is listened to, whatever its alert switch says; a type without its permission is simply not listened to (never asked for here)
+  const unable = es.TYPES.filter((t) => lacks(main, t.scopes).length).map((t) => t.id);
   // The red box and the verdict only count the types the bot does not already cover (`optional`); the others still show their own state in their row.
   const blockedCore = blocked.filter((id) => !es.isOptional(id));
   const missingCore = lacks(main, es.scopesFor(Object.fromEntries(es.TYPES.filter((t) => enabled[t.id] && !t.optional).map((t) => [t.id, true]))));
-  return { code: "ready", ...base, broadcasterId: main.userId, missing, missingCore, blocked, blockedCore };
+  return { code: "ready", ...base, broadcasterId: main.userId, missing, missingCore, blocked, blockedCore, unable };
 }
 
 /** "403 Forbidden: …": what Twitch answered to a creation, in one short line (no secret is ever in it). */
@@ -128,7 +130,7 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
     after = list.json?.pagination?.cursor;
     if (!after) break;
   }
-  const startable = Object.fromEntries(es.TYPES.map((t) => [t.id, d.enabled[t.id] === true && !d.blocked.includes(t.id)]));
+  const startable = Object.fromEntries(es.TYPES.map((t) => [t.id, !d.unable.includes(t.id)]));
   const wanted = es.wantedSubs(startable, d.broadcasterId);
   const cls = es.classify(renew ? [] : rows, wanted, callback);
   const drop = renew ? rows.filter((r) => r?.transport?.callback === callback).map((r) => String(r.id)) : cls.stale;
@@ -136,7 +138,7 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
   // 2. Create what is missing; the state of each type is the worst state of its subscriptions.
   const types = {};
   const put = (typeId, code) => { types[typeId] = types[typeId] ? worst(types[typeId], code) : code; };
-  for (const t of es.TYPES) { if (d.enabled[t.id] && d.blocked.includes(t.id)) types[t.id] = "need_more"; else if (!d.enabled[t.id]) types[t.id] = "off"; }
+  for (const t of es.TYPES) { if (d.enabled[t.id] && d.blocked.includes(t.id)) types[t.id] = "need_more"; else if (d.unable.includes(t.id)) types[t.id] = "off"; }
   let busy = false;
   for (const w of cls.wanted) {
     if (w.state === "enabled") {
@@ -186,7 +188,8 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
     }
   }
   let code = "listening";
-  const on = Object.entries(types).filter(([, c]) => c !== "off");
+  // The verdict counts the types with an alert on and the two that are always listened to (stream start and end); a muted type that fails never turns the page red.
+  const on = Object.entries(types).filter(([id, c]) => c !== "off" && (d.enabled[id] === true || es.ALWAYS_LISTENED.includes(id)));
   const core = on.filter(([id]) => !es.isOptional(id));
   const active = core.length ? core : on;   // a type the bot already covers never decides alone, unless it is all that is on
   if (!active.length) code = "nothing_on";
