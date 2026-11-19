@@ -1,8 +1,6 @@
 {
   "untitled": "(Untitled)",
   "allDay": "All day",
-  "yes": "Yes",
-  "no": "No",
   "intro": "Write your streams here: they show on your site (the schedule, the chat bot…) as soon as you save. Times are in the {tz} time zone.",
   "listTitle": "Your streams ({n})",
   "none": "No stream. Fill in the form below.",
@@ -11,7 +9,6 @@
   "colGames": "Games",
   "colRepeat": "Repeat",
   "colState": "Status",
-  "stateOk": "Planned",
   "stateCancelled": "Cancelled",
   "actEdit": "Edit",
   "actDelete": "Delete",

@@ -79,7 +79,7 @@ async function applyPull(ctx, provider, res) {
 export async function refresh(ctx, { force = false } = {}) {
   const provider = R.providerOf(ctx);
   if (provider.mode !== "pull") return { ok: false, code: "not_pull" };
-  const token = clean(ctx.setting("accessToken"), 600);
+  const token = await D.tokenOf(ctx);
   if (!token) return { ok: false, code: "no_token" };
   const { cacheMs } = knobs(ctx);
   const snap = await D.snapshot(ctx);
@@ -111,8 +111,8 @@ export async function refresh(ctx, { force = false } = {}) {
 export function ensureFresh(ctx) {
   try {
     const provider = R.providerOf(ctx);
-    if (provider.mode !== "pull" || !clean(ctx.setting("accessToken"), 600)) return;
-    refresh(ctx).catch(() => {});
+    if (provider.mode !== "pull") return;
+    D.tokenOf(ctx).then((token) => (token ? refresh(ctx) : undefined)).catch(() => {});
   } catch { /* jamais d'erreur vers la page */ }
 }
 

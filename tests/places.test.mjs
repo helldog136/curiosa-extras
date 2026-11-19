@@ -40,7 +40,7 @@ const ROLLOUT = {
   "bandcamp": ["1.2.1", { main: "networks.accounts" }],
   "bluesky": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "calendar-ical": ["1.2.1", { sources: "calendar.schedule.sources" }],
-  "calendar-manual": ["1.3.1", { streams: "calendar.schedule.streams" }],
+  "calendar-manual": ["1.4.0", { streams: "calendar.schedule.streams" }],
   "commissions": ["1.1.2", { main: "community.commissions", packages: "community.commissions.packages" }],
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
@@ -48,14 +48,14 @@ const ROLLOUT = {
   "content-planner": ["1.1.2", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
-  "directory": ["1.2.3", { main: "content.directory" }],
-  "discord-announcer": ["1.4.1", { main: "networks.discord", golive: "live.golive" }],
+  "directory": ["1.3.0", { main: "content.directory" }],
+  "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
-  "faq": ["1.1.3", { main: "content.faq", inbox: "content.faq.inbox" }],
+  "faq": ["1.2.0", { main: "content.faq", inbox: "content.faq.inbox" }],
   "gallery": ["1.3.2", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
-  "game-covers": ["1.5.3", { covers: "community.games.covers", kept: "community.games.covers" }],
+  "game-covers": ["1.6.0", { covers: "community.games.covers", kept: "community.games.covers" }],
   "game-suggestions": ["1.11.3", { main: "community.games" }],
   "github": ["1.3.2", { main: "networks.accounts", stats: "networks.stats" }],
   "hero": ["1.1.0", { banner: "site.home.banners" }],
@@ -65,7 +65,7 @@ const ROLLOUT = {
   "kofi": ["1.2.1", { main: "networks.accounts" }],
   "legal-pages": ["1.1.3", { legal: "site.general.privacy" }],
   "live-status": ["1.6.1", { main: "live.golive" }],
-  "map": ["1.2.3", { main: "content.map", types: "content.map.types" }],
+  "map": ["1.3.0", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "maze-overlay": ["1.3.1", { look: "obs.overlays.maze", motion: "obs.overlays.maze" }],
   "partnerships": ["2.5.1", { main: "community.partners" }],
@@ -83,23 +83,25 @@ const ROLLOUT = {
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
   "stream-story": ["2.15.3", { main: "calendar.story", styles: "calendar.story.styles" }],
-  "supporters": ["1.3.2", { main: "community.supporters" }],
+  "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
-  "testimonials": ["1.5.3", { main: "community.reviews", share: "community.reviews.share" }],
-  "thanks-wall": ["1.4.2", { wall: "community.supporters.wall" }],
+  "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
+  "thanks-wall": ["1.5.0", { wall: "community.supporters.wall" }],
   "threads": ["1.2.1", { main: "networks.accounts" }],
   "ticker-overlay": ["1.3.0", { main: "obs.overlays.ticker" }],
   "tiktok": ["1.2.1", { main: "networks.accounts" }],
-  "videos": ["1.2.3", { main: "content.videos", shelves: "content.videos.shelves" }],
+  "videos": ["1.3.0", { main: "content.videos", shelves: "content.videos.shelves" }],
   "x-twitter": ["1.2.1", { main: "networks.accounts" }],
   "youtube-channel": ["1.5.1", { main: "networks.youtube", stats: "networks.stats" }],
   "youtube-connector": ["1.5.2", { main: "networks.youtube" }],
-  "youtube-live-actions": ["1.3.3", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
+  "youtube-live-actions": ["1.4.0", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
 };
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
-const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions"]);
+/** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
+const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
+const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
@@ -255,7 +257,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
     const { places, version, minCore: nowCore, ...rest } = now;
     const { version: oldVersion, minCore: oldCore, ...oldRest } = old;
-    assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0"), `${id}: minCore only moves for the connection block (0.36.0)`);
+    assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0") || LIVE_SEARCH_CORE[id] === nowCore, `${id}: minCore only moves for the connection block (0.36.0) or the live search (0.6.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
     if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
@@ -265,7 +267,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     // What an older core needs to keep showing the module in the same place.
     assert.equal(now.adminMenu, old.adminMenu, `${id}: adminMenu kept for cores older than 0.31.0`);
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);
-    assert.ok(now.minCore === old.minCore || now.minCore === "0.36.0" || (id === "contacts" && now.minCore === "0.38.0"), `${id}: minCore unchanged (0.36.0 for the connection block)`);
+    assert.ok(now.minCore === old.minCore || now.minCore === "0.36.0" || (id === "contacts" && now.minCore === "0.38.0") || LIVE_SEARCH_CORE[id] === now.minCore, `${id}: minCore unchanged (0.36.0 for the connection block, 0.6.0 for the live search)`);
   }
   // The modules that stay without a place are untouched.
   for (const id of Object.keys(NOT_PLACED)) assert.equal(manifests[id].places, undefined, `${id}: ${NOT_PLACED[id]}`);
@@ -340,7 +342,6 @@ test("kit: places.valid and compat.minCore pass for the migrated modules; places
     hero: ['section "banner" (site.home.banners) shows 9 simple settings (R5: 7 at most)'],
     "maze-overlay": ['section "look" (obs.overlays.maze) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
     polls: ['section "polls" (live.participation.polls) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
-    "thanks-wall": ['section "wall" (community.supporters.wall) shows 17 simple settings (R5: 7 at most)'],
   };
   // Dual mode: a module with neither adminMenu nor menuGroup keeps its default sidebar section on a core older than 0.31.0 (unchanged on purpose).
   const NO_MENU = "no adminMenu: on a core older than 0.31.0 the module keeps its default sidebar section (fine if that is wanted)";

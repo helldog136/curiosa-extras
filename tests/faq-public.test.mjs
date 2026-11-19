@@ -19,7 +19,7 @@ test("manifeste : valide, et le code fait ce que module.json annonce", () => {
   assert.equal(r.manifest.name.en, "FAQ");
   assert.equal(r.manifest.basePath, "faq");
   assert.equal(r.manifest.page, true);
-  assert.equal(manifest.minCore, "0.2.6", "scripts de page : cœur 0.2.6");
+  assert.equal(manifest.minCore, "0.6.0", "scripts de page : cœur 0.2.6 ; recherche en direct dans les listes (R15) : cœur 0.6.0");
   assert.equal(index.VERSION, manifest.version, "VERSION doit suivre la version du manifeste");
   assert.deepEqual(manifest.sections.map((s) => s.id), Object.keys(def.sections));
   assert.deepEqual(manifest.mcp.map((a) => a.name).sort(), Object.keys(def.mcp).sort());
@@ -265,7 +265,7 @@ test("script de page (cœur 0.2.6) : la page FAQ réclame scripts/faq.js ; la 40
   const bytes = fs.statSync(file).size;
   assert.ok(bytes > 0 && bytes <= 32 * 1024, `${bytes} octets`);
   assert.equal(fs.readFileSync(file, "utf8"), client.CLIENT_JS, "scripts/faq.js doit être la copie exacte de CLIENT_JS (client.mjs) : le régénérer si client.mjs change");
-  assert.equal(manifest.minCore, "0.2.6", "un cœur plus ancien ignorerait scripts : la page n'aurait plus son confort");
+  assert.ok(manifest.minCore.split(".")[1] >= 2 && manifest.minCore.split(".")[1] >= "2" , "un cœur plus ancien ignorerait scripts : la page n'aurait plus son confort"); assert.equal(manifest.minCore, "0.6.0");
 });
 
 // ── Le script du navigateur ──────────────────────────────────────────────────────────────────────────────────────

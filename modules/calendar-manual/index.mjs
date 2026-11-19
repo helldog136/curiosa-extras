@@ -19,7 +19,6 @@ function zoneOf(ctx) {
   return isValidTimeZone(tz) ? tz : DEFAULT_ZONE;
 }
 const rowsOf = async (ctx) => (await ctx.api.store.list(COLLECTION, { limit: MAX_STREAMS })).filter((r) => r?.data && typeof r.data === "object");
-const yesNo = (ctx) => [{ value: "no", label: ctx.t("no") }, { value: "yes", label: ctx.t("yes") }];
 
 /** Plage demandée (Date) -> [from, to] bornés ; sans plage : maintenant → +60 jours, 400 jours au plus. */
 function windowOf({ from, to } = {}, now = Date.now()) {
@@ -49,7 +48,7 @@ export default {
     const form = (r) => {
       const d = r?.data ?? {};
       return {
-        type: "adminForm", action: "save", title: r ? `${t("edit")} — ${d.title}` : t("add"), submitLabel: t("save"), cancelHref: r ? "?" : undefined,
+        type: "adminForm", action: "save", title: r ? `${t("edit")} — ${d.title}` : t("add"), submitLabel: t("save"), ...(r ? { cancelHref: "?", presentation: "dialog" } : {}),
         fields: [
           { name: "id", kind: "hidden", value: r?.id ?? "" },
           { name: "title", label: t("fTitle"), required: true, value: d.title ?? "" },
@@ -58,11 +57,11 @@ export default {
           { name: "endTime", label: t("fEndTime"), help: t("hEndTime"), value: d.endTime ?? "" },
           { name: "games", label: t("fGames"), help: t("hGames"), value: (d.games ?? []).join(", ") },
           { name: "partners", label: t("fPartners"), help: t("hPartners"), example: t("exPartners"), folded: true, value: (d.partners ?? []).join(", ") },
-          { name: "allDay", label: t("fAllDay"), help: t("hAllDay"), kind: "select", options: yesNo(ctx), value: d.allDay ? "yes" : "no" },
-          { name: "repeat", label: t("fRepeat"), kind: "select", options: [{ value: "none", label: t("repeatNone") }, { value: "weekly", label: t("repeatWeekly") }], value: d.repeat === "weekly" ? "weekly" : "none" },
-          { name: "repeatUntil", label: t("fRepeatUntil"), help: t("hRepeatUntil"), kind: "date", value: d.repeatUntil ?? "" },
-          { name: "skip", label: t("fSkip"), help: t("hSkip"), value: (d.skip ?? []).join(", ") },
-          { name: "cancelled", label: t("fCancelled"), help: t("hCancelled"), kind: "select", options: yesNo(ctx), value: d.cancelled ? "yes" : "no" },
+          { name: "allDay", label: t("fAllDay"), help: t("hAllDay"), kind: "switch", folded: true, value: d.allDay ? "on" : "" },
+          { name: "repeat", label: t("fRepeat"), folded: true, kind: "select", options: [{ value: "none", label: t("repeatNone") }, { value: "weekly", label: t("repeatWeekly") }], value: d.repeat === "weekly" ? "weekly" : "none" },
+          { name: "repeatUntil", label: t("fRepeatUntil"), help: t("hRepeatUntil"), folded: true, kind: "date", value: d.repeatUntil ?? "" },
+          { name: "skip", label: t("fSkip"), help: t("hSkip"), folded: true, value: (d.skip ?? []).join(", ") },
+          { name: "cancelled", label: t("fCancelled"), help: t("hCancelled"), kind: "switch", folded: true, value: d.cancelled ? "on" : "" },
         ],
       };
     };
@@ -75,13 +74,13 @@ export default {
       const label = day ? dayFmt.format(new Date(Date.UTC(day.y, day.m - 1, day.d))) : d.startDate;
       return d.allDay ? `${label} · ${t("allDay")}` : `${label} · ${d.startTime}${d.endTime ? `–${d.endTime}` : ""}`;
     };
-    const repeat = (d) => (d.repeat === "weekly" ? (d.repeatUntil ? t("repeatWeeklyUntil", { date: d.repeatUntil }) : t("repeatWeekly")) : t("repeatNone"));
+    const repeat = (d) => (d.repeat === "weekly" ? (d.repeatUntil ? t("repeatWeeklyUntil", { date: d.repeatUntil }) : t("repeatWeekly")) : "");   // what is the same on every row (no repeat, planned) is not written (R14)
     const sorted = [...rows].sort((a, b) => String(a.data.startDate).localeCompare(String(b.data.startDate)) || String(a.data.startTime).localeCompare(String(b.data.startTime)));
     return [
       { type: "markdown", text: t("intro", { tz }) },
       { type: "heading", text: t("listTitle", { n: rows.length }) },
       sorted.length
-        ? { type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith"), t("colRepeat"), t("colState")], rows: sorted.map((r) => [when(r.data), r.data.title, (Array.isArray(r.data.games) ? r.data.games : []).join(", "), (Array.isArray(r.data.partners) ? r.data.partners : []).join(", "), repeat(r.data), r.data.cancelled ? t("stateCancelled") : t("stateOk")]), rowIds: sorted.map((r) => r.id), rowActions: [{ label: t("actEdit"), href: "?edit={id}" }, { label: t("actDelete"), action: "remove", confirm: t("confirmDelete"), danger: true }] }
+        ? { type: "table", searchable: true, truncate: [1, 2, 3], columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith"), t("colRepeat"), t("colState")], rows: sorted.map((r) => [when(r.data), r.data.title, (Array.isArray(r.data.games) ? r.data.games : []).join(", "), (Array.isArray(r.data.partners) ? r.data.partners : []).join(", "), repeat(r.data), r.data.cancelled ? t("stateCancelled") : ""]), rowIds: sorted.map((r) => r.id), rowActions: [{ label: t("actEdit"), href: "?edit={id}", presentation: "dialog" }, { label: t("actDelete"), action: "remove", confirm: t("confirmDelete"), danger: true, inMenu: true }] }
         : { type: "markdown", text: t("none") },
       form(null),
     ];
@@ -100,7 +99,7 @@ export default {
         if ((await ctx.api.store.count(COLLECTION)) >= MAX_STREAMS) return { error: t("errMax", { n: MAX_STREAMS }) };
         await ctx.api.store.add(COLLECTION, r.stream);
       }
-      return { ok: t("saved"), redirect: "?" };
+      return v.id ? { ok: t("saved") } : { ok: t("saved"), redirect: "?" };   // the edit window closes by itself on success
     },
     async remove(ctx, v) {
       const row = v.id ? await ctx.api.store.get(v.id) : null;

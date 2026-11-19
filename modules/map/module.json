@@ -5,8 +5,8 @@
     "fr": "Carte",
     "en": "Map"
   },
-  "version": "1.2.3",
-  "minCore": "0.6.0",
+  "version": "1.3.0",
+  "minCore": "0.38.0",
   "description": {
     "fr": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande de la personne qui visite, avec un bouton « Près de moi ».",
     "en": "A list of useful places (studios, good addresses, events…) with filters by type and search, and an OpenStreetMap map that only shows when the visitor asks for it, with a “Near me” button."

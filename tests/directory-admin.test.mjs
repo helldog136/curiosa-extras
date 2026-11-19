@@ -56,11 +56,13 @@ test("panneau : sans droit d'écriture, on voit tout mais aucun formulaire ni bo
   assert.ok(text(await panel(ctx, { cats: "1" })).includes("pas le droit"));
 });
 
-test("panneau : le droit « masquer » seul donne le bouton Masquer, pas la fiche publique", async () => {
+test("panneau : le droit « masquer » seul donne l'interrupteur, pas la fiche publique", async () => {
   const { ctx, cat } = setup({ can: ["hide"] });
   await publish(ctx, [{ id: cat, label: "Membres" }]);
   const t = byType(await panel(ctx), "table").at(-1);
-  assert.deepEqual(t.rowActions.map((a) => a.label), ["Masquer"]);
+  assert.deepEqual(t.rowActions, [], "no \"Modifier\" without the right to edit, and no verb button \"Masquer\"");
+  assert.equal(t.rows[0][1].switch.on, true);
+  assert.equal(t.rows[0][1].switch.action, "setShown");
 });
 
 test("panneau : le résumé, la phrase « ne pas montrer » avec le nom de la catégorie, les liens vers l'annuaire et vers Contacts", async () => {
@@ -82,14 +84,17 @@ test("panneau : les personnes visibles, recherche, pages de 25, masquées ici", 
   await publish(ctx, [{ id: cat, label: "Membres" }]);
   let blocks = await panel(ctx);
   assert.equal(byType(blocks, "table").at(-1).rows.length, 25);
+  assert.equal(byType(blocks, "table").at(-1).searchable, "server", "live search asked of the server, no search button");
   assert.ok(text(blocks).includes("Page 1 sur 3"));
   blocks = await panel(ctx, { ppage: "3" });
   assert.equal(byType(blocks, "table").at(-1).rows.length, 10);
   blocks = await panel(ctx, { pq: "p 042" });
   assert.deepEqual(byType(blocks, "table").at(-1).rows.map((r) => r[0].split(" · ")[0]), ["P 042"]);
-  await run(ctx, "hide", { id: byType(await panel(ctx, { pq: "p 007" }), "table").at(-1).rowIds[0] });
-  blocks = await panel(ctx, { show: "hidden" });
-  assert.deepEqual(byType(blocks, "table").at(-1).rows, [["P 007"]]);
+  await run(ctx, "setShown", { enabled: "0", id: byType(await panel(ctx, { pq: "p 007" }), "table").at(-1).rowIds[0] });
+  blocks = await panel(ctx, { pq: "p 007" });
+  const row = byType(blocks, "table").at(-1).rows[0];
+  assert.deepEqual([row[0], row[1].switch.on], ["P 007", false], "a hidden person stays in the same list, with the switch off");
+  assert.equal(byType(blocks, "table").at(-1).rows.length, 1);
 });
 
 /* ───────────── Les gabarits ───────────── */
@@ -303,11 +308,12 @@ test("géolocalisation : seulement un nom de ville, borné ; une réponse absurd
 test("masquer / remontrer : un clic, sans toucher Contacts ; la personne masquée reste listée dans « masquées ici »", async () => {
   const { ctx, book, cat, list } = setup({ n: 3 });
   await publish(ctx, [{ id: cat, label: "Membres" }]);
-  assert.ok((await run(ctx, "hide", { id: list[1].id })).ok);
+  assert.ok((await run(ctx, "setShown", { enabled: "0", id: list[1].id })).ok);
   assert.deepEqual(names(htmlOf(await page(ctx))), ["P 001", "P 003"]);
-  assert.ok(text(await panel(ctx)).includes("Voir les personnes masquées ici (1)"));
+  const mine = byType(await panel(ctx), "table").at(-1).rows.find((r) => r[0] === "P 002");
+  assert.equal(mine[1].switch.on, false, "still listed, switch off");
   assert.equal((await book.methods.get({ id: list[1].id })).contact.name, "P 002");
-  assert.equal((await run(ctx, "unhide", { id: list[1].id })).redirect, "?show=hidden");
+  assert.ok((await run(ctx, "setShown", { enabled: "1", id: list[1].id })).ok);
   assert.equal(names(htmlOf(await page(ctx))).length, 3);
 });
 
@@ -339,5 +345,5 @@ test("les droits et actions du manifeste correspondent au code ; chaque action d
     assert.equal(typeof a, "object", name);
     assert.ok(rights.has(a.right), `${name} : droit « ${a.right} » déclaré`);
   }
-  assert.deepEqual(Object.entries(def.adminActions).filter(([, a]) => a.right === "hide").map(([n]) => n).sort(), ["hide", "unhide"]);
+  assert.deepEqual(Object.entries(def.adminActions).filter(([, a]) => a.right === "hide").map(([n]) => n).sort(), ["setShown"]);
 });

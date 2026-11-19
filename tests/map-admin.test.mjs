@@ -150,8 +150,10 @@ test("liste de l'administration : recherche, état, type, pagination par 50 ; mo
   assert.deepEqual((await list({ q: "cherche" })).rows.map((r) => r[0]), ["Cherché"]);
   assert.equal((await list({ state: "draft" })).rows.length, 20);
   assert.equal((await list({ type: "event" })).rows.length, 30);
-  assert.equal((await run("filter", ctx, { q: "Lieu 1", state: "published", type: "event" })).redirect, "?q=Lieu%201&state=published&type=event");
-  assert.ok(!(await run("filter", ctx, { q: "<x>", state: "x", type: "../.." })).redirect.includes("<"));
+  assert.equal((await list({})).searchable, "server", "live search asked of the server, no search button (R15)");
+  assert.equal(def.adminActions.filter, undefined);
+  const chips = byType(await def.adminPanel(ctx, { query: { q: "Lieu 1", state: "published" } }), "links").find((l) => l.items.some((i) => /state=draft/.test(i.href)));
+  assert.ok(chips.items.some((i) => i.href === "?q=Lieu%201&state=draft"), "the state chips keep the search");
   const target = (await data.world(ctx)).places[3];
   const form = byType(await def.adminPanel(ctx, { query: { edit: target.rowId } }), "adminForm")[0];
   assert.equal(form.action, "savePlace");

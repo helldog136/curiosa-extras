@@ -70,9 +70,12 @@ test("admin : liste + formulaire ; suppression avec confirmation « danger » ; 
   assert.deepEqual(table.rowIds, [id]);
   const del = table.rowActions.find((a) => a.action === "remove");
   assert.ok(del.danger === true && /définitive/.test(del.confirm), "jamais destructif sans confirmation");
-  assert.deepEqual(table.rows[0].slice(1), ["Soirée", "Celeste", "", "Chaque semaine, jusqu'au 2026-12-31", "Prévu"]);
+  assert.deepEqual(table.rows[0].slice(1), ["Soirée", "Celeste", "", "Chaque semaine, jusqu'au 2026-12-31", ""], "what is the same on every row (planned) is not written");
+  assert.equal(table.searchable, true);
+  assert.ok(table.rowActions.find((a) => a.href).presentation === "dialog" && del.inMenu, "edit in a window, delete in the menu");
   const edit = (await def.adminPanel(ctx, { query: { edit: id } }))[0];
-  assert.equal(edit.type, "adminForm"); assert.equal(edit.cancelHref, "?");
+  assert.equal(edit.type, "adminForm"); assert.equal(edit.cancelHref, "?"); assert.equal(edit.presentation, "dialog");
+  assert.ok(edit.fields.filter((f) => f.kind !== "hidden" && !f.folded).length <= 5, "R4: five fields visible at most, the rest is folded");
   const v = Object.fromEntries(edit.fields.map((f) => [f.name, f.value]));
   assert.deepEqual([v.id, v.title, v.startTime, v.games, v.repeat, v.repeatUntil, v.skip], [id, "Soirée", "21:00", "Celeste", "weekly", "2026-12-31", "2026-10-21"]);
 });
@@ -129,9 +132,16 @@ test("i18n et manifeste : fr/en alignés, aucune clé manquante, aucun service, 
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fs.readFileSync(new URL("module.json", dir), "utf8"));
   assert.ok(parseManifest(raw).ok);
-  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.3.1", "0.6.0", "multiple"]);
+  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.4.0", "0.6.0", "multiple"]);
   assert.equal(raw.offers, undefined, "aucun service : deux modules d'agenda n'offrent jamais le même"); assert.deepEqual(raw.provides.map((p) => p.topic), ["planning.slot"]);
   assert.ok(raw.permissions.includes("storage"));
   const declared = new Set(raw.settings.map((s) => s.key));
   for (const m of code.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)) assert.ok(declared.has(m[1]), m[1]);
+});
+
+test("the switches of the form post \"on\": all day and cancelled are read", async () => {
+  const ctx = mk();
+  await def.adminActions.save(ctx, { title: "Journée", startDate: "2026-10-16", allDay: "on", cancelled: "on" });
+  const items = await slots(ctx, ALL);
+  assert.deepEqual(items.map((i) => [i.title, i.status, i.allDay]), [["Journée", "cancelled", true]]);
 });

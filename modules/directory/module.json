@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
   "id": "directory",
-  "minCore": "0.6.0",
+  "minCore": "0.38.0",
   "name": {
     "fr": "Annuaire",
     "en": "Directory"
   },
-  "version": "1.2.3",
+  "version": "1.3.0",
   "menuGroup": "content",
   "description": {
     "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",

@@ -56,7 +56,7 @@ const serve = () => {
   globalThis.fetch = withImages(f);
 };
 const makeCtx = (extra = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY, useSteam: false, refreshDays: 1 }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents, ...extra });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { useSteam: false, refreshDays: 1 }, legacy: { rawgKey: KEY }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents, ...extra });
   c.can = () => true;
   return c;
 };
@@ -70,7 +70,7 @@ beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCa
 afterEach(() => { mock.timers.reset(); globalThis.fetch = realFetch; });
 
 test("manifeste 1.3.2 : version corrective (1.3.0 + route cover/:slug), une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
-  assert.equal(manifest.version, "1.5.3");
+  assert.equal(manifest.version, "1.6.0");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
   assert.equal(manifest.dashboard, undefined, "rien qu'on ne puisse pas agir dessus : pas de carte ni de tâche");
   assert.deepEqual(manifest.logEvents.map((e) => e.key).slice(-2), ["cover.outage", "cover.back"]);
@@ -91,7 +91,7 @@ test("une jaquette trouvée est gardée (chemin, nom, date), jamais l'image ni l
   assert.deepEqual(Object.keys(docs[0]).sort(), ["ambiguous", "at", "candidates", "img", "name", "rawgId", "title", "until"]);
   assert.equal(docs[0].img, "/media/games/021/jeu-21.jpg");
   assert.equal(Date.parse(docs[0].until) - Date.parse(docs[0].at), 24 * HOUR);
-  assert.ok(!JSON.stringify(c.dumpStore()).includes(KEY), "la clé n'est jamais copiée");
+  assert.ok(!JSON.stringify(c.dumpStore().filter((r) => r.collection !== "ownKey")).includes(KEY), "la clé n'est jamais copiée (hors de son propre document)");
   assert.ok(!JSON.stringify(docs).includes("https://"), "on garde un chemin, pas une adresse");
   // « Redémarrage » : un autre chargement du module (mémoire vide, disjoncteur neuf), le même stockage.
   const reborn = (await import("../modules/game-covers/index.mjs?v=restart-1")).default.services["game.cover"];

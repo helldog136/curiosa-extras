@@ -121,9 +121,6 @@
       "R13 setting:photos.help[fr] #9015ce",
       "R9 locale:fr:adminHideHow #2c2c86"
     ],
-    "discord-announcer": [
-      "R33b setting:webhookUrl"
-    ],
     "events": [
       "R10 setting:mapLink.label[fr] #843839",
       "R10 setting:timezone.option:America/Argentina/Buenos_Aires[en] #e3254f",
@@ -175,8 +172,7 @@
       "R13 locale:en:health_label #a6b0ee",
       "R13 locale:en:test_unreachable #2e9ca9",
       "R13 locale:fr:health_label #c4d483",
-      "R13 locale:fr:test_unreachable #53ba0e",
-      "R33b setting:rawgKey"
+      "R13 locale:fr:test_unreachable #53ba0e"
     ],
     "guestbook": [
       "R10 locale:en:mailAdmin #e1cfb0",
@@ -419,8 +415,7 @@
       "R13 locale:en:meExplain #feda96",
       "R13 locale:fr:meDonePending #cd4146",
       "R13 locale:fr:meDoneShown #a5b30a",
-      "R13 locale:fr:meExplain #4c721d",
-      "R33b setting:accessToken"
+      "R13 locale:fr:meExplain #4c721d"
     ],
     "testimonials": [
       "R10 locale:en:errSummary #7140de",
@@ -558,16 +553,102 @@
   },
   "justified": {
     "calendar-ical": {
-      "R33b setting:url": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. calendar-ical also stays at minCore 0.2.5 (the Planning migration installs it), so it cannot require the block."
+      "R33b setting:url": "The address stays a manifest setting: the Planning migration seeds this module with `settings: { url }` and installs it at the Planning's own minimum core (0.11.0), so the module cannot require the `connection` block (0.36.0) nor move the address into its own store. It is shown as dots once set. To fold it, the core would have to fold manifest-level secrets behind an Edit window."
     },
-    "discord-announcer": {
-      "R33b setting:webhookUrl": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The webhook address is typed once; the Discord card shows the state."
-    },
-    "game-covers": {
-      "R33b setting:rawgKey": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The key is optional; the sources card shows Configured/Degraded/Not configured."
-    },
-    "supporters": {
-      "R33b setting:accessToken": "A manifest-level secret setting: the core only folds a secret behind a «Modifier» dialog through the `connection` block, and a module cannot open a dialog for a manifest setting. It is shown as dots once set (core 0.36.0 valueHint) and the page already carries a state line. The platform access code is typed once; the connection card shows the state."
+    "legal-pages": {
+      "R10 locale:en:adm.preview.gaps #5f1032": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R10 locale:en:doc.notice.host.intro #b72c10": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R10 locale:fr:adm.preview.gaps #d94473": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R10 locale:fr:doc.notice.host.intro #ea1998": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R10 setting:footerLinks.option:none[en] #7dd8e9": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R10 setting:footerLinks.option:none[fr] #caac17": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 description[en] #d09a3b": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 description[fr] #884a4b": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:adm.disclaimer #89d617": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:adm.intro.text #a0b9df": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.cookies.more.FR #468337": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.cookies.none #d165b8": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.cookies.noneExceptThirdParty #85077c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.notice.hidden #f5adbb": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.notice.reg.FR #b0a6e0": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.privacy.c.chat #18b086": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.privacy.c.publicPosts #1a4683": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.privacy.c.thirdParty #da92c0": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.privacy.rights.BE #f73228": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.privacy.rights.CA_QC #9991a1": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:doc.privacy.rights.FR #f9aa9d": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:err.hostAddress #7689d4": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:err.legalForm #98d16e": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:err.regNumber.FR #9c776e": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:f.legalForm.help #6a8f3f": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:f.otherCollect.help #78eccd": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:f.regNumber.label.FR #109a44": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:note.sellsHere #b92e16": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:public.index.intro #93a3e4": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:st.address.help.FR #45764a": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:st.business.help.FR #ab8461": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:en:st.country.help #c0875f": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:adm.disclaimer #ec4029": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:adm.intro.text #ce9a45": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.cookies.more.FR #ac136e": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.cookies.none #0288ac": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.cookies.noneExceptThirdParty #028e7c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.notice.hidden #3e319a": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.notice.reg.FR #e49be4": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.c.chat #17ce05": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.c.host #69cfd7": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.c.list #8f9131": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.c.publicPosts #9d13bb": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.c.thirdParty #d372c4": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.rights.BE #0bb56b": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.rights.CA #902a5d": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.rights.CA_QC #9a6bd3": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:doc.privacy.rights.FR #236217": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:err.hostAddress #f4a526": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:err.legalForm #4b7fb8": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:err.regNumber.FR #8cf1b0": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:f.legalForm.help #56d862": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:f.otherCollect.help #c3ae79": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:f.regNumber.label.FR #8d43ad": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:note.sellsHere #2afe31": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:public.index.intro #0fcdcd": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:st.address.help.CA #8e6cee": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:st.address.help.CA_QC #8e6cee": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:st.address.help.FR #c73233": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R13 locale:fr:st.business.help.FR #228283": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:doc.cookies.essential #888a18": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:doc.cookies.noneExceptThirdParty #85077c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:doc.cookies.thirdParty #7dcda5": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:doc.notice.sells.text #9080f1": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:doc.privacy.c.thirdParty #da92c0": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:doc.privacy.share.thirdParty #44b0d1": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:err.listTool #21be78": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:err.sellsWhere #3f86fa": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:err.thirdPartyNames #e9670e": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:f.collect_thirdParty.label #2874d2": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:f.collect_thirdParty.short #a9bd6f": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:f.listTool.help #56852c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:f.sellsWhere.label #6f78a4": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:f.thirdPartyNames.label #7d7106": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:o.sells.elsewhere #712ccb": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:en:st.address.help.CH #512eb0": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.cookies.essential #4bace9": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.cookies.noneExceptThirdParty #028e7c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.cookies.thirdParty #84d481": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.notice.sells.text #76275c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.privacy.c.nothing #f7a4bc": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.privacy.c.thirdParty #d372c4": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:doc.privacy.share.thirdParty #0d1f38": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:err.listTool #28a0bc": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:err.sellsWhere #c80ce0": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:err.thirdPartyNames #633c9f": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:f.collect_thirdParty.label #76686c": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:f.collect_thirdParty.short #1f4323": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:f.listTool.help #a6da9f": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:f.sellsWhere.label #57fefd": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:f.thirdPartyNames.label #bb3fd6": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:o.sells.elsewhere #769535": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording.",
+      "R9 locale:fr:st.address.help.CH #d09f87": "Legal text is long and formal by nature (sentences over 20 words, legal terms such as cookies, cache or API named in the notices); it is a template reviewed by a person of the country, not interface wording."
     }
   }
 }

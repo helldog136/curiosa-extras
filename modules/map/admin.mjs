@@ -67,14 +67,16 @@ async function placesBlocks(ctx, query) {
 
   // Liste
   const f = { q: clean(query.q, LIMITS.search), state: ["published", "draft"].includes(query.state) ? query.state : "", type: String(query.type ?? "").toLowerCase().replace(/[^a-z0-9-]/g, "") };
+  // Quick filters (state, type) as links above the list; the search itself is live and asked of the server (the list is paged), see the table (R15, R30).
   if (w.places.length > 8) {
-    blocks.push({
-      type: "adminForm", action: "filter", title: ctx.t("filterTitle"), submitLabel: ctx.t("filterGo"), fields: [
-        { name: "q", label: ctx.t("filterQ"), value: f.q },
-        { name: "state", label: ctx.t("filterState"), kind: "select", value: f.state, options: [{ value: "", label: ctx.t("stateAll") }, { value: "published", label: ctx.t("statePublished") }, { value: "draft", label: ctx.t("stateDraft") }] },
-        ...(options.length > 1 ? [{ name: "type", label: ctx.t("fType"), kind: "select", value: f.type, options: [{ value: "", label: ctx.t("allTypes") }, ...options] }] : []),
-      ],
-    });
+    const to = (over) => `?${Object.entries({ q: f.q, state: f.state, type: f.type, ...over }).filter(([, v]) => v).map(([k, v]) => `${k}=${enc(v)}`).join("&")}` || "?";
+    const mark = (on, label) => `${on ? "● " : ""}${label}`;
+    blocks.push({ type: "links", items: [
+      { label: mark(!f.state, ctx.t("stateAll")), href: to({ state: "" }) },
+      { label: mark(f.state === "published", ctx.t("statePublished")), href: to({ state: "published" }) },
+      { label: mark(f.state === "draft", ctx.t("stateDraft")), href: to({ state: "draft" }) },
+    ] });
+    if (options.length > 1) blocks.push({ type: "links", items: [{ label: mark(!f.type, ctx.t("allTypes")), href: to({ type: "" }) }, ...options.map((o) => ({ label: mark(f.type === o.value, o.label), href: to({ type: o.value }) }))] });
   }
   let list = w.places;
   if (f.state) list = list.filter((p) => p.status === f.state);
@@ -85,13 +87,13 @@ async function placesBlocks(ctx, query) {
   const page = Math.min(num(query.page, 1, 1, 200), pages);
   const slice = list.slice((page - 1) * PER, page * PER);
   if (!w.places.length) blocks.push({ type: "markdown", text: ctx.t("emptyAdmin") });
-  else if (!list.length) blocks.push({ type: "markdown", text: ctx.t("noMatch") });
   else {
     blocks.push({
-      type: "table", columns: [ctx.t("colName"), ctx.t("colType"), ctx.t("colState")],
+      // Live search asked of the server (the list is paged): the table always comes back, with no row when nothing matches (R15).
+      type: "table", columns: [ctx.t("colName"), ctx.t("colType"), ctx.t("colState")], searchable: "server", searchPlaceholder: ctx.t("filterQ"), empty: ctx.t("noMatch"), truncate: [0],
       rows: slice.map((p) => [p.name, typeInfo(ctx, w, p.type).name, ctx.t(p.status === "published" ? "statePublished" : "stateDraft")]),
       rowIds: slice.map((p) => p.rowId),
-      rowActions: [{ label: ctx.t("edit"), href: "?edit={id}" }, { label: "↑", action: "moveUp" }, { label: "↓", action: "moveDown" }],
+      rowActions: [{ label: ctx.t("edit"), href: "?edit={id}" }, { label: ctx.t("moveUp"), action: "moveUp", inMenu: true }, { label: ctx.t("moveDown"), action: "moveDown", inMenu: true }],
     });
     const pager = pagerLinks(ctx, f, "page", page, pages);
     if (pager) blocks.push(pager);
@@ -225,17 +227,6 @@ const act = (right, run) => ({ right, run });
 const back = (extra = "") => `?${extra}`;
 
 export const adminActions = {
-  // Recherche dans la liste de l'administration : on revient sur la page avec les paramètres dans l'adresse.
-  filter: act(EDIT, async (ctx, values) => {
-    const parts = [];
-    const text = clean(values.q, LIMITS.search);
-    if (text) parts.push(`q=${enc(text)}`);
-    if (["published", "draft"].includes(values.state)) parts.push(`state=${values.state}`);
-    const type = String(values.type ?? "").toLowerCase().replace(/[^a-z0-9-]/g, "");
-    if (type) parts.push(`type=${enc(type)}`);
-    return { redirect: back(parts.join("&")) };
-  }),
-
   savePlace: act(EDIT, async (ctx, values) => {
     await ensureSeed(ctx);
     invalidate(ctx);

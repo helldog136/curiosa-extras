@@ -31,7 +31,8 @@ export async function panel(ctx, { query = {} } = {}) {
   if (/^[a-z0-9:_-]{1,120}$/.test(tier)) return tierScreen(ctx, tier);
   const snap = await D.snapshot(ctx, { fresh: true });
   const t = ctx.t, out = [];
-  out.push(...connectionBlocks(ctx, snap));
+  out.push(...await connectionBlocks(ctx, snap));
+  if (str(query.edit) === "token" && can(ctx, RIGHT_MANAGE)) out.push(await tokenDialog(ctx));
   const line = countsLine(ctx, S.summary(ctx, snap));
   if (line) out.push({ type: "markdown", text: line });
   out.push(...await listBlocks(ctx, snap, query));
@@ -54,11 +55,11 @@ function countsLine(ctx, c) {
  * La connexion à la plateforme, en UNE carte (R33) : à configurer (code d'accès absent, ou plateforme « par notification » qui n'a encore rien envoyé : la mise en place
  * est alors montrée), dégradée (la dernière actualisation a échoué, ou le service ne répond pas), configurée (une ligne). Un import de fichier n'a pas de connexion.
  */
-function connectionBlocks(ctx, snap) {
+async function connectionBlocks(ctx, snap) {
   const t = ctx.t, provider = R.providerOf(ctx), st = D.stateOf(snap);
   if (provider.mode === "file") return [];
-  const token = !!clean(ctx.setting("accessToken"), 600);
-  const platform = R.say(ctx, provider.label), title = t("connTitle", { platform }), edit = { href: "?tab=settings" };
+  const token = !!(await D.tokenOf(ctx));
+  const platform = R.say(ctx, provider.label), title = t("connTitle", { platform }), edit = { href: "?edit=token" };
   const setup = () => {
     const steps = R.say(ctx, provider.steps);
     const blocks = [{ type: "markdown", text: R.say(ctx, provider.what) }];
@@ -80,6 +81,15 @@ function connectionBlocks(ctx, snap) {
     return [{ type: "connection", id: "platform", title, state: "degraded", reason: t(`sync_${st.syncCode}`), primary: fixCode || !refresh ? { label: t("fixToken"), ...edit } : refresh, edit, menu: refresh && fixCode ? [refresh] : [] }];
   }
   return [{ type: "connection", id: "platform", title, state: "configured", summary: st.syncedAt ? t("sumPull", { platform, n: st.syncCount ?? 0, when: when(ctx, st.syncedAt) }) : t("sumPullNever", { platform }), edit, menu: refresh ? [refresh] : [], net }];
+}
+
+/** The window "Edit": the access code, shown as set when it is (never an empty field that hides a value). */
+async function tokenDialog(ctx) {
+  const provider = R.providerOf(ctx), platform = R.say(ctx, provider.label), set = !!(await D.tokenOf(ctx));
+  return {
+    type: "adminForm", presentation: "dialog", action: "saveToken", cancelHref: "?", title: ctx.t("connTitle", { platform }), submitLabel: ctx.t("saveToken"),
+    fields: [{ name: "accessToken", label: ctx.t("tokenLabel"), kind: "secret", example: ctx.t("tokenExample"), help: ctx.t("tokenHelp"), ...(set ? { valueHint: "kept" } : {}) }],
+  };
 }
 
 /* ───────────── 2. La liste ───────────── */
@@ -115,13 +125,12 @@ async function listBlocks(ctx, snap, query) {
   const page = Math.min(pages, int(str(query.page), 1, 1, 100000));
   const slice = rows.slice((page - 1) * LIMITS.adminPage, page * LIMITS.adminPage);
   out.push({ type: "links", items: FILTERS.map((f) => ({ label: `${f === filter ? "● " : ""}${t(`filter_${f}`)}`, href: `?filter=${f}` })) });
-  out.push({ type: "adminForm", action: "search", submitLabel: t("searchButton"), fields: [{ name: "q", kind: "text", label: t("searchLabel"), value: str(query.q).slice(0, 100), help: t("searchHelp") }, { name: "filter", kind: "hidden", value: filter }] });
-  if (!slice.length) { out.push({ type: "markdown", text: t("listNone") }); return out; }
   const names = await C.cardNames(ctx, slice.map((p) => p.contactId).filter(Boolean));
   const nameOf = (p) => p.name || (p.contactId ? (names.names.get(p.contactId)?.name ?? (names.state === "ok" ? t("nameGone") : t("nameInContacts"))) : "—");
   const tierNames = (p) => (p.tiers ?? []).map((k) => snap.tiers.get(k)?.data.name ?? "").filter(Boolean).slice(0, 2).join(", ") || "—";
   out.push({
-    type: "table", columns: [t("colPerson"), t("colTier"), t("colState"), t("colPublic")],
+    // Live search asked of the server (the list is paged): the table always comes back, with no row when nothing matches (R15).
+    type: "table", columns: [t("colPerson"), t("colTier"), t("colState"), t("colPublic")], searchable: "server", searchPlaceholder: t("searchLabel"), empty: t("listNone"), truncate: [0, 3],
     rows: slice.map((p) => [nameOf(p), tierNames(p), P.isActive(p, S.providerOfPerson(ctx, p), activeDays) ? t("stActive") : t("stEnded"), displayState(ctx, p, S.providerOfPerson(ctx, p))]),
     rowIds: slice.map((p) => p.pid), rowActions: [{ label: t("open"), href: "?p={id}" }],
   });
@@ -251,16 +260,21 @@ function tidyBlocks(ctx, snap) {
 const back_ = (ok, extra = {}) => ({ ok, redirect: "?", ...extra });
 
 export const actions = {
+  /** The window "Edit": an empty field keeps the current code. */
+  saveToken: { right: RIGHT_MANAGE, async run(ctx, values) {
+    const typed = clean(values.accessToken, 600);
+    if (!typed) return (await D.tokenOf(ctx)) ? { ok: ctx.t("tokenSaved"), redirect: "?" } : { errors: { accessToken: ctx.t("errToken") } };
+    if (/\s/.test(typed) || typed.length < 8) return { errors: { accessToken: ctx.t("errToken") } };
+    await D.saveToken(ctx, typed);
+    D.forget(ctx);
+    return { ok: ctx.t("tokenSaved"), redirect: "?" };
+  } },
   refresh: { right: RIGHT_MANAGE, async run(ctx) {
     const t = ctx.t;
     const r = await S.refresh(ctx, { force: true });
     if (!r.ok) return { error: t(r.code === "no_token" ? "needToken" : r.code === "not_pull" ? "sync_not_pull" : `sync_${r.code}`) };
     return back_(t(r.partial ? "refreshPartial" : "refreshDone", { n: r.count ?? 0, added: r.added ?? 0, ended: r.ended ?? 0 }));
   } },
-  search: async (ctx, values) => {
-    const q = clean(values.q, 100), f = FILTERS.includes(str(values.filter)) ? str(values.filter) : "all";
-    return { redirect: `?filter=${f}${q ? `&q=${enc(q)}` : ""}` };
-  },
   personRenew: { right: RIGHT_MANAGE, async run(ctx, values) {
     const r = await O.consentLink(ctx, clean(values.pid, 40), { renew: true });
     return r.ok ? { ok: ctx.t("linkRenewed"), redirect: `?p=${clean(values.pid, 40)}` } : { error: ctx.t("personGone") };

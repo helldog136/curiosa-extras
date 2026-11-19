@@ -86,13 +86,11 @@ async function mainBlocks(ctx, snap, q, editor) {
   if (!snap.items.length) return out; // le message de bienvenue, plus haut, dit déjà quoi faire
   out.push({ type: "heading", text: t("listTitle", { n: snap.items.length }) });
   out.push({ type: "links", items: [["", "filterAll", counts.all], ["published", "st_published", counts.published], ["draft", "st_draft", counts.draft], ["hidden", "st_hidden", counts.hidden]].map(([s, key, n]) => ({ label: `${st === s ? "▸ " : ""}${t(key)} (${n})`, href: `${here(ctx)}${s ? `?st=${s}` : ""}` })) });
-  if (snap.items.length > LIMITS.adminPage || search) out.push({ type: "adminForm", action: "search", submitLabel: t("searchButton"), fields: [{ name: "q", kind: "text", label: t("findLabel"), value: search, help: t("searchHelp") }, { name: "st", kind: "hidden", value: st }] });
   const words = P.searchWords(search);
   const rows = snap.items.filter((x) => (!st || x.status === st) && (!words.length || words.every((w) => `${x.hay} ${P.fold(x.ext)}`.includes(w))));
   const pages = Math.max(1, Math.ceil(rows.length / LIMITS.adminPage));
   const page = Math.min(pages, P.int(str(q.page), 1, 1, 100000));
   const slice = rows.slice((page - 1) * LIMITS.adminPage, page * LIMITS.adminPage);
-  if (!rows.length) { out.push({ type: "markdown", text: t("listNone") }); return out; }
   const actions = [];
   if (editor) actions.push({ label: t("actEdit"), href: "?edit={id}" });
   if (can(ctx, RIGHT_PUBLISH)) {
@@ -101,7 +99,8 @@ async function mainBlocks(ctx, snap, q, editor) {
   }
   out.push({
     // Une seule colonne : sur un téléphone, un tableau large défilerait de côté et cacherait les boutons.
-    type: "table", columns: [t("colTitle")],
+    // The search is live and asked of the server (the list is paged): the table always comes back, with no row when nothing matches (R15).
+    type: "table", columns: [t("colTitle")], searchable: "server", searchPlaceholder: t("findLabel"), empty: t("listNone"), truncate: [0],
     rows: slice.map((x) => [[untitled(ctx, x), `${statusLabel(ctx, x.status)}${x.cat ? ` · ${D.catName(ctx, snap.cats.find((c) => c.k === x.cat))}` : ""} · ${x.date}`].join(" — ")]),
     rowIds: slice.map((x) => String(x.n)), rowActions: actions,
   });
@@ -209,7 +208,7 @@ function shelfBlocks(ctx, snap, editor) {
       rowActions: editor ? [{ label: t("actUp"), action: "catUp" }, { label: t("actDown"), action: "catDown" }, { label: t("actRename"), href: "?cat={id}" }, { label: t("actDelete"), action: "catRemove", confirm: t("confirmCatDelete"), danger: true }] : [],
     }));
   } else out.push(tab({ type: "markdown", text: t("catsNone") }));
-  if (editor) out.push(tab({ type: "adminForm", action: "catAdd", title: t("catAddTitle"), submitLabel: t("catAddButton"), fields: langFields(ctx, "name", null, { label: "fieldName", help: "fieldNameHelp", max: LIMITS.name }) }));
+  if (editor) out.push(tab({ type: "adminForm", action: "catAdd", title: t("catAddTitle"), submitLabel: t("catAddButton"), fields: langFields(ctx, "catName", null, { label: "fieldName", help: "fieldNameHelp", max: LIMITS.name }) }));
   // Séries
   out.push(tab({ type: "heading", text: t("seriesTitle", { n: snap.series.length }) }), tab({ type: "markdown", text: t("seriesIntro") }));
   if (snap.series.length) {
@@ -220,7 +219,7 @@ function shelfBlocks(ctx, snap, editor) {
       rowActions: editor ? [{ label: t("actEdit"), href: "?series={id}" }, { label: t("actUp"), action: "seriesUp" }, { label: t("actDown"), action: "seriesDown" }, { label: t("actDelete"), action: "seriesRemove", confirm: t("confirmSeriesDelete"), danger: true }] : [],
     }));
   } else out.push(tab({ type: "markdown", text: t("seriesNone") }));
-  if (editor) out.push(tab({ type: "adminForm", action: "seriesAdd", title: t("seriesAddTitle"), submitLabel: t("seriesAddButton"), fields: langFields(ctx, "name", null, { label: "fieldName", help: "fieldNameHelp", max: LIMITS.name }) }));
+  if (editor) out.push(tab({ type: "adminForm", action: "seriesAdd", title: t("seriesAddTitle"), submitLabel: t("seriesAddButton"), fields: langFields(ctx, "seriesName", null, { label: "fieldName", help: "fieldNameHelp", max: LIMITS.name }) }));
   return out;
 }
 
@@ -409,8 +408,8 @@ export const actions = {
     return done(r.made ? ctx.t("tplDone", { n: r.made }) : ctx.t("tplDoneEmpty"));
   } },
   catAdd: { right: RIGHT_EDIT, async run(ctx, values) {
-    const names = readLang(ctx, "name", values, LIMITS.name);
-    if (!Object.keys(names).length) return { errors: { [`name_${P.localesOf(ctx)[0]}`]: ctx.t("errName") } };
+    const names = readLang(ctx, "catName", values, LIMITS.name);
+    if (!Object.keys(names).length) return { errors: { [`catName_${P.localesOf(ctx)[0]}`]: ctx.t("errName") } };
     const r = await D.addCategory(ctx, names);
     if (!r.ok) return { error: ctx.t(r.code === "full" ? "errCatFull" : "errSave", { max: LIMITS.categories }) };
     return done(ctx.t("catAdded", { name: P.pickName(names, ctx.locale, ctx.defaultLocale) }), { redirect: "?tab=shelves" });
@@ -430,8 +429,8 @@ export const actions = {
 
   // ── séries
   seriesAdd: { right: RIGHT_EDIT, async run(ctx, values) {
-    const names = readLang(ctx, "name", values, LIMITS.name);
-    if (!Object.keys(names).length) return { errors: { [`name_${P.localesOf(ctx)[0]}`]: ctx.t("errName") } };
+    const names = readLang(ctx, "seriesName", values, LIMITS.name);
+    if (!Object.keys(names).length) return { errors: { [`seriesName_${P.localesOf(ctx)[0]}`]: ctx.t("errName") } };
     const r = await D.addSeries(ctx, names);
     if (!r.ok) return { error: ctx.t(r.code === "full" ? "errSeriesFull" : "errSave", { max: LIMITS.series }) };
     return { ok: ctx.t("seriesAdded"), redirect: `?series=${r.p}` };

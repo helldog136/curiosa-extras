@@ -80,8 +80,8 @@ export function cleanStream(v) {
   if (!day) return { error: "errDate" };
   const partners = parsePartners(v.partners);
   if (partners.error) return partners;
-  const allDay = v.allDay === "yes" || v.allDay === true || v.allDay === "true";
-  const out = { title, startDate: dateOf(day), allDay, startTime: "", endTime: "", games: parseGames(v.games), partners: partners.list, cancelled: v.cancelled === "yes" || v.cancelled === true, repeat: "none", repeatUntil: "", skip: [] };
+  const allDay = v.allDay === "on" || v.allDay === "yes" || v.allDay === true || v.allDay === "true";
+  const out = { title, startDate: dateOf(day), allDay, startTime: "", endTime: "", games: parseGames(v.games), partners: partners.list, cancelled: v.cancelled === "on" || v.cancelled === "yes" || v.cancelled === true, repeat: "none", repeatUntil: "", skip: [] };
   if (!allDay) {
     const t = parseTime(v.startTime);
     if (!t) return { error: "errStartTime" };

@@ -51,12 +51,14 @@ function choiceFor(book, settings, key) {
  */
 export function makeWorld({ book = fakeContactBook(), settings = {}, locale = "fr", locales = ["fr", "en"], can = true, withBook = true, withCurate = true, key = "soutiens", basePath = "soutiens", extra = {} } = {}) {
   const curate = fakeContactCurate(book);
-  const all = { provider: "patreon", accessToken: "tok-creator", publicPage: true, ...settings };
+  // The access code is no longer a setting: a site that still holds it as one hands it over to the store (see `D.tokenOf`), so a world starts from that state.
+  const { accessToken = "tok-creator", ...rest } = settings;
+  const all = { provider: "patreon", publicPage: true, ...rest };
   const choices = {};
   for (const k of ["category", "wallCategory"]) choices[k] = choiceFor(book, all, k);
   const ctx = fakeCtx({
     key, moduleId: "supporters", name: "Soutiens", basePath, locale, defaultLocale: "fr", locales, messages: locale === "en" ? { ...en } : { ...fr },
-    permissions: manifest.permissions, settings: all, choices, siteUrl: "https://site.example.test",
+    permissions: manifest.permissions, settings: all, legacy: { accessToken }, choices, siteUrl: "https://site.example.test",
     ...(withBook ? { services: { ...book.services, ...(withCurate ? { "contact.curate": curate.methods } : {}) } } : {}), ...extra,
   });
   ctx.can = (right) => (can === true ? true : Array.isArray(can) ? can.includes(right) : false);

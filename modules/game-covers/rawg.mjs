@@ -35,9 +35,24 @@ const STATE_REFRESH = 10 * 60_000;
 export const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 export const isValidKey = (key) => typeof key === "string" && KEY_RE.test(key);
 
-/** La clé : celle du réglage de cette page, sinon celle reprise du site (les réglages saisis ont toujours le dessus). { key, source: "setting" | "adopted" | null, valid }. Aucune valeur n'en sort. */
+/**
+ * La clé saisie par la personne : un document du stockage (fenêtre « Modifier », R33). Une clé encore tenue comme l'ancien réglage « rawgKey » est reprise ici :
+ * écrite d'abord, effacée ensuite (rien n'est perdu si une étape échoue). Une clé déjà saisie dans la fenêtre l'emporte sur l'ancien réglage.
+ */
+export async function ownKeyOf(ctx) {
+  const doc = await fx.readOne(ctx, COL.own);
+  const own = String(doc?.key ?? "").trim();
+  let held = "";
+  try { held = String((await ctx.legacy?.get("rawgKey")) ?? "").trim(); } catch { held = ""; }
+  if (!held) return own;
+  if (!own) await fx.writeOne(ctx, COL.own, { key: held, at: new Date().toISOString() });
+  try { await ctx.legacy.clear("rawgKey"); } catch { /* effacée au passage suivant */ }
+  return own || held;
+}
+
+/** La clé : celle saisie sur cette page, sinon celle reprise du site (la clé saisie a toujours le dessus). { key, source: "setting" | "adopted" | null, valid }. Aucune valeur n'en sort. (« setting » : nom gardé, c'est le contrat du service.) */
 export async function keyOf(ctx) {
-  const own = String(ctx.setting("rawgKey") ?? "").trim();
+  const own = await ownKeyOf(ctx);
   if (own) return { key: own, source: "setting", valid: isValidKey(own) };
   const adopted = String((await fx.readOne(ctx, COL.key))?.key ?? "").trim();
   if (adopted) return { key: adopted, source: "adopted", valid: isValidKey(adopted) };

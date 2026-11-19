@@ -40,8 +40,8 @@
   "errBusy": "One moment, try again in a minute.",
   "back": "← Back",
   "noRight": "You can see this page but not change it. Ask the person who manages the site.",
-  "needToken": "The platform's access code is missing. Open the Settings tab, paste it in “Platform access code” and save.",
-  "sync_token": "The platform refuses the access code. Check that you copied all of it, without spaces, then paste it again in the Settings tab.",
+  "needToken": "The platform's access code is missing. Choose “Enter the access code” and save.",
+  "sync_token": "The platform refuses the access code. Check that you copied all of it, without spaces, then paste it again with “Edit”.",
   "sync_scope": "The platform refuses to let this code read your members. Check that it is the code of the page's creator.",
   "sync_none": "The platform cannot find your support page with this code. Check that it is the code of your creator account.",
   "sync_busy": "The platform asks you to wait (too many requests). Try again in a few minutes.",
@@ -64,8 +64,6 @@
   "filter_pending": "To read",
   "filter_unfiled": "Not in Contacts",
   "searchLabel": "Search",
-  "searchHelp": "Part of a name or nickname. Example: Luna.",
-  "searchButton": "Search",
   "colPerson": "Person",
   "colTier": "Tier (on the platform)",
   "colState": "State",
@@ -190,5 +188,11 @@
   "sumActive": "Active: {n}",
   "sumPending": "Nicknames to read: {n}",
   "sumShown": "Visible on the page: {n}",
-  "importNoRight": "You are not allowed to import a file: ask the person who manages the site."
+  "importNoRight": "You are not allowed to import a file: ask the person who manages the site.",
+  "saveToken": "Save the access code",
+  "tokenLabel": "Access code of the platform",
+  "tokenExample": "For example: a long code copied from the platform",
+  "tokenHelp": "Patreon: your creator access code. Ko-fi: your verification code.",
+  "tokenSaved": "Access code saved.",
+  "errToken": "Paste the whole access code, with no space, for example the long code given by the platform"
 }

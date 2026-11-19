@@ -19,6 +19,22 @@ export const YT = { forceMs: 60_000, waitMs: 8_000, minMinutes: 5, maxMinutes: 6
 
 export const isWebhook = (url) => typeof url === "string" && WEBHOOK.test(url.trim());
 
+const SECRET = "secret";
+/**
+ * The sending address. It is kept in the store (one document), so the page can fold it behind "Edit" (R33). An address still held as the former setting
+ * is handed over here: written first, cleared after, so nothing is lost if a step fails. Runs at every pass of the task and when the page opens.
+ */
+export async function webhookOf(ctx) {
+  const doc = (await ctx.api.store.list(SECRET, { limit: 1 }))[0];
+  const own = String(doc?.data?.url ?? "").trim();
+  let held = "";
+  try { held = String((await ctx.legacy?.get("webhookUrl")) ?? "").trim(); } catch { held = ""; }
+  if (!held) return own;
+  if (!own) await ctx.api.store.add(SECRET, { url: held });
+  try { await ctx.legacy.clear("webhookUrl"); } catch { /* cleared at the next pass */ }
+  return own || held;
+}
+
 /** Envoi brut, ne lève jamais. Les pings ne partent que si `mentions`. */
 export async function post(url, content, mentions) {
   try {
@@ -137,7 +153,7 @@ async function logSend(ctx, key, subject, result) {
 
 /** Un passage : annonce ce qui est nouveau et récent. Exporté pour les tests. */
 export async function announce(ctx, now = Date.now()) {
-  const url = String(ctx.setting("webhookUrl") ?? "").trim();
+  const url = await webhookOf(ctx);
   if (!isWebhook(url)) return { sent: 0, skipped: 0 };
   const fresh = Math.min(24 * 90, Math.max(1, Number(ctx.setting("freshHours")) || 24)) * 3600_000;
   const mention = String(ctx.setting("mention") ?? "").trim();
@@ -189,12 +205,12 @@ const failure = (ctx, d) => [ctx.t("resultFailed", { status: d.status ?? "—" }
 export default {
   tasks: { announce: { everyMinutes: 1, run: (ctx) => announce(ctx).then(() => undefined) } },
 
-  async adminPanel(ctx) {
-    const url = String(ctx.setting("webhookUrl") ?? "").trim();
+  async adminPanel(ctx, { query } = {}) {
+    const url = await webhookOf(ctx);
     const ok = isWebhook(url);
     const log = await ctx.api.store.list("log", { limit: 50 });
     const last = log[0]?.data;
-    const toEdit = { href: "?tab=settings" };
+    const toEdit = { href: "?edit=webhook" };
     let yt = false;
     // YouTube : mentionné dans le résumé seulement si la Chaîne YouTube est installée ET que le réglage est coché.
     try {
@@ -204,9 +220,8 @@ export default {
     const title = ctx.t("adminTitle");
     const blocks = [];
     if (!ok) {
-      // The guide and the field live together: the card opens in the Settings tab, where the address is typed.
-      blocks.push({ type: "connection", tab: "settings", id: "webhook", title, state: "notConfigured", reason: ctx.t(url ? "badAddress" : "notSet"),
-        setup: [{ type: "markdown", text: ctx.t("setupSteps") }] });
+      blocks.push({ type: "connection", id: "webhook", title, state: "notConfigured", reason: ctx.t(url ? "badAddress" : "notSet"),
+        primary: { label: ctx.t("addAddress"), href: "?edit=webhook" }, setup: [{ type: "markdown", text: ctx.t("setupSteps") }] });
     } else if (last && last.ok === false) {
       blocks.push({ type: "connection", id: "webhook", title, state: "degraded", reason: ctx.t(last.status ? "lastFailedCode" : "lastFailed", { status: last.status ?? "" }), primary: { label: ctx.t("testSubmit"), action: "test" }, edit: toEdit });
     } else {
@@ -220,12 +235,28 @@ export default {
         rows: log.map((r) => [String(r.data.at).slice(0, 16).replace("T", " "), String(r.data.subject), r.data.ok ? ctx.t("resultOk") : failure(ctx, r.data)]),
       });
     }
+    if (query?.edit === "webhook") {
+      blocks.push({
+        type: "adminForm", presentation: "dialog", action: "saveWebhook", cancelHref: "?", title, submitLabel: ctx.t("saveAddress"),
+        fields: [{ name: "webhookUrl", label: ctx.t("fieldAddress"), kind: "secret", example: ctx.t("fieldAddressExample"), ...(ok ? { valueHint: "kept" } : {}) }],
+      });
+    }
     return blocks;
   },
 
   adminActions: {
+    /** The window "Edit": an empty field keeps the current address; only a Discord address is kept. */
+    async saveWebhook(ctx, values) {
+      const typed = String(values?.webhookUrl ?? "").trim();
+      const current = await webhookOf(ctx);
+      if (!typed && isWebhook(current)) return { ok: ctx.t("savedAddress"), redirect: "?" };
+      if (!isWebhook(typed)) return { errors: { webhookUrl: ctx.t("errAddress") } };
+      const doc = (await ctx.api.store.list(SECRET, { limit: 1 }))[0];
+      if (doc) await ctx.api.store.update(doc.id, { url: typed }); else await ctx.api.store.add(SECRET, { url: typed });
+      return { ok: ctx.t("savedAddress"), redirect: "?" };
+    },
     async test(ctx) {
-      const url = String(ctx.setting("webhookUrl") ?? "").trim();
+      const url = await webhookOf(ctx);
       if (!isWebhook(url)) return { error: ctx.t("errNoWebhook") };
       const site = await ctx.api.site(ctx.locale);
       const result = await post(url, ctx.t("testMessage", { site: site.name }), false);

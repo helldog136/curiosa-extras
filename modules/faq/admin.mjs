@@ -142,7 +142,7 @@ export async function adminPanel(ctx, { query } = {}) {
     blocks.push({ type: "heading", text: ctx.t("draftsTitle", { count: drafts.length }) });
     blocks.push({ type: "markdown", text: ctx.t("draftsHelp") });
     blocks.push({
-      type: "table", columns: [ctx.t("colQuestion")],
+      type: "table", columns: [ctx.t("colQuestion")], searchable: true, truncate: [0],
       rows: drafts.map((i) => [`${titleOf(ctx, i)}\n${[themeLabel(ctx, themes, i.theme), langsCell(ctx, i), ctx.t(i.by === "assistant" ? "originAssistant" : "originTeam")].join(" · ")}`]),
       rowIds: drafts.map((i) => i.id), rowActions: actions,
     });
@@ -152,18 +152,22 @@ export async function adminPanel(ctx, { query } = {}) {
   const published = items.filter((i) => i.status === "published");
   blocks.push({ type: "heading", text: ctx.t("publishedTitle", { count: published.length }) });
   if (!published.length) blocks.push({ type: "markdown", text: ctx.t(items.length ? "publishedNoneDrafts" : "publishedNone") });
-  const groups = [...themes.map((t) => ({ theme: t, name: themeName(ctx, t) || ctx.t("untitled"), items: siblings(items, t.id) })), { theme: null, name: ctx.t("noTheme"), items: published.filter((i) => !themes.some((t) => t.id === i.theme)) }];
-  for (const g of groups) {
-    if (!g.items.length) continue;
+  // ONE table for all the published questions (same columns): the theme is a column, with quick filters above and a live search (R15, R30).
+  if (published.length) {
+    const sorted = [...themes.map((t) => siblings(items, t.id)).flat(), ...published.filter((i) => !themes.some((t) => t.id === i.theme))];
     const actions = [];
     if (editor) actions.push({ label: ctx.t("actEdit"), href: "?edit={id}" });
-    if (themes.length) blocks.push({ type: "heading", text: g.name });
+    const withThemes = themes.length > 0;
     blocks.push({
-      type: "table", columns: [ctx.t("colQuestion")],
-      rows: g.items.map((i) => [`${titleOf(ctx, i)}\n${langsCell(ctx, i)} · ${ctx.t("votesCell", { yes: i.y, no: i.n })}`]),
-      rowIds: g.items.map((i) => i.id), rowActions: actions,
+      type: "table", columns: [ctx.t("colQuestion"), ...(withThemes ? [ctx.t("colTheme")] : [])], searchable: true, truncate: [0], ...(withThemes ? { filters: [{ column: 1 }] } : {}),
+      rows: sorted.map((i) => [`${titleOf(ctx, i)}\n${langsCell(ctx, i)} · ${ctx.t("votesCell", { yes: i.y, no: i.n })}`, ...(withThemes ? [{ text: themeLabel(ctx, themes, i.theme), badge: "neutral" }] : [])]),
+      rowIds: sorted.map((i) => i.id), rowActions: actions,
     });
-    if (editor && g.items.length > 1) blocks.push({ type: "links", items: [{ label: ctx.t("linkOrder"), href: `${here(ctx)}?order=${g.theme ? g.theme.id : "none"}` }] });
+    if (editor) {
+      const orderLinks = [...themes.map((t) => ({ id: t.id, name: themeName(ctx, t) || ctx.t("untitled"), n: siblings(items, t.id).length })), { id: "none", name: ctx.t("noTheme"), n: published.filter((i) => !themes.some((t) => t.id === i.theme)).length }]
+        .filter((g) => g.n > 1).map((g) => ({ label: withThemes ? ctx.t("linkOrderIn", { name: g.name }) : ctx.t("linkOrder"), href: `${here(ctx)}?order=${g.id}` }));
+      if (orderLinks.length) blocks.push({ type: "links", items: orderLinks });
+    }
   }
   const disliked = published.filter((i) => i.n >= 3 && i.n > i.y).length;
   if (disliked) blocks.push({ type: "markdown", text: ctx.t("votesHint", { n: disliked }) });
@@ -203,7 +207,7 @@ export async function adminPanel(ctx, { query } = {}) {
     blocks.push({ type: "heading", text: ctx.t("inboxNewTitle", { count: fresh.length }), tab });
     const actions = [];
     if (editor) actions.push({ label: ctx.t("actAnswer"), href: "?answer={id}" }, { label: ctx.t("actDismiss"), action: "dismissAsked", confirm: ctx.t("confirmDismiss"), danger: true });
-    blocks.push({ type: "table", columns: cols, rows: rowsOf(fresh), rowIds: fresh.map((a) => a.id), rowActions: actions, tab });
+    blocks.push({ type: "table", columns: cols, searchable: true, rows: rowsOf(fresh), rowIds: fresh.map((a) => a.id), rowActions: actions, tab });
   }
   const ready = asked.filter((a) => a.status === "drafted");
   if (ready.length) {
@@ -212,7 +216,7 @@ export async function adminPanel(ctx, { query } = {}) {
     const actions = [];
     if (editor) actions.push({ label: ctx.t("actReread"), href: "?answer={id}" });
     if (publisher) actions.push({ label: ctx.t("actPublish"), action: "publishAsked", confirm: ctx.t("confirmPublish") });
-    blocks.push({ type: "table", columns: cols, rows: rowsOf(ready), rowIds: ready.map((a) => a.id), rowActions: actions, tab });
+    blocks.push({ type: "table", columns: cols, searchable: true, rows: rowsOf(ready), rowIds: ready.map((a) => a.id), rowActions: actions, tab });
   }
   return blocks;
 }

@@ -161,10 +161,13 @@ test("au plus 1 000 messages : le suivant est refusé avec une phrase claire", a
   assert.equal(await ctx.api.store.count("messages"), 1000);
 });
 
-test("action messageSearch : renvoie vers la liste filtrée", async () => {
-  const { ctx } = setup(1);
-  assert.deepEqual(await run(ctx, "messageSearch", { q: " élodie " }), { redirect: "?q=%C3%A9lodie" });
-  assert.deepEqual(await run(ctx, "messageSearch", { q: "" }), { redirect: "?" });
+test("the message list: live search asked of the server, no search button, the table comes back empty when nothing matches", async () => {
+  const { ctx } = setup(3);
+  assert.equal(def.adminActions.messageSearch, undefined);
+  const blocks = await panel(ctx, { q: "zzzzzz" });
+  assert.equal(blocks.some((b) => b.type === "adminForm" && b.action === "messageSearch"), false);
+  const table = byType(blocks, "table").find((t) => t.columns.includes("Message"));
+  assert.deepEqual([table.searchable, table.rows.length, typeof table.empty], ["server", 0, "string"]);
 });
 
 /* ───────────── Les actions : à l'honneur ───────────── */
@@ -219,7 +222,7 @@ test("à l'honneur : 24 mises à l'honneur au plus, les plus anciennes sont reti
 
 test("les actions qui écrivent sont réservées par un droit du module, déclaré dans le manifeste", () => {
   assert.deepEqual(manifest.rights.map((r) => r.id), ["messages.edit"]);
-  for (const name of ["honorSearch", "honorSave", "honorClear", "messageSearch", "messageSave", "tidy"]) assert.equal(def.adminActions[name].right, "messages.edit", name);
+  for (const name of ["honorSearch", "honorSave", "honorClear", "messageSave", "tidy"]) assert.equal(def.adminActions[name].right, "messages.edit", name);
   assert.equal(Admin.RIGHT, "messages.edit");
   assert.deepEqual(manifest.rights[0].default, { admin: true, editor: false });
 });
@@ -379,7 +382,7 @@ test("outils : Contacts muet → une phrase claire, jamais d'écriture à l'aveu
 /* ───────────── Le manifeste ───────────── */
 
 test("manifeste : Contacts v2 obligatoire, vie privée offerte, groupes et catégorie cachée en « choix parmi » (jamais un nom à taper), cœur 0.5.0 (éléments d'overlay depuis la 1.2.0)", () => {
-  assert.equal(manifest.minCore, "0.11.0");
+  assert.equal(manifest.minCore, "0.38.0");
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, undefined]]);
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]]);
   for (const key of ["category", "category2", "category3", "category4", "category5", "category6", "hide"]) {

@@ -129,12 +129,15 @@ test("une règle : ajout, erreurs sous le champ, modification qui garde le derni
   assert.equal(r.ok, messages.fr.done_rule_saved);
   const [edited] = await S.listRules(w.ctx);
   assert.equal(edited.id, saved.id); assert.equal(edited.name, "Rouge 2"); assert.equal(edited.lastAt, 123456); assert.equal(edited.readMessage, true); assert.equal((await S.listRules(w.ctx)).length, 1);
-  await act(w, "toggleRule", { id: saved.id });
+  await act(w, "setRuleState", { id: saved.id, enabled: "0" });
   assert.equal((await S.listRules(w.ctx))[0].enabled, false);
-  const panelBlocks = await w.panel();
-  assert.match(texts(panelBlocks).join("\n"), /en pause/);
-  await act(w, "toggleRule", { id: saved.id });
+  await act(w, "setRuleState", { id: saved.id, enabled: "0" });
+  assert.equal((await S.listRules(w.ctx))[0].enabled, false, "the switch says the state: asking twice never undoes it");
+  const row = find(await w.panel(), "table")[0].rows[0];
+  assert.deepEqual([row[1].switch.on, row[1].switch.offText, row[1].switch.onText], [false, "En pause", ""], "the state is a switch, paused rows say so");
+  await act(w, "setRuleState", { id: saved.id, enabled: "1" });
   assert.equal((await S.listRules(w.ctx))[0].enabled, true);
+  assert.equal(find(await w.panel(), "table")[0].rows[0][1].switch.on, true);
   const withEdit = await w.panel({ edit: saved.id });
   const form = find(withEdit, "adminForm", (b) => b.action === "saveRule")[0];
   assert.equal(form.fields.find((f) => f.name === "id").value, saved.id);
@@ -142,9 +145,10 @@ test("une règle : ajout, erreurs sous le champ, modification qui garde le derni
   assert.equal(form.fields.find((f) => f.name === "currency").value, "USD");
   assert.equal(form.fields.find((f) => f.name === "readMessage").value, "on");
   assert.equal(form.cancelHref, "?");
+  assert.equal(form.presentation, "dialog", "editing opens in a window above the list");
   await act(w, "removeRule", { id: saved.id });
   assert.equal((await S.listRules(w.ctx)).length, 0);
-  assert.match((await act(w, "toggleRule", { id: "inconnu" })).error, /n'existe plus/);
+  assert.match((await act(w, "setRuleState", { id: "inconnu", enabled: "1" })).error, /n'existe plus/);
   w.done();
 });
 
@@ -166,11 +170,13 @@ test("le tableau des règles se lit en une phrase ; les devises ajoutées en ré
   const blocks = await w.panel();
   const table = find(blocks, "table")[0];
   assert.deepEqual(table.rows.map((r) => r[0].split(" — ")[0]), ["A", "B"]);
+  assert.ok(!table.rows.some((r) => /pause|paused/.test(r[0])), "the state is in the switch, not in the sentence");
   assert.match(table.rows[0][0], /Super Chat, toutes devises · → tts:lire \+ lit le message · recharge 30 s/);
   assert.match(table.rows[1][0], /Adhésions offertes : 5 ou plus/);
   assert.equal(table.rowIds.length, 2);
-  assert.deepEqual(table.rowActions.map((a) => a.action ?? "href"), ["href", "toggleRule", "removeRule"]);
-  assert.ok(table.rowActions[2].danger && table.rowActions[2].confirm);
+  assert.deepEqual(table.rowActions.map((a) => a.action ?? "href"), ["href", "removeRule"], "one visible action, the other in the menu");
+  assert.ok(table.rowActions[1].danger && table.rowActions[1].confirm && table.rowActions[1].inMenu && !table.rowActions[0].inMenu);
+  assert.equal(table.searchable, true);
   const cur = find(blocks, "adminForm", (b) => b.action === "saveRule")[0].fields.find((f) => f.name === "currency").options.map((o) => o.label);
   assert.ok(cur.includes("ISK") && cur.includes("UAH") && cur.includes("EUR") && !cur.includes("PAS-UNE-DEVISE"));
   w.done();
@@ -193,6 +199,10 @@ test("simulation : même chemin qu'un vrai don (règles, maison), AUCUN appel à
   const lines = await w.journal();
   assert.ok(lines.every((l) => l.test === true && l.who === "Test"));
   w.tick(4000);
+  const simForm = find(await w.panel(), "adminForm", (b) => b.action === "simulate")[0];
+  const ruleForm = find(await w.panel(), "adminForm", (b) => b.action === "saveRule")[0];
+  const shared = simForm.fields.map((f) => f.name).filter((n) => ruleForm.fields.some((g) => g.name === n));
+  assert.deepEqual(shared, [], "two forms of one page never share a field name (a label must point to its own field)");
   const refused = await act(w, "simulate", { type: "superchat", amount: "5", currency: "EUR", text: "what the shit" });
   assert.match(refused.ok, /refusé par la vérification du texte/);
   w.done();
@@ -202,12 +212,12 @@ test("simulation : un montant faux est signalé sous son champ ; limite d'une to
   const w = await world();
   let r = await act(w, "simulate", { type: "superchat", amount: "beaucoup", currency: "EUR" });
   assert.deepEqual(Object.keys(r.errors), ["amount"]); assert.match(r.errors.amount, /5 ou 2,50/);
-  r = await act(w, "simulate", { type: "superchat", amount: "5", currency: "E" });
-  assert.deepEqual(Object.keys(r.errors), ["currency"]);
+  r = await act(w, "simulate", { simType: "superchat", amount: "5", simCurrency: "E" });
+  assert.deepEqual(Object.keys(r.errors), ["simCurrency"]);
   r = await act(w, "simulate", { type: "gift", count: "0" });
   assert.deepEqual(Object.keys(r.errors), ["count"]);
-  r = await act(w, "simulate", { type: "autre" });
-  assert.deepEqual(Object.keys(r.errors), ["type"]);
+  r = await act(w, "simulate", { simType: "autre" });
+  assert.deepEqual(Object.keys(r.errors), ["simType"]);
   assert.ok((await act(w, "simulate", { type: "member" })).ok);
   assert.match((await act(w, "simulate", { type: "member" })).error, /une simulation toutes les 3 secondes/);
   for (let i = 0; i < 29; i++) { w.tick(3100); assert.ok((await act(w, "simulate", { type: "member" })).ok, `simulation ${i + 2}`); }

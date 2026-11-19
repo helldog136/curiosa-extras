@@ -40,8 +40,8 @@
   "errBusy": "Un instant, réessayez dans une minute.",
   "back": "← Retour",
   "noRight": "Vous pouvez voir cette page, mais pas la modifier. Demandez à la personne qui gère le site.",
-  "needToken": "Il manque le code d'accès de la plateforme. Ouvrez l'onglet Réglages, collez-le dans « Code d'accès de la plateforme » et enregistrez.",
-  "sync_token": "La plateforme refuse le code d'accès. Vérifiez que vous l'avez copié en entier, sans espace, puis collez-le de nouveau dans l'onglet Réglages.",
+  "needToken": "Il manque le code d'accès de la plateforme. Choisissez « Saisir le code d'accès » et enregistrez.",
+  "sync_token": "La plateforme refuse le code d'accès. Vérifiez que vous l'avez copié en entier, sans espace, puis collez-le de nouveau avec « Modifier ».",
   "sync_scope": "La plateforme refuse la lecture de vos membres avec ce code. Vérifiez que c'est bien celui du compte qui a créé la page.",
   "sync_none": "La plateforme ne trouve pas votre page de soutien avec ce code. Vérifiez que c'est bien le code du compte qui gère votre page de soutien.",
   "sync_busy": "La plateforme demande de patienter (trop de demandes). Réessayez dans quelques minutes.",
@@ -64,8 +64,6 @@
   "filter_pending": "À relire",
   "filter_unfiled": "Pas dans Contacts",
   "searchLabel": "Chercher",
-  "searchHelp": "Un bout de nom ou de pseudo. Exemple : Luna.",
-  "searchButton": "Chercher",
   "colPerson": "Personne",
   "colTier": "Palier (chez la plateforme)",
   "colState": "État",
@@ -190,5 +188,11 @@
   "sumActive": "Actifs : {n}",
   "sumPending": "Pseudos à relire : {n}",
   "sumShown": "Visibles sur la page : {n}",
-  "importNoRight": "Vous n'avez pas le droit d'importer un fichier : demandez-le à la personne qui gère le site."
+  "importNoRight": "Vous n'avez pas le droit d'importer un fichier : demandez-le à la personne qui gère le site.",
+  "saveToken": "Enregistrer le code d'accès",
+  "tokenLabel": "Code d'accès de la plateforme",
+  "tokenExample": "Par exemple : un long code copié sur la plateforme",
+  "tokenHelp": "Patreon : le code d'accès de votre page. Ko-fi : votre code de vérification.",
+  "tokenSaved": "Code d'accès enregistré.",
+  "errToken": "Collez le code d'accès en entier, sans espace, par exemple le long code donné par la plateforme"
 }

@@ -223,7 +223,8 @@ test("panneau : vide, il explique par où commencer ; rempli, brouillons / publi
   assert.deepEqual(drafts.columns, ["Question"], "une seule colonne : lisible sur un téléphone");
   assert.deepEqual(drafts.rows[0], ["Brouillon ?\nSans thème · FR (manque : EN) · Brouillon de l'assistant"]);
   assert.deepEqual(drafts.rowActions.map((a) => a.label), ["Modifier", "Publier"]);
-  assert.deepEqual(pub.rows[0], ["Publiée ?\nFR (manque : EN) · 12 / 4"]);
+  assert.deepEqual(pub.rows[0], ["Publiée ?\nFR (manque : EN) · 12 / 4", { text: "Abonnements", badge: "neutral" }], "the theme is a coloured and written column of ONE table (R30)");
+  assert.equal(pub.searchable, true); assert.deepEqual(pub.filters, [{ column: 1 }]);
   assert.deepEqual(pub.rowActions.map((a) => a.label), ["Modifier"], "un seul bouton par ligne publiée : lisible sur un téléphone");
   assert.deepEqual(themes.rows, [["Abonnements\nQuestions : 2"]]);
   assert.deepEqual(themes.rowActions.map((a) => a.label), ["Modifier"]);

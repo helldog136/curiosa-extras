@@ -33,10 +33,11 @@ test("panneau : avis à valider d'abord, bandeau clair, actions adaptées à cha
   const t = table(blocks);
   assert.deepEqual(t.rows.map((r) => r[1]), ["Attente"]);
   assert.deepEqual(t.columns, ["Date", "Prénom ou pseudo", "Note", "Avis"], "pas de colonne e-mail sans le droit");
-  assert.deepEqual(t.rowActions.map((a) => a.action ?? a.href), ["approve", "reject", "?edit={id}", "remove"]);
+  assert.deepEqual(t.rowActions.map((a) => a.action ?? a.href), ["approve", "?edit={id}", "reject", "remove"]);
+  assert.deepEqual(t.rowActions.filter((a) => !a.inMenu).length, 2, "two visible actions at most, the others in the menu (R16)");
   assert.ok(!flat(blocks).includes("ada@example.org"), "l'e-mail n'apparaît nulle part");
   const published = table(await def.adminPanel(ctx, { query: { status: "approved" } }));
-  assert.deepEqual(published.rowActions.map((a) => a.action ?? a.href), ["feature", "unpublish", "?edit={id}", "remove"]);
+  assert.deepEqual(published.rowActions.map((a) => a.action ?? a.href), ["feature", "?edit={id}", "unpublish", "remove"]);
   assert.match(published.rows[0][4], /Publié · ★ Favori/);
   const refused = table(await def.adminPanel(ctx, { query: { status: "rejected" } }));
   assert.deepEqual(refused.rowActions.map((a) => a.action ?? a.href), ["restore", "remove"]);
@@ -74,12 +75,12 @@ test("liste d'administration : 50 par page, pages numérotées, filtre par note,
   const blind = ctxFor({ rights: [] }); await seed(blind, { status: "pending", email: "findme@example.org" });
   assert.equal(rows(await def.adminPanel(blind, { query: { status: "pending", q: "findme" } })).length, 0, "on ne cherche pas dans ce qu'on n'a pas le droit de voir");
   const hostile = await def.adminPanel(ctx, { query: { status: "<script>", stars: "9", q: "<img onerror=x>", page: "NaN", edit: "../../etc", add: "1" } });
+  assert.equal(table(hostile).searchable, "server");
   assert.match(flat(hostile), /No review matches this filter/);
   assert.ok(rows(await def.adminPanel(ctx, { query: { status: "<script>", stars: "9", page: "NaN", edit: "../../etc" } })).length > 0, "des valeurs absurdes retombent sur les réglages par défaut");
-  // la recherche renvoie vers la même page avec les filtres
-  assert.deepEqual(await run(ctx, "search", { status: "approved", stars: "4", q: " ada " }), { redirect: "?status=approved&stars=4&q=ada" });
-  assert.deepEqual(await run(ctx, "search", { status: "x", stars: "9", q: "" }), { redirect: "?" });
-  assert.ok((await run(ctx, "search", { q: "https://evil.example" })).redirect.startsWith("?"));
+  // la recherche est en direct (le serveur filtre), sans bouton ni action
+  assert.equal(def.adminActions.search, undefined);
+  assert.equal(hostile.some((b) => b.type === "adminForm" && b.action === "search"), false);
 });
 
 test("onglet Partager : lien à copier, QR code sur fond blanc, téléchargement ; blocs rangés dans des onglets qui existent", async () => {

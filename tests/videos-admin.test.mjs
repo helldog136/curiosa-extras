@@ -213,8 +213,8 @@ test("catégories : gabarit en un clic (une seule fois), « Vide », ajout, reno
   assert.equal((await D.snapshot(ctx, { fresh: true })).cats.length, 3);
   assert.match((await act(ctxFor(), "applyTemplate", { template: "empty" })).ok, /aucune catégorie créée/);
   assert.ok((await act(ctx, "applyTemplate", { template: "n'importe quoi" })).error);
-  assert.match((await act(ctx, "catAdd", { name_fr: "", name_en: "" })).errors.name_fr, /Écrivez un nom/);
-  assert.match((await act(ctx, "catAdd", { name_fr: "Présentations", name_en: "Presentations" })).ok, /Présentations/);
+  assert.match((await act(ctx, "catAdd", { catName_fr: "", catName_en: "" })).errors.catName_fr, /Écrivez un nom/);
+  assert.match((await act(ctx, "catAdd", { catName_fr: "Présentations", catName_en: "Presentations" })).ok, /Présentations/);
   snap = await D.snapshot(ctx, { fresh: true });
   const [m, r, t, pr] = snap.cats;
   await act(ctx, "catDown", { id: String(m.k) }); await act(ctx, "catUp", { id: String(pr.k) });
@@ -227,14 +227,14 @@ test("catégories : gabarit en un clic (une seule fois), « Vide », ajout, reno
   assert.equal(snap.byN.get(v.n).cat, 0); assert.equal(snap.cats.length, 3);
   assert.equal((await act(ctx, "catRemove", { id: String(r.k) })).error, messages("fr").goneCategory);
   const old = P.LIMITS.categories; P.LIMITS.categories = 3;
-  try { assert.match((await act(ctx, "catAdd", { name_fr: "Trop", name_en: "Too" })).error, /limite de 3 catégories/); } finally { P.LIMITS.categories = old; }
+  try { assert.match((await act(ctx, "catAdd", { catName_fr: "Trop", catName_en: "Too" })).error, /limite de 3 catégories/); } finally { P.LIMITS.categories = old; }
 });
 
 test("séries : créer, ajouter des vidéos (jamais deux fois, 100 au plus), ordre par boutons, publier", async () => {
   const ctx = ctxFor();
   const vids = await seedVideos(ctx, Array.from({ length: 4 }, (_, i) => ({ ext: id(i + 1), title: `Épisode ${i + 1}` })));
-  const p = Number(/series=(\d+)/.exec((await act(ctx, "seriesAdd", { name_fr: "Formation", name_en: "Course" })).redirect)[1]);
-  assert.match((await act(ctx, "seriesAdd", { name_fr: "", name_en: "" })).errors.name_fr, /Écrivez un nom/);
+  const p = Number(/series=(\d+)/.exec((await act(ctx, "seriesAdd", { seriesName_fr: "Formation", seriesName_en: "Course" })).redirect)[1]);
+  assert.match((await act(ctx, "seriesAdd", { seriesName_fr: "", seriesName_en: "" })).errors.seriesName_fr, /Écrivez un nom/);
   for (const v of vids) assert.match((await act(ctx, "seriesItemAdd", { id: `${p}:${v.n}` })).ok, /ajoutée à la série/);
   assert.match((await act(ctx, "seriesItemAdd", { id: `${p}:${vids[0].n}` })).error, /déjà dans la série/);
   assert.match((await act(ctx, "seriesItemAdd", { id: `${p}:999` })).error, /n'existe plus/);
@@ -250,11 +250,11 @@ test("séries : créer, ajouter des vidéos (jamais deux fois, 100 au plus), ord
   assert.match((await act(ctx, "seriesSave", { id: String(p), name_fr: "x", name_en: "x", desc_fr: "y".repeat(P.LIMITS.seriesDesc + 1) })).errors.desc_fr, /Trop long/);
   const onlyEdit = ctxFor({}, { rights: ["edit"] });
   const [w] = await seedVideos(onlyEdit, [{ ext: id(9), title: "W" }]);
-  const q = Number(/series=(\d+)/.exec((await act(onlyEdit, "seriesAdd", { name_fr: "S", name_en: "S" })).redirect)[1]);
+  const q = Number(/series=(\d+)/.exec((await act(onlyEdit, "seriesAdd", { seriesName_fr: "S", seriesName_en: "S" })).redirect)[1]);
   await act(onlyEdit, "seriesItemAdd", { id: `${q}:${w.n}` });
   await act(onlyEdit, "seriesSave", { id: String(q), name_fr: "S2", name_en: "S2", state: "published" });
   assert.equal((await D.snapshot(onlyEdit, { fresh: true })).series[0].status, "draft");
-  await act(ctx, "seriesAdd", { name_fr: "Deux", name_en: "Two" }); await act(ctx, "seriesDown", { id: String(p) });
+  await act(ctx, "seriesAdd", { seriesName_fr: "Deux", seriesName_en: "Two" }); await act(ctx, "seriesDown", { id: String(p) });
   assert.deepEqual((await D.snapshot(ctx, { fresh: true })).series.map((x) => x.names.fr), ["Deux", "La formation"]);
   assert.match((await act(ctx, "seriesRemove", { id: String(p) })).ok, /supprimée/);
   assert.equal((await D.snapshot(ctx, { fresh: true })).items.length, 4);
@@ -311,4 +311,20 @@ test("l'écran de modification propose les bons boutons et, sans galerie, une in
 test("les droits du module sont déclarés et relus", () => {
   assert.deepEqual(manifest.rights.map((r) => r.id).sort(), ["edit", "publish"]);
   for (const [name, a] of Object.entries(def.adminActions)) assert.ok(typeof a === "object" && ["edit", "publish"].includes(a.right), `${name} a un droit`);
+});
+
+test("the video list: live search asked of the server (the list is paged), the table always comes back; the add forms of categories and series never share a field name", async () => {
+  const ctx = ctxFor();
+  await seedVideos(ctx, [{ ext: "aaaaaaaaaaa", title: "Premier" }, { ext: "bbbbbbbbbbb", title: "Second" }]);
+  const blocks = await panel(ctx);
+  const table = blocks.find((b) => b.type === "table");
+  assert.equal(table.searchable, "server");
+  assert.equal(blocks.some((b) => b.type === "adminForm" && b.action === "search"), false, "no search button any more");
+  const none = await panel(ctx, { q: "zzzzzz" });
+  const empty = none.find((b) => b.type === "table" && b.searchable === "server");
+  assert.deepEqual(empty.rows, []);
+  assert.ok(empty.empty);
+  const shelves = (await panel(ctx, { tab: "shelves" })).filter((b) => b.type === "adminForm");
+  const names = shelves.flatMap((f) => f.fields.map((x) => x.name));
+  assert.equal(new Set(names).size, names.length, "unique field names on the page");
 });

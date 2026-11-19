@@ -49,7 +49,7 @@ const serve = (answer = (s) => ({ json: { results: DB[s.toLowerCase()] ?? [] } }
 };
 let n = 0;
 const makeCtx = (extra = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY, useSteam: false }, permissions: ["storage", "routes", "admin", "mcp"], ...extra });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { useSteam: false }, legacy: extra.settings ? {} : { rawgKey: KEY }, permissions: ["storage", "routes", "admin", "mcp"], ...extra });   // a ctx given its own settings has no key unless it says so (legacy)
   c.can = () => true;
   return c;
 };
@@ -64,8 +64,8 @@ test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["game.cover", 1]]);
   assert.deepEqual(manifest.offers[0].readOnly.sort(), ["candidates", "cover", "status"]);
   assert.deepEqual(manifest.offers[0].callerRights, ["fix"]);
-  const key = manifest.settings.find((s) => s.key === "rawgKey");
-  assert.equal(key.type, "secret"); assert.equal(key.optional, true);
+  assert.equal(manifest.settings.some((s) => s.key === "rawgKey"), false, "the code is kept in the store, behind \"Edit\" (R33)");
+  assert.deepEqual(manifest.legacySettings, [{ key: "rawgKey", secret: true }]);
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["rawg_covers_to_check", "rawg_covers_list", "rawg_cover_set"]);
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_covers_list").readOnly, true, "la liste est une lecture : même niveau que rawg_covers_to_check");
   assert.deepEqual(manifest.tabs.map((t) => t.id), ["use", "saved"]);
@@ -82,7 +82,7 @@ test("sans clé : no-key, aucune requête ; clé mal formée : refused, aucune r
   assert.deepEqual(await svc.cover(none, { title: "Hades" }), { status: "no-key", url: null });
   assert.deepEqual(await svc.candidates(none, { title: "Hades" }), { status: "no-key", candidates: [], sources: [] });
   assert.deepEqual(await svc.status(none), { ready: false, configured: false, source: null, state: null, keyHeld: false, sources: [{ source: "rawg", on: false, why: "no-key" }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
-  const bad = makeCtx({ settings: { rawgKey: "pas bon !", useSteam: false } });
+  const bad = makeCtx({ settings: { useSteam: false }, legacy: { rawgKey: "pas bon !" } });
   assert.equal((await svc.cover(bad, { title: "Hades" })).status, "refused");
   assert.equal(f.calls.length, 0);
 });
@@ -99,7 +99,7 @@ test("jaquette trouvée : le titre ressemblant gagne, la clé part vers RAWG (ht
   // La clé n'est dans aucune valeur rendue, aucun journal du client réseau, aucun bloc, aucun état gardé.
   assert.ok(!JSON.stringify(r).includes(KEY));
   assert.ok(!JSON.stringify(c.calls.netLog).includes(KEY), "le journal du réseau ne contient pas la clé");
-  assert.ok(!JSON.stringify(c.dumpStore()).includes(KEY), "la clé du réglage n'est pas copiée dans le stockage");
+  assert.ok(!JSON.stringify(c.dumpStore().filter((r) => r.collection !== "ownKey")).includes(KEY), "la clé n'est copiée nulle part, hors de son propre document");
   assert.ok(!JSON.stringify(await svc.status(c)).includes(KEY));
   assert.deepEqual((await svc.status(c)), { ready: true, configured: true, source: "setting", state: "ok", at: (await svc.status(c)).at, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
 });
@@ -252,7 +252,7 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
   await svc.adopt(c, input);
   assert.equal((await fixes.fixFor(c, "Rien")).kind, "game");
   // La clé saisie dans les réglages l'emporte sur la clé reprise ; une autre clé ne remplace pas la reprise.
-  const own = makeCtx({ settings: { rawgKey: "UNE-AUTRE-CLE-1234" }, rows: { adoptedKey: [{ key: KEY, at: "x" }] } });
+  const own = makeCtx({ legacy: { rawgKey: "UNE-AUTRE-CLE-1234" }, rows: { adoptedKey: [{ key: KEY, at: "x" }] } });
   assert.equal((await rawg.keyOf(own)).key, "UNE-AUTRE-CLE-1234");
   const other = await svc.adopt(makeCtx({ settings: { useSteam: false } }), { key: "n'importe quoi" });
   assert.equal(other.keyAdopted, false); assert.equal(other.ready, false);
@@ -278,7 +278,7 @@ test("l'administration : jamais la clé ; une seule carte d'état des sources ; 
   assert.match(card.summary, /^RAWG( · \w+)*$/, "les sources qui servent, sur une ligne");
   assert.deepEqual(card.menu.map((m) => m.action), ["testKey"]);
   assert.deepEqual(card.net.map((n) => n.host), ["api.rawg.io", "store.steampowered.com"], "la santé du service est dans la carte, pas une ligne de plus");
-  assert.equal(card.edit.href, "?tab=settings");
+  assert.equal(card.edit.href, "?edit=key");
   const adopted = makeCtx({ settings: { useSteam: false } });
   await svc.adopt(adopted, { key: KEY });
   const shown = await mod.adminPanel(adopted, { query: {} });
@@ -301,7 +301,7 @@ test("connexion en trois états (R33) : aucune source, sources qui servent, code
   const degraded = await mod.adminPanel(refusedCtx, { query: {} });
   assertConnectionStates({ notConfigured: tabOf(notConfigured, "use"), configured: tabOf(configured, "use"), degraded: tabOf(degraded, "use") });
   const card = degraded.find((b) => b.type === "connection");
-  assert.match(card.reason, /Rawg refuse le code/); assert.deepEqual(card.primary, { label: "Corriger le code", href: "?tab=settings" });
+  assert.match(card.reason, /Rawg refuse le code/); assert.deepEqual(card.primary, { label: "Corriger le code", href: "?edit=key" });
   assert.ok(!degraded.some((b) => b.type === "netHealth"));
 });
 
@@ -315,7 +315,7 @@ test("« Tester la clé » : ok, refusée, injoignable, absente, mal formée ; l
   serve(() => ({ status: 500, json: {} }));
   assert.match((await mod.adminActions.testKey(makeCtx())).error, /injoignable/);
   assert.match((await mod.adminActions.testKey(makeCtx({ settings: { useSteam: false } }))).error, /Aucun code/);
-  assert.match((await mod.adminActions.testKey(makeCtx({ settings: { rawgKey: "x y" } }))).error, /format/);
+  assert.match((await mod.adminActions.testKey(makeCtx({ legacy: { rawgKey: "x y" } }))).error, /format/);
 });
 
 test("écran « Quel est le bon jeu ? » : titre, jaquettes proposées (images de RAWG seulement), boutons de choix, recherche d'un autre nom", async () => {
@@ -639,4 +639,23 @@ test("aucun nom de site, aucune clé réelle, aucun minuteur dans le code du mod
   assert.ok(!/setInterval/.test(code), "pas de minuteur de fond");
   assert.ok(!/\bfetch\(/.test(files.filter((x) => x !== "copies.mjs").map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n")), "tout passe par ctx.api.net (sauf les octets d'une image, copies.mjs)");
   assert.ok(!/console\.(log|info|warn|error)\([^)]*\bkey\b(?!\w)/.test(code.replace(/error\?\.name/g, "")), "la clé n'est jamais journalisée");
+});
+
+test("the access code lives in the store behind \"Edit\": handed over once from the former setting, window with a kept value, empty keeps, bad format refused under the field, a new code replaces it", async () => {
+  const c = makeCtx();
+  assert.equal((await rawg.ownKeyOf(c)), KEY);
+  assert.deepEqual(c.dumpStore().filter((r) => r.collection === "ownKey").map((r) => r.data.key), [KEY]);
+  assert.deepEqual(c.calls.legacyCleared, ["rawgKey"]);
+  assert.equal((await mod.adminPanel(c, { query: {} })).some((b) => b.type === "adminForm" && b.action === "saveKey"), false, "closed: no field on the page");
+  const dialog = (await mod.adminPanel(c, { query: { edit: "key" } })).find((b) => b.type === "adminForm" && b.action === "saveKey");
+  assert.deepEqual([dialog.presentation, dialog.fields.length, dialog.fields[0].kind, dialog.fields[0].valueHint, dialog.fields[0].value], ["dialog", 1, "secret", "kept", undefined]);
+  assert.match((await mod.adminActions.saveKey(c, { rawgKey: "pas bon !" })).errors.rawgKey, /sans espace/);
+  assert.equal((await mod.adminActions.saveKey(c, { rawgKey: "" })).redirect, "?");
+  assert.equal((await rawg.ownKeyOf(c)), KEY);
+  assert.equal((await mod.adminActions.saveKey(c, { rawgKey: "UNE-AUTRE-CLE-1234" })).redirect, "?");
+  assert.equal((await rawg.keyOf(c)).key, "UNE-AUTRE-CLE-1234");
+  const none = makeCtx({ settings: { useSteam: false } });
+  const first = (await mod.adminPanel(none, { query: { edit: "key" } })).find((b) => b.type === "adminForm" && b.action === "saveKey");
+  assert.equal(first.fields[0].valueHint, undefined, "no code yet: an empty field");
+  assert.equal(manifest.settings.some((s) => s.key === "rawgKey"), false);
 });

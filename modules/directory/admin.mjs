@@ -269,41 +269,33 @@ async function roleScreen(ctx, id) {
 
 function peopleBlocks(ctx, view, query) {
   const t = ctx.t, out = [];
-  const showHidden = str(query.show) === "hidden";
-  out.push({ type: "heading", text: showHidden ? t("hiddenTitle") : t("peopleTitle") });
-  const links = [{ label: showHidden ? t("peopleShowVisible") : t("peopleShowHidden", { n: view.hiddenHere.length }), href: showHidden ? "?" : "?show=hidden" }];
-  if (showHidden) {
-    out.push({ type: "markdown", text: t("hiddenIntro") });
-    if (!view.hiddenHere.length) out.push({ type: "markdown", text: t("hiddenNone") });
-    else out.push({ type: "table", columns: [t("colPerson")], rows: view.hiddenHere.slice(0, 200).map((h) => [h.name]), rowIds: view.hiddenHere.slice(0, 200).map((h) => h.id), rowActions: can(ctx, RIGHT_HIDE) ? [{ label: t("peopleUnhide"), action: "unhide" }] : [] });
-    out.push({ type: "links", items: links });
-    return out;
-  }
+  out.push({ type: "heading", text: t("peopleTitle") });
   out.push({ type: "markdown", text: t("peopleIntro") });
-  const all = [...view.all].sort((a, b) => (a.fname < b.fname ? -1 : a.fname > b.fname ? 1 : 0));
+  // ONE list: the people shown and the people hidden here (a switch tells which); the search is live and asked of the server, the list is paged (R15, R17, R30).
+  const shown = [...view.all].sort((a, b) => (a.fname < b.fname ? -1 : a.fname > b.fname ? 1 : 0)).map((e) => ({ e, on: true, key: e.key }));
+  const hidden = [...view.hiddenHere].sort((a, b) => (fold(a.name) < fold(b.name) ? -1 : 1)).map((h) => ({ h, on: false, key: fold(h.name) }));
+  const all = [...shown, ...hidden];
   const pq = clean(str(query.pq), 100);
-  const filtered = pq ? all.filter((e) => e.key.includes(fold(pq))) : all;
+  const filtered = pq ? all.filter((r) => r.key.includes(fold(pq))) : all;
   const pages = Math.max(1, Math.ceil(filtered.length / LIMITS.adminPage));
   const page = Math.min(pages, Math.max(1, P.int(str(query.ppage), 1, 1, 100000)));
   const slice = filtered.slice((page - 1) * LIMITS.adminPage, page * LIMITS.adminPage);
-  if (all.length > LIMITS.adminPage || pq) out.push({ type: "adminForm", action: "peopleSearch", submitLabel: t("pickSearchButton"), fields: [{ name: "q", kind: "text", label: t("peopleSearchLabel"), value: pq, help: t("peopleSearchHelp") }] });
-  if (!filtered.length) out.push({ type: "markdown", text: all.length ? t("peopleNoMatch") : t("peopleNone") });
-  else {
-    const actions = [];
-    if (can(ctx, RIGHT_EDIT)) actions.push({ label: t("peopleEdit"), href: "?person={id}" });
-    if (can(ctx, RIGHT_HIDE)) actions.push({ label: t("peopleHide"), action: "hide", confirm: t("peopleHideConfirm"), danger: true });
-    out.push({
-      type: "table", columns: [t("colPerson")],
-      rows: slice.map((e) => [[e.isTeam ? `${e.name} ★` : e.name, e.catSlugs.map((s) => view.cats.find((c) => c.slug === s)).filter(Boolean).map((c) => Dir.catLabel(ctx, c)).join(", "), [Object.keys(e.bio).length ? t("hasBio") : "", e.city].filter(Boolean).join(", ")].filter(Boolean).join(" · ")]),
-      rowIds: slice.map((e) => e.id), rowActions: actions,
-    });
-    if (pages > 1) {
-      const link = (n, label) => ({ label, href: `?ppage=${n}${pq ? `&pq=${enc(pq)}` : ""}` });
-      out.push({ type: "links", items: [...(page > 1 ? [link(page - 1, t("msgPrev"))] : []), ...(page < pages ? [link(page + 1, t("msgNext"))] : [])] });
-      out.push({ type: "markdown", text: t("msgPageOf", { page, pages }) });
-    }
+  const canHide = can(ctx, RIGHT_HIDE);
+  const actions = can(ctx, RIGHT_EDIT) ? [{ label: t("peopleEdit"), href: "?person={id}" }] : [];
+  const cell = (r) => {
+    const label = r.on ? t("peopleShownState") : t("peopleHiddenState");
+    return canHide ? { text: label, switch: { on: r.on, action: "setShown", label: t("peopleSwitchLabel", { name: r.on ? r.e.name : r.h.name }), onText: "", offText: t("peopleHiddenState") } } : r.on ? "" : label;
+  };
+  out.push({
+    type: "table", columns: [t("colPerson"), t("colShown")], searchable: "server", searchParam: "pq", searchReset: ["ppage"], searchPlaceholder: t("peopleSearchLabel"), empty: t("peopleNone"), truncate: [0],
+    rows: slice.map((r) => [r.on ? [r.e.isTeam ? `${r.e.name} ★` : r.e.name, r.e.catSlugs.map((s) => view.cats.find((c) => c.slug === s)).filter(Boolean).map((c) => Dir.catLabel(ctx, c)).join(", "), [Object.keys(r.e.bio).length ? t("hasBio") : "", r.e.city].filter(Boolean).join(", ")].filter(Boolean).join(" · ") : r.h.name, cell(r)]),
+    rowIds: slice.map((r) => (r.on ? r.e.id : r.h.id)), rowActions: actions,
+  });
+  if (pages > 1) {
+    const link = (n, label) => ({ label, href: `?ppage=${n}${pq ? `&pq=${enc(pq)}` : ""}` });
+    out.push({ type: "links", items: [...(page > 1 ? [link(page - 1, t("msgPrev"))] : []), ...(page < pages ? [link(page + 1, t("msgNext"))] : [])] });
+    out.push({ type: "markdown", text: t("msgPageOf", { page, pages }) });
   }
-  out.push({ type: "links", items: links });
   return out;
 }
 
@@ -330,7 +322,7 @@ async function personScreen(ctx, id) {
       ...textFields(ctx, "bio", cur?.bio, { label: "bioField", help: "bioHelp", max: LIMITS.bio, kind: "textarea" }),
       { name: "city", kind: "text", label: t("cityField"), value: cur?.city ?? "", help: `${t("cityHelp")} ${mapNote}` },
     ] },
-    ...(can(ctx, RIGHT_HIDE) ? [{ type: "heading", text: t("catMoreTitle") }, { type: "adminForm", action: "hide", submitLabel: t("peopleHide"), fields: [{ name: "id", kind: "hidden", value: cardId }] }] : []),
+    ...(can(ctx, RIGHT_HIDE) ? [{ type: "heading", text: t("catMoreTitle") }, { type: "adminForm", action: "setShown", submitLabel: t("peopleHide"), fields: [{ name: "id", kind: "hidden", value: cardId }, { name: "enabled", kind: "hidden", value: "0" }] }] : []),
   ];
 }
 
@@ -453,7 +445,6 @@ export const actions = {
   teamRemove: { right: RIGHT_EDIT, async run(ctx, values) { const r = await D.removeTeamMember(ctx, clean(values.id, LIMITS.id)); return r.ok ? back(ctx.t("teamRemoved")) : { error: ctx.t("errSave") }; } },
 
   /* Personnes */
-  peopleSearch: { right: RIGHT_EDIT, async run(ctx, values) { const q = clean(values.q, 100); return { redirect: q ? `?pq=${enc(q)}` : "?" }; } },
   personSave: { right: RIGHT_EDIT, async run(ctx, values) {
     const bio = readTexts(ctx, "bio", values, LIMITS.bio, true);
     const errors = tooLong(ctx, "bio", bio, LIMITS.bio);
@@ -477,13 +468,12 @@ export const actions = {
     if (!r.ok) return { error: ctx.t(r.code === "too_many" ? "errTooMany" : "errSave", { max: LIMITS.profiles }) };
     return back(placed ? ctx.t("personSavedPlaced", { name: P.shownName(who.card, "card"), place: placed }) : ctx.t("personSaved", { name: P.shownName(who.card, "card") }));
   } },
-  hide: { right: RIGHT_HIDE, async run(ctx, values) {
-    const r = await D.patchProfile(ctx, clean(values.id, LIMITS.id), { hidden: true });
-    return r.ok ? back(ctx.t("peopleHidden")) : { error: ctx.t(r.code === "too_many" ? "errTooMany" : "errSave", { max: LIMITS.profiles }) };
-  } },
-  unhide: { right: RIGHT_HIDE, async run(ctx, values) {
-    const r = await D.patchProfile(ctx, clean(values.id, LIMITS.id), { hidden: false });
-    return r.ok ? { ok: ctx.t("peopleUnhidden"), redirect: "?show=hidden" } : { error: ctx.t("errSave") };
+  /** The switch of a row: it SAYS the wanted state (`values.enabled` "1" = shown, "0" = hidden here), it never inverts. */
+  setShown: { right: RIGHT_HIDE, async run(ctx, values) {
+    const show = values.enabled === "1";
+    const r = await D.patchProfile(ctx, clean(values.id, LIMITS.id), { hidden: !show });
+    if (!r.ok) return { error: ctx.t(r.code === "too_many" ? "errTooMany" : "errSave", { max: LIMITS.profiles }) };
+    return { ok: ctx.t(show ? "peopleUnhidden" : "peopleHidden") };
   } },
 
   /* Remettre en ordre : suivre les fiches fusionnées, retirer ce qui visait une fiche supprimée, suivre les catégories fusionnées. Borné : 5 000 fiches = 50 lectures de 100. */

@@ -48,11 +48,9 @@
   "rules_full": "You already have {max} rules: delete one to add another.",
   "col_rule": "Rule",
   "rule_edit": "Edit",
-  "rule_toggle": "Pause",
   "rule_delete": "Delete",
   "rule_delete_confirm": "Delete this rule?",
   "rule_cooldown": "cooldown {seconds} s",
-  "rule_paused": "paused",
   "rule_with_message": "+ reads the message",
   "f_name": "Rule name",
   "f_name_help": "To find it again, for example “Red for big donations” (64 characters at most).",
@@ -161,5 +159,9 @@
   "house_title": "Home Assistant",
   "house_open": "Open Home Assistant",
   "house_summary": "Paired, sees you live",
-  "sim_plays": "The simulation really plays the action at your place."
+  "sim_plays": "The simulation really plays the action at your place.",
+  "col_on": "On",
+  "rule_on": "On",
+  "rule_off": "Off",
+  "rule_switch": "Rule “{name}” on or off"
 }
