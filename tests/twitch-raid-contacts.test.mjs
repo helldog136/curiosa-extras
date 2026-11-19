@@ -120,7 +120,10 @@ test("migration (350 chaînes) : dock identique à la 1.3 — 4 paquets (100, 10
 });
 
 test("mode « au hasard » (700 chaînes migrées) avec le VRAI Connecteur Twitch sur le faux Twitch : route live sans liste ni demande, pick trouve un membre en direct, tirage sans remise par paquets de 100, plafond de recherches", async () => {
-  const realFetch = globalThis.fetch;
+  const realFetch = globalThis.fetch, realRandom = Math.random;
+  // The search draws 6 batches of 100 at random out of 700 names, with 3 of them live: with the real Math.random it misses all three about once in 350 runs (hypergeometric,
+  // 0.28 %), which made this test fail now and then in CI. A fixed sequence makes it deterministic (the draw itself is covered by the seeded tests of draw.mjs).
+  let seed = 20260619; Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const liveOnes = [name(17), name(420), name(688)];
   const tw = fakeTwitch({ streams: liveOnes.map((login, i) => ({ login, name: login.toUpperCase(), title: `Titre ${i}`, viewers: 5 + i })) });
   globalThis.fetch = (u, i) => tw.fetch(u, i);
@@ -144,7 +147,7 @@ test("mode « au hasard » (700 chaînes migrées) avec le VRAI Connecteur Twitc
     Object.assign(search.limits, { max: 1 }); search.resetSearch();
     await routePick(ctx); tw.state.streams = []; search.resetSearch(); Object.assign(search.limits, { max: 0 });
     assert.equal((await routePick(ctx)).state, "limited");
-  } finally { globalThis.fetch = realFetch; }
+  } finally { globalThis.fetch = realFetch; Math.random = realRandom; }
 });
 
 /* ───────────── Migration : sans catégorie, rejouée, 2 000, coupée ───────────── */
