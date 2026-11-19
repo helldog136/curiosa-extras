@@ -2,18 +2,8 @@
   "comment": "KNOWN informational banners without a link (R32). This list only shrinks: fix one, then node tests/helpers/banners.mjs --write.",
   "known": [
     "alerts-overlay/twitch-admin.mjs state[1]",
-    "commissions/admin.mjs seen_${ps.state}",
-    "daily-game/admin.mjs bannerLow",
-    "events/admin.mjs ctx.t(alb.state === \"absent\" ? \"albumsAbsent\" : \"albumsDown\"",
-    "events/admin.mjs ctx.t(vid.state === \"absent\" ? \"videosAbsent\" : \"videosDown\"",
-    "events/admin.mjs note_${ev.note}",
-    "events/admin.mjs reportSummary(ctx, rep)",
-    "gallery/admin.mjs gone.text",
     "game-covers/panel.mjs saved_${saved}",
-    "map/admin.mjs lines.join(\" \")",
-    "testimonials/admin.mjs bannerPending",
-    "twitch-bot/entry.mjs entry_unpublished",
-    "videos/admin.mjs bannerMissing"
+    "twitch-bot/entry.mjs entry_unpublished"
   ],
   "justified": {
     "alerts-overlay/twitch-admin.mjs state[1]": "The tone is chosen at run time: every case is a warning with its reason (voice unknown, not supported, no voice) except one info line saying the owner muted the voice, which is a state caused by the person's own action. Left to the alerts agent; re-check after their release.",
