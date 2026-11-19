@@ -322,7 +322,7 @@ async function personScreen(ctx, id) {
       ...textFields(ctx, "bio", cur?.bio, { label: "bioField", help: "bioHelp", max: LIMITS.bio, kind: "textarea" }),
       { name: "city", kind: "text", label: t("cityField"), value: cur?.city ?? "", help: `${t("cityHelp")} ${mapNote}` },
     ] },
-    ...(can(ctx, RIGHT_HIDE) ? [{ type: "heading", text: t("catMoreTitle") }, { type: "adminForm", action: "hide", submitLabel: t("peopleHide"), fields: [{ name: "id", kind: "hidden", value: cardId }] }] : []),
+    ...(can(ctx, RIGHT_HIDE) ? [{ type: "heading", text: t("catMoreTitle") }, { type: "adminForm", action: "setShown", submitLabel: t("peopleHide"), fields: [{ name: "id", kind: "hidden", value: cardId }, { name: "enabled", kind: "hidden", value: "0" }] }] : []),
   ];
 }
 

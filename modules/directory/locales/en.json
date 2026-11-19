@@ -190,5 +190,6 @@
   "colShown": "Shown",
   "peopleShownState": "Shown",
   "peopleHiddenState": "Hidden",
-  "peopleSwitchLabel": "{name} shown or hidden in this directory"
+  "peopleSwitchLabel": "{name} shown or hidden in this directory",
+  "peopleHide": "Hide this person"
 }

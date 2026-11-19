@@ -190,5 +190,6 @@
   "colShown": "Affichée",
   "peopleShownState": "Affichée",
   "peopleHiddenState": "Masquée",
-  "peopleSwitchLabel": "{name} affichée ou masquée dans cet annuaire"
+  "peopleSwitchLabel": "{name} affichée ou masquée dans cet annuaire",
+  "peopleHide": "Masquer cette personne"
 }
