@@ -6,7 +6,7 @@
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.4.2",
+  "version": "1.5.0",
   "menuGroup": "community",
   "description": {
     "en": "A thank-you page for your community: cards with photos, one person in the spotlight each month. Names stay in Contacts.",
@@ -270,7 +270,8 @@
       "label": {
         "en": "Second group (a Contacts category)",
         "fr": "Deuxième groupe (une catégorie de Contacts)"
-      }
+      },
+      "rare": true
     },
     {
       "key": "groupTitle2",
@@ -280,7 +281,8 @@
       "label": {
         "en": "Title of the second group",
         "fr": "Titre du deuxième groupe"
-      }
+      },
+      "rare": true
     },
     {
       "key": "category3",
@@ -297,7 +299,8 @@
       "label": {
         "en": "Third group (a Contacts category)",
         "fr": "Troisième groupe (une catégorie de Contacts)"
-      }
+      },
+      "rare": true
     },
     {
       "key": "groupTitle3",
@@ -307,7 +310,8 @@
       "label": {
         "en": "Title of the third group",
         "fr": "Titre du troisième groupe"
-      }
+      },
+      "rare": true
     },
     {
       "key": "category4",
@@ -324,7 +328,8 @@
       "label": {
         "en": "Fourth group (a Contacts category)",
         "fr": "Quatrième groupe (une catégorie de Contacts)"
-      }
+      },
+      "rare": true
     },
     {
       "key": "groupTitle4",
@@ -334,7 +339,8 @@
       "label": {
         "en": "Title of the fourth group",
         "fr": "Titre du quatrième groupe"
-      }
+      },
+      "rare": true
     },
     {
       "key": "category5",
@@ -351,7 +357,8 @@
       "label": {
         "en": "Fifth group (a Contacts category)",
         "fr": "Cinquième groupe (une catégorie de Contacts)"
-      }
+      },
+      "rare": true
     },
     {
       "key": "groupTitle5",
@@ -361,7 +368,8 @@
       "label": {
         "en": "Title of the fifth group",
         "fr": "Titre du cinquième groupe"
-      }
+      },
+      "rare": true
     },
     {
       "key": "category6",
@@ -378,7 +386,8 @@
       "label": {
         "en": "Sixth group (a Contacts category)",
         "fr": "Sixième groupe (une catégorie de Contacts)"
-      }
+      },
+      "rare": true
     },
     {
       "key": "groupTitle6",
@@ -388,7 +397,8 @@
       "label": {
         "en": "Title of the sixth group",
         "fr": "Titre du sixième groupe"
-      }
+      },
+      "rare": true
     },
     {
       "key": "hide",
@@ -474,7 +484,8 @@
             "fr": "Pseudo en ligne (nom du compte)"
           }
         }
-      ]
+      ],
+      "rare": true
     },
     {
       "key": "photos",
@@ -487,7 +498,8 @@
       "help": {
         "en": "Switched off, only the first letters of each name are shown.",
         "fr": "Désactivé, seules les initiales de chaque nom sont affichées."
-      }
+      },
+      "rare": true
     },
     {
       "key": "order",

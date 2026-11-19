@@ -86,7 +86,7 @@ const ROLLOUT = {
   "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
-  "thanks-wall": ["1.4.2", { wall: "community.supporters.wall" }],
+  "thanks-wall": ["1.5.0", { wall: "community.supporters.wall" }],
   "threads": ["1.2.1", { main: "networks.accounts" }],
   "ticker-overlay": ["1.3.0", { main: "obs.overlays.ticker" }],
   "tiktok": ["1.2.1", { main: "networks.accounts" }],
@@ -101,7 +101,7 @@ const MIGRATED = { ...TWITCH, ...ROLLOUT };
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
 /** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
 const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
-const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters"]);
+const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
@@ -342,7 +342,6 @@ test("kit: places.valid and compat.minCore pass for the migrated modules; places
     hero: ['section "banner" (site.home.banners) shows 9 simple settings (R5: 7 at most)'],
     "maze-overlay": ['section "look" (obs.overlays.maze) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
     polls: ['section "polls" (live.participation.polls) shows 6 fields (R4: 5 visible at most, fold the rare ones)'],
-    "thanks-wall": ['section "wall" (community.supporters.wall) shows 17 simple settings (R5: 7 at most)'],
   };
   // Dual mode: a module with neither adminMenu nor menuGroup keeps its default sidebar section on a core older than 0.31.0 (unchanged on purpose).
   const NO_MENU = "no adminMenu: on a core older than 0.31.0 the module keeps its default sidebar section (fine if that is wanted)";
