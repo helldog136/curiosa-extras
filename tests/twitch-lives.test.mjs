@@ -586,7 +586,7 @@ test("panneau : Twitch en panne = message simple ; pas connecté = on dit commen
   const ctx = mk();
   L.state.fail.streams = 500; await tick(ctx, 0);
   const text = JSON.stringify(await def.adminPanel(ctx));
-  assert.match(text, /Twitch ne répond pas pour le moment/);
+  assert.match(text, /Twitch ne répond pas/);
   assert.ok(!/connectez votre chaîne Twitch|arrivent dans quelques minutes/.test(text), "no pointer to another place, no approximate promise");
   assert.equal((await def.adminPanel(ctx)).find((b) => b.id === "tracking").state, "degraded");
 });

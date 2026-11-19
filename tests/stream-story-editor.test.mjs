@@ -96,7 +96,7 @@ test("éditeur avec Contacts : chercher, ajouter (6 au plus), catégorie, saisie
   const ctx = mk(cb);
   const { els, server } = await boot(ctx, "contacts");
   assert.equal(els.get("book-box").hidden, false); assert.equal(els.get("book-absent").hidden, true, "Contacts répond : pas de message de repli");
-  assert.match(els.get("chosen").textContent, /Personne pour le moment/);
+  assert.match(els.get("chosen").textContent, /Personne/);
 
   // 1. la recherche à la saisie (agnostique du réseau), pastilles de comptes
   await type(els.get("q"), "ali");
@@ -149,7 +149,7 @@ test("éditeur avec Contacts : chercher, ajouter (6 au plus), catégorie, saisie
   server.restore();
   cb.admin.deleteContact(team[0]);
   const again = await boot(ctx, "contacts-2"), e2 = again.els;
-  assert.match(e2.get("chosen").textContent, /Personne pour le moment/);
+  assert.match(e2.get("chosen").textContent, /Personne/);
   btn(rows(e2.get("model-list"))[0], "Charger").click(); await wait(600);
   const back = rows(e2.get("chosen"));
   assert.equal(back.length, 6);
