@@ -203,7 +203,8 @@ export async function panel(ctx, { query }) {
   blocks.push(CU.commandsTable(ctx, info));
   const add = CU.addChooser(ctx, info, { partnerHref: partnerHref(ctx) });
   if (add) blocks.push(add);
-  blocks.push(CU.logBlock(ctx, info.s, await st.readLog(ctx)));
+  const log = CU.logBlock(ctx, info.s, await st.readLog(ctx));
+  if (log) blocks.push(log);
   blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
   blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
   return blocks;

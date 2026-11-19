@@ -1,13 +1,9 @@
 {
   "comment": "KNOWN informational banners without a link (R32). This list only shrinks: fix one, then node tests/helpers/banners.mjs --write.",
   "known": [
-    "alerts-overlay/twitch-admin.mjs state[1]",
-    "game-covers/panel.mjs saved_${saved}",
-    "twitch-bot/entry.mjs entry_unpublished"
+    "game-covers/panel.mjs saved_${saved}"
   ],
   "justified": {
-    "alerts-overlay/twitch-admin.mjs state[1]": "The tone is chosen at run time: every case is a warning with its reason (voice unknown, not supported, no voice) except one info line saying the owner muted the voice, which is a state caused by the person's own action. Left to the alerts agent; re-check after their release.",
-    "game-covers/panel.mjs saved_${saved}": "Result of saving a cover, shown on the page reached after the redirect (the action message would be lost by the redirect). Left to the connection-states agent; re-check after their release.",
-    "twitch-bot/entry.mjs entry_unpublished": "Says the catalogue entry is not published, the one state this page cannot show otherwise. Left to the bot agent; re-check after their release."
+    "game-covers/panel.mjs saved_${saved}": "Result of saving a cover, shown on the page reached after the redirect (the action message would be lost by the redirect). Left to the connection-states agent; re-check after their release."
   }
 }

@@ -110,15 +110,21 @@ async function statusBlocks(ctx, d, state) {
 
 /* ───────────── The pages ───────────── */
 
-/** The form of the journal's options (first tab, folded): how long the journal is kept, and the e-mails when the listening stops. */
-function optionsForm(ctx, s) {
+/** One line that says what the journal options are now (they are changed in a window, R33): how long it is kept, the e-mail, the silence alarm. */
+function optionsSummary(ctx, s) {
+  const t = ctx.t;
+  return [t("opt_sum_days", { n: s.retentionDays }), ...(s.healthMail ? [t("opt_sum_mail")] : []), ...(s.silentHours > 0 ? [t("opt_sum_silent", { n: s.silentHours })] : [])].join(" · ");
+}
+
+/** The window of the journal's options (`?journal=1`): how long the journal is kept, and the e-mails when the listening stops. Three fields, all filled, so they show only here. */
+function optionsDialog(ctx, s) {
   const t = ctx.t;
   return {
-    type: "adminForm", action: "saveJournal", title: t("opt_title"), submitLabel: t("opt_save_btn"), submitStyle: "secondary",
+    type: "adminForm", action: "saveJournal", presentation: "dialog", cancelHref: "?", title: t("opt_title"), submitLabel: t("opt_save_btn"),
     fields: [
-      { name: "retentionDays", kind: "number", folded: true, label: t("opt_retention"), min: RETENTION.min, max: RETENTION.max, step: 1, unit: t("opt_unit_days"), value: s.retentionDays, help: t("opt_retention_help") },
-      { name: "healthMail", kind: "switch", folded: true, label: t("opt_mail"), value: s.healthMail ? "on" : "", help: t("opt_mail_help") },
-      { name: "silentHours", kind: "number", folded: true, label: t("opt_silent"), min: SILENT.min, max: SILENT.max, step: 1, unit: t("opt_unit_hours"), value: s.silentHours, help: t("opt_silent_help") },
+      { name: "retentionDays", kind: "number", label: t("opt_retention"), min: RETENTION.min, max: RETENTION.max, step: 1, unit: t("opt_unit_days"), value: s.retentionDays, help: t("opt_retention_help") },
+      { name: "healthMail", kind: "switch", label: t("opt_mail"), value: s.healthMail ? "on" : "", help: t("opt_mail_help") },
+      { name: "silentHours", kind: "number", label: t("opt_silent"), min: SILENT.min, max: SILENT.max, step: 1, unit: t("opt_unit_hours"), value: s.silentHours, help: t("opt_silent_help") },
     ],
   };
 }
@@ -184,17 +190,20 @@ export async function panel(ctx, { query } = {}) {
       // (1.12.0) channel points: the cell leads to the Rewards tab, where each reward has its own reaction (R25)
       ...(column ? [ty.id === "redeem" ? { text: `${rx.summaryText(ctx, sums[ty.id])}${sums[ty.id]?.rewards ? ` · ${t("rw_count", { n: sums[ty.id].rewards })}` : ""}`, href: "?tab=rewards", title: t("rw_count_title") } : { text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),
       // (1.22) the alert of the type: the one switch of the row
-      { text: shown ? t("tw_on") : t("tw_off"), switch: { on: shown, action: "setType", label: t("tw_switch_label", { type: t(`type_${ty.id}`) }), onText: t("tw_on"), offText: t("tw_off") } }];
+      { text: shown ? t("tw_on") : t("tw_off"), switch: { on: shown, action: "setType", label: t("tw_switch_label", { type: t(`type_${ty.id}`) }), onText: "", offText: t("tw_off") } }];   // the usual state (on) is not written on every row (R14)
   });
+  const status = await statusBlocks(ctx, d, state);
+  const setup = status[0]?.state === "notConfigured";   // setup first: nothing to list, nothing to keep, no options to change yet (R33)
   return [
-    { type: "markdown", text: t("page_intro") },
-    ...(await statusBlocks(ctx, d, state)),
-    { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
-      rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
+    ...status,
+    // an empty journal is one plain sentence and its one action (R18, R33): no empty table, no box
+    ...(rows.length ? [{ type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), ...(new Set(lines.map((l) => l.kind)).size > 1 ? { filters: [{ column: 1, allLabel: t("filter_all") }] } : {}), truncate: [3], pageSize: 50,
+      rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] }] : setup ? [] : [{ type: "markdown", text: t("empty") }, { type: "links", items: [{ label: t("empty_test"), href: "?tab=twitch" }] }]),
     ...(await rwAdmin.blocks(ctx, { query: query ?? {}, ready, enabled: enabled.redeem === true })),
-    { type: "links", items: [{ label: t("dock_open"), href: "?dock=1", presentation: "dialog" }] },
+    ...(setup ? [] : [{ type: "markdown", text: optionsSummary(ctx, s) }]),
+    { type: "links", items: [{ label: t("dock_open"), href: "?dock=1", presentation: "dialog" }, ...(setup ? [] : [{ label: t("opt_title"), href: "?journal=1", presentation: "dialog" }])] },
     ...(query?.dock === "1" ? [await dockDialog(ctx)] : []),
-    optionsForm(ctx, s),
+    ...(query?.journal === "1" && !setup ? [optionsDialog(ctx, s)] : []),
     { type: "markdown", tab: "twitch", text: t("types_intro") },
     ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "twitch" })) : []),
     ...(reasonLines(ctx, state, enabled).length ? [{ type: "markdown", tab: "twitch", text: reasonLines(ctx, state, enabled).join("\n") }] : []),

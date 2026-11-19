@@ -218,7 +218,6 @@ function testBlocks(ctx, o) {
   const label = (k) => nameOf(o, k) ?? (EXAMPLE_KEYS.includes(k) ? t(`ex_${k.replace(/[^a-z0-9]/g, "_")}`) : k);
   return [
     { type: "heading", text: t("test_title") },
-    { type: "markdown", text: t("test_help") },
     { type: "adminForm", action: "test", submitLabel: t("test_btn"), fields: [
       { name: "key", kind: "select", label: t("test_key"), value: seen[0], options: seen.map((k) => ({ value: k, label: label(k) })) },
       { name: "customKey", kind: "text", label: t("test_custom"), help: t("test_custom_help") },
@@ -258,8 +257,8 @@ function journalHtml(ctx, o) {
 
 function journalBlocks(ctx, o) {
   const t = ctx.t;
+  if (!o.lines.length) return [];   // nothing received: no title, no sentence to say so (R33)
   const out = [{ type: "heading", text: t("jr_title") }];
-  if (!o.lines.length) { out.push({ type: "markdown", text: t("jr_empty") }); return out; }
   out.push({ type: "html", html: journalHtml(ctx, o) });
   out.push({ type: "markdown", text: t("jr_note") });
   if (can(ctx, "ha.manage")) out.push({ type: "table", columns: [t("jr_col")], pageSize: 0, rows: [[String(o.lines.length)]], rowIds: ["log"], rowActions: [{ label: t("jr_clear"), action: "clearLog", confirm: t("jr_clear_confirm", { n: o.lines.length }), danger: true }] });

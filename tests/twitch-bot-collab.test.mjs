@@ -309,7 +309,7 @@ const barOf = async (ctx) => (await A.panel(ctx, { query: {} })).filter((b) => b
 test("page: the line under the status bar says off by default, then on with since when, what it does and when it ends; one button each way; the choices form has one visible field (the timers) and three folded", async () => {
   const { ctx } = fresh();
   let html = await barOf(ctx);
-  assert.match(html, /Collaboration mode off/); assert.match(html, /Start collaboration mode/); assert.doesNotMatch(html, /Stop collaboration mode/);
+  assert.doesNotMatch(html, /Collaboration mode off/, "off is the usual state: no pill"); assert.match(html, /Start collaboration mode/); assert.doesNotMatch(html, /Stop collaboration mode|Set the mode/, "one single button while off");
   const r = await A.actions.collabOn(ctx);
   assert.match(r.ok, /Collaboration mode is on/);
   html = await barOf(ctx);
@@ -533,7 +533,7 @@ test("assistant tool: timers pause / every_n with n (2, 3 or 5) and autoStopHour
 });
 
 test("manifest: version, history events, no new permission, route or right; the tick task settles the automatic end", async () => {
-  assert.equal(manifest.version, "1.24.0"); assert.equal(manifest.minCore, "0.36.0");
+  assert.equal(manifest.version, "1.24.1"); assert.equal(manifest.minCore, "0.36.0");
   for (const k of ["collab.on", "collab.off"]) assert.ok(manifest.logEvents.some((e) => e.key === k && e.label.fr && e.label.en), k);
   assert.deepEqual(manifest.permissions, ["routes", "storage", "admin", "topics", "mcp", "instances.setup"]);
   assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage", "timers.manage"]);
