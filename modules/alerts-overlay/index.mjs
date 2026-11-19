@@ -295,11 +295,11 @@ const sameToken = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); retu
 async function youtubeBlocks(ctx) {
   let here = false;
   try { here = (await Promise.all(LIVE_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.length > 0); } catch { here = false; }
-  if (!here) return [{ type: "markdown", text: ctx.t("ytAbsent") }];
+  if (!here) return [];   // no YouTube module here: nothing to say about it (R33)
   return [
     { type: "heading", text: ctx.t("ytTitle") },
     { type: "markdown", text: ctx.t("ytHelp") },
-    { type: "adminForm", action: "testYoutube", title: ctx.t("ytTestTitle"), submitLabel: ctx.t("ytTestSubmit"), fields: [] },
+    { type: "adminForm", action: "testYoutube", submitLabel: ctx.t("ytTestSubmit"), fields: [] },
   ];
 }
 
@@ -580,9 +580,9 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       ...(waiting ?? []),
       ...ev,
       ...(m === "guest" && shown ? await guestBlocks(ctx) : []),
-      // The address to push an alert from another tool exists only once a push code is set: without one, the only line says where to set it (R33: no instruction that cannot work).
-      ...(hasToken ? [{ type: "copy", label: ctx.t("pushLabel"), text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alex","username":"alex"}'` }] : [{ type: "markdown", text: ctx.t("noToken") }]),
-      { type: "adminForm", action: "test", title: ctx.t("testTitle"), submitLabel: ctx.t("testSubmit"), fields: [] },
+      // The address to push an alert from another tool exists only once a push code is set; without one nothing is shown (the code is an advanced setting, R33).
+      ...(hasToken ? [{ type: "copy", label: ctx.t("pushLabel"), text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alex","username":"alex"}'` }] : []),
+      { type: "adminForm", action: "test", submitLabel: ctx.t("testSubmit"), fields: [] },
       ...(await youtubeBlocks(ctx)),
       // the queue (first tab, after the push address, as before) and the Twitch events tab of the overlay
       ...(await adminTw.panel(ctx, { query: query ?? {}, twitch: m === "on" ? "events" : shown ? "editor" : "none" })),

@@ -18,7 +18,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.105.1",
-      "version": "1.22.0",
+      "version": "1.22.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔",
@@ -1199,7 +1199,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/home-assistant",
       "ref": "v1.105.1",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🏠",
@@ -2856,7 +2856,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.105.1",
-      "version": "1.24.0",
+      "version": "1.24.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -3026,21 +3026,21 @@
     {
       "id": "twitch-events",
       "name": "Twitch activity",
-      "description": "Bridge version: hands its journal and settings over once, then stops listening. Remove it afterwards.",
+      "description": "Bridge version: hands its journal and settings over once, then stops listening.",
       "i18n": {
         "en": {
           "name": "Twitch activity",
-          "description": "Bridge version: hands its journal and settings over once, then stops listening. Remove it afterwards."
+          "description": "Bridge version: hands its journal and settings over once, then stops listening."
         },
         "fr": {
           "name": "Activité Twitch",
-          "description": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter. Retirez-la ensuite."
+          "description": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-events",
       "ref": "v1.105.1",
-      "version": "1.15.0",
+      "version": "1.15.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",

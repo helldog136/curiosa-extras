@@ -79,7 +79,8 @@ test("interrupteur : un vrai interrupteur du cœur dans chaque ligne (état cour
     assert.equal(sw.action, "toggle", nameOf(r));
     assert.match(sw.label, /^Activer la commande !/, nameOf(r));
     assert.equal(typeof sw.on, "boolean");
-    assert.ok(sw.onText && sw.offText === fr.state_off, "le texte à côté de l'interrupteur dit l'état");
+    assert.ok(sw.offText === fr.state_off && typeof sw.onText === "string", "off is written next to the switch");
+    if (!sw.on) assert.ok(sw.onText === "" || sw.onText.startsWith("Masquée"), "the usual state (on) writes nothing next to the switch (R14)");
     assert.ok(/^(custom|builtin|partner|network|group):/.test(list.rowIds[i]));
   }
   assert.equal(R("tip")[3].switch.on, true);
@@ -126,7 +127,7 @@ test("partenaires et réseaux sans commande : pas de lignes « Pas encore activ�
   const s = plain((await A.panel(fresh.ctx, { query: {} })).find((b) => !b.tab && b.type === "html" && b.html.includes('class="ck-add"')).html);
   assert.match(s, /3 partenaires et 1 réseau n'ont pas encore de commande\./);
   assert.ok(!(await A.panel(world().ctx, { query: {} })).some((b) => !b.tab && b.type === "html" && b.html.includes('class="ck-add"')), "rien à ajouter : pas de bouton");
-  assert.deepEqual(commandsTable(await A.panel(fresh.ctx, { query: {} })).rows.filter((r) => cellOf(r[2]) !== ""), [], "ni partenaire ni réseau non activé dans le tableau");
+  assert.deepEqual(commandsTable(await A.panel(fresh.ctx, { query: {} })).rows.filter((r) => r.length === 4 && cellOf(r[2]) !== ""), [], "ni partenaire ni réseau non activé dans le tableau");
   // un réseau sans commande : « Ajouter » ouvre la fenêtre de sa proposition (nom, texte), enregistrée en l'activant
   const net = dialogsOf(await A.panel(none.ctx, { query: { edit: "network:twitch-channel" } }));
   assert.equal(net.length, 0, "sans réseau de ce nom : pas de fenêtre");
@@ -136,6 +137,20 @@ test("partenaires et réseaux sans commande : pas de lignes « Pas encore activ�
   assert.equal(open.action, "save");
   assert.equal(open.fields.find((f) => f.name === "enabled")?.value, "on", "une proposition pas encore enregistrée s'active en l'enregistrant");
   assert.match(open.fields.find((f) => f.name === "text").help, /^L'adresse vient du réseau /);
+});
+
+/* ───────────── R33 : ce qui est identique pour toutes les lignes n'est ni une colonne, ni un filtre, ni une étiquette ───────────── */
+
+test("R33 : sans partenaire ni réseau, pas de colonne « Origine » ni de filtre d'origine ; le filtre d'état n'existe que s'il y a deux états ; le texte de l'interrupteur n'écrit que ce qui sort de l'ordinaire", async () => {
+  const plainWorld = world();
+  const t = commandsTable(await A.panel(plainWorld.ctx, { query: {} }));
+  assert.ok(!t.columns.includes(fr.col_origin), "one single origin: no column (R14)");
+  assert.ok(t.rows.every((r) => r.length === t.columns.length), "every row follows the columns");
+  const stateCol = t.columns.indexOf(fr.col_active);
+  assert.deepEqual((t.filters ?? []).map((f) => f.column), new Set(t.rows.map((r) => cellOf(r[stateCol]))).size > 1 ? [stateCol] : [], "at most ONE row of pills here, on the state, and only with two states");
+  for (const r of t.rows) assert.ok(r[stateCol].switch.onText === "" || r[stateCol].switch.onText.startsWith("Masquée"), "nothing written next to a switch that is on and usual");
+  assert.deepEqual(list.filters.map((f) => f.column), [2, 3], "mixed origins and states: both rows of pills, each with at least two values");
+  assert.equal(fr.filter_all, "Toutes", "the same word for both rows of pills: the commands are feminine");
 });
 
 /* ───────────── La recherche en direct (la règle du cœur, appliquée aux cellules du tableau) ───────────── */
@@ -328,7 +343,7 @@ test("liste des commandes : une commande réservée au timer porte la pastille �
 
 /* ───────────── Journal ───────────── */
 
-test("journal : bouton « Vider le journal » petit et secondaire dans l'en-tête, confirmation qui dit ce qui sera perdu ; recherche et filtre Répondu / Pas répondu ; intro d'une ligne", async () => {
+test("journal : bouton « Vider le journal » petit et secondaire dans l'en-tête, confirmation qui dit ce qui sera perdu ; recherche et filtre Répondu / Pas répondu", async () => {
   const { ctx } = world({ settings: { cooldownGlobal: 0, cooldownUser: 0 } });
   for (let i = 0; i < 4; i++) await say(ctx, "!jeu", { chatterId: String(i), login: `u${i}` }, NOW + i * 2000);
   await C.saveCommand(ctx, { kind: "builtin", id: "titre" }, { role: "mods" }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
@@ -342,7 +357,8 @@ test("journal : bouton « Vider le journal » petit et secondaire dans l'en-têt
   assert.equal(pills(html)[1].label, "Répondu");
   assert.equal(pills(html)[2].label, "Pas répondu");
   assert.match(html, /data-ck-q placeholder="Une personne, une commande…"/);
-  assert.ok(fr.log_help.length <= 60, "l'intro tient sur une ligne");
+  assert.ok(!html.includes("ck-intro"), "no sentence under the title of the journal (R33)");
+  assert.equal(await A.panel(world().ctx, { query: {} }).then((p) => p.some((x) => x.type === "html" && /Ce que le bot a fait récemment/.test(x.html ?? ""))), false, "an empty journal shows nothing (no title, no sentence)");
   assert.ok(client.rowPasses({ hay: rowsOf(html)[0].attrs.hay, result: "refused" }, { q: "curieux", result: "not" }, { result: { not: ["refused", "error"] } }));
   assert.equal(rowsOf(html).filter((r) => client.rowPasses({ hay: r.attrs.hay, result: r.attrs.result }, { q: "", result: "sent" }, {})).length, 4);
   assert.deepEqual(await A.actions.clearLog(ctx), { ok: fr.log_cleared });
@@ -442,7 +458,7 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.24.0");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.24.1");
 });
 
 /* ───────────── "Started by": the timer and the chat | the timer only ───────────── */

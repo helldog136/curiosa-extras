@@ -34,7 +34,7 @@ What Twitch activity offered to others stays offered here: the topic `twitch.eve
 *Wait to group bursts*) were settings shown in the Twitch tab even without Twitch. Data version 2 copies them once into the store (`options.mjs`, collection
 `twitchOptions`, `ctx.legacy` then cleared); they are a form of the Twitch events tab now. *Pause between two alerts* and *Volume of the sounds* apply to the media too:
 they went to the Settings tab (same keys, nothing to migrate). The journal options of Twitch activity (*Keep the journal for*, the e-mails, the silence warning) are a
-folded form of the first tab (stored in the state of the listening); the choice of the Twitch channel stays a setting (advanced, asked with several channels only).
+window of the first tab, opened by "Journal and e-mails" under a one-line summary (stored in the state of the listening); the choice of the Twitch channel stays a setting (advanced, asked with several channels only).
 
 ### Taking over Twitch activity (once)
 

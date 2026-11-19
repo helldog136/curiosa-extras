@@ -221,7 +221,7 @@ test("upgrade from the real 1.94.0: the old module is retired: no listening, its
   assert.equal(newDock.status, 200, "the OBS dock keeps its key: only the address changes");
   assert.deepEqual(await bridge.exports["twitch.event"](ev, {}), []);
   const page = await bridge.adminPanel(ev, { query: {} });
-  assert.deepEqual(page.map((b) => b.type), ["banner", "markdown"], "R33: the banner is the link, no second button");
+  assert.deepEqual(page.map((b) => b.type), ["banner"], "R33: ONE message, which is also the link");
   assert.equal(page[0].href, "/admin/instances/id-al");
   assert.equal(await bridge.adminBadge(ev), 0);
   const subs = old.twFake.subs.length, calls = old.twFake.calls.length;
@@ -351,14 +351,36 @@ test("the copy that listens: one Twitch events tab (one alert switch per type, t
   assert.ok(!page.some((b) => b.action === "saveType"), "no second editor");
   assert.ok(page.some((b) => b.action === "applyPreset") && page.some((b) => b.action === "simulate"));
   assert.ok(page.some((b) => b.action === "saveTwitchOptions" && b.tab === "twitch"));
-  const journal = page.find((b) => b.type === "table" && !b.tab && b.filters);
-  assert.ok(journal && page.indexOf(journal) < page.findIndex((b) => b.type === "adminForm" && b.action === "test"), "the journal comes before the test alert");
-  const optionsForm = page.find((b) => b.action === "saveJournal");
-  assert.ok(optionsForm.fields.every((f) => f.folded));
+  assert.ok(!page.some((b) => b.type === "table" && !b.tab), "an empty journal is not a table (R33)");
+  const emptyAt = page.findIndex((b) => b.type === "markdown" && b.text === en.empty);
+  assert.ok(emptyAt >= 0 && page[emptyAt + 1].type === "links" && page[emptyAt + 1].items.length === 1, "one plain sentence and its one action");
+  assert.ok(emptyAt < page.findIndex((b) => b.type === "adminForm" && b.action === "test"), "the journal comes before the test alert");
+  assert.ok(!page.some((b) => b.action === "saveJournal"), "the options are in a window: no filled form left on the page");
+  assert.ok(page.some((b) => b.type === "markdown" && /^Journal kept 30 days/.test(b.text)), "one line says what the options are");
+  const optionsForm = (await def.adminPanel(w.ctx, { query: { journal: "1" } })).find((b) => b.action === "saveJournal");
+  assert.equal(optionsForm.presentation, "dialog");
+  assert.ok(optionsForm.fields.every((f) => !f.folded) && optionsForm.fields.length <= 5);
   assert.ok((await def.adminActions.saveJournal(w.ctx, { retentionDays: "400", silentHours: "2" })).errors.retentionDays);
   assert.ok((await def.adminActions.saveJournal(w.ctx, { retentionDays: "90", silentHours: "2", healthMail: "on" })).ok);
   assert.deepEqual((await S.readState(w.ctx)).options, { retentionDays: 90, silentHours: 2, healthMail: true });
   assertAdminPageErgonomics(page, { errors: [(await def.adminActions.saveJournal(w.ctx, { retentionDays: "x", silentHours: "1" })).errors.retentionDays] });
+});
+
+test("R33: in the three states of the listening, no filled form, no sentence about what is absent, an empty journal is one sentence and its one action", async () => {
+  const worlds = { configured: world({ locale: "en" }), degraded: world({ locale: "en", tw: { status: "renew" } }), notConfigured: world({ locale: "en", tw: { status: "none" } }) };
+  const pages = {};
+  for (const [name, w] of Object.entries(worlds)) {
+    await S.ensureSecret(w.ctx);
+    if (name === "configured") await S.updateState(w.ctx, (d) => { d.listen = { code: "listening", at: Date.now() }; d.types = Object.fromEntries(["follow", "sub"].map((id) => [id, { code: "listening" }])); });
+    const page = await def.adminPanel(w.ctx, { query: {} });
+    const c = page.find((b) => b.type === "connection");
+    assert.ok(c, name);
+    assert.ok(!page.some((b) => b.action === "saveJournal"), `${name}: the options are in a window, not a form left on the page`);
+    assert.ok(!page.some((b) => b.type === "markdown" && /push code|installez|install .Live actions/i.test(b.text)), `${name}: no sentence about a code or a module that is not there`);
+    assert.ok(!page.some((b) => b.type === "adminForm" && b.title === "Send a test alert"), `${name}: the title would repeat the button`);
+    pages[name] = page;
+  }
+  assert.deepEqual(Object.entries(pages).map(([k, p]) => [k, p.find((b) => b.type === "connection").state]), [["configured", "configured"], ["degraded", "degraded"], ["notConfigured", "notConfigured"]], "the three states are rendered");
 });
 
 test("the Reaction window edits what the overlay tab edited: minimum, animation, voice, viewer text (all folded), saved in the overlay", async () => {
@@ -405,12 +427,12 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
 });
 
 test("the bridge 1.13.0: offers only the hand-over, keeps working as 1.12.0 until it is called, says it moved, FR/EN parity", () => {
-  assert.equal(bridgeMan.version, "1.15.0");
+  assert.equal(bridgeMan.version, "1.15.1");
   assert.deepEqual(bridgeMan.offers.map((o) => [o.service, o.version]), [["twitch.events.handover", 1]]);
   assert.equal(bridgeMan.mcp, undefined, "its tools are the overlay's now");
   assert.ok(!bridgeMan.permissions.includes("mcp"));
   const fr = json(new URL("../modules/twitch-events/locales/fr.json", import.meta.url).pathname);
   assert.deepEqual(Object.keys(bridgeEn).sort(), Object.keys(fr).sort());
-  for (const k of ["moved_banner", "moved_remove"]) assert.ok(bridgeEn[k] && fr[k], k);
+  for (const k of ["moved_banner"]) assert.ok(bridgeEn[k] && fr[k], k);
   assert.match(bridgeMan.description.fr, /journal/);
 });
