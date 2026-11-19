@@ -79,6 +79,7 @@ export function toItem(d) {
   const o = {
     id: String(d.id), type: d.kind, at: new Date(Number.isFinite(d.at) ? d.at : Date.now()).toISOString(),
     test: d.source === "test", replay: d.source === "replay", missed: d.missed === true,
+    ...(d.muted === true ? { muted: true } : {}),
   };
   for (const k of ["name", "login", "tier", "text", "title", "trainType", "streamType", "rewardId"]) if (typeof d[k] === "string" && d[k]) o[k] = d[k];
   for (const k of ["months", "streak", "count", "cumulative", "amount", "viewers", "level", "total", "goal", "progress", "bestLevel"]) if (num(d[k]) !== undefined) o[k] = d[k];

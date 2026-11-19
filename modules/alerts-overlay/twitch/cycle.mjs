@@ -5,9 +5,35 @@ const st = await import(`./state.mjs${v}`);
 const L = await import(`./listen.mjs${v}`);
 const cu = await import(`./catchup.mjs${v}`);
 const health = await import(`./health.mjs${v}`);
+const es = await import(`./eventsub.mjs${v}`);
+const tw = await import(new URL(`../twitch.mjs${v}`, import.meta.url).href);
+
+/**
+ * (1.22) Listening is no longer tied to the alert switch of a type. The ONE alert switch of a type is the "Alert" switch of the overlay (its configuration, `on`); the stored `enabled`
+ * of the state is its mirror: it says which permissions to ask for and which lines are recorded as "muted" (kept and counted, never played).
+ * First pass after the update: a type that was switched off in the old "Received" list keeps its meaning (no alert) by switching its alert off. Then the mirror is kept in line.
+ */
+export async function syncAlertFlags(ctx) {
+  const state = await st.readState(ctx);
+  const cfg = await tw.loadConfig(ctx);
+  let changed = false;
+  if (!state.alertsMigrated) {
+    for (const id of es.TYPE_IDS) {
+      const stored = state.enabled?.[id];
+      const wasOn = typeof stored === "boolean" ? stored : es.typeOf(id).default;
+      if (!wasOn && cfg.types[id]?.on !== false) { cfg.types[id] = { ...cfg.types[id], on: false }; changed = true; }
+    }
+    if (changed) await tw.saveConfig(ctx, cfg);
+  }
+  const want = Object.fromEntries(es.TYPE_IDS.filter((id) => cfg.types[id]).map((id) => [id, cfg.types[id].on !== false]));
+  const now = st.enabledOf(state);
+  if (state.alertsMigrated && es.TYPE_IDS.every((id) => want[id] === undefined || now[id] === want[id])) return;
+  await st.updateState(ctx, (x) => { x.enabled = { ...st.enabledOf(x), ...want }; x.alertsMigrated = true; });
+}
 
 /** { code, types, caught?: { follows, subs } }. */
 export async function check(ctx, s, { now = Date.now(), renew = false, settle = false } = {}) {
+  await syncAlertFlags(ctx).catch(() => {});
   const before = await st.readState(ctx);
   const r = await L.ensureListening(ctx, s, { renew, settle, now });
   const ok = r.code === "listening";

@@ -68,12 +68,18 @@ test("webhook: every type is journalled once, with a durable idempotent key", as
   assert.equal((await S.readState(ctx)).lastEventAt, NOW);
 });
 
-test("webhook: a disabled type is acknowledged but not stored; hype progress only on a new level", async () => {
+test("webhook: a type with its alert off is recorded and flagged muted; hype progress only on a new level", async () => {
   const { ctx } = world();
   await S.ensureSecret(ctx);
   await S.updateState(ctx, (d) => { d.enabled = { cheer: false }; });
   assert.equal((await deliver(ctx, TYPES.cheer, EV.cheer)).status, 204);
-  assert.equal((await lines(ctx)).length, 0);
+  const kept = await lines(ctx);
+  assert.equal(kept.length, 1, "recorded: counters and goals still see it");
+  assert.equal(kept[0].muted, true);
+  const items = await P.topicItems(ctx, {}, NOW + 5000);
+  assert.equal(items[0].muted, true, "the topic says it is muted, so the overlay never plays it");
+  await deliver(ctx, TYPES.follow, EV.follow);
+  assert.equal((await lines(ctx)).find((l) => l.kind === "follow").muted, undefined, "an alert that is on is not flagged");
   await deliver(ctx, "channel.hype_train.begin", EV.hypeBegin, { version: "2" });
   for (const lv of [1, 1, 2, 2, 3]) await deliver(ctx, "channel.hype_train.progress", EV.hypeProgress(lv), { version: "2" });
   assert.deepEqual((await lines(ctx)).filter((l) => l.kind === "hype_progress").map((l) => l.level).sort(), [2, 3]);
@@ -202,32 +208,54 @@ test("listening: creates every wanted subscription, repairs the cut ones, drops 
   assert.equal(tw.subs.filter((x) => x.type.startsWith("channel.hype")).length, 3);
 });
 
-test("listening: switching a type off removes its subscription; renew starts again with a new secret", async () => {
+test("listening: an alert switched off never removes a subscription; renew starts again with a new secret", async () => {
   const { ctx, tw } = world();
   const s = { channel: "", retentionDays: 30 };
   tw.autoEnable = true;
   assert.equal((await L.ensureListening(ctx, s)).code, "pending", "just created: Twitch has not verified the address yet");
   assert.equal((await L.ensureListening(ctx, s)).code, "listening");
-  assert.equal(tw.subs.length, 12);   // (1.20.0) the end of a subscription rides with "sub"
-  await S.updateState(ctx, (d) => { d.enabled = { hype: false, redeem: false }; });
+  assert.equal(tw.subs.length, 13);   // (1.20.0) the end of a subscription rides with "sub"; (1.15.0) channel points too once their permission is granted
+  await S.updateState(ctx, (d) => { d.enabled = { hype: false, redeem: false, online: false, offline: false, follow: false }; });
   await L.ensureListening(ctx, s);
-  assert.equal(tw.subs.length, 9);
+  assert.equal(tw.subs.length, 13, "(1.15.0) the alert switch is not the listening switch");
   const before = (await S.readState(ctx)).secret;
   await L.ensureListening(ctx, s, { renew: true });
   assert.notEqual((await S.readState(ctx)).secret, before);
   assert.equal(tw.lastSecret, (await S.readState(ctx)).secret, "Twitch got the new secret");
-  assert.equal(tw.subs.length, 9);
+  assert.equal(tw.subs.length, 13);
 });
 
-test("listening: private site, expired token, Twitch down, refusal, nothing switched on", async () => {
-  assert.equal((await L.ensureListening(world({ siteUrl: "http://localhost:3000" }).ctx, { channel: "" })).code, "site_private");
-  assert.equal((await L.ensureListening(world({ tw: { status: "reconnect" } }).ctx, { channel: "" })).code, "need_reconnect");
-  assert.equal((await L.ensureListening(world({ tw: { listDown: true } }).ctx, { channel: "" })).code, "twitch_down");
-  const w = world({ tw: { createStatus: 400 } });
-  assert.equal((await L.ensureListening(w.ctx, { channel: "" })).code, "refused");
+test("listening: stream start and end are always listened to, whatever the alert switches say", async () => {
   const n = world();
+  n.tw.autoEnable = true;
   await S.updateState(n.ctx, (d) => { d.enabled = Object.fromEntries(es.TYPE_IDS.map((i) => [i, false])); });
-  assert.equal((await L.ensureListening(n.ctx, { channel: "" })).code, "nothing_on");
+  await L.ensureListening(n.ctx, { channel: "" });
+  assert.equal((await L.ensureListening(n.ctx, { channel: "" })).code, "listening");
+  const kinds = n.tw.subs.map((x) => x.type);
+  assert.ok(kinds.includes("stream.online") && kinds.includes("stream.offline"));
+  const st = await S.readState(n.ctx);
+  assert.equal(st.types.online.code, "listening"); assert.equal(st.types.offline.code, "listening");
+});
+
+test("listening: a muted type without its permission is not listened to, not asked for and not an alarm", async () => {
+  const n = world({ tw: { scopes: [] } });
+  n.tw.autoEnable = true;
+  await S.updateState(n.ctx, (d) => { d.enabled = Object.fromEntries(es.TYPE_IDS.map((i) => [i, false])); });
+  await L.ensureListening(n.ctx, { channel: "" });
+  const r = await L.ensureListening(n.ctx, { channel: "" });
+  assert.equal(r.code, "listening", "nothing missing for the types that are listened to");
+  assert.deepEqual(n.tw.subs.map((x) => x.type).sort(), ["channel.raid", "stream.offline", "stream.online"]);
+  assert.deepEqual(n.tw.wants.flatMap((w) => w.scopes ?? []), [], "no new permission is asked for the sake of tracking");
+});
+
+test("listening: an alert that is on without its permission is the one degraded line", async () => {
+  const n = world({ tw: { scopes: [] } });
+  n.tw.autoEnable = true;
+  await S.updateState(n.ctx, (d) => { d.enabled = { ...Object.fromEntries(es.TYPE_IDS.map((i) => [i, false])), sub: true }; });
+  await L.ensureListening(n.ctx, { channel: "" });
+  const r = await L.ensureListening(n.ctx, { channel: "" });
+  assert.equal(r.code, "need_more");
+  assert.deepEqual(n.tw.wants.flatMap((w) => w.scopes ?? []).sort(), ["channel:read:subscriptions"]);
 });
 
 test("revocation: noted, and the listening is repaired", async () => {
@@ -248,28 +276,56 @@ test("admin page: journal table with search and filters, types with switches, st
   assert.equal(table.searchable, true); assert.ok(table.filters.length === 1);
   assert.equal(table.rows[0][1].badge, "accent"); assert.match(table.rows[0][1].text, /Réabonnement/);
   assert.match(table.rows[0][3].text, /12 mois/);
-  // (1.18.0) the types are in the Twitch events tab of the alerts overlay, with two switches: Received (listening) and Shown (the alert on screen)
+  // (1.22.0) the types are in the Twitch events tab of the alerts overlay, with ONE switch: the alert on screen. Listening has no switch (it never depends on an alert).
   const types = blocks.find((b) => b.tab === "twitch" && b.type === "table");
-  assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r.at(-1).switch?.action === "setType" && r.at(-2).switch?.action === "setEnabled"));
+  assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r.at(-1).switch?.action === "setType" && r.filter((c) => c?.switch).length === 1));
+  assert.equal(mod.adminActions.setEnabled, undefined);
   assert.ok(blocks.some((b) => b.type === "connection"));
 });
 
-test("admin actions: switch says the state wanted, test, replay, remove", async () => {
+test("admin actions: the alert switch says the state wanted, test, replay, remove", async () => {
   const { ctx, tw } = world({ tw: { scopes: ["channel:read:subscriptions"] } });
-  const off = await mod.adminActions.setEnabled(ctx, { id: "cheer", enabled: "0" });
-  assert.ok(off.ok); assert.equal(S.enabledOf(await S.readState(ctx)).cheer, false);
-  await mod.adminActions.setEnabled(ctx, { id: "cheer", enabled: "0" });
+  const cycle = await import("../modules/alerts-overlay/twitch/cycle.mjs");
+  tw.autoEnable = true;
+  await cycle.check(ctx, { channel: "" });
+  assert.ok((await mod.adminActions.setType(ctx, { id: "cheer", enabled: "0" })).ok);
+  await cycle.check(ctx, { channel: "" });
+  assert.equal(S.enabledOf(await S.readState(ctx)).cheer, false, "the stored alert flag follows the switch of the overlay");
+  await mod.adminActions.setType(ctx, { id: "cheer", enabled: "0" });
+  await cycle.check(ctx, { channel: "" });
   assert.equal(S.enabledOf(await S.readState(ctx)).cheer, false, "a repeated press changes nothing");
-  const on = await mod.adminActions.setEnabled(ctx, { id: "cheer", enabled: "1" });
-  assert.match(on.ok, /accord de Twitch/);
-  assert.ok(tw.wants.at(-1).scopes.includes("bits:read"));
-  assert.ok((await mod.adminActions.setEnabled(ctx, { id: "zzz", enabled: "1" })).error);
+  assert.ok((await mod.adminActions.setType(ctx, { id: "cheer", enabled: "1" })).ok);
+  await cycle.check(ctx, { channel: "" });
+  assert.equal(S.enabledOf(await S.readState(ctx)).cheer, true);
+  assert.ok(tw.wants.at(-1).scopes.includes("bits:read"), "an alert that is turned on asks for its permission");
+  assert.ok((await mod.adminActions.setType(ctx, { id: "zzz", enabled: "1" })).error);
   assert.ok((await mod.adminActions.testEvent(ctx, { id: "follow" })).ok);
   const id = (await S.recent(ctx, 1))[0].id;
   assert.ok((await mod.adminActions.replay(ctx, { id })).ok);
   assert.ok((await mod.adminActions.replay(ctx, { id: "x" })).error);
   assert.ok((await mod.adminActions.remove(ctx, { id })).ok);
   assert.ok((await mod.adminActions.remove(ctx, { id })).error);
+});
+
+test("update to 1.22.0: a type that was off in the old Received list keeps no alert, and starts being listened to", async () => {
+  const { ctx, tw } = world();
+  const cycle = await import("../modules/alerts-overlay/twitch/cycle.mjs");
+  const tws = await import("../modules/alerts-overlay/twitch.mjs");
+  tw.autoEnable = true;
+  // what an older version stored: online and offline switched off (no stream state), follow on
+  await S.updateState(ctx, (d) => { d.enabled = { online: false, offline: false, follow: true }; d.liveSince = Date.parse("2026-11-15T19:45:17Z"); });
+  assert.equal(tws.normaliseConfig(null).types.online.on, true, "the overlay default is on");
+  await cycle.check(ctx, { channel: "" });
+  const cfg = await tws.loadConfig(ctx, Date.now() + 60_000);
+  assert.equal(cfg.types.online.on, false); assert.equal(cfg.types.offline.on, false, "the choice of the owner is kept as an alert switched off");
+  assert.equal(cfg.types.follow.on, true);
+  await cycle.check(ctx, { channel: "" });
+  assert.ok(tw.subs.some((x) => x.type === "stream.online") && tw.subs.some((x) => x.type === "stream.offline"), "listened to on the very next pass, without any action");
+  const st = await S.readState(ctx);
+  assert.equal(st.alertsMigrated, true);
+  assert.equal(S.enabledOf(st).online, false);
+  // the stale start of 2026-11-15 does not turn a quiet night into a silence
+  assert.equal((await S.readState(ctx)).liveSince, undefined, "a start older than 48 hours is forgotten");
 });
 
 test("MCP tools: read the journal, status, bounded replay", async () => {
@@ -311,7 +367,7 @@ test("admin page passes the page ergonomics (R3 R4 R9 R10 R11 R14 R15 R17 R22), 
     const { ctx } = world({ locale, alerts: true });
     await S.ensureSecret(ctx);
     const errors = [];
-    for (const [a, v] of [["setEnabled", { id: "zzz" }], ["replay", { id: "zzz" }], ["remove", { id: "zzz" }], ["testEvent", { id: "zzz" }]]) errors.push((await mod.adminActions[a](ctx, v)).error);
+    for (const [a, v] of [["setType", { id: "zzz" }], ["replay", { id: "zzz" }], ["remove", { id: "zzz" }], ["testEvent", { id: "zzz" }]]) errors.push((await mod.adminActions[a](ctx, v)).error);
     assertAdminPageErgonomics(await mod.adminPanel(ctx, { query: {} }), { errors });
     for (const k of ["follow", "sub", "gift", "cheer", "raid", "online"]) await deliver(ctx, TYPES[k], EV[k === "sub" ? "sub" : k]);
     await P.sendTest(ctx, "hype");

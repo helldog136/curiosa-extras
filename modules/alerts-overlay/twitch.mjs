@@ -485,6 +485,8 @@ export async function pullTwitch(ctx, emit, env) {
     // (1.18.0) a line taken over from Twitch activity (`from`, given by the copy that listens: the topic schema is full) keeps the key it had there: never shown twice
     const key = `${typeof item.from === "string" && item.from ? item.from : item.source?.instance ?? ""}|${item.id}`;
     if (s.seen.has(key) || stagedIds.has(key)) continue;
+    // (1.22) a line of a type whose alert is switched off is recorded by the listening (counters, goals) and flagged `muted`: it is never played
+    if (item.muted === true && item.test !== true && item.replay !== true) { remember(s, key); changed = true; continue; }
     const r = alertFor(item, shared);
     if (r.held) {
       // the whole alert waits for a decision (the owner chose "hold the alert"): kept, never shown or read until then
