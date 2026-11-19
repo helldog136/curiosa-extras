@@ -11,8 +11,8 @@
   "adminMenuOrder": 40,
   "platform": "twitch",
   "description": {
-    "en": "Bridge version: hands its journal and settings over to the Alerts overlay (OBS) once, then stops listening.",
-    "fr": "Version de passage : donne une fois son journal et ses réglages à Overlay alertes (OBS), puis arrête d'écouter."
+    "en": "Bridge version: hands its journal and settings over once, then stops listening.",
+    "fr": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter."
   },
   "author": "Helldog136",
   "license": "MIT",

@@ -51,7 +51,7 @@ export async function panel(ctx, { query = {}, twitch = "editor" } = {}) {
   // (R33) the state is said only when it is not the usual one (paused), and "empty the queue" only when something waits
   const queueBlocks = [
     ...(q.paused ? [{ type: "banner", tone: "warning", text: t("q_paused", { n: q.held }) }] : []),
-    { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
+    { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), submitStyle: "secondary", fields: [] },
     ...(q.held + q.staged > 0 ? [{ type: "table", columns: [t("q_col")], pageSize: 0, rows: [[String(q.held + q.staged)]], rowIds: ["queue"], rowActions: [{ label: t("q_clear_btn"), action: "clearQueue", confirm: t("q_clear_confirm", { n: q.held + q.staged }), danger: true }] }] : []),
   ];
   if (twitch === "none") return queueBlocks;

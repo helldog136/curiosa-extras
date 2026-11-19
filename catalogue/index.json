@@ -3026,15 +3026,15 @@
     {
       "id": "twitch-events",
       "name": "Twitch activity",
-      "description": "Bridge version: hands its journal and settings over to the Alerts overlay (OBS) once, then stops listening.",
+      "description": "Bridge version: hands its journal and settings over once, then stops listening.",
       "i18n": {
         "en": {
           "name": "Twitch activity",
-          "description": "Bridge version: hands its journal and settings over to the Alerts overlay (OBS) once, then stops listening."
+          "description": "Bridge version: hands its journal and settings over once, then stops listening."
         },
         "fr": {
           "name": "Activité Twitch",
-          "description": "Version de passage : donne une fois son journal et ses réglages à Overlay alertes (OBS), puis arrête d'écouter."
+          "description": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
