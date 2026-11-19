@@ -820,6 +820,20 @@ test("page : UN bloc « connection » en haut (l'état est écrit par le cœur),
   assert.equal(connOf(await A.panel(ctx, { query: {} })).reason, fr.conn_muted_remote);
 });
 
+test("R33 : dans les trois états, un journal vide ne montre ni titre ni phrase, et le mode collaboration éteint n'a qu'un bouton, sans pastille « désactivé »", async () => {
+  const states = { configured: (await listeningWorld()).ctx, degraded: world({ siteUrl: "http://localhost:3000" }).ctx, notConfigured: world({ tw: { mainStatus: "none" } }).ctx };
+  for (const [name, ctx] of Object.entries(states)) {
+    const b = await A.panel(ctx, { query: {} });
+    assert.equal(connOf(b).state, name);
+    assert.ok(!JSON.stringify(b).includes(fr.log_title), `${name}: nothing to list, nothing shown`);
+    const bar = b.filter((x) => x.type === "html" && /class="ck-bar"/.test(x.html)).map((x) => x.html).join("");
+    if (name === "notConfigured") assert.equal(bar, "", "nothing to share before the chat is connected");
+    else {
+      assert.match(bar, /Activer le mode collaboration/); assert.doesNotMatch(bar, /Régler le mode|Mode collaboration désactivé|<span class="ck-origin/, `${name}: one button, no pill for the usual state`);
+    }
+  }
+});
+
 test("page : l'écoute du chat en trois états, avec pourquoi et quoi faire en mots simples ; le bouton d'autorisation seulement quand il sert", async () => {
   const listening = await listeningWorld();
   let b = await A.panel(listening.ctx, { query: {} });
@@ -975,7 +989,7 @@ test("fiche du partenaire : une fiche en brouillon peut être réglée — la co
   const { ctx } = world({ sponsors: [] });
   const draft = target({ id: "d1", title: "Brouillon", slug: "brouillon", path: "/sponsors/brouillon", published: false });
   const b = await panelDef.render(ctx, draft, { advanced: false });
-  assert.equal(b[0].tone, "info");
+  assert.equal(b[0].tone, "warning");
   assert.equal(b[0].text, fr.entry_unpublished);
   assert.deepEqual(await panelDef.actions.save(ctx, draft, { enabled: "on", name: "brouillon", text: "Voir {adresse}" }), { ok: fr.entry_saved_unpublished });
   assert.equal((await listOf(ctx)).find((c) => c.key === "partner:d1").state, "missing", "pas dans les fiches publiées : en pause jusqu'à la publication");
@@ -1104,7 +1118,7 @@ test("journal : les 30 dernières lignes ; réponse envoyée ou raison du refus 
   assert.deepEqual([rows[0].cells.ans, rows[0].cells.extra], ["!titre", `${fr.log_refused} : ${fr.reason_role}`]);
   assert.deepEqual([rows[1].cells.ans, rows[1].cells.extra.startsWith(`${fr.log_sent} : `)], ["!jeu", true]);
   assert.equal(rows[0].attrs.result, "refused");
-  assert.ok(htmlOf(b, "log").includes(fr.log_help));
+  assert.ok(!htmlOf(b, "log").includes("ck-intro"), "no sentence under the title of the journal (R33)");
   assert.ok(htmlOf(b, "log").includes(fr.log_clear_confirm.replace("{n}", "30")), "la confirmation dit ce qui sera perdu");
   assert.equal(JSON.stringify(await ctx.api.store.list("botLog")).includes("Viewer"), false, "le nom d'affichage n'est pas gardé");
 });
@@ -1155,7 +1169,7 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.24.0", "0.36.0", "twitch", "multiple", 6]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.24.1", "0.36.0", "twitch", "multiple", 6]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }, { service: "alerts.show", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");

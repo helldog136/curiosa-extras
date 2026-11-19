@@ -86,7 +86,7 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.24.0");
+  assert.equal(manifest.version, "1.24.1");
   assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
@@ -778,7 +778,7 @@ test("la page de modification d'une récompense charge ses valeurs ; le test est
   const table = b.find((x) => x.type === "table" && x.rowIds && x.columns[0] === "Récompense");
   assert.deepEqual(table.columns, ["Récompense", "Ce qui se passe", "Coût", "État"], "UN tableau : titre, ce qui se passe, coût, état");
   assert.equal(table.searchable, true, "recherche en direct dès le départ");
-  assert.ok(table.filters.length >= 1);
+  assert.equal(table.filters, undefined, "one reward: nothing to filter by (R33)");
   const row = table.rows[0];
   assert.equal(row[1].text, "Lumières : rouge"); assert.ok(row[1].badge, "pastille colorée ET écrite");
   assert.equal(row[3].switch.action, "rewardEnable"); assert.equal(row[3].switch.on, true);

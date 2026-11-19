@@ -65,7 +65,7 @@ const dump = (w) => JSON.stringify(w.ctx.dumpStore());
 test("le manifeste est valide et déclare le contrat exact", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.4.0"); assert.equal(manifest.minCore, "0.36.0");
+  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.4.1"); assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
@@ -911,6 +911,14 @@ test("page : les trois états passent les contrôles R33 du kit (état, doublons
   const cut = await A.panel(w2.ctx);
   const w3 = world(); const code = (await B.createPairing(w3.ctx)).code;
   const never = (await (async () => { await new FakeHaClient({ send: directTransport(def, w3.ctx) }).pair(code, "Maison"); return A.panel(w3.ctx); })());
+  for (const [name, page] of Object.entries({ notConfigured, configured, lost, cut, never })) {
+    const text = JSON.stringify(page);
+    assert.ok(!text.includes("Simule un échange"), `${name}: no description under the test form`);
+    assert.ok(!text.includes("Aucune action reçue"), `${name}: no sentence that says nothing was received`);
+  }
+  assert.ok(!notConfigured.some((b) => b.type === "heading" && b.text === fr.jr_title), "nothing received yet: no journal title");
+  assert.equal(fr.live_no, "Hors direct : les actions des viewers sont refusées.", "one short exact state, no reassurance about points");
+  assert.ok(!/Repris/.test(fr.ev_start) && /Tout remis en marche/.test(fr.ev_start), "the journal says 'everything back on', not an internal word");
   assertConnectionStates({ notConfigured, configured, degraded: lost });
   assertConnectionStates({ notConfigured, configured, degraded: cut });
   assertConnectionStates({ notConfigured, configured, degraded: never });

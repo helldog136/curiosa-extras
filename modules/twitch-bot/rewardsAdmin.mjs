@@ -160,7 +160,7 @@ function journalBlocks(ctx, s, entries, names, advanced) {
 /** Tous les blocs de l'onglet (déjà marqués pour l'onglet). `info` : le décor de admin.mjs ({ s, d }). */
 export async function blocks(ctx, info, query = {}) {
   const t = ctx.t, s = info.s, state = await st.readState(ctx);
-  const out = [K.bootstrap(ctx), { type: "heading", text: t("rw_title") }, { type: "markdown", text: t("rw_intro") }];
+  const out = [K.bootstrap(ctx), { type: "markdown", text: t("rw_intro") }];   // no title: the tab already has its name (R33)
   const namedList = await A.named(ctx, s).catch(() => []), names = A.names(t, namedList), advanced = adv(info);
   if (state.rewardsOn !== true) {
     if (can(ctx)) out.push(K.inlineActions(ctx, K.actionButton({ label: t("rw_enable_btn"), act: "rewardsEnable", cls: "primary", fail: t("err_toggle") })));
@@ -203,17 +203,20 @@ export async function blocks(ctx, info, query = {}) {
   else {
     // UN tableau : titre, ce qui se passe (pastille colorée ET écrite), coût, état avec son interrupteur. « Modifier » ouvre une fenêtre ; la simulation et la suppression sont dans « ⋯ ».
     const unmapped = (r) => linkOf(fresh, r.action) === "unmapped";
-    out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_what"), t("rw_col_cost"), t("rw_col_state")], rowIds: rows.map((r) => r.id),
-      searchable: true, searchPlaceholder: t("rw_search"), filters: [{ column: 1, allLabel: t("rw_filter_all") }, { column: 3, allLabel: t("rw_filter_any") }], truncate: [0], empty: t("rw_list_empty"),
-      rows: rows.map((r) => {
+    const tableRows = rows.map((r) => {
         const status = R.statusOf(r), what = actionName(ctx, names, r.action, { advanced });
         const stateCell = status === "gone" ? { text: t("rw_state_gone"), badge: "danger" }
           : status === "refused" ? { text: t("rw_state_refused", { why: t(`rw_refused_${r.refused?.code === "duplicate" ? "duplicate" : "other"}`) }), badge: "warn" }
           : { text: t(status === "paused" ? "rw_filter_paused" : "rw_filter_active"),
             ...(writable ? { switch: { on: status === "active", action: "rewardEnable", label: t("rw_sw_label", { title: r.title }),
-              onText: unmapped(r) ? `${t("rw_state_active")} · ${t("rw_note_unmapped")}` : t("rw_state_active"), offText: r.pause === "auto" ? t("rw_state_paused_auto") : t("rw_state_paused") } } : {}) };
+              onText: unmapped(r) ? t("rw_note_unmapped") : "", offText: r.pause === "auto" ? t("rw_state_paused_auto") : t("rw_state_paused") } } : {}) };   // the usual state is not written next to the switch (R14)
         return [{ text: r.title, title: r.title }, { text: what, badge: toneOf(r.action) }, t("rw_points", { n: r.cost }), stateCell];
-      }),
+      });
+    const mixed = (col) => new Set(tableRows.map((r) => (typeof r[col] === "string" ? r[col] : r[col].text))).size > 1;   // a filter with one single value says nothing (R33)
+    const filters = [...(mixed(1) ? [{ column: 1, allLabel: t("rw_filter_all") }] : []), ...(mixed(3) ? [{ column: 3, allLabel: t("rw_filter_any") }] : [])];
+    out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_what"), t("rw_col_cost"), t("rw_col_state")], rowIds: rows.map((r) => r.id),
+      searchable: true, searchPlaceholder: t("rw_search"), ...(filters.length ? { filters } : {}), truncate: [0], empty: t("rw_list_empty"),
+      rows: tableRows,
       rowActions: writable ? [{ label: t("act_edit"), href: `${TAB}&rewardEdit={id}`, presentation: "dialog" }, { label: t("rw_sim_row_btn"), href: `${TAB}&rewardTest={id}#test`, inMenu: true }, { label: t("rw_delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] : [] });
   }
   if (writable) {

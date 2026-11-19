@@ -53,23 +53,23 @@ async function listBlock(ctx, info, rows, writable) {
   const states = await Promise.all(rows.map((c) => stateOf(ctx, c)));
   return {
     type: "table", columns: [t("col_command"), t("col_answer"), t("tm_col_rhythm"), t("col_active")], rowIds: rows.map((c) => c.key),
-    searchable: true, searchPlaceholder: t("search_timers"), filters: [{ column: 3, allLabel: t("filter_any") }], truncate: [0, 1, 2], empty: t("tm_empty"),
+    searchable: true, searchPlaceholder: t("search_timers"), ...(new Set(states.map((x) => x.state)).size > 1 ? { filters: [{ column: 3, allLabel: t("filter_any") }] } : {}), truncate: [0, 1, 2], empty: t("tm_empty"),
     rows: rows.map((c, i) => {
       const st = states[i], r = rhythm(t, c.repeat), name = nameOf(info, c);
       const notes = [r.note, c.timerOnly ? t("pill_timer_only") : ""].filter(Boolean).join(" · ");
       const rhythmText = `${r.every}${notes ? ` · ${notes}` : ""}`;
       const state = { text: t(FILTER[st.state]), title: st.full };
       return [{ text: name, title: name }, { text: c.text, title: c.text }, { text: rhythmText, title: rhythmText },
-        writable ? { ...state, switch: { on: c.repeat.enabled !== false, action: "timerToggle", label: t("sw_label_timer", { name }), onText: st.note ? `${t(FILTER[st.state])} · ${st.note}` : t(FILTER[st.state]), offText: t("tm_filter_off") } } : state];
+        writable ? { ...state, switch: { on: c.repeat.enabled !== false, action: "timerToggle", label: t("sw_label_timer", { name }), onText: st.note || (st.state === "on" ? "" : t(FILTER[st.state])), offText: t("tm_filter_off") } } : state];
     }),
     rowActions: writable ? [{ label: t("act_edit"), href: `${TAB}&edit={id}&repeat=1`, presentation: "dialog" }, { label: t("tm_send_btn"), action: "timerSend", confirm: t("tm_send_confirm") }, { label: t("tm_delete_btn"), action: "timerDelete", confirm: t("tm_delete_confirm"), danger: true }] : [],
   };
 }
 
-/** Le haut de l'onglet : le titre, UNE phrase qui dit à quoi il sert (R1) et « Ajouter un timer » (le seul bouton principal, il ouvre une fenêtre). */
+/** Le haut de l'onglet : UNE phrase qui dit à quoi il sert (R1) et « Ajouter un timer » (le seul bouton principal, il ouvre une fenêtre). */
 function headBlocks(ctx, writable, n) {
   const t = ctx.t;
-  return [{ type: "heading", text: t("tm_title") }, { type: "markdown", text: t("tm_intro") },
+  return [{ type: "markdown", text: t("tm_intro") },   // no title: the tab already has its name (R33)
     ...(writable && n < MAX_REPEATS ? [{ type: "links", items: [{ label: t("tm_new_open"), href: `${TAB}&timerAdd=1`, presentation: "dialog" }] }] : []),
     ...(writable && n >= MAX_REPEATS ? [{ type: "markdown", text: t("tm_full", { max: MAX_REPEATS }) }] : [])];
 }
