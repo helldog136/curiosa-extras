@@ -120,29 +120,19 @@ async function connectButton(ctx, channel, { first = false, adminPath = "" } = {
 /** L'état de la maison en une ligne (R25) : ce que dit le Connecteur Home Assistant. */
 const houseLine = (t, house) => {
   const s = house.status ?? {};
-  return !s.paired ? t("rw_house_unpaired") : s.enabled === false ? t("rw_house_off") : s.live === false ? t("rw_house_notlive") : t("rw_house_ok");
+  return !s.paired ? t("rw_house_unpaired") : s.enabled === false ? t("rw_house_off") : s.live === false ? t("rw_house_notlive") : "";
 };
 const houseReady = (house) => !!house.installed && house.status?.paired === true && house.status?.enabled !== false && house.status?.live !== false;
 
-/** Une fois tout en place : l'état de la maison et les deux liens utiles (le Connecteur, la création d'une récompense). */
+/** Once everything is in place: the state of the home only when it is not ready, and the links (R25: the link says the state of the other side). Without the connector: the core's install suggestion alone. */
 function houseBlocks(ctx, house) {
   const t = ctx.t;
-  if (!house.installed) return [{ type: "markdown", text: t("rw_house_absent") }, { type: "suggestInstall", service: J.SERVICE, reason: t("rw_suggest_reason") }];
+  if (!house.installed) return [{ type: "suggestInstall", service: J.SERVICE, reason: t("rw_suggest_reason") }];
+  const ready = houseReady(house);
   return [
-    { type: "banner", tone: houseReady(house) ? "success" : "warning", text: houseLine(t, house) },
-    ...(house.adminPath ? [{ type: "links", items: [{ label: t("rw_house_link"), href: house.adminPath }, { label: t("rw_new_link"), href: `${TAB}&rewardNew=1`, presentation: "dialog" }] }] : []),
+    ...(ready || !houseLine(t, house) ? [] : [{ type: "banner", tone: "warning", text: houseLine(t, house) }]),
+    ...(house.adminPath ? [{ type: "links", items: [{ label: t(ready ? "rw_house_ready_link" : "rw_house_link"), href: house.adminPath }, { label: t("rw_new_link"), href: `${TAB}&rewardNew=1`, presentation: "dialog" }] }] : []),
   ];
-}
-
-/** Les trois étapes avec l'état de chacune (R8, R25) : activer, autoriser chez Twitch, relier la maison (facultatif). */
-function stepsBlock(ctx, { on, acc, house }) {
-  const t = ctx.t, done = { text: t("rw_step_done"), badge: "ok" }, todo = { text: t("rw_step_todo"), badge: "warn" }, wait = { text: t("rw_step_wait"), badge: "neutral" };
-  const home = !house.installed ? { text: t("rw_step_absent"), badge: "neutral" } : houseReady(house) ? { text: t("rw_step_paired"), badge: "ok" } : { text: t("rw_step_unpaired"), badge: "warn" };
-  return { type: "table", columns: [t("rw_col_step"), t("rw_col_state"), t("rw_col_next")], rows: [
-    [t("rw_step_1"), on ? done : todo, on ? "" : t("rw_step_1_next")],
-    [t("rw_step_2"), !on ? wait : acc?.ok ? done : todo, !on ? "" : acc?.ok ? "" : t("rw_step_2_next")],
-    [t("rw_step_3"), home, house.installed && house.adminPath ? { text: t("rw_house_link"), href: house.adminPath } : ""],
-  ] };
 }
 
 /** Les actions que Home Assistant a dit ne pas connaître, en une phrase avec leurs noms (5 au plus) : à relier dans Home Assistant. */
@@ -156,7 +146,7 @@ function unmappedBlocks(ctx, state, names, used) {
 /** Le journal des 50 derniers échanges (son propre vidage reste là en attendant l'Historique commun). */
 function journalBlocks(ctx, s, entries, names, advanced) {
   const t = ctx.t, time = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
-  const out = [{ type: "heading", text: t("rw_log_title") }, { type: "markdown", text: t(entries.length ? "rw_log_help" : "rw_log_empty", { n: J.KEEP_RESOLVED }) }, { type: "links", items: [{ label: t("rw_log_history"), href: "?tab=history" }] }];   // l'onglet « Historique » du cœur : remboursements à regarder
+  const out = [{ type: "heading", text: t("rw_log_title") }, { type: "markdown", text: t(entries.length ? "rw_log_help" : "rw_log_empty", { n: J.KEEP_RESOLVED }) }];
   if (!entries.length) return out;
   const tone = { done: "ok", refunded: "warn", failed: "danger" };
   // Le détail ne répète pas le résultat (R14) : il n'est écrit que s'il y a une raison.
@@ -173,13 +163,11 @@ export async function blocks(ctx, info, query = {}) {
   const out = [K.bootstrap(ctx), { type: "heading", text: t("rw_title") }, { type: "markdown", text: t("rw_intro") }];
   const namedList = await A.named(ctx, s).catch(() => []), names = A.names(t, namedList), advanced = adv(info);
   if (state.rewardsOn !== true) {
-    out.push(stepsBlock(ctx, { on: false, acc: null, house: await houseInfo(ctx) }));
     if (can(ctx)) out.push(K.inlineActions(ctx, K.actionButton({ label: t("rw_enable_btn"), act: "rewardsEnable", cls: "primary", fail: t("err_toggle") })));
     return tab(out);
   }
   const acc = await R.access(ctx, s);
   if (!acc.ok) {
-    out.push(stepsBlock(ctx, { on: true, acc, house: await houseInfo(ctx) }));
     out.push({ type: "banner", tone: "warning", text: t(`rw_access_${acc.code}`) });
     if (["need_connect", "need_reconnect", "need_scope"].includes(acc.code)) {
       if (info.d.channel) out.push(...(await connectButton(ctx, info.d.channel, { first: acc.code === "need_connect", adminPath: info.d.main?.adminPath })));

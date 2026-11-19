@@ -534,25 +534,22 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
   assert.deepEqual([blocks[i].items[1].href, blocks[i].items[1].presentation], ["?tab=rewards&rewardNew=1", "dialog"], "R25 : l'état de la maison et, à côté, le lien pour créer une récompense (dans une fenêtre)");
   assert.equal(blocks[i - 1].type, "banner", "l'état de la maison est dit juste au-dessus des liens");
   assert.ok(blocks.every((b) => b.tab === "rewards"));
-  // Connecteur -> Bot Twitch : « Étape suivante », une fois associé
+  // Connecteur -> Bot Twitch : un seul lien, une fois associé (plus de titre ni de paragraphe)
   await pairUp(w, {});
   let ha = await hapanel(w);
-  i = ha.findIndex((b) => b.type === "heading" && b.text === "Étape suivante");
-  assert.ok(i >= 0);
-  assert.deepEqual(ha[i + 2], { type: "links", items: [{ label: "Créer ou modifier vos récompenses", href: "/admin/instances/b1?tab=rewards" }] });
+  assert.ok(ha.some((b) => b.type === "links" && JSON.stringify(b.items) === JSON.stringify([{ label: "Créer ou modifier vos récompenses", href: "/admin/instances/b1?tab=rewards" }])));
+  assert.ok(!ha.some((b) => b.type === "heading" && b.text === "Étape suivante"));
   // pas de Connecteur : la proposition d'installation existante
   const noHa = world({ noHa: true }); await enable(noHa);
   blocks = await panel(noHa);
   const s = blocks.find((b) => b.type === "suggestInstall");
   assert.equal(s.service, "home-assistant.bridge"); assert.ok(s.reason);
   assert.ok(!blocks.some((b) => b.type === "links" && b.items[0].label === "Relier à votre maison"));
-  assert.match(JSON.stringify(blocks), /il faut le Connecteur Home Assistant/);
-  // pas de Bot Twitch : une phrase simple et le chemin du Catalogue
+  assert.ok(!JSON.stringify(blocks).includes("il faut le Connecteur"), "R33 : la phrase en double a disparu, la suggestion du cœur reste");
+  // pas de Bot Twitch : un seul lien, vers le Catalogue
   const noBot = world({ noBot: true }); await pairUp(noBot, {});
   ha = await hapanel(noBot);
-  i = ha.findIndex((b) => b.type === "heading" && b.text === "Étape suivante");
-  assert.match(ha[i + 1].text, /n'est pas installé/);
-  assert.deepEqual(ha[i + 3], { type: "links", items: [{ label: "Ouvrir le Catalogue", href: "/admin/catalogue" }] });
+  assert.ok(ha.some((b) => b.type === "links" && JSON.stringify(b.items) === JSON.stringify([{ label: "Installer le Bot Twitch", href: "/admin/catalogue" }])));
   assert.ok(!JSON.stringify(ha).includes("tab=rewards"));
   done();
 });
@@ -568,16 +565,18 @@ test("liens : seuls des chemins d'administration du site sont utilisés (jamais 
 
 /* ───────────── G. Mise en route ───────────── */
 
-test("mise en route : trois étapes (intégration HACS, code, première récompense avec son bouton) tant que rien n'est associé", async () => {
+test("mise en route : trois étapes (intégration HACS, code, première récompense avec son bouton) tant que rien n'est associé, dans le bloc « connection »", async () => {
   const w = world();
   const blocks = await hapanel(w);
-  const text = JSON.stringify(blocks);
-  assert.match(text, /Mise en route en 3 étapes/);
+  const conn = blocks.find((b) => b.type === "connection");
+  assert.equal(conn.state, "notConfigured");
+  const text = JSON.stringify(conn.setup);
   assert.match(text, /1\. Installer l'intégration/); assert.ok(text.includes("https://github.com/helldog136/homeassistant-curiosa"));
   assert.match(text, /2\. Associer/); assert.match(text, /3\. Créer une première récompense/);
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pair"));
-  const i = blocks.findIndex((b) => b.type === "markdown" && /3\. Créer une première récompense/.test(b.text));
-  assert.deepEqual(blocks[i + 1], { type: "links", items: [{ label: "Créer ou modifier vos récompenses", href: "/admin/instances/b1?tab=rewards" }] });
+  assert.ok(conn.setup.some((b) => b.type === "adminForm" && b.action === "pair"));
+  const i = conn.setup.findIndex((b) => b.type === "markdown" && /3\. Créer une première récompense/.test(b.text));
+  assert.deepEqual(conn.setup[i + 1], { type: "links", items: [{ label: "Créer ou modifier vos récompenses", href: "/admin/instances/b1?tab=rewards" }] });
+  assert.ok(!text.includes("sera connecté") && !text.includes("est connecté"), "R33 : la consigne ne promet pas ce que la page affichera");
   assert.ok(!blocks.some((b) => b.type === "heading" && b.text === "Étape suivante"), "une seule porte vers le Bot Twitch à la fois");
   done();
 });

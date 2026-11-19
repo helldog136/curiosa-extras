@@ -95,13 +95,13 @@ function pickBlock(ctx, info) {
   if (!cands.length) return null;
   const rows = cands.map((c) => {
     const first = `${info.s.prefix}${c.name}`, origin = c.kind === "group" ? "builtin" : c.kind;
-    return `<tr ${K.rowAttrs({ origin }, `${first} ${c.aliases.join(" ")} ${c.text} ${t(`origin_${origin}`)}`)}><td class="c-name"><span class="ck-ell" title="${esc(first)}"><span class="ck-name">${esc(first)}</span></span></td><td class="c-ans"><span class="ck-ell" title="${esc(c.text)}">${esc(c.text)}</span></td><td class="c-org">${K.originPill(origin, t(`origin_${origin}`))}</td><td class="c-act"><div class="ck-acts"><a class="ck-btn small" href="${esc(editHref(c.key))}">${esc(t("tm_pick_btn"))}</a></div></td></tr>`;
+    return `<tr ${K.rowAttrs({ origin }, `${first} ${c.aliases.join(" ")} ${c.text} ${K.originText(t, origin)}`)}><td class="c-name"><span class="ck-ell" title="${esc(first)}"><span class="ck-name">${esc(first)}</span></span></td><td class="c-ans"><span class="ck-ell" title="${esc(c.text)}">${esc(c.text)}</span></td><td class="c-org">${K.originPill(origin, K.originText(t, origin))}</td><td class="c-act"><div class="ck-acts"><a class="ck-btn small" href="${esc(editHref(c.key))}">${esc(t("tm_pick_btn"))}</a></div></td></tr>`;
   }).join("");
   const body = K.listShell({
     ctx, id: "timer-pick", columns: [{ label: t("col_command"), width: "22%" }, { label: t("col_answer") }, { label: t("col_origin"), width: "13%" }, { label: t("col_action"), width: "22%", sr: true }],
     rows, text: { search: t("search_label"), placeholder: t("search_commands"), empty: t("search_none"), clear: t("search_clear"), count: t("search_count") },
   });
-  return { type: "html", html: `<div class="ck"><details class="ck-add"><summary><span class="ck-add-b">${esc(t("tm_route_pick"))}</span><span class="ck-add-s">${esc(t("tm_pick_status", { n: cands.length }))}</span></summary><div class="ck-add-body">${body}</div></details></div>` };
+  return { type: "html", html: `<div class="ck"><details class="ck-add"><summary><span class="ck-add-b">${esc(t("tm_route_pick"))}</span></summary><div class="ck-add-body">${body}</div></details></div>` };
 }
 
 export async function blocks(ctx, info, query = {}) {

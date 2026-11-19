@@ -7,6 +7,7 @@ import { createHmac } from "node:crypto";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 import { htmlOf, rowsOf, tableOf, tableRow, rowId, cellOf, dialogsOf, shownFields, foldedFields } from "./helpers/ui.mjs";
+import { assertConnectionStates } from "./helpers/connectionKit.mjs";
 
 /** Horloge simulée pour les tests qui annoncent un prochain stream à date fixe : le résultat ne dépend plus du jour où le test tourne. */
 const atClock = async (ms, fn) => { mock.timers.enable({ apis: ["Date"], now: ms }); try { return await fn(); } finally { mock.timers.reset(); } };
@@ -786,74 +787,112 @@ const bannerOf = (blocks) => blocks.filter((b) => b.type === "banner");
 const formsOf = (blocks, action) => blocks.filter((b) => b.type === "adminForm" && b.action === action);
 const table = (blocks, firstColumn) => blocks.find((b) => b.type === "table" && b.columns[0] === firstColumn);
 
-const barOf = (blocks) => blocks.find((b) => b.type === "html" && b.html.includes('class="ck-bar"')).html;
-test("page : UNE ligne d'état en haut (pastille écrite, boutons « Vérifier » et « Arrêt d'urgence ») ; pas de carte à un seul bouton ; cela vaut pour toutes les situations", async () => {
-  for (const o of [{}, { tw: { mainStatus: "none" } }, { tw: { ready: false } }, { siteUrl: "http://localhost:3000" }]) {
+const connOf = (blocks) => blocks.find((b) => b.type === "connection");
+const stopOf = (blocks) => blocks.find((b) => b.type === "html" && b.html.includes('data-ck-act="mute"'));
+const listeningWorld = async (o = {}) => {
+  const w = world(o);
+  const settings = (await import("../modules/twitch-bot/settings.mjs")).settingsOf(w.ctx);
+  await L.ensureListening(w.ctx, settings);
+  w.tw.subs[0].status = "enabled";
+  await L.ensureListening(w.ctx, settings);
+  return w;
+};
+test("page : UN bloc « connection » en haut (l'état est écrit par le cœur), l'arrêt d'urgence à part ; pas de carte à un seul bouton ; cela vaut pour toutes les situations", async () => {
+  for (const [o, state, stop] of [[{}, "degraded", true], [{ tw: { mainStatus: "none" } }, "notConfigured", false], [{ tw: { ready: false } }, "notConfigured", false], [{ siteUrl: "http://localhost:3000" }, "degraded", true]]) {
     const { ctx } = world(o);
     const blocks = await A.panel(ctx, { query: {} });
-    const bar = barOf(blocks);
-    assert.equal(blocks.indexOf(blocks.find((b) => b.html === bar)), 1, "la ligne d'état est le premier bloc visible");
-    assert.match(bar, /data-ck-act="mute"[^>]*>Arrêt d&#39;urgence</); assert.match(bar, /ck-danger/);
-    assert.match(bar, /data-ck-act="(check|relisten)"[^>]*>(Vérifier|Réparer l&#39;écoute)</);
-    assert.ok(!blocks.some((b) => b.type === "adminForm" && b.fields.length === 0), "aucune carte qui ne contient qu'un bouton");
-    assert.deepEqual(blocks.filter((b) => b.type === "heading" && !b.tab).map((b) => b.text), [fr.summary_title], "plus de titre « Le bot écoute-t-il… » : la ligne d'état le dit ; le seul titre est celui de la liste");
+    assert.equal(blocks.indexOf(connOf(blocks)), 1, "l'état est le premier bloc visible");
+    assert.equal(connOf(blocks).state, state);
+    assert.equal(!!stopOf(blocks), stop, "l'arrêt d'urgence n'existe que quand le bot peut répondre");
+    if (stop) { assert.match(stopOf(blocks).html, /Arrêt d&#39;urgence/); assert.match(stopOf(blocks).html, /ck-danger/); }
+    assert.ok(!blocks.some((b) => b.type === "adminForm" && b.fields.length === 0 && !b.presentation), "aucune carte qui ne contient qu'un bouton");
+    assert.ok(!blocks.some((b) => b.type === "html" && b.html.includes('class="ck-bar"') && /écoute/.test(b.html)), "plus de pastille « Le bot écoute » écrite à la main");
+    assert.deepEqual(blocks.filter((b) => b.type === "heading" && !b.tab).map((b) => b.text), [fr.summary_title], "le seul titre est celui de la liste");
   }
   const { ctx } = world();
   await A.actions.mute(ctx);
-  const bar = barOf(await A.panel(ctx, { query: {} }));
-  assert.match(bar, /ck-origin danger">Le bot est coupé</); assert.match(bar, /data-ck-act="unmute"[^>]*>Réactiver les réponses</);
-  assert.ok(!/COUPÉ/.test(bar));
+  const blocks = await A.panel(ctx, { query: {} });
+  const c = connOf(blocks);
+  assert.deepEqual([c.state, c.reason, c.primary], ["degraded", fr.conn_muted, { label: "Réactiver les réponses", action: "unmute" }]);
+  assert.match(c.since, /^2026-/);
+  assert.ok(!stopOf(blocks), "coupé : la carte reprend, plus de second bouton");
+  await S.updateState(ctx, (d) => { d.mutedBy = "remote"; });
+  assert.equal(connOf(await A.panel(ctx, { query: {} })).reason, fr.conn_muted_remote);
 });
 
-test("page : « Le bot écoute : oui / non », avec pourquoi et quoi faire, en mots simples ; bouton d'autorisation seulement quand il sert", async () => {
-  const listening = world();
-  await L.ensureListening(listening.ctx, (await import("../modules/twitch-bot/settings.mjs")).settingsOf(listening.ctx));
-  listening.tw.subs[0].status = "enabled";
-  await L.ensureListening(listening.ctx, (await import("../modules/twitch-bot/settings.mjs")).settingsOf(listening.ctx));
+test("page : l'écoute du chat en trois états, avec pourquoi et quoi faire en mots simples ; le bouton d'autorisation seulement quand il sert", async () => {
+  const listening = await listeningWorld();
   let b = await A.panel(listening.ctx, { query: {} });
-  assert.deepEqual(bannerOf(b).map((x) => [x.tone, x.text]), []);
-  assert.match(barOf(b), /ck-origin ok">Le bot écoute votre chat</);
-  assert.match(barOf(b), /Aucun message reçu pour l&#39;instant/); assert.match(barOf(b), /répond pendant vos directs/);
+  assert.equal(b.filter((x) => x.type === "banner").length, 0);
+  let c = connOf(b);
+  assert.deepEqual([c.state, c.summary, c.reason, c.primary, c.setup, c.edit], ["configured", "Répond pendant vos directs", undefined, undefined, undefined, { href: "?tab=settings" }]);
+  await S.updateState(listening.ctx, (d) => { d.lastMessageAt = NOW - 60_000; });
+  assert.match(connOf(await A.panel(listening.ctx, { query: {} })).summary, /^Répond pendant vos directs · Dernier message /);
   const cases = [
-    [{ tw: { mainStatus: "none" } }, "listen_need_connect", true], [{ tw: { mainStatus: "reconnect" } }, "listen_need_reconnect", true], [{ tw: { mainScopes: ["user:read:chat"] } }, "listen_need_more", true],
-    [{ tw: { ready: false } }, "listen_creds_missing", false], [{ siteUrl: "http://localhost:3000" }, "listen_site_private", false],
+    [{ tw: { mainStatus: "none" } }, "listen_need_connect", "notConfigured", "main=1"], [{ tw: { mainStatus: "reconnect" } }, "listen_need_reconnect", "degraded", "main=1"], [{ tw: { mainScopes: ["user:read:chat"] } }, "listen_need_more", "degraded", "main=1"],
+    [{ tw: { ready: false } }, "listen_creds_missing", "notConfigured", null], [{ siteUrl: "http://localhost:3000" }, "listen_site_private", "degraded", null],
   ];
-  for (const [o, key, button] of cases) {
+  for (const [o, key, state, link] of cases) {
     const { ctx } = world(o);
     b = await A.panel(ctx, { query: {} });
-    const banner = bannerOf(b)[0];
-    assert.equal(banner.tone, "warning"); assert.ok(banner.text.includes(fr[key]), key);
-    assert.match(barOf(b), /ck-origin warn">Le bot n&#39;écoute pas votre chat</);
-    assert.equal(b.filter((x) => x.type === "html" && x.html.includes("data-twitch-connect")).length, button ? 1 : 0, key);
-    if (button) assert.match(b.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")).html, /id\.twitch\.tv\/oauth2\/authorize\?main=1/);
-    assert.match(barOf(b), /data-ck-act="check"/); assert.ok(!barOf(b).includes('data-ck-act="relisten"'), "« Réparer l'écoute » ne sert que quand l'abonnement lui-même est en cause");
+    c = connOf(b);
+    assert.equal(c.state, state, key); assert.ok(c.reason.includes(fr[key]), key);
+    const html = JSON.stringify(state === "notConfigured" ? c.setup : c.primary);
+    assert.equal(html.includes("id.twitch.tv/oauth2/authorize?main=1"), link === "main=1", key);
+    if (state === "degraded") assert.ok(c.primary.href || c.primary.action, "une marche à suivre");
+    assert.equal(b.filter((x) => x.type === "html" && x.html.includes("data-twitch-connect")).length, 0, "le bouton est dans la carte, pas en dessous");
   }
+  const site = connOf(await A.panel(world({ siteUrl: "http://localhost:3000" }).ctx, { query: {} }));
+  assert.deepEqual(site.primary, { label: "Vérifier maintenant", action: "check" });
   const rev = world();
   await S.updateState(rev.ctx, (d) => { d.sub = { code: "revoked", detail: "authorization_revoked", at: Date.now() }; });
-  const rb = await A.panel(rev.ctx, { query: {} });
-  assert.match(bannerOf(rb)[0].text, /Twitch a arrêté d'envoyer les messages du chat/);
-  assert.match(barOf(rb), /data-ck-act="relisten"[^>]*>Réparer l&#39;écoute</); assert.ok(!barOf(rb).includes('data-ck-act="check"'), "« Réparer l'écoute » prend la place de « Vérifier »");
-  const creds = await A.panel(world({ tw: { ready: false } }).ctx, { query: {} });
-  assert.match(textOf(creds), /\[Connecteur Twitch\]\(\/admin\/instances\/tw1\)/, "le lien mène à la page où régler l'application Twitch (celle que donne le Connecteur)");
-  const guide = await A.panel(world({ tw: { mainStatus: "none" } }).ctx, { query: {} });
-  assert.ok(!textOf(guide).includes("Twitch doit d'abord"), "no filler sentence: the button and its tooltip say it");
-  assert.match(guide.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")).html, /Autoriser le bot chez Twitch/);
+  const rc = connOf(await A.panel(rev.ctx, { query: {} }));
+  assert.match(rc.reason, /Twitch a arrêté d'envoyer les messages du chat/); assert.ok(!rc.reason.includes("sinon cliquez"), "plus de consigne conditionnelle : le bouton est celui de la carte");
+  assert.deepEqual(rc.primary, { label: "Réparer l'écoute", action: "relisten" });
+  const creds = connOf(await A.panel(world({ tw: { ready: false } }).ctx, { query: {} }));
+  assert.match(JSON.stringify(creds.setup), /\[Connecteur Twitch\]\(\/admin\/instances\/tw1\)/, "le lien mène à la page où régler l'application Twitch (celle que donne le Connecteur)");
+  assert.ok(!JSON.stringify(creds).includes("Avant de continuer"), "pas de phrase d'attente");
+  const guide = connOf(await A.panel(world({ tw: { mainStatus: "none" } }).ctx, { query: {} }));
+  assert.match(guide.setup.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")).html, /Autoriser le bot chez Twitch/);
   const failed = world({ result: { code: "wrongAccount", login: "intrus" }, tw: { mainStatus: "none" } });
   assert.match(textOf(await A.panel(failed.ctx, { query: {} })), /compte « intrus »/);
 });
 
-test("page : le compte bot séparé n'apparaît qu'en mode avancé (réglage) ; connexion guidée, état, déconnexion", async () => {
-  const simple = await A.panel(world().ctx, { query: {} });
-  assert.ok(!textOf(simple).includes(fr.bot_title));
+test("page : l'état de l'écoute passe les contrôles R33 du kit dans ses trois états", async () => {
+  const notConfigured = await A.panel(world({ tw: { mainStatus: "none" } }).ctx, { query: {} });
+  const configured = await A.panel((await listeningWorld()).ctx, { query: {} });
+  const degraded = await A.panel(world({ tw: { mainStatus: "reconnect" } }).ctx, { query: {} });
+  assertConnectionStates({ notConfigured, configured, degraded });
+  const revoked = world();
+  await S.updateState(revoked.ctx, (d) => { d.sub = { code: "revoked", detail: "authorization_revoked", at: Date.now() }; });
+  assertConnectionStates({ notConfigured, configured, degraded: await A.panel(revoked.ctx, { query: {} }) });
+  const muted = await listeningWorld(); await A.actions.mute(muted.ctx);
+  assertConnectionStates({ notConfigured, configured, degraded: await A.panel(muted.ctx, { query: {} }) });
+});
+
+test("page : l'écoute se vérifie à l'ouverture : jamais « pas encore vérifié, cliquez »", async () => {
+  const { ctx } = world();
+  assert.equal((await S.readState(ctx)).sub, undefined);
+  const c = connOf(await A.panel(ctx, { query: {} }));
+  assert.notEqual(c.reason, fr.listen_unknown, "la page a lancé la vérification elle-même");
+  assert.ok((await S.readState(ctx)).sub?.code, "l'écoute a un état connu");
+  assert.ok(!JSON.stringify(Object.values(fr)).includes("Cliquez sur « Vérifier maintenant »"));
+});
+
+test("page : le compte du bot (réglage) est une ligne de la carte : mise en place guidée tant qu'il manque, résumé et déconnexion dans le menu quand il est connecté", async () => {
+  const simple = connOf(await A.panel(world().ctx, { query: {} }));
+  assert.ok(!JSON.stringify(simple).includes("monbot") && !simple.menu?.length);
   const adv = world({ settings: { replyAs: "bot" } });
-  const b = await A.panel(adv.ctx, { query: {} });
-  assert.ok(textOf(b).includes(fr.bot_title));
-  assert.match(bannerOf(b)[0].text, new RegExp(fr.listen_bot_need_connect));
-  assert.match(b.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")).html, /bot=1/);
-  const ok = world({ settings: { replyAs: "bot" }, tw: { botStatus: "ok", botScopes: [...es.SCOPES.bot], mainScopes: [...es.SCOPES.own] } });
-  const b2 = await A.panel(ok.ctx, { query: {} });
-  assert.match(textOf(b2), /Compte bot connecté : monbot/);
-  assert.ok(b2.some((x) => x.type === "html" && x.html.includes('data-ck-act="disconnectBot"')));
+  const c = connOf(await A.panel(adv.ctx, { query: {} }));
+  assert.deepEqual([c.state, c.reason], ["notConfigured", fr.listen_bot_need_connect]);
+  assert.equal(c.setup[0].text, fr.bot_help);
+  assert.match(c.setup.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")).html, /bot=1/);
+  const ok = await listeningWorld({ settings: { replyAs: "bot" }, tw: { botStatus: "ok", botScopes: [...es.SCOPES.bot], mainScopes: [...es.SCOPES.own] } });
+  const c2 = connOf(await A.panel(ok.ctx, { query: {} }));
+  assert.equal(c2.state, "configured"); assert.match(c2.summary, /^Répond avec monbot · Répond pendant vos directs/);
+  assert.deepEqual(c2.menu.map((m) => [m.label, m.action, m.danger]), [["Déconnecter le compte du bot", "disconnectBot", true]]);
+  assert.ok(c2.menu[0].confirm.length > 20, "dit ce qui sera perdu");
+  assert.ok(!JSON.stringify(await A.panel(ok.ctx, { query: {} })).includes("Compte bot connecté"), "plus de bandeau de bonne nouvelle");
   assert.match((await A.actions.disconnectBot(ok.ctx)).ok, /déconnecté/);
 });
 
@@ -1116,7 +1155,7 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.23.1", "0.15.0", "twitch", "multiple", 6]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.24.0", "0.36.0", "twitch", "multiple", 6]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }, { service: "alerts.show", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
@@ -1150,7 +1189,7 @@ test("textes : fr et en ont exactement les mêmes clés et les mêmes {variables
     const re = new RegExp(`^${k.replace(/\$\{[^}]+\}/g, "[a-zA-Z_]+")}$`);
     assert.ok(Object.keys(fr).some((x) => re.test(x)), `aucune clé ne correspond à « ${k} »`);
   }
-  const dynamic = { origin: ["custom", "builtin", "partner", "network"], filter: ["all", "any"], note: ["outside", "ended", "planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], role: ["everyone", "subscribers", "mods", "owner"], why: ["planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], log: ["sent", "refused", "error"],
+  const dynamic = { origin: ["custom", "partner", "network"], filter: ["all", "any"], note: ["outside", "ended", "planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], role: ["everyone", "subscribers", "mods", "owner"], why: ["planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], log: ["sent", "refused", "error"],
     res: ["denied", "refused", "network", "rate", "expired", "wrongAccount", "scope"], listen_failure: ["revoked", "unreachable", "other"], cmd: ["planning_text", "jeu_text", "titre_text", "followers_text", "uptime_text"],
     reason: ["muted", "off", "hidden", "missing", "live_unknown", "offline", "role", "cooldown", "rate", "empty", "not_ready", "send_denied", "send_dropped", "send_refused", "send_rate", "send_twitch"],
     listen: ["pending", "unknown", "no_channel", "channel_unknown", "creds_missing", "need_connect", "need_reconnect", "need_more", "bot_need_connect", "bot_reconnect", "bot_more", "site_private", "revoked", "twitch_busy", "twitch_down", "refused"] };
@@ -1179,15 +1218,14 @@ test("page : tout est prêt mais l'écoute n'est pas vérifiée → vérifiée �
   const b = await A.panel(ctx, { query: {} });
   assert.equal(tw.subs.length, 1, "l'abonnement a été créé à l'ouverture de la page");
   assert.ok(tw.calls.some((c) => c.method === "POST"));
-  assert.equal(bannerOf(b)[0].text, fr.listen_pending.replace("{detail}", ""), "Twitch n'a pas encore vérifié : « en attente »");
+  assert.equal(connOf(b).reason, fr.listen_pending.replace("{detail}", ""), "Twitch n'a pas encore vérifié : « en attente »");
   const posts = tw.calls.filter((c) => c.method === "POST").length;
   await A.panel(ctx, { query: {} });
   assert.equal(tw.calls.filter((c) => c.method === "POST").length, posts, "pas de nouvelle création pour une page rouverte");
   tw.subs[0].status = "enabled";   // Twitch a fini de vérifier ; 5 secondes plus tard, la page rouverte le constate (plus « en attente »)
   await S.updateState(ctx, (d) => { d.sub.at = Date.now() - 6_000; });
   const again = await A.panel(ctx, { query: {} });
-  assert.deepEqual(bannerOf(again).map((x) => x.tone), [], "plus de bandeau d'attente");
-  assert.match(barOf(again), /ck-origin ok">Le bot écoute votre chat</);
+  assert.equal(connOf(again).state, "configured", "plus d'attente : l'écoute est configurée");
   assert.equal(tw.calls.filter((c) => c.method === "POST").length, posts, "toujours aucune nouvelle création");
   const blocked = world({ tw: { mainStatus: "none" } });
   await A.panel(blocked.ctx, { query: {} });

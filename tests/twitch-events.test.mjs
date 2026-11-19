@@ -251,7 +251,7 @@ test("admin page: journal table with search and filters, types with switches, st
   // (1.18.0) the types are in the Twitch events tab of the alerts overlay, with two switches: Received (listening) and Shown (the alert on screen)
   const types = blocks.find((b) => b.tab === "twitch" && b.type === "table");
   assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r.at(-1).switch?.action === "setType" && r.at(-2).switch?.action === "setEnabled"));
-  assert.ok(blocks.some((b) => b.type === "banner"));
+  assert.ok(blocks.some((b) => b.type === "connection"));
 });
 
 test("admin actions: switch says the state wanted, test, replay, remove", async () => {
@@ -306,7 +306,7 @@ test("instance deletion removes our subscriptions and permission requests, nothi
 });
 
 test("admin page passes the page ergonomics (R3 R4 R9 R10 R11 R14 R15 R17 R22), empty and filled, both languages, with errors", async () => {
-  const { assertAdminPageErgonomics } = await import("./helpers/ergonomicsPending.mjs");
+  const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   for (const locale of ["fr", "en"]) {
     const { ctx } = world({ locale, alerts: true });
     await S.ensureSecret(ctx);

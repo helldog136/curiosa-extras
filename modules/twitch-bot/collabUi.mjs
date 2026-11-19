@@ -14,18 +14,19 @@ export function bar(ctx, s, e) {
   const t = ctx.t, fail = t("err_toggle");
   const texts = e.on
     ? [t(`co_since_${e.by ?? "admin"}`, { date: stamp(ctx, s, e.since) }), effectText(t, e), e.until ? t("co_ends", { date: stamp(ctx, s, e.until) }) : t("co_no_end")]
-    : [t("co_off_text")];
+    : [];
   const button = e.on
     ? K.actionButton({ label: t("co_stop_btn"), act: "collabOff", cls: "small primary", fail })
     : K.actionButton({ label: t("co_start_btn"), act: "collabOn", cls: "small", fail, title: t("co_start_tip") });
-  return K.statusBar(ctx, { kind: e.on ? "warn" : "builtin", pill: t(e.on ? "co_pill_on" : "co_pill_off"), texts, buttons: button });
+  const choices = `<a class="ck-btn small" href="?tab=use&collab=1">${K.esc(t("co_choices_btn"))}</a>`;   // opens the window of the choices (the address is the open state)
+  return K.statusBar(ctx, { kind: e.on ? "warn" : "builtin", pill: t(e.on ? "co_pill_on" : "co_pill_off"), texts, buttons: `${choices}${button}` });
 }
 
-/** The choices form. One visible field; the rest is folded (R4, R7). */
+/** The choices form, in a window opened by the link under the line (`?collab=1`). One visible field; the rest is folded (R4, R7). */
 export function form(ctx, e) {
   const t = ctx.t;
   return {
-    type: "adminForm", action: "collabSave", title: t("co_form_title"), submitLabel: t("co_save_btn"),
+    type: "adminForm", action: "collabSave", presentation: "dialog", cancelHref: "?tab=use", title: t("co_form_title"), submitLabel: t("co_save_btn"),
     fields: [
       { name: "collabTimers", label: t("co_f_timers"), kind: "segmented", value: C.timersOf(e), options: C.TIMERS.map((x) => ({ value: x, label: x === "pause" ? t("co_o_pause") : t("co_o_ratio", { n: x }) })) },
       { name: "collabFactor", label: t("co_f_factor"), kind: "number", value: e.factor, placeholder: String(C.DEFAULTS.factor), min: C.FACTOR.min, max: C.FACTOR.max, step: 1, unit: t("co_unit_times"), help: t("co_f_factor_help"), folded: true },
@@ -42,5 +43,5 @@ export function errors(ctx, codes) {
   return out;
 }
 
-/** The two blocks of the page. */
-export const blocks = (ctx, s, e) => [bar(ctx, s, e), form(ctx, e)];
+/** The blocks of the page: the line (with the link to the choices) and, when the address asks for it, the window of the choices. */
+export const blocks = (ctx, s, e, { open = false } = {}) => [bar(ctx, s, e), ...(open ? [form(ctx, e)] : [])];
