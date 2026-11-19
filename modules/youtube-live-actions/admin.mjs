@@ -103,7 +103,9 @@ function chatBlock(ctx, o) {
   const head = { type: "connection", id: "chat", title: t("chat_title"), summary: "", edit: { href: SETTINGS } };
   const settings = { label: t("open_settings"), href: SETTINGS };
   const connect = o.connectorPath ? { primary: { label: t("connect_link"), href: o.connectorPath } } : {};
-  const limit = t("chat_limit", { used: percent(ctx, o.units), max: o.s.budgetPercent });
+  // The share of the daily allowance is only worth showing when it is nearly used up.
+  const near = o.s.budgetPercent > 0 && o.units / 100 >= o.s.budgetPercent * 0.8;
+  const withLimit = (text) => (near ? `${text} · ${t("chat_limit", { used: percent(ctx, o.units), max: o.s.budgetPercent })}` : text);
   switch (st.status) {
     case "off": return { ...head, state: "notConfigured", reason: t("st_off"), primary: settings };
     case "no_bridge": return { ...head, state: "notConfigured", reason: t("st_no_bridge"), primary: settings };
@@ -115,8 +117,8 @@ function chatBlock(ctx, o) {
     case "connect": return { ...head, state: "degraded", reason: t("st_connect"), ...connect };
     case "backoff": return { ...head, state: "degraded", reason: errorText(ctx, st.error, o.now), ...(st.error?.code === "chat_denied" ? connect : {}) };
     case "no_chat": return { ...head, state: "degraded", reason: t("st_no_chat", { title }) };
-    case "idle": return { ...head, state: "configured", summary: `${t("st_idle")} · ${limit}` };
-    case "reading": return { ...head, state: "configured", summary: `${t("st_reading", { title, when: st.lastPollAt ? ago(ctx, st.lastPollAt, o.now) : t("st_just_now") })} · ${limit}` };
+    case "idle": return { ...head, state: "configured", summary: withLimit(t("st_idle")) };
+    case "reading": return { ...head, state: "configured", summary: withLimit(t("st_reading", { title, when: st.lastPollAt ? ago(ctx, st.lastPollAt, o.now) : t("st_just_now") })) };
     default: return { ...head, state: "configured", summary: t("st_starting") };
   }
 }
@@ -147,10 +149,12 @@ function houseBlocks(ctx, o) {
   const h = o.house;
   const head = { type: "connection", id: "house", title: t("house_title"), summary: "", ...(o.housePath ? { edit: { href: o.housePath, label: t("house_open") } } : {}) };
   const open = o.housePath ? { primary: { label: t("house_open"), href: o.housePath } } : {};
+  // when the card already offers "Open Home Assistant" as its action, "Modify" would say the same thing twice
+  const { edit: _same, ...bare } = head;
   if (!h.installed) return [{ ...head, state: "notConfigured", reason: t("house_none"), setup: [{ type: "suggestInstall", service: SUGGEST_BRIDGE, reason: t("suggest_bridge") }] }];
   const hidden = (value) => ({ name: "yt_big", kind: "hidden", value });
-  if (!h.known) return [{ ...head, state: "degraded", reason: t("house_unknown"), ...open }];
-  if (!h.paired) return [{ ...head, state: "notConfigured", reason: t("house_unpaired"), ...open }];
+  if (!h.known) return [{ ...bare, state: "degraded", reason: t("house_unknown"), ...open }];
+  if (!h.paired) return [{ ...bare, state: "notConfigured", reason: t("house_unpaired"), ...open }];
   if (!h.enabled) {
     const manage = can(ctx, "yt.manage");
     return [{ ...head, state: "degraded", reason: t(manage ? "house_cut" : "big_resume_no_right"), ...(manage ? { primary: { label: t("big_start"), action: "start" } } : open) }];
@@ -159,13 +163,14 @@ function houseBlocks(ctx, o) {
   const stop = can(ctx, "yt.stop")
     ? [{ type: "html", html: BIG_CSS }, { type: "adminForm", action: "stop", submitLabel: t("big_stop"), fields: [hidden("stop")] }]
     : [{ type: "markdown", text: t("big_no_right") }];
-  if (!seen || o.now - seen > 60_000) return [{ ...head, state: "degraded", reason: t("house_offline"), ...open }, ...stop];
-  if (!h.live) return [{ ...head, state: "degraded", reason: t("house_not_live"), ...open }, ...stop];
+  if (!seen || o.now - seen > 60_000) return [{ ...bare, state: "degraded", reason: t("house_offline"), ...open }, ...stop];
+  if (!h.live) return [{ ...bare, state: "degraded", reason: t("house_not_live"), ...open }, ...stop];
   return [{ ...head, state: "configured", summary: t("house_summary") }, ...stop];
 }
 
 /** The one warning of the page: the chat is only read while the page is open (reading stops, « !stop » included, when it is closed). */
-const infoBlocks = (ctx) => [{ type: "markdown", text: ctx.t("info_open") }];
+const NOT_READING = new Set(["off", "no_bridge", "no_api", "no_channel", "ambiguous", "unverified", "connect"]);
+const infoBlocks = (ctx, o) => (NOT_READING.has(o.state.status) ? [] : [{ type: "markdown", text: ctx.t("info_open") }]);   // nothing is read in those states: the warning would be noise
 
 function ruleForm(ctx, o, editing) {
   const t = ctx.t;
@@ -175,7 +180,7 @@ function ruleForm(ctx, o, editing) {
   const fields = [
     ...(editing ? [{ name: "id", kind: "hidden", value: editing.id }] : []),
     { name: "name", kind: "text", label: t("f_name"), value: cur.name, required: true, help: t("f_name_help") },
-    { name: "type", kind: "select", label: t("f_type"), value: cur.type, options: R.TYPES.map((x) => ({ value: x, label: t(`type_${x}`) })), help: t("f_type_help") },
+    { name: "type", kind: "select", label: t("f_type"), value: cur.type, options: R.TYPES.map((x) => ({ value: x, label: t(`type_${x}`) })) },
     { name: "currency", kind: "select", label: t("f_currency"), value: cur.currency, options: [{ value: "*", label: t("any_currency") }, ...currencies.map((c) => ({ value: c, label: c }))], help: t("f_currency_help") },
     { name: "min", kind: "text", label: t("f_min"), value: cur.type === "gift" ? String(cur.minCount ?? 1) : R.fromMicros(cur.minMicros || 0, lang(ctx)), help: t("f_min_help") },
     { name: "cooldownSec", kind: "text", label: t("f_cooldown"), value: String(cur.cooldownSec ?? 30), help: t("f_cooldown_help") },
@@ -263,8 +268,8 @@ function journalHtml(ctx, o) {
 
 function journalBlocks(ctx, o) {
   const t = ctx.t;
+  if (!o.journal.length) return [];   // nothing happened yet: no heading, no sentence to explain the empty list
   const out = [{ type: "heading", text: t("jr_title") }];
-  if (!o.journal.length) { out.push({ type: "markdown", text: t("jr_empty") }); return out; }
   out.push({ type: "html", html: journalHtml(ctx, o) });
   if (can(ctx, "yt.manage")) out.push({ type: "table", columns: [t("jr_col")], pageSize: 0, rows: [[String(o.journal.length)]], rowIds: ["journal"], rowActions: [{ label: t("jr_clear"), action: "clearJournal", confirm: t("jr_clear_confirm", { n: o.journal.length }), danger: true }] });
   return out;
@@ -303,7 +308,7 @@ export async function panel(ctx, { query } = {}) {
   return [
     chatBlock(ctx, o),
     ...houseBlocks(ctx, o),
-    ...infoBlocks(ctx),
+    ...infoBlocks(ctx, o),
     ...ruleBlocks(ctx, o, query),
     ...simBlocks(ctx, o),
     ...journalBlocks(ctx, o),

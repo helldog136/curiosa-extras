@@ -10,7 +10,6 @@
   "test_invalid": "Ce code n'a pas le bon format (lettres, chiffres, tirets, 8 caractères au moins). Recopiez-le depuis rawg.io/apidocs.",
   "health_label": "RAWG (jaquettes de jeux)",
   "todo_title": "Jaquettes à vérifier",
-  "todo_empty": "Aucune jaquette à vérifier.",
   "todo_more": "… et {count} autres titres plus anciens.",
   "col_asked": "Titre demandé",
   "col_found": "Jeu trouvé",

@@ -74,7 +74,7 @@ async function withConsole(fn) {
 
 test("manifeste 1.3.0 : valide, secret saisi par la propriétaire, écriture désactivée par défaut et avancée, aucun outil MCP, onglets inchangés, service youtube.api v1", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.5.0");
+  assert.equal(manifest.version, "1.5.1");
   const by = (k) => manifest.settings.find((s) => s.key === k);
   assert.deepEqual(manifest.legacySettings.map((x) => [x.key, !!x.secret]), [["apiKey", true], ["oauthClientId", false], ["oauthClientSecret", true]], "typed in the \"Modify\" windows since 1.5.0");
   assert.ok(!by("oauthClientId") && !by("oauthClientSecret") && !by("apiKey"));
@@ -656,7 +656,9 @@ test("le service ne propose qu'UN nouvel appel d'écriture (chatPost) : rien d'a
 
 test("panneau, première fois : une mise en route en 4 étapes avec les liens de la console Google et les mots à chercher ; aucun bouton de connexion tant que l'ID et le code secret ne sont pas là", async () => {
   const c = makeConnector({ apiKey: API_KEY });
-  const blocks = await def.adminPanel(c.ctx, { query: {} });
+  const first = await def.adminPanel(c.ctx, { query: {} });
+  assert.equal(plain(first).includes("Téléviseurs"), false, "optional and not started: no guide until it is asked for");
+  const blocks = await def.adminPanel(c.ctx, { query: { setup: "account" } });
   const text = plain(blocks);
   for (const needle of ["Compte YouTube", "console.cloud.google.com/auth/clients", "console.cloud.google.com/auth/overview", "youtube.googleapis.com", "Téléviseurs et périphériques à entrée limitée", "Publier l'application", "Enregistrer l'ID client"]) assert.ok(text.includes(needle), needle);
   assert.ok(!/Mise en route, une seule fois|Revoir les 4 étapes/.test(text), "no heading, no folded copy of the steps");
@@ -667,7 +669,7 @@ test("panneau, première fois : une mise en route en 4 étapes avec les liens de
   assert.match(steps, /<a href="https:\/\/console\.cloud\.google\.com\/[^"]+" target="_blank" rel="noopener noreferrer"[^>]*>/);
   // En anglais aussi.
   const e = makeConnector({ apiKey: API_KEY, locale: "en" });
-  const en4 = plain(await def.adminPanel(e.ctx, { query: {} }));
+  const en4 = plain(await def.adminPanel(e.ctx, { query: { setup: "account" } }));
   assert.ok(en4.includes("TVs and Limited Input devices") && en4.includes("Register the client ID"));
   // Un ID mal collé est signalé (une raison, un bouton pour le corriger).
   const bad = mk({ oauthClientId: "abc", oauthClientSecret: "12" });

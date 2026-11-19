@@ -75,6 +75,19 @@ test("« Suivre mes statistiques » décoché : aucune requête, aucune donnée,
   assert.equal(JSON.stringify(await def.adminPanel(ctx)), "[]");
 });
 
+test("R33 : sans application Twitch réglée, « Mes directs » n'est jamais « Configuré » : la carte de connexion dit pourquoi, la carte de mesure se tait", async () => {
+  C = connector({ settings: {} });   // Connecteur sans application Twitch
+  const panel = await def.adminPanel(mk());
+  const cards = panel.filter((b) => b.type === "connection");
+  assert.ok(!cards.some((b) => b.id === "tracking"), "nothing is measured, so no measuring card");
+  assert.ok(!cards.some((b) => b.state === "configured"), "no card claims a configured state");
+  assert.ok(cards.length === 0 || cards.every((b) => b.state === "notConfigured"));
+  // with the application set, the card is back and tells the real state
+  C = connector();
+  const ok = (await def.adminPanel(mk())).find((b) => b.type === "connection" && b.id === "tracking");
+  assert.equal(ok.state, "configured");
+});
+
 // ── Sessions ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 test("session simple : début, fin, durée, pic, moyenne pondérée, heures regardées, followers au début et à la fin, fermée après 3 vérifications hors direct", async () => {
@@ -587,7 +600,7 @@ test("mots simples : aucun jargon dans les textes de « Mes directs » (fr et en
   const code = ["index", "connect", "helix", "handover", "live", "analytics"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
   for (const m of code.matchAll(/\bt\("([a-zA-Z_]+)"/g)) assert.ok(m[1] in fr, m[1]);
   for (const m of code.matchAll(/\bt\(!?[a-z]*\s*\?\s*"([a-zA-Z_]+)"\s*:\s*[a-z.]*\s*\?\s*"([a-zA-Z_]+)"\s*:\s*"([a-zA-Z_]+)"/g)) for (const k of m.slice(1)) assert.ok(k in fr, k);
-  for (const k of ["type_archive", "type_highlight", "type_upload", "live_videosError", "live_videosNone", "live_bestNone"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["type_archive", "type_highlight", "type_upload", "live_videosError"]) assert.ok(fr[k] && en[k], k);
   // l'honnêteté sur la limite est dite en mode simple, une seule fois : dans l'aide du réglage
   const help = manifest.settings.find((s) => s.key === "trackStats").help;
   assert.match(help.fr, /Twitch ne fournit pas l'historique/); assert.match(help.en, /Twitch gives no history/);

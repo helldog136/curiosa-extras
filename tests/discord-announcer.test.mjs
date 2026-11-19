@@ -131,15 +131,22 @@ test("connexion en trois états (R33) : à régler, réglée, dégradée après 
   assertConnectionStates({ notConfigured, configured, degraded });
   const only = (blocks) => blocks.filter((b) => b.type === "connection");
   assert.equal(only(notConfigured).length + only(configured).length + only(degraded).length, 3, "un seul bloc par état");
-  assert.deepEqual(only(notConfigured)[0].primary, { label: "Set the sending address", href: "?tab=settings" });
+  assert.equal(only(notConfigured)[0].primary, undefined, "the field is right below the guide: no button that leads to the tab already open");
   assert.match(only(notConfigured)[0].setup[0].text, /Integrations/, "la consigne n'existe que tant que l'adresse manque");
   assert.equal(only(configured)[0].setup, undefined);
   assert.equal(only(configured)[0].summary, "Site news and Twitch lives");
   assert.equal(only(configured)[0].edit.href, "?tab=settings");
   assert.equal(configured.some((b) => b.type === "table" || b.type === "heading"), false, "journal vide : ni titre ni tableau vide");
+  assert.equal(only(notConfigured)[0].tab, "settings", "the guide opens in the tab where the address is typed");
+  assert.equal(only(configured)[0].tab, undefined);
+  const row = degraded.find((b) => b.type === "table").rows[0];
+  assert.equal(row[2], "failed (404) · 2 tries · Unknown Webhook", "no \"attempt(s)\", no dangling colon");
   assert.equal(only(degraded)[0].reason, "The last send failed (code 404).");
   assert.deepEqual(only(degraded)[0].primary, { label: "Send a test message", action: "test" });
   assert.ok(degraded.some((b) => b.type === "table"), "le journal montre l'échec");
+  const quiet = ctxWith({});
+  await quiet.api.store.add("log", { key: "q", subject: "Annonce", ok: false, status: 404, error: null, attempts: 1, at: "2030-06-01T12:00:00Z" });
+  assert.equal((await def.adminPanel(quiet)).find((b) => b.type === "table").rows[0][2], "failed (404)", "nothing after the status when the service gave no text and one try was made");
   // Une adresse réglée mais qui n'est pas celle de Discord : à régler, avec la raison.
   const bad = await def.adminPanel(ctxWith({}, { webhookUrl: "https://evil.example/x" }));
   assert.equal(only(bad)[0].state, "notConfigured"); assert.match(only(bad)[0].reason, /not a valid/);

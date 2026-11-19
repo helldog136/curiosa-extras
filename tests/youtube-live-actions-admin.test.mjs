@@ -23,7 +23,7 @@ test("la page : blocs valides, états clairs (une carte par service), gros bouto
   const all = texts(blocks).join("\n");
   assert.match(all, /Gardez cette page ouverte/);
   assert.match(all, /!stop/);
-  assert.match(all, /limite du jour : \d+ % sur \d+ %/);
+  assert.doesNotMatch(all, /limite du jour/, "far from the limit: no counter");
   assert.ok(!/Ce qu'il faut savoir|Cette page se recharge toute seule|50 évènements au plus/.test(all), "no tutorial, no filler");
   const reload = find(blocks, "html", (b) => /location\.reload/.test(b.html))[0];
   assert.ok(reload, "la page se recharge d'elle-même");

@@ -6,13 +6,13 @@
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.6.0",
+  "version": "2.6.1",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 20,
   "platform": "twitch",
   "description": {
-    "en": "Showcases your Twitch channel: header button, live status, latest clips. Once connected, it counts your followers and paying subscribers, and measures your lives and the views of your videos.",
-    "fr": "Met en avant votre chaîne Twitch : bouton, statut en direct, derniers clips. Une fois connectée, elle compte vos followers et abonnements payants, et mesure vos directs et les vues de vos vidéos."
+    "en": "Showcases your Twitch channel: header button, live status, latest clips, statistics.",
+    "fr": "Met en avant votre chaîne Twitch : bouton, statut en direct, derniers clips, statistiques."
   },
   "author": "Helldog136",
   "license": "MIT",
