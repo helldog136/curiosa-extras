@@ -210,7 +210,7 @@ test("page : seulement les idées publiées, écartées cachées sauf réglage, 
 test("page : état vide qui dit quoi faire, formulaire (idée, pseudo replié, bouton), recherche seulement s'il y a des idées", async () => {
   const c = ctxFor();
   const empty = (await bodyOf(c)).html.replaceAll("&#39;", "'");
-  assert.match(empty, /Aucune idée pour l'instant\. Proposez la première avec le champ ci-dessus\./);
+  assert.match(empty, /Aucune idée\. Proposez la première avec le champ ci-dessus\./);
   assert.doesNotMatch(empty, /data-ib-q/, "pas de recherche pour une liste vide");
   assert.match(empty, /<label for="ib-idea-[^"]+">Votre idée<\/label>/);
   assert.match(empty, /<details class="ib-more"><summary>Plus d'options<\/summary>[\s\S]*name="nick"/);

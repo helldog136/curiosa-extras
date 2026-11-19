@@ -280,7 +280,7 @@ test("jaquette ambiguë : une phrase et le lien « Ce n'est pas le bon jeu ? » 
   const { els } = await pickFirst(ctx);
   const box = els.get("cover-warn");
   assert.equal(box.hidden, false);
-  assert.match(box.textContent, /La jaquette de « Hades \(II\) & l'été » est peut-être celle d'un autre jeu \(RAWG a pris « Autre jeu »\)\. La vidéo se fait quand même\./);
+  assert.match(box.textContent, /Le nom de « Hades \(II\) & l'été » ressemble à celui d'un autre jeu \(Rawg a pris « Autre jeu »\) : vérifiez sa jaquette\. La vidéo se fait quand même\./);
   const a = warnLink(els);
   assert.equal(a.textContent, "Ce n'est pas le bon jeu ?");
   assert.equal(a.attrs.href, `/admin/settings/rawg-covers?titre=${encodeURIComponent("Hades (II) & l'été")}`);
@@ -306,7 +306,7 @@ test("en anglais : l'avertissement et le lien sont traduits (avec ou sans le nom
   const ctx = mk({ locale: "en", calendar: [slot(1, 6, { games: ["Celeste"] })] });
   ctx.api.rawg.cover = async () => ({ status: "found", url: COVER_OK, ambiguous: true });
   const { els } = await pickFirst(ctx);
-  assert.equal(els.get("cover-warn").textContent, "The cover for “Celeste” may belong to another game. You can still make the video. Not the right game?");
+  assert.equal(els.get("cover-warn").textContent, "The name of “Celeste” looks like another game: check its cover. You can still make the video. Not the right game?");
   assert.equal(warnLink(els).textContent, "Not the right game?");
 });
 

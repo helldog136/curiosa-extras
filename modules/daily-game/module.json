@@ -5,7 +5,7 @@
     "fr": "Jeu du jour",
     "en": "Daily game"
   },
-  "version": "1.2.1",
+  "version": "1.2.2",
   "menuGroup": "community",
   "minCore": "0.6.0",
   "description": {
@@ -591,8 +591,8 @@
         "en": "Type of game"
       },
       "help": {
-        "fr": "Le quiz est le seul type pour l'instant.",
-        "en": "The quiz is the only type for now."
+        "fr": "Le quiz est le seul type.",
+        "en": "The quiz is the only type."
       },
       "options": [
         {

@@ -33,7 +33,7 @@
   "set_value_done": "Valeur changée : {value}.",
   "test_done": "Répétition envoyée à vos pages d'overlay.",
   "pause_done": "Subathon en pause.",
-  "resume_done": "Subathon repris.",
+  "resume_done": "Subathon relancé.",
   "err_minutes": "Écrivez un nombre entier de minutes entre -600 et 600, sauf 0, par exemple 5.",
   "err_nostart": "Choisissez d'abord un début dans les réglages.",
   "add_time_done": "{minutes} minutes ajoutées.",

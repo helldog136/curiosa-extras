@@ -25,14 +25,14 @@ test("liste : les prochains, du plus proche au plus lointain ; les brouillons et
 
 test("liste : état vide poli, jamais une page cassée ; le mot du site vient des réglages", async () => {
   const ctx = ctxFor();
-  assert.match(await html(ctx), /Rien de prévu pour l(?:'|&#39;)instant/);
+  assert.match(await html(ctx), /Rien de prévu\./);
   const custom = ctxFor({ wordMany: "Ateliers", wordOne: "Atelier", intro: "Bienvenue **chez nous**." });
   await addEvent(custom, { title: "Le premier" });
   const h = await html(custom);
   assert.match(h, /Chercher parmi les ateliers/);
   assert.match(h, /<strong>chez nous<\/strong>/);
   const en = ctxFor({}, { locale: "en" });
-  assert.match(await html(en), /Nothing planned for now/);
+  assert.match(await html(en), /Nothing planned\./);
   assert.match(await html(en), /Search the events/);
 });
 

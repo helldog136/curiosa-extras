@@ -431,7 +431,7 @@ test("lien privé : la page de remerciement le donne, la page de retrait demande
   const thanks = await page(ctx, "merci", token);
   assert.match(flat(thanks), /Keep this link to yourself/);
   assert.match(flat(thanks), new RegExp(`https://example\\.test/en/avis/retrait/${token}`));
-  assert.match(flat(thanks), /waiting to be read/);
+  assert.match(flat(thanks), /Waiting to be read/);
   const withdraw = htmlOf(await page(ctx, "retrait", token));
   assert.match(withdraw, /<form method="post" action="\/m\/tm\d+\/withdraw\?lang=en">/);
   assert.match(withdraw, /Camille/);

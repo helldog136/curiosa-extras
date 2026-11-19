@@ -97,10 +97,10 @@ export const cardList = (items, opts) => `<ul class="ct-cards">${items.map((c) =
 
 /** Onglets (Contacts, Organisations, Catégories). */
 export const tabs = (items, label) => `<nav aria-label="${esc(label)}"><ul class="ct-tabs">${items.map((i) => `<li><a href="${esc(i.href)}"${i.current ? ' aria-current="page"' : ""}>${esc(i.label)}</a></li>`).join("")}</ul></nav>`;
-/** Barre de recherche : formulaire GET (les filtres en cours sont gardés en champs cachés). */
-export function searchBar({ q, hidden, label, placeholder, button }) {
+/** Barre de recherche : formulaire GET sans bouton (Entrée lance la recherche ; les filtres en cours sont gardés en champs cachés). Une recherche en direct sur une liste paginée par le serveur demande un bloc du cœur qui n'existe pas encore. */
+export function searchBar({ q, hidden, label, placeholder }) {
   const keep = Object.entries(hidden).filter(([, v]) => v).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join("");
-  return `<form class="ct-search" method="get" role="search"><label class="ct-sr" for="ct-q">${esc(label)}</label><input id="ct-q" type="search" name="q" value="${esc(q)}" placeholder="${esc(placeholder)}" maxlength="100" autocomplete="off">${keep}<button type="submit">${esc(button)}</button></form>`;
+  return `<form class="ct-search" method="get" role="search"><label class="ct-sr" for="ct-q">${esc(label)}</label><input id="ct-q" type="search" name="q" value="${esc(q)}" placeholder="${esc(placeholder)}" maxlength="100" autocomplete="off" enterkeyhint="search">${keep}</form>`;
 }
 /** Pastilles de filtre : [{ label, href, current, color?, network?, netLabel? }]. */
 export const chips = (items, label) => (items.length ? `<ul class="ct-chips" aria-label="${esc(label)}">${items.map((i) => `<li><a href="${esc(i.href)}" aria-current="${i.current ? "true" : "false"}">${i.network ? netPill(i.network, "") : i.color ? `<span class="ct-dot" style="--c:${esc(i.color)}" aria-hidden="true"></span>` : ""}<span>${esc(i.label)}</span></a></li>`).join("")}</ul>` : "");

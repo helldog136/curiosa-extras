@@ -189,7 +189,7 @@ async function toolsBlocks(ctx, query) {
     if (rep.failed) lines.push(ctx.t("reportFailed", { n: rep.failed }));
     if (rep.full) lines.push(ctx.t("reportFull", { max: LIMITS.places }));
     if (rep.remaining) lines.push(ctx.t("reportMore", { n: rep.remaining, next: rep.to + 1 }));
-    blocks.push(tools({ type: "banner", tone: rep.failed || rep.remaining ? "warning" : "success", text: lines.join(" ") }));
+    blocks.push(tools(rep.failed || rep.remaining ? { type: "banner", tone: "warning", text: lines.join(" ") } : { type: "markdown", text: lines.join(" ") }));
     if (rep.problems.length) blocks.push(tools({ type: "markdown", text: rep.problems.map((p) => `- ${p.replace(/[*_`\[\]<>]/g, " ")}`).join("\n") }));
   }
   blocks.push(tools({

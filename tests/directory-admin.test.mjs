@@ -327,7 +327,7 @@ test("remettre en ordre : une fiche fusionnée dans Contacts garde sa présentat
   assert.equal(data.profiles.has(list[1].id), false);
   assert.equal(data.profiles.has(list[2].id), false);
   assert.deepEqual(data.config.team.map((m) => m.contactId), [list[0].id]);
-  assert.equal((await run(ctx, "tidy", {})).ok, "Tout est en ordre.");
+  assert.equal((await run(ctx, "tidy", {})).ok, "Rien à mettre à jour.");
 });
 
 /* ───────────── Le manifeste ───────────── */

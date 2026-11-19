@@ -10,7 +10,7 @@ const ALBUMS = [{ id: "a1", title: "Soirée d'ouverture", count: 24, url: "/gale
 const VIDEOS = [{ id: "v1", title: "Masterclass d'ouverture", url: "/videos/ouverture" }];
 const past = (extra = {}) => ({ slug: "passe", title: "Soirée passée", date: "2020-06-10", ...extra });
 const quick = () => { L.timing.callMs = 150; L.timing.failMs = 10_000; L.forgetLinks(); };
-const UNAVAILABLE = /ne sont pas disponibles pour l(?:'|&#39;)instant/;
+const UNAVAILABLE = /ne sont pas disponibles pour le moment/;
 
 test("album lié : le bouton « Voir les photos » apparaît sur la fiche d'un événement passé, relu chez la galerie (rien n'est recopié)", async () => {
   quick();

@@ -88,7 +88,6 @@ function urlForm(ctx, a) {
 function starter(ctx) {
   return [
     { type: "heading", text: ctx.t("starterTitle") },
-    { type: "markdown", text: ctx.t("starterHelp") },
     {
       type: "table", columns: [ctx.t("starterCol")],
       rows: Object.keys(TEMPLATES).map((id) => [`${ctx.t(`tpl_${id}_name`)}\n${ctx.t(`tpl_${id}_about`)}`]),
@@ -141,7 +140,7 @@ export async function adminPanel(ctx, { query } = {}) {
 
   // ── Onglet « Mes albums » ───────────────────────────────────────────────────────
   const gone = goneNotice(ctx, q.gone);
-  if (gone) blocks.push({ type: "banner", tone: gone.failed ? "warning" : "info", text: gone.text });
+  if (gone) blocks.push(gone.failed ? { type: "banner", tone: "warning", text: gone.text } : { type: "markdown", text: gone.text });
   if (fresh.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("bannerRequests", { count: fresh.length }), href: `${here(ctx)}?tab=requests` });
   if (root === null) blocks.push({ type: "banner", tone: "warning", text: ctx.t("noPageBanner") });
 

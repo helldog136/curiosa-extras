@@ -41,7 +41,7 @@
   "coordsInvalid": "Ces coordonnées ne sont pas valides. Exemple : latitude 12.3456 et longitude 34.5678.",
   "showMore": "Afficher plus",
   "loadFailed": "Impossible de charger ces informations. Réessayez dans un instant.",
-  "noPoints": "Il n'y a aucun lieu à placer sur la carte.",
+  "noPoints": "Aucun lieu à placer sur la carte.",
   "close": "Fermer",
   "seeOnMap": "Voir sur la carte",
   "directions": "Itinéraire",

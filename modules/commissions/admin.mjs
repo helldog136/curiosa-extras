@@ -37,7 +37,7 @@ async function overview(ctx, q, manage) {
   if (st.total >= LIMITS.orders * 0.9) blocks.push({ type: "banner", tone: "warning", text: ctx.t("nearFull", { n: st.total, max: LIMITS.orders }) });
   blocks.push({ type: "heading", text: ctx.t("stateTitle") });
   const free = ps.free === null ? "" : ctx.t("slotsFree", { free: ps.free, slots: queue.slots });
-  blocks.push({ type: "banner", tone: ps.state === "open" ? "success" : ps.state === "full" ? "warning" : "info", text: ctx.t(`seen_${ps.state}`, { free }) });
+  blocks.push(ps.state === "open" ? { type: "markdown", text: ctx.t("seen_open", { free }) } : { type: "banner", tone: "warning", text: ctx.t(`seen_${ps.state}`, { free }) });
   if (queue.reopenOn && ps.state !== "open" && queue.reopenOn < day(new Date())) blocks.push({ type: "banner", tone: "warning", text: ctx.t("reopenPassed", { date: fmtDay(ctx.locale, queue.reopenOn) }) });
   if (manage) {
     blocks.push({
