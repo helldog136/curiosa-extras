@@ -25,7 +25,7 @@ const get = (url) => new Request(`https://example.test${url}`);
 const MODULES = [
   { name: "Overlay défilant", dir: "ticker-overlay", def: tk, id: "banner", fit: "scale", version: "1.3.0", minCore: "0.6.0" },
   { name: "Témoignages", dir: "testimonials", def: T.def, id: "reviews", fit: "fluid", version: "1.5.1", minCore: "0.11.0" },
-  { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.5.2", minCore: "0.11.0" },
+  { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.5.3", minCore: "0.11.0" },
 ];
 /** Ce que le cœur ajoute à l'adresse de l'élément : taille du cadre, style commun, options. */
 const frame = (extra = "", w = 640, h = 140, fit = "scale") => new URLSearchParams(`ov-w=${w}&ov-h=${h}&ov-fit=${fit}&ov-lang=fr&ov-text=light&ov-surface=transparent&ov-corners=round${extra ? `&${extra}` : ""}`);
@@ -462,7 +462,7 @@ test("Mascotte (mode test) : une phrase d'exemple avec le dessin inclus SEULEMEN
   mcOverlay.resetOverlayCache();
   const demoDoc = await (await mcElement(draft, "ov-demo=1")).text();
   const demo = await mcData(draft, "ov-demo=1");
-  assert.deepEqual(demo, { name: "Mascotte", lines: [{ kind: "hello", text: "Bonjour ! Voici un exemple de phrase de la mascotte." }] });
+  assert.deepEqual(demo, { name: "Mascotte", lines: [{ kind: "hello", text: "Bonjour, voici un exemple de phrase de la mascotte." }] });
   assert.ok(!demoDoc.includes("Pixel Secret") && !demoDoc.includes("/uploads/"), "rien de la mascotte non publiée");
   assert.match(demoDoc, /class="mc-svg"/, "le dessin inclus");
   assert.deepEqual((await mcData(draft)).lines, []);

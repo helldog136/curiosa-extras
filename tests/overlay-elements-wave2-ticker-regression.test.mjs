@@ -195,7 +195,7 @@ const GOLDEN = {
     }
   },
   "mascot": {
-    "manifest": "0c295dd021625567",
+    "manifest": "8c081300482a89a6",
     "keys": [
       "adminActions",
       "adminPanel",
@@ -212,28 +212,28 @@ const GOLDEN = {
     ],
     "scenes": {
       "fr": {
-        "cfg": "ff06b40f952c9a9f",
-        "code": "b2a93a6dde7de1e0",
+        "cfg": "d6f2c32bf5111d9a",
+        "code": "483e9014acc498aa",
         "css": "4cdeec6964b1df8f",
         "head": "fb6f86fd1c87dbad",
         "footer": "74234e98afe7498f",
         "lines": "a9868ed5f3d02f91",
-        "js": "82346ba7741261ce",
+        "js": "d9cd8887d1132885",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "ca41049c4ecfd8a8",
+        "admin": "a96cd09967bd20e4",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       },
       "en": {
-        "cfg": "447adf9dd1178351",
-        "code": "606251976daad931",
+        "cfg": "1c905444cf7bc780",
+        "code": "653aab7df46d36ee",
         "css": "4cdeec6964b1df8f",
         "head": "d9c657c01be7ac11",
         "footer": "74234e98afe7498f",
         "lines": "fd2e39c77a231d53",
-        "js": "2cb5bd46390d87c1",
+        "js": "4971e9b01089e591",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "dd9cbbb0be2a4d49",
+        "admin": "169958f0c74cd903",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       }
