@@ -94,7 +94,7 @@ const ROLLOUT = {
   "x-twitter": ["1.2.1", { main: "networks.accounts" }],
   "youtube-channel": ["1.5.1", { main: "networks.youtube", stats: "networks.stats" }],
   "youtube-connector": ["1.5.2", { main: "networks.youtube" }],
-  "youtube-live-actions": ["1.3.3", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
+  "youtube-live-actions": ["1.4.0", { chat: "live.chat.youtube", alerts: "live.alerts.events" }],
 };
 const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */

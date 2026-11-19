@@ -48,11 +48,9 @@
   "rules_full": "Vous avez déjà {max} règles : supprimez-en une pour en ajouter.",
   "col_rule": "Règle",
   "rule_edit": "Modifier",
-  "rule_toggle": "Pause",
   "rule_delete": "Supprimer",
   "rule_delete_confirm": "Supprimer cette règle ?",
   "rule_cooldown": "recharge {seconds} s",
-  "rule_paused": "en pause",
   "rule_with_message": "+ lit le message",
   "f_name": "Nom de la règle",
   "f_name_help": "Pour vous y retrouver, par exemple « Rouge pour les gros dons » (64 caractères au plus).",
@@ -161,5 +159,9 @@
   "house_title": "Home Assistant",
   "house_open": "Ouvrir Home Assistant",
   "house_summary": "Associé, vous voit en direct",
-  "sim_plays": "La simulation joue vraiment l'action chez vous."
+  "sim_plays": "La simulation joue vraiment l'action chez vous.",
+  "col_on": "Active",
+  "rule_on": "Activée",
+  "rule_off": "En pause",
+  "rule_switch": "Règle « {name} » activée ou en pause"
 }
