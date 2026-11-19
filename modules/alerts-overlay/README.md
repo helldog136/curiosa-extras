@@ -25,7 +25,7 @@ What Twitch activity offered to others stays offered here: the topic `twitch.eve
 
 | Mode | When | What it shows and does |
 |---|---|---|
-| `on` | the first copy, on a site with the Twitch connector | first tab: status, journal, OBS dock, journal options; **Twitch events** tab: one table of types (state, reaction window, switches *Received* and *Shown*), styles, sample evening, Twitch options; **Rewards** and **Viewer texts and voice** tabs |
+| `on` | the first copy, on a site with the Twitch connector | first tab: status, journal, OBS dock, journal options; **Twitch events** tab: one table of types (state, reaction window, the *Alert* switch), styles, sample evening, Twitch options; **Rewards** and **Viewer texts and voice** tabs |
 | `waiting` | Twitch activity is still installed and has not handed over | its alerts keep showing (the overlay reads its topic, as before); a banner says what to do; nothing is listened to here |
 | `guest` | another copy of the overlay | its own editor of the alerts (as before), a link to the copy that listens; it shows the Twitch alerts through the topic |
 | `off` | no Twitch connection on the site (Streamer.bot, YouTube, the bot's media only) | **nothing Twitch**: no Twitch, Rewards or Voice tab, no journal, no dock, no task calls, no permission asked; every Twitch need is optional |
@@ -75,6 +75,9 @@ Two more elements for overlay pages, drawn by the core's animation engine in the
 Both read the journal of the copy that listens (another copy reads the topic, without the progress inside a level), every 1.5 s, with the server's clock: a reaction starts 1.6 s after the event arrived, the same on every open page; a reloaded page replays nothing. Options: **Title**, **What it counts** (counter), and the engine's **Effects** and **Calm motion**. Readers never write.
 
 ### The Twitch data behind them
+
+- **Listening is not the alert (1.22.0).** The switch of a type is its alert (the `on` of its configuration; `state.enabled` mirrors it at every pass). It never removes a subscription: every type whose permission is already granted is listened to, and stream start and end (no permission needed) always are. A line of a type with its alert off is recorded as usual (counters, goals, live state) with `muted: true`, also in the topic `twitch.event`; the overlay never plays it. Permissions are asked for only by types with their alert on. On the first pass after the update, a type that was off in the old *Received* list keeps no alert (its alert is switched off), and starts being listened to on the next pass.
+- **Silence (1.22.0).** The silence warning only runs while the stream is known to be live: both stream types are listened to and the start is less than 48 hours old (an older start is forgotten). The end of the stream clears the warning without a "back" e-mail.
 
 - The live state of a train is kept in the listening state (`hype`: level, progress, goal, `expiresAt`, the last 20 messages), updated by every « progress » message. The journal still gets one line per **new** level only (its size and retention are unchanged). Its lines now keep `expiresAt` (Twitch's `expires_at`), and the topic item carries it.
 - A state written by an older version has no `hype` key: it is rebuilt from the journal lines of the train (no countdown in those).

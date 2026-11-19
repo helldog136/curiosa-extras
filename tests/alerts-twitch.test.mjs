@@ -35,6 +35,14 @@ test("templates: unknown words are found, values are filled, nothing is left ove
   assert.equal(tw.fillTemplate("{__proto__} {constructor}", { name: "a" }), "");
 });
 
+test("a muted line (alert switched off at the listening) is never played, a test or a replay of it still is", async () => {
+  const w = world({ items: [item("follow", { name: "Camille", muted: true }), item("raid", { name: "lune_douce", viewers: 12 }), item("follow", { name: "etoile_nord", muted: true, test: true })] });
+  await w.pull();
+  assert.equal(w.out.length, 2, "the raid and the test are played, the muted follow is not");
+  assert.ok(!w.out.some((x) => /Camille/.test(JSON.stringify(x))));
+  assert.equal((await w.pull()).valueOf() ?? 0, 0, "and it is not played later either");
+});
+
 test("config: unknown types dropped, switches boolean, template bounded, numbers in range, minimum only where it exists", () => {
   const c = tw.normaliseConfig({ preset: "zzz", types: { follow: { on: false, template: "x".repeat(500), seconds: "9999", min: 5 }, cheer: { min: "250", seconds: 1 }, bogus: { on: true } } });
   assert.equal(c.preset, "");
@@ -263,7 +271,7 @@ test("service alerts.queue and the tools for assistants", async () => {
 });
 
 test("manifest: version, tab, four more settings (one advanced), the topic and its schema, FR and EN texts", () => {
-  assert.equal(manifest.version, "1.21.0");
+  assert.equal(manifest.version, "1.22.0");
   const t = manifest.consumes.find((c) => c.topic === "twitch.event");
   assert.ok(t.schema.find((f) => f.key === "id" && f.required) && t.schema.find((f) => f.key === "at" && f.type === "datetime"));
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");

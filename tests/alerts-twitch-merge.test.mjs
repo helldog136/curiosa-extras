@@ -341,13 +341,13 @@ test("another copy of the overlay on a Twitch site: its own editor and a link to
   assertAdminPageErgonomics(page);
 });
 
-test("the copy that listens: one Twitch events tab (two switches per type, the reaction window), the journal and the dock first, the options folded", async () => {
+test("the copy that listens: one Twitch events tab (one alert switch per type, the reaction window), the journal and the dock first, the options folded", async () => {
   const w = world({ locale: "en" });
   await S.ensureSecret(w.ctx);
   const page = await def.adminPanel(w.ctx, { query: {} });
   const types = page.filter((b) => b.tab === "twitch" && b.type === "table");
   assert.equal(types.length, 1, "ONE table of types");
-  assert.deepEqual(types[0].rows[0].slice(-2).map((c) => c.switch.action), ["setEnabled", "setType"]);
+  assert.deepEqual(types[0].rows[0].filter((c) => c?.switch).map((c) => c.switch.action), ["setType"], "one switch: the alert (listening has none)");
   assert.ok(!page.some((b) => b.action === "saveType"), "no second editor");
   assert.ok(page.some((b) => b.action === "applyPreset") && page.some((b) => b.action === "simulate"));
   assert.ok(page.some((b) => b.action === "saveTwitchOptions" && b.tab === "twitch"));
@@ -405,7 +405,7 @@ test("public contracts: the same tools (names and inputs) as the two modules of 
 });
 
 test("the bridge 1.13.0: offers only the hand-over, keeps working as 1.12.0 until it is called, says it moved, FR/EN parity", () => {
-  assert.equal(bridgeMan.version, "1.14.0");
+  assert.equal(bridgeMan.version, "1.15.0");
   assert.deepEqual(bridgeMan.offers.map((o) => [o.service, o.version]), [["twitch.events.handover", 1]]);
   assert.equal(bridgeMan.mcp, undefined, "its tools are the overlay's now");
   assert.ok(!bridgeMan.permissions.includes("mcp"));

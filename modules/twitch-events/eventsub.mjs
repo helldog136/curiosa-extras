@@ -53,7 +53,10 @@ export const KINDS = TYPES.flatMap((t) => t.kinds);
 export const groupOf = (kind) => TYPES.find((t) => t.kinds.includes(kind))?.id ?? null;
 export const DEFAULTS = Object.fromEntries(TYPES.map((t) => [t.id, t.default]));
 
-/** The subscriptions wanted for the enabled types: [{ typeId, type, version, condition }]. */
+/** (1.22) Listened to whatever the alert switch says: the live state of the stream (silence alert, "since the start" figures) depends on them, and they need no permission. */
+export const ALWAYS_LISTENED = ["online", "offline"];
+
+/** The subscriptions wanted for the types set to true: [{ typeId, type, version, condition }]. (1.22: the caller passes the types to LISTEN to, not the types that play an alert.) */
 export function wantedSubs(enabled, broadcasterId) {
   const b = String(broadcasterId);
   return TYPES.filter((t) => enabled[t.id] === true).flatMap((t) => t.subs.map((s) => ({ typeId: t.id, type: s.type, version: s.version, condition: s.cond(b) })));
