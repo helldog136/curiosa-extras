@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.109.2 — 2026-11-20
+
+*In short: a few buttons of Twitch bot and Game suggestions did nothing on the admin pages they share with other modules. They work again. Nothing else changes.*
+
+### Fixed
+
+- **Twitch bot 1.24.4: "Set the mode", "Add" and "Add this timer" did nothing.** On the Chat page of the admin, these buttons brought you back to the same list instead of opening their window. They open it again.
+- **Game suggestions 1.11.4: "Add several games at once" showed the same form.** On the Games page of the admin, this button, and the link back to the single-game form, brought you back to the same screen. They work again.
+- **Content notebook 1.1.3.** Its tabs, cards and back links also keep working if another module is added to the Notebook page one day.
+
+### For developers
+
+- **twitch-bot 1.24.4, game-suggestions 1.11.4, content-planner 1.1.3.** Same cause as contacts 2.7.1: on a place page shared by several modules the core gives each module its own URL namespace (`<instance>.edit=3`) and reads unprefixed parameters only when the module is the sole contributor of the whole page. It rewrites the `?...` links written in block keys (`href`, `cancelHref`...), never those inside a raw `html` block. Each module now writes its html links with its namespace and reads both forms (`placeLinks.mjs`: `scopeHtmlLinks` on the way out, `unscopeQuery` on the way in); the core leaves an already prefixed link untouched. Content notebook is the only contributor of its page today, so nothing was broken there. New regression tests replay the core's own `sectionQuery` and `scopeBlocks` (`tests/*-place-links.test.mjs`).
+
 ## 1.109.1 — 2026-11-20
 
 *In short: the "Add a person" button of Contacts works again on the Contacts page of the admin. Nothing else changes.*
