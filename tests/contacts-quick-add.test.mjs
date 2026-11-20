@@ -74,7 +74,7 @@ test("« Ajouter via » par défaut : 3 champs (plateforme, pseudo ou lien, nom 
   assert.equal(f.submitLabel, "Enregistrer");
   const html = blocks.map((b) => b.html ?? "").join("");
   assert.match(html, /aria-current="page">Ajouter via</);
-  assert.match(html, /href="\?new=person&amp;mode=manual">Ajout manuel</);
+  assert.match(html, new RegExp(`href="\\?${ctx.instance.key}\\.new=person&amp;${ctx.instance.key}\\.mode=manual">Ajout manuel<`));
   const org = await def.adminPanel(ctx, { query: { new: "org" } });
   assert.ok(form(org, "save") && !form(org, "addVia"), "une organisation garde son formulaire");
   assert.ok(!org.map((b) => b.html ?? "").join("").includes("Ajouter via"));
@@ -172,8 +172,8 @@ test("doublon : un compte déjà sur une fiche propose d'ouvrir cette fiche (auc
   const page = await def.adminPanel(ctx, { query: { new: "person", same: first } });
   assert.match(JSON.stringify(page), /Ce compte est déjà dans votre carnet, sur la fiche « Sam »/);
   const html = page.map((b) => b.html ?? "").join("");
-  assert.match(html, new RegExp(`href="\\?contact=${first}">Ouvrir la fiche<`));
-  assert.match(html, /href="\?new=person">Revenir au formulaire</);
+  assert.match(html, new RegExp(`href="\\?${ctx.instance.key}\\.contact=${first}">Ouvrir la fiche<`));
+  assert.match(html, new RegExp(`href="\\?${ctx.instance.key}\\.new=person">Revenir au formulaire<`));
   assert.ok(!form(page, "addVia"));
   assert.ok(JSON.stringify(await def.adminPanel(ctx, { query: { new: "person", same: "inconnu" } })).includes("addVia"), "fiche disparue : retour au formulaire");
   // Même règle depuis l'ajout manuel.
