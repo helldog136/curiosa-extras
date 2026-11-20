@@ -4,6 +4,18 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.109.1 — 2026-11-20
+
+*In short: the "Add a person" button of Contacts works again on the Contacts page of the admin. Nothing else changes.*
+
+### Fixed
+
+- **Contacts 2.7.1: "Add a person" did nothing.** On the Contacts page, the button, the tabs (Organisations, Categories, Duplicates, Import / export), the filters and "See more" brought you back to the same list. They work again.
+
+### For developers
+
+- **contacts 2.7.1.** The contact form shares the page `community.contacts` with Contacts, so the core gives each module its own URL namespace (`contacts.new=person`) and reads unprefixed parameters for nobody. It rewrites only the `?...` links written in block keys (`href`, `cancelHref`...), never those inside a raw `html` block, so the panel's links arrived without their parameters. The panel now writes its html links with the namespace (`scopeHtmlLinks`) and reads both forms (`unscopeQuery`) in `ui.mjs`; the core leaves an already prefixed link alone. New test: `tests/contacts-place-links.test.mjs` (replays the core's `sectionQuery` and `scopeBlocks`); six existing assertions now expect the namespaced links.
+
 ## 1.109.0 — 2026-11-20
 
 *In short: a page can now be shown with a skin other than the site's, so a showcase can have one page per skin. Needs Curiosa 0.45.0.*

@@ -87,7 +87,7 @@ test("pages de 20 groupes : on parcourt tout sans doublon ni trou ; 5 000 groupe
   assert.match(html, /46 groups to look at/);
   const page2 = htmlOf(await def.adminPanel(ctx, { query: { view: "dupes", at: "20" } }));
   assert.equal([...page2.matchAll(/class="ct-card"/g)].length, 20);
-  assert.match(html, /href="\?view=dupes&amp;at=20">See more</);
+  assert.match(html, new RegExp(`href="\\?${ctx.instance.key}\\.view=dupes&amp;${ctx.instance.key}\\.at=20">See more<`));
 });
 
 test("« ce ne sont pas des doublons » : la paire est mémorisée et ne revient plus, même après réécriture ; plafond de 20 000 paires", async () => {
