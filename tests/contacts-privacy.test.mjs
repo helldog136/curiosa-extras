@@ -117,7 +117,7 @@ test("fiche : section « Données personnelles » (télécharger tout ce que le 
   const all = textOf(blocks);
   assert.match(all, /Données personnelles/);
   assert.ok(blocks.some((b) => b.type === "download" && b.name === "person" && b.params.id === id && b.label === "Télécharger tout ce que le site sait de cette personne"));
-  assert.match(htmlOf(blocks), new RegExp(`href="\\?contact=${id}&amp;erase=1"[^>]*>Effacer cette personne partout…`));
+  assert.match(htmlOf(blocks), new RegExp(`href="\\?${ctx.instance.key}\\.contact=${id}&amp;${ctx.instance.key}\\.erase=1"[^>]*>Effacer cette personne partout…`));
   assert.deepEqual(await svc.erase(ctx, { id, confirm: false }), { ok: false, error: "confirm_required" });
   const r = await svc.erase(ctx, { id, confirm: true });
   assert.equal(r.ok, true);

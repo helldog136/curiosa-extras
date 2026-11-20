@@ -405,7 +405,7 @@ export default {
   },
 
   async adminPanel(ctx, { query } = {}) {
-    try { return await panel(ctx, query ?? {}); } catch (e) { if (e?.code === "busy") return [{ type: "banner", tone: "warning", text: ctx.t("busy") }]; throw e; }
+    try { const key = ctx.instance?.key; return U.scopeHtmlLinks(await panel(ctx, U.unscopeQuery(query, key)), key); } catch (e) { if (e?.code === "busy") return [{ type: "banner", tone: "warning", text: ctx.t("busy") }]; throw e; }
   },
 
   adminActions: {

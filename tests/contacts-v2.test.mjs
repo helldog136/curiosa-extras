@@ -207,7 +207,7 @@ test("admin — liste : tableau du cœur avec recherche serveur (filtre toute la
   // Pagination par liens qui gardent la recherche et les filtres.
   const p1 = await def.adminPanel(ctx, { query: { q: "bulk" } });
   const more = /href="(\?[^"]*)">See more</.exec(htmlOf(p1));
-  assert.ok(more && more[1] === "?page=2&amp;q=bulk", more?.[1]);
+  assert.ok(more && more[1] === `?${ctx.instance.key}.page=2&amp;${ctx.instance.key}.q=bulk`, more?.[1]);
   const seen = [];
   let query = {};
   for (let guard = 0; guard < 10; guard++) {
@@ -318,7 +318,7 @@ test("admin — catégories : créer (droit), renommer, « Mettre dans… », su
   const ctx = makeCtx({ locale: "fr" });
   const { cat, ada } = await seedBook(ctx);
   const page = await def.adminPanel(ctx, { query: { view: "categories" } });
-  assert.match(htmlOf(page), new RegExp(`href="\\?view=categories&amp;edit=${cat}"[\\s\\S]*Raid target[\\s\\S]*1 fiche`));
+  assert.match(htmlOf(page), new RegExp(`href="\\?${ctx.instance.key}\\.view=categories&amp;${ctx.instance.key}\\.edit=${cat}"[\\s\\S]*Raid target[\\s\\S]*1 fiche`));
   assert.ok(page.some((b) => b.action === "createCategory"));
   assert.equal(def.adminActions.createCategory.right, "categories.create", "le cœur vérifie le droit avant l'action");
   assert.equal((await def.adminActions.createCategory.run(ctx, { label: "Amis", color: "#58b368" })).ok, "Catégorie créée.");
@@ -389,7 +389,7 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
 });
 
 test("manifeste 2.1 : version, minCore 0.38.0, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", async () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.7.0", "0.38.0", 2, 2]);
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.7.1", "0.38.0", 2, 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   // The 1.x → 2.0 conversion is gone (dataFloor 2, bridge tag v1.50.0): what is left is an empty marker that never touches the data.

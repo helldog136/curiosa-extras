@@ -8,6 +8,28 @@ const { NETWORK_LOOK } = await import(`./networks.mjs${v}`);
 export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** Adresse d'admin relative avec ces paramètres (vides retirés). */
 export const href = (params) => { const s = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&"); return s ? `?${s}` : "?"; };
+/**
+ * Place pages (core 0.34.0): several modules can share one page, so the core gives each its own URL namespace (`<instance>.new=person`). It rewrites the `?...` links
+ * written in block keys such as `href` and `cancelHref`, but never the links inside a raw `html` block, and it reads unprefixed parameters only when the module is the
+ * sole contributor of the whole page (the contact form shares this one). So every `href="?..."` of our html blocks carries the namespace itself, and the panel
+ * reads both forms (`unscopeQuery`). The core leaves an already prefixed link untouched, so this keeps working if the core rewrites html links one day.
+ */
+const NS_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+const PARAM_RE = /^[A-Za-z0-9_-]{1,40}$/;
+export function scopeHtmlLinks(node, key) {
+  if (!NS_RE.test(String(key ?? ""))) return node;
+  const rewrite = (h) => h.replace(/href="\?([^"#]*)/g, (_m, q) => `href="?${q.split(/(&amp;|&)/).map((part) => (part === "&amp;" || part === "&" || !part ? part : PARAM_RE.test(part.split("=")[0]) ? `${key}.${part}` : part)).join("")}`);
+  const walk = (b) => (Array.isArray(b) ? b.map(walk) : b && typeof b === "object" ? (b.type === "html" && typeof b.html === "string" ? { ...b, html: rewrite(b.html) } : b) : b);
+  return walk(node);
+}
+/** The parameters as the panel reads them: `contacts.new` and `new` both give `new` (the prefixed one wins). */
+export function unscopeQuery(query, key) {
+  const prefix = `${key}.`;
+  const out = {};
+  for (const [k, v] of Object.entries(query ?? {})) if (!k.startsWith(prefix)) out[k] = v;
+  for (const [k, v] of Object.entries(query ?? {})) if (k.startsWith(prefix) && PARAM_RE.test(k.slice(prefix.length))) out[k.slice(prefix.length)] = v;
+  return out;
+}
 const safeImg = (u) => (typeof u === "string" && (/^https:\/\/[^\s"'<>]+$/i.test(u) || /^\/[A-Za-z0-9._~/%-]+(#[\w=.,:-]*)?$/.test(u)) ? u : null);
 const hue = (s) => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
 const initials = (name) => String(name ?? "?").trim().split(/\s+/).slice(0, 2).map((w) => [...w][0] ?? "").join("").toUpperCase() || "?";
