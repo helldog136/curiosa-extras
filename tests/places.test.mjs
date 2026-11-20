@@ -44,7 +44,7 @@ const ROLLOUT = {
   "commissions": ["1.1.2", { main: "community.commissions", packages: "community.commissions.packages" }],
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
-  "contacts": ["2.7.0", { main: "community.contacts" }],
+  "contacts": ["2.7.1", { main: "community.contacts" }],
   "content-planner": ["1.1.2", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
