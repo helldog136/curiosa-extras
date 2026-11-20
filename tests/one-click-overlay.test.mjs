@@ -23,7 +23,7 @@ test("FR and EN: same keys for the texts, no colon at the end, short", () => {
 });
 
 test("manifests: the bot keeps the permission, core 0.15.0", () => {
-  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.24.3", "0.36.0", true]);
+  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.24.4", "0.36.0", true]);
 });
 
 /* ───────────── Twitch bot ───────────── */

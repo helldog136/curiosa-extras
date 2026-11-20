@@ -171,7 +171,8 @@ test("liste : formulaire « J'ai une idée ! » en tête, quatre endroits avec l
   assert.match(page, /Idées<span class="cp-n">1<\/span>/);
   assert.match(page, /En préparation<span class="cp-n">1<\/span>/);
   assert.ok(page.includes("Première") && !page.includes("Deuxième"), "l'endroit ouvert montre ses idées seulement");
-  assert.ok(page.includes(`href="?idea=${a}&amp;col=idea"`), "toute la carte est le lien vers l'idée");
+  const ns = ctx.instance.key; // the links of the html blocks carry the namespace of the instance (place pages, see content-planner-place-links.test.mjs)
+  assert.ok(page.includes(`href="?${ns}.idea=${a}&amp;${ns}.col=idea"`), "toute la carte est le lien vers l'idée");
   const doing = html(await def.adminPanel(ctx, { query: { col: "doing" } }));
   assert.ok(doing.includes("Deuxième") && !doing.includes("Première"));
   assert.match(doing, /aria-current="page">En préparation/);
@@ -190,11 +191,11 @@ test("pagination : 50 par page, page hors limites ramenée dans les limites, lie
   const p1 = html(await def.adminPanel(ctx, { query: {} }));
   assert.equal((p1.match(/class="cp-card"/g) ?? []).length, 50);
   assert.match(p1, /Page 1 sur 3/);
-  assert.match(p1, /rel="next" href="\?page=2"/);
+  assert.match(p1, new RegExp(`rel="next" href="\\?${ctx.instance.key}\\.page=2"`));
   assert.ok(!p1.includes('rel="prev"'));
   const p3 = html(await def.adminPanel(ctx, { query: { page: "3" } }));
   assert.equal((p3.match(/class="cp-card"/g) ?? []).length, 20);
-  assert.match(p3, /rel="prev" href="\?page=2"/);
+  assert.match(p3, new RegExp(`rel="prev" href="\\?${ctx.instance.key}\\.page=2"`));
   assert.equal((html(await def.adminPanel(ctx, { query: { page: "999" } })).match(/class="cp-card"/g) ?? []).length, 20, "au-delà : la dernière page");
   for (const page of ["0", "-3", "abc", "2.5"]) assert.equal((html(await def.adminPanel(ctx, { query: { page } })).match(/class="cp-card"/g) ?? []).length, 50, `page « ${page} » : la première`);
 });

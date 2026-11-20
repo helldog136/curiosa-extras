@@ -28,7 +28,7 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 /** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
 const TWITCH = {
   "alerts-overlay": ["1.22.2", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
-  "twitch-bot": ["1.24.3", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
+  "twitch-bot": ["1.24.4", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.4.2", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.6.3", { main: "networks.twitch", stats: "networks.stats" }],
@@ -45,7 +45,7 @@ const ROLLOUT = {
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
   "contacts": ["2.7.1", { main: "community.contacts" }],
-  "content-planner": ["1.1.2", { main: "calendar.notebook" }],
+  "content-planner": ["1.1.3", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
@@ -56,7 +56,7 @@ const ROLLOUT = {
   "faq": ["1.2.0", { main: "content.faq", inbox: "content.faq.inbox" }],
   "gallery": ["1.3.2", { main: "content.galleries", takedowns: "content.galleries.takedowns" }],
   "game-covers": ["1.6.0", { covers: "community.games.covers", kept: "community.games.covers" }],
-  "game-suggestions": ["1.11.3", { main: "community.games" }],
+  "game-suggestions": ["1.11.4", { main: "community.games" }],
   "github": ["1.3.2", { main: "networks.accounts", stats: "networks.stats" }],
   "hero": ["1.1.0", { banner: "site.home.banners" }],
   "idea-box": ["1.1.3", { main: "community.ideas" }],
