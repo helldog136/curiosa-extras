@@ -10,9 +10,12 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const { default: admin } = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
 const { downloads, backup } = await import(`./export.mjs${v}`);
+const placeLinks = await import(`./placeLinks.mjs${v}`);
 
 export default {
   ...admin, // adminPanel, adminActions
+  // On a place page shared with another module the core reads each module's own namespace only and does not rewrite the links inside html blocks: see placeLinks.mjs.
+  async adminPanel(ctx, o = {}) { const key = ctx.instance?.key; return placeLinks.scopeHtmlLinks(await admin.adminPanel(ctx, { query: placeLinks.unscopeQuery(o?.query, key) }), key); },
   ...tools, // mcp
   adminDownloads: downloads,
   backup,

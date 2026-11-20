@@ -24,6 +24,7 @@ const channel = await import(`./channel.mjs${v}`);
 const actions = await import(`./actions.mjs${v}`);
 const rewards = await import(`./rewards.mjs${v}`);
 const kit = await import(`./adminkit.mjs${v}`);
+const placeLinks = await import(`./placeLinks.mjs${v}`);
 const { migrateTimers } = await import(`./timersMigrate.mjs${v}`);
 const remote = await import(`./remote.mjs${v}`);
 const collab = await import(`./collab.mjs${v}`);
@@ -65,7 +66,8 @@ export default {
   },
 
   async adminBadge(ctx) { const c = (await st.readState(ctx)).sub?.code; return c && !["listening", "pending"].includes(c) ? 1 : 0; },
-  adminPanel: admin.panel,
+  // On a place page shared with other modules the core reads each module's own namespace only, and does not rewrite the links inside html blocks: see placeLinks.mjs.
+  adminPanel: async (ctx, o) => placeLinks.scopeHtmlLinks(await admin.panel(ctx, { ...o, query: placeLinks.unscopeQuery(o?.query, ctx.instance?.key) }), ctx.instance?.key),
   adminActions: admin.actions,
   // Les NOMS des actions de la maison, pour le Connecteur Home Assistant (qui ne possède pas les récompenses) : [{ key, label }], 50 au plus, libellé ≤ 60 caractères, sans secret.
   exports: { "home.actions": async (ctx) => actions.catalog(ctx, settingsOf(ctx), ctx.t, (await rewards.list(ctx)).map((r) => r.action)) },

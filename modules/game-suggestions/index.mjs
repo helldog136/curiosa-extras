@@ -12,6 +12,7 @@
 // une tâche du cœur en traite quelques-unes à la fois, et un bouton de l'admin lance la même opération tout de suite. Tout ce qui
 // sert à ne pas marteler RAWG (date et résultat de chaque essai) est écrit dans les données de l'instance : rien ne vit en mémoire seulement.
 const v = new URL(import.meta.url).search; // la version du module se propage au fichier voisin (sinon l'ancien code resterait en cache après une mise à jour)
+const placeLinks = await import(`./placeLinks.mjs${v}`);
 const overlay = await import(`./overlay.mjs${v}`); // l'élément « Top des jeux proposés » des pages d'overlay (cœur 0.5.0) : seulement ce que la page publique montre
 const COLLECTION = "games";
 const STATE = "state";                // un seul document : dernière recherche de jaquettes, pause éventuelle
@@ -373,7 +374,7 @@ export const playedService = {
   },
 };
 
-export default {
+const definition = {
   services: { "game.played": playedService },
   // L'élément « Top des jeux proposés » des pages d'overlay : une adresse publique sans secret (elle ne rend que ce que la page publique montre).
   overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),
@@ -588,4 +589,10 @@ export default {
   hooks: {
     async onInstanceDelete(ctx) { for (const k of [...memory.keys()]) if (k.split("|")[1] === ctx.instance.key) memory.delete(k); },
   },
+};
+
+// On a place page shared with other modules ("community.games") the core reads each module's own namespace only and does not rewrite the links inside html blocks: see placeLinks.mjs.
+export default {
+  ...definition,
+  async adminPanel(ctx, o = {}) { const key = ctx.instance?.key; return placeLinks.scopeHtmlLinks(await definition.adminPanel(ctx, { query: placeLinks.unscopeQuery(o?.query, key) }), key); },
 };
