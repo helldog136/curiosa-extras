@@ -78,8 +78,8 @@
     {
       "topic": "home.info",
       "label": {
-        "en": "Which sponsor is on the overlay right now (for the Home Assistant connector)",
-        "fr": "Le sponsor affiché à l'écran en ce moment (pour le Connecteur Home Assistant)"
+        "en": "The sponsor on screen",
+        "fr": "Le sponsor à l'écran"
       }
     }
   ],

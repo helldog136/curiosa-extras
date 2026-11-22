@@ -77,8 +77,8 @@
     {
       "topic": "home.info",
       "label": {
-        "fr": "De petites informations des autres extensions, affichées dans Home Assistant (par exemple le sponsor à l'écran)",
-        "en": "Small pieces of information from other extensions, shown in Home Assistant (for example the sponsor on screen)"
+        "fr": "Informations des autres extensions",
+        "en": "Information from other extensions"
       },
       "schema": [
         {
