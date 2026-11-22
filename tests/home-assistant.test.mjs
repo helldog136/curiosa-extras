@@ -273,8 +273,9 @@ test("interrogation : forme de la réponse et des actions", async () => {
   const id = (await enq(w, { key: "tts:lire", text: "Bonjour", viewer: "Léa", ref: "x1" })).id;
   const r = await ha.pull();
   assert.equal(r.status, 200);
-  assert.deepEqual(Object.keys(r.body).sort(), ["actions", "catalog", "cursor", "enabled", "live", "pollSeconds", "serverTime"]);
+  assert.deepEqual(Object.keys(r.body).sort(), ["actions", "catalog", "cursor", "enabled", "info", "live", "pollSeconds", "serverTime"]);
   assert.deepEqual(r.body.catalog, [], "sans Bot Twitch (ou sans noms), le champ additif est une liste vide");
+  assert.deepEqual(r.body.info, [], "de même sans fournisseur de home.info");
   assert.equal(r.body.enabled, true); assert.equal(r.body.live, true); assert.equal(r.body.serverTime, new Date(Date.now()).toISOString());
   assert.equal(r.body.actions.length, 1);
   const a = r.body.actions[0];

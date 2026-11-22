@@ -66,7 +66,7 @@ const cfgOf = (out) => {
 test("manifeste : overlay avec route, sujets consommés (sponsor.card, core.entry), tous les réglages utilisés", () => {
   assert.equal(manifestJson.type, "overlay");
   assert.equal(typeof def.overlay, "function");
-  assert.deepEqual(Object.keys(def.routes), ["items"]);
+  assert.deepEqual(Object.keys(def.routes), ["items", "shown"]);
   assert.deepEqual(manifestJson.consumes.map((c) => c.topic).sort(), ["core.entry", "sponsor.card"]);
   assert.deepEqual(manifestJson.permissions.sort(), ["overlay", "routes", "topics"]);
   const keys = manifestJson.settings.map((s) => s.key).sort();

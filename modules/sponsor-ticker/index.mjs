@@ -112,23 +112,101 @@ function elementTokens(query) {
 
 const safeLink = (v) => (typeof v === "string" && /^(https?:\/\/|\/(?!\/))/i.test(v.trim()) ? v.trim() : null);
 
+// ── Which sponsor is on the OBS overlay right now ─────────────────────────────────────────────────
+// The overlay page picks the sponsor in the browser, so the server learns it from the page (route `shown`). Memory only, per instance: { id, name, until }.
+// The id must be one of the CURRENT items and the name comes from the server's own data, never from the caller. An entry that is past `until` is ignored (the OBS page may be closed without sending the clear).
+export const SHOWN = { maxBody: 512, perMinute: 30, graceMs: 10_000 };
+const shownNow = new Map();   // instance key -> { id, name, until }
+const shownCalls = new Map(); // instance key -> timestamps of the calls of the last minute
+export const resetShown = () => { shownNow.clear(); shownCalls.clear(); };
+/** The sponsor currently reported as shown on the overlay, or null (nothing reported, cleared, or expired). */
+export function shownSponsor(ctx, now = Date.now()) {
+  const s = shownNow.get(ctx.instance.key);
+  if (s && s.until <= now) shownNow.delete(ctx.instance.key);
+  return s && s.until > now ? s : null;
+}
+/** Sliding window of SHOWN.perMinute calls per minute and per instance: 0 when the call passes (and is counted), else the seconds to wait. */
+function takeShown(key, now) {
+  const list = shownCalls.get(key) ?? [];
+  while (list.length && now - list[0] >= 60_000) list.shift();
+  shownCalls.set(key, list);
+  if (list.length >= SHOWN.perMinute) return Math.max(1, Math.ceil((60_000 - (now - list[0])) / 1000));
+  list.push(now);
+  return 0;
+}
+const reply = (status, body, extra = {}) => Response.json(body, { status, headers: { "cache-control": "no-store", ...extra } });
+/** Reads a JSON object body of 512 bytes at most. Returns { body } or { status } (400 or 413). */
+async function readBody(request) {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > SHOWN.maxBody) return { status: 413 };
+  let raw = "";
+  try {
+    if (request.body && typeof request.body.getReader === "function") {
+      const reader = request.body.getReader(), chunks = [];
+      let size = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > SHOWN.maxBody) { reader.releaseLock(); return { status: 413 }; }   // stop reading, do not cancel (see the home-assistant module)
+        chunks.push(value);
+      }
+      raw = Buffer.concat(chunks).toString("utf8");
+    } else raw = await request.text();
+  } catch (e) { return { status: 400 }; }
+  if (Buffer.byteLength(raw) > SHOWN.maxBody) return { status: 413 };
+  try {
+    const body = JSON.parse(raw);
+    return body && typeof body === "object" && !Array.isArray(body) ? { body } : { status: 400 };
+  } catch (e) { return { status: 400 }; }
+}
+
+/** The items the overlay can show right now (shared by the `items` and `shown` routes): ids `s:<id>` (sponsor.card) and `e:<path>` (core.entry). */
+async function currentItems(ctx) {
+  const site = ctx.api.siteUrl;
+  const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
+  return [
+    ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
+    // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
+    ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
+  ];
+}
+
 export default {
   routes: {
     // JSON rafraîchi par la page de l'overlay : l'état courant, rien n'est mis en cache côté serveur.
     async items(request, ctx) {
       const site = ctx.api.siteUrl;
-      const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
-      const raw = [
-        ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
-        // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
-        ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
-      ];
+      const raw = await currentItems(ctx);
       // Mode test d'une page d'overlay (?demo=1) : sans aucun sponsor, une carte d'exemple pour voir le bandeau.
       if (!raw.length && new URL(request.url).searchParams.get("demo") === "1") raw.push({ id: "demo", name: ctx.t("demoName"), text: ctx.t("demoText"), url: "https://example.com/promo", page: `${site}/`, code: "CODE10", logo: null, publishedAt: null });
       // The QR leads to the page of this site that presents the sponsor, never straight to the referral link (`url`): the visitor meets the presentation first and follows the link from there.
       const items = await Promise.all(raw.map(async ({ page, ...i }) => { const qrUrl = qrTarget(page, site); return { ...i, qrUrl, qrSvg: qrUrl ? await ctx.api.qr(qrUrl) : null }; }));
       return Response.json({ items }, { headers: { "cache-control": "no-store" } });
     },
+
+    // The overlay page says which item it just put on screen (`{ "id": "<item id>" }`) or that it is leaving (`{ "id": null }`). Never trusted: the id must be a current item and the name is ours.
+    async shown(request, ctx) {
+      if (request.method !== "POST") return reply(405, { ok: false, error: "method_not_allowed" }, { Allow: "POST" });
+      const key = ctx.instance.key, now = Date.now();
+      const wait = takeShown(key, now);
+      if (wait) return reply(429, { ok: false, error: "rate_limited" }, { "Retry-After": String(wait) });
+      const r = await readBody(request);
+      if (!r.body) return reply(r.status, { ok: false, error: r.status === 413 ? "too_large" : "bad_request" });
+      const id = r.body.id;
+      if (id === null) { shownNow.delete(key); return reply(200, { ok: true }); }
+      if (typeof id !== "string" || !id || id.length > 300) return reply(400, { ok: false, error: "bad_request" });
+      let item;
+      try { item = (await currentItems(ctx)).find((i) => i.id === id); } catch (e) { return reply(503, { ok: false, error: "unavailable" }, { "Retry-After": "5" }); }
+      if (!item) return reply(400, { ok: false, error: "bad_request" });
+      shownNow.set(key, { id: item.id, name: item.name, until: now + num(ctx.setting("holdSeconds"), 10, 3, 120) * 1000 + SHOWN.graceMs });
+      return reply(200, { ok: true });
+    },
+  },
+
+  // The topic `home.info` (optional, read by the Home Assistant connector): which sponsor is on the OBS overlay now. `value` is null when nothing is on screen (or the overlay is not open).
+  exports: {
+    "home.info": async (ctx) => [{ key: `sponsor-ticker.${ctx.instance.key}`, label: ctx.t("homeInfoLabel"), value: shownSponsor(ctx)?.name ?? null }],
   },
 
   // ÉLÉMENT DE PAGE D'OVERLAY (cœur 0.5.0) : on réutilise l'overlay ci-dessous, tel quel ; le cœur ajoute la taille du cadre, le style commun (ov-text…) et l'option opt-qr.
@@ -153,7 +231,10 @@ export default {
       ...(element ? { tv: true } : {}),
       badge: ctx.t("badge"),
       isNew: ctx.t("new"),
+      // Reporting which sponsor is on screen (route `shown`): never in the test page (demo) nor in the fast developer mode; then the page script is exactly the one without this feature.
+      ...(!element?.demo && !dev?.fast ? { reportUrl: `/m/${ctx.instance.key}/shown` } : {}),
     };
+    const report = typeof cfg.reportUrl === "string";
     const custom = color(ctx.setting("accentColor"), null);
     const accent = custom ?? ctx.theme.accent;
     // Les couleurs de la carte suivent le thème du site (fond, texte, texte atténué, texte sur l'accent).
@@ -253,7 +334,7 @@ export default {
       script: `(function(){var c=${json},slider=document.getElementById("tk-slider"),items=[],last=null,hold;
         // Hasard : Math.random, ou un petit générateur à graine en mode développeur (?seed=N).
         var rnd=Math.random;if(c.seed!==null){var a=c.seed>>>0;rnd=function(){a=(a+0x6d2b79f5)>>>0;var t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
-        function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
+        function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}${report ? ' function report(id){try{fetch(c.reportUrl,{method:"POST",keepalive:true,headers:{"content-type":"application/json"},body:JSON.stringify({id:id})}).catch(function(){})}catch(e){}}' : ""}
         ${fitTitle.toString()}
         ${fitScale.toString()}
         ${shortDomain.toString()}
@@ -282,7 +363,7 @@ export default {
           [430,330,250].forEach(function(w){if(best&&best.s>=1)return;var r=apply(w);r.score=r.t.size*r.s;if(!best||r.score>best.score*1.03)best=r});
           apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")${showQr ? ";sizeQr(card)" : ""}}
         window.addEventListener("resize",function(){if(cur)fit(cur)});
-        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
+        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");${report ? "report(s.id);" : ""}clearTimeout(hold);hold=setTimeout(function(){${report ? "report(null);" : ""}go("out")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}
         load().then(function(){setTimeout(cycle,c.startDelay*1000)})})();${elementScript}`,
     };
