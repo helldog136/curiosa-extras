@@ -6,7 +6,7 @@
     "en": "Contacts",
     "fr": "Contacts"
   },
-  "version": "2.7.1",
+  "version": "2.8.0",
   "menuGroup": "community",
   "description": {
     "en": "Your private address book: people and organisations, their accounts on the networks (Twitch, YouTube, Bluesky…), categories, notes and photo. Each person lives here once; the rest of the site only links to them.",
@@ -115,7 +115,26 @@
   "permissions": [
     "admin",
     "storage",
-    "mcp"
+    "mcp",
+    "topics"
+  ],
+  "consumes": [
+    {
+      "topic": "core.user",
+      "label": {
+        "en": "People who log in to the site",
+        "fr": "Personnes qui se connectent au site"
+      },
+      "schema": [
+        { "key": "id", "type": "string", "required": true },
+        { "key": "name", "type": "string", "required": true },
+        { "key": "email", "type": "string", "required": true },
+        { "key": "level", "type": "string" },
+        { "key": "roles", "type": "string[]" },
+        { "key": "createdAt", "type": "datetime" },
+        { "key": "updatedAt", "type": "datetime" }
+      ]
+    }
   ],
   "rights": [
     {

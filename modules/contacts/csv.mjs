@@ -3,7 +3,7 @@
 //
 // Colonnes (titre français / titre anglais ; l'import comprend les deux, plus quelques synonymes) :
 //   nom/name · type/type · fonction/role · organisation · e-mail/email · téléphone/phone · comptes/accounts · catégories/categories · notes/note
-//   · statut/status · relation · autres canaux/others · photo · origine/source · id
+//   · statut/status · relation · autres canaux/others · photo · origine/source · id · compte du site/site account (export seulement : le rôle du compte de connexion lié à la fiche, ignoré à l'import)
 // Seul le nom (ou un compte, dont le pseudo sert de nom) est obligatoire. Une colonne inconnue est ignorée (jamais une erreur).
 // « comptes » : « twitch:pseudo | youtube:@nom | web:monsite.be » (ou simplement des liens de profil collés, le réseau se devine).
 // « notes » : « 2026-05-01 · auteur⏎texte » ; plusieurs notes séparées par une ligne « --- ».
@@ -27,6 +27,8 @@ export const COLUMNS = [
   { key: "photo", fr: "photo", en: "photo", alias: ["image", "avatar"] },
   { key: "source", fr: "origine", en: "source", alias: ["provenance"] },
   { key: "id", fr: "id", en: "id", alias: ["identifiant"] },
+  // Added last (2.8.0) so the position of every older column is unchanged. Export only: the column is read as « known » and IGNORED by the import, which never creates or changes a link.
+  { key: "siteAccount", fr: "compte du site", en: "site account", alias: [] },
 ];
 const BY_NAME = new Map();
 for (const c of COLUMNS) for (const n of [c.key, c.fr, c.en, ...c.alias]) BY_NAME.set(fold(n).replace(/[^a-z0-9]+/g, " ").trim(), c.key);
@@ -236,6 +238,7 @@ export function cardCells({ data, id, categoryNames, notes, withContact, labels 
     name: data.name, kind: labels.kind[data.kind === "org" ? "org" : "person"], role: data.role ?? "", organisation: data.orgName ?? "", email: withContact ? data.email ?? "" : "", phone: withContact ? data.phone ?? "" : "",
     accounts, categories: categoryNames.map(enc).join(" | "), note: formatNotes(notes), status: labels.status[data.status === "to_review" ? "to_review" : "active"],
     relation: data.relation ?? "", others: data.others ?? "", photo: data.photo ?? "", source: data.source ?? "", id,
+    siteAccount: data.account && typeof data.account === "object" && typeof data.account.id === "string" && typeof labels.level === "function" ? labels.level(data.account) : "",
   };
   return COLUMNS.map((c) => values[c.key]);
 }
