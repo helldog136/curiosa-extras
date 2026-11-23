@@ -48,7 +48,7 @@ const DOC_PROBLEMS = {
 };
 const CAP_PROBLEMS = {
   tooMany: () => `An idea holds ${X.MAX_DOCS_PER_IDEA} documents at most. Ask the owner to delete one in the notebook.`,
-  tooBig: () => `The documents of an idea hold ${X.MAX_CHARS_PER_IDEA} characters in all, at most. Shorten a text or ask the owner to delete an old version.`,
+  tooBig: () => `The documents of an idea hold ${X.MAX_CHARS_PER_IDEA} characters in all, at most. Shorten a text or ask the owner to delete a draft that is no longer needed.`,
   full: () => `The notebook holds ${X.MAX_DOCS_TOTAL} documents at most. Ask the owner to delete some.`,
 };
 

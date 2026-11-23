@@ -521,5 +521,13 @@
         }
       }
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.idea_doc_list": "Liste les documents d'une idée (par exemple le script d'une vidéo en versions v1, v2, final), les plus récemment modifiés d'abord, sans leur texte : titre, version, longueur et dates. Pour lire un texte, utilisez idea_doc_get.",
+      "mcp.idea_doc_get": "Lit un document d'une idée en entier : titre, version et texte complet (60 000 caractères au plus).",
+      "mcp.idea_doc_add": "Ajoute un document à une idée, par exemple un script ou un plan. Seul le titre est obligatoire ; la version est v1 sauf indication. Pour garder une version précédente, ajoutez un nouveau document avec un nouveau nom de version plutôt que de modifier l'ancien. Le document est privé : il n'est jamais montré sur le site.",
+      "mcp.idea_doc_update": "Change le titre, la version ou le texte d'un document existant. Ce que vous envoyez remplace l'ancienne valeur : l'ancien texte ne peut pas être récupéré. Pour garder la version précédente, utilisez idea_doc_add avec un nouveau nom de version."
+    }
+  }
 }
