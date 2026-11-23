@@ -44,11 +44,11 @@ const script = (n) => `${"Line of the script.\n".repeat(Math.ceil(n / 20)).slice
 
 // ── Manifest ─────────────────────────────────────────────────────────────────────────────────────────────────
 
-test("manifest: 1.2.0, valid, minCore untouched, no new permission", () => {
+test("manifest: 1.2.0, valid, minCore 0.6.0 (the enriched table and the folded field), no new permission", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifest.version, "1.2.0");
-  assert.equal(manifest.minCore, "0.2.5");
+  assert.equal(manifest.minCore, "0.6.0", "the kit asks for 0.6.0 as soon as a table is searchable or a field is folded");
   assert.equal(manifest.dataVersion, 1, "no migration: the documents live in a collection of their own");
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "storage"]);
 });

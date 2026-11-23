@@ -33,7 +33,7 @@ test("manifeste : valide, une seule instance, aucune page", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifest.id, "content-planner");
-  assert.equal(manifest.minCore, "0.2.5");
+  assert.equal(manifest.minCore, "0.6.0"); // 1.2.0: the documents table (live search, badge, row menu) and the folded field are core 0.6.0 blocks
   assert.equal(manifest.instances, "single");
   assert.equal(manifest.page, false);
   assert.equal(manifest.name.fr, "Cahier de contenu");

@@ -1,6 +1,6 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.5",
+  "minCore": "0.6.0",
   "id": "content-planner",
   "name": {
     "en": "Content notebook",
