@@ -444,3 +444,27 @@ The core's development server (Next.js 16.4.1) prints, on every start, a notice 
 **Checked:** 8 tests (field flags, address rules, claim and refusal, release on removal, no claim when reordering, release on delete, escaping on the shop page, no empty box, list thumbnail, order holds no photo); three deliberate defects (no release, delete keeps files, always claim) are each caught. Full suite: 6324 tests, 0 failures.
 
 **Not checked yet:** the real core (upload through the gallery field, display on the shop page and in the list, files really gone after deletion, acceptance of the crop address in the table image cell), and the phone/desktop screenshots.
+
+## 21. Print on demand (idea, nothing built)
+
+**Goal.** Like Fourthwall, but the seller picks the printing service. The seller designs a product (for example a logo on a t-shirt), sets the selling price through a margin, and the service prints and ships after each paid order. The seller keeps their own shop and their own payment provider. No commission on our side.
+
+**Modules.** One module per printing service (same pattern as payments), offering a common service `fulfillment.provider` v1; the shop offers `fulfillment.consumer` v1 and depends on no service. Sketch of the service: `catalog()` (blank products, colours, sizes, base cost), `mockups(design, product)`, `quote(items, address)` (shipping per destination), `createOrder(order)` (idempotent: the order number is the external reference), `getStatus(ref)`, `cancel(ref)`. As for payments, a notification only triggers a re-read of the real state, and a regular reading is the fallback when no public address exists.
+
+**Product.** A product of kind "print": the design file (own upload), the chosen blank product, the offered colours and sizes. Each variant keeps the provider reference and the base cost last read. No stock (made on demand).
+
+**Prices and margin (seller's decision).**
+- The seller enters a margin either as a net amount or as a percentage; the selling price is computed (base cost + margin, all taxes included, rounded to a clean price) and shown next to an estimate "you keep about X per sale" (price − tax − base cost − estimated payment fee). The estimate is labelled as an estimate.
+- Base costs change on the provider's side. Prices never change silently: the seller sees "cost changed, new price proposed" and confirms. A variant whose margin would become negative is taken off sale until the seller decides.
+- The order copies the selling price and the base cost at the time of the order, so old orders stay exact.
+- Shipping comes from the provider's quote per destination; the seller chooses to include it in the price or to charge it on top, with an optional margin.
+
+**Order flow.** Paid → send to the provider (never before payment is confirmed) → "sent to provider" → printed/shipped with tracking → mail to the customer (existing outbox). A refusal by the provider (product withdrawn, address refused, seller's account not funded) never refunds by itself: it alerts the seller, as for a late payment. Every step is idempotent so a retry never prints twice.
+
+**Open points.**
+1. Currency: providers bill in their own currency. First version: the shop currency must equal the provider's, otherwise the product cannot be put on sale (no silent conversion).
+2. Design file and mockups: the provider must fetch the design from a public address (needs the public HTTPS prerequisite already decided); mockup images must be downloaded and stored, and it is not known whether the core lets a module save a downloaded file. To check; if not, it is a generic core need to describe, not to build here.
+3. Tax and customs for shipments outside the EU, and who is the legal seller towards the buyer: needs a human legal and accounting review, no conclusion here.
+4. Which service first: not decided.
+
+**Not verified.** None of the providers' APIs were read for this section; the sketch above comes from general knowledge and must be checked against each official documentation before any code.
