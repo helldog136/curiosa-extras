@@ -85,11 +85,13 @@ test("the core QR service: lowest correction level (L), smallest version, a shor
 });
 
 test("QR code off: the page is exactly what it was before the full-height QR (hash of title, html, css and script)", () => {
+  // The hashes were re-pinned for Sponsor ticker 1.6.0 on purpose: the page script now places its displays on the server clock (rotation.mjs, `serverTime` of the items route) instead of picking at random.
+  // Nothing of the QR sizing or of any visual changed (the html and css parts are untouched, see tests/overlay-elements-regression.test.mjs).
   const h = (settings, q) => crypto.createHash("sha256").update(JSON.stringify(tk.overlay(makeCtx([], settings), { query: new URLSearchParams(q) }))).digest("hex").slice(0, 16);
-  assert.equal(h({ showQr: false }, ""), "d46a81081ee13d42");
-  assert.equal(h({}, "ov-w=720&ov-h=180&ov-tv=1&opt-qr=0&ov-text=light"), "e2801954d85d86a5");
-  assert.equal(h({ showQr: false }, "ov-w=720&ov-h=180&ov-tv=2&ov-text=dark&ov-surface=soft"), "ab76b0461ef9e0d6");
-  assert.equal(h({ showQr: false, visual: "broadcast", accentColor: "#336699" }, ""), "92c47330b5bbb9eb");
+  assert.equal(h({ showQr: false }, ""), "3de3043f65283c50");
+  assert.equal(h({}, "ov-w=720&ov-h=180&ov-tv=1&opt-qr=0&ov-text=light"), "b680fb4b7a477987");
+  assert.equal(h({ showQr: false }, "ov-w=720&ov-h=180&ov-tv=2&ov-text=dark&ov-surface=soft"), "98346076277d0a66");
+  assert.equal(h({ showQr: false, visual: "broadcast", accentColor: "#336699" }, ""), "4e136499f67235d3");
 });
 
 // ── In a real browser ───────────────────────────────────────────────────────────────────────────

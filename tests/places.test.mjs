@@ -29,7 +29,7 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 const TWITCH = {
   "alerts-overlay": ["1.22.2", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.24.4", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
-  "home-assistant": ["1.4.2", { main: "live.rewards.home" }],
+  "home-assistant": ["1.5.0", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.6.3", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.4", { list: "live.raid.list", featured: "live.raid.featured" }],
@@ -78,7 +78,7 @@ const ROLLOUT = {
   "reddit": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "snapchat": ["1.2.1", { main: "networks.accounts" }],
   "soundcloud": ["1.2.1", { main: "networks.accounts" }],
-  "sponsor-ticker": ["1.5.0", { main: "obs.overlays.sponsors" }],
+  "sponsor-ticker": ["1.6.0", { main: "obs.overlays.sponsors" }],
   "sponsors": ["1.2.0", { sponsors: "community.partners.sponsors" }],
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
@@ -261,6 +261,8 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
     if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
+    if (id === "home-assistant") rest.consumes = rest.consumes.filter((c) => c.topic !== "home.info"); // 1.5.0: the optional topic of the information provided by other modules
+    if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
     assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);

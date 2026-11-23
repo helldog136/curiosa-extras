@@ -7,6 +7,7 @@
 // Neighbour file: dynamic, versioned import (docs/HOT-UPDATE.md).
 const v = new URL(import.meta.url).search;
 const { ovTransition, transitionConfig } = await import(new URL(`./transition.mjs${v}`, import.meta.url).href);
+const { rotationPick, slotMs, scheduledId } = await import(new URL(`./rotation.mjs${v}`, import.meta.url).href);
 const color = (v, def) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : def);
 const num = (v, def, min, max) => Math.min(max, Math.max(min, Number(v) || def));
 const safeImage = (v) => (typeof v === "string" && /^(https?:\/\/|\/uploads\/)/.test(v) ? v : null);
@@ -112,22 +113,45 @@ function elementTokens(query) {
 
 const safeLink = (v) => (typeof v === "string" && /^(https?:\/\/|\/(?!\/))/i.test(v.trim()) ? v.trim() : null);
 
+/** The items the overlay can show right now (shared by the `items` route and the topic `home.info`): ids `s:<id>` (sponsor.card) and `e:<path>` (core.entry). */
+async function currentItems(ctx) {
+  const site = ctx.api.siteUrl;
+  const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
+  return [
+    ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
+    // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
+    ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
+  ];
+}
+
+/** The display period and the hold time in seconds, clamped like the overlay does. */
+const schedule = (ctx) => [num(ctx.setting("periodSeconds"), 90, 5, 3600), num(ctx.setting("holdSeconds"), 10, 3, 120)];
+
 export default {
   routes: {
     // JSON rafraîchi par la page de l'overlay : l'état courant, rien n'est mis en cache côté serveur.
     async items(request, ctx) {
       const site = ctx.api.siteUrl;
-      const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
-      const raw = [
-        ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
-        // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
-        ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
-      ];
+      const raw = await currentItems(ctx);
       // Mode test d'une page d'overlay (?demo=1) : sans aucun sponsor, une carte d'exemple pour voir le bandeau.
       if (!raw.length && new URL(request.url).searchParams.get("demo") === "1") raw.push({ id: "demo", name: ctx.t("demoName"), text: ctx.t("demoText"), url: "https://example.com/promo", page: `${site}/`, code: "CODE10", logo: null, publishedAt: null });
       // The QR leads to the page of this site that presents the sponsor, never straight to the referral link (`url`): the visitor meets the presentation first and follows the link from there.
       const items = await Promise.all(raw.map(async ({ page, ...i }) => { const qrUrl = qrTarget(page, site); return { ...i, qrUrl, qrSvg: qrUrl ? await ctx.api.qr(qrUrl) : null }; }));
-      return Response.json({ items }, { headers: { "cache-control": "no-store" } });
+      return Response.json({ items, serverTime: Date.now() }, { headers: { "cache-control": "no-store" } });
+    },
+  },
+
+  // The topic `home.info` (optional, read by the Home Assistant connector): the sponsor the server schedules on the OBS overlay now (see rotation.mjs: the page computes the same answer from the same clock).
+  // `value` is the sponsor name during its display time, null between two displays or when there is no sponsor.
+  exports: {
+    "home.info": async (ctx) => {
+      let name = null;
+      try {
+        const items = await currentItems(ctx);
+        const id = scheduledId(items.map((i) => i.id), Date.now(), ...schedule(ctx));
+        name = items.find((i) => i.id === id)?.name ?? null;
+      } catch (e) { name = null; }
+      return [{ key: `sponsor-ticker.${ctx.instance.key}`, label: ctx.t("homeInfoLabel"), value: name }];
     },
   },
 
@@ -153,6 +177,8 @@ export default {
       ...(element ? { tv: true } : {}),
       badge: ctx.t("badge"),
       isNew: ctx.t("new"),
+      // Test page (demo), fast developer mode and seeded developer mode choose at random in the browser, as before; otherwise the server clock decides (rotation.mjs).
+      ...(element?.demo || dev?.fast || dev?.seed != null ? { free: true } : {}),
     };
     const custom = color(ctx.setting("accentColor"), null);
     const accent = custom ?? ctx.theme.accent;
@@ -257,10 +283,13 @@ export default {
         ${fitTitle.toString()}
         ${fitScale.toString()}
         ${shortDomain.toString()}
+        ${rotationPick.toString()}
+        ${slotMs.toString()}
         ${showQr ? qrPlan.toString() + "\n        " : ""}${ovTransition.toString()}
         if(c.tr.ms!==600){slider.style.setProperty("--tr-ms",c.tr.ms+"ms");slider.style.setProperty("--tr-fade",Math.round(c.tr.ms*.78)+"ms")}
         function go(phase){return ovTransition(slider,phase,phase==="in"?c.tr.in:c.tr.out,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"})}
-        function load(){return fetch(c.itemsUrl,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(Array.isArray(d.items))items=d.items}).catch(function(){})}
+        var off=0;
+        function load(){var t0=Date.now();return fetch(c.itemsUrl,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(Array.isArray(d.items))items=d.items;if(typeof d.serverTime==="number")off=d.serverTime-(t0+Date.now())/2}).catch(function(){})}
         function pick(){if(!items.length)return null;if(items.length===1)return items[0];var s=items[Math.floor(rnd()*items.length)],g=0;while(s.id===last&&g++<8)s=items[Math.floor(rnd()*items.length)];return s}
         function build(s){
           var card=el("div","ticker-card ticker-card--"+c.visual);card.append(el("div","ticker-bar"));
@@ -284,7 +313,11 @@ export default {
         window.addEventListener("resize",function(){if(cur)fit(cur)});
         function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}
-        load().then(function(){setTimeout(cycle,c.startDelay*1000)})})();${elementScript}`,
+        // The server clock decides (rotation.mjs): slot = floor(server time / slot length), the sponsor of a slot is on screen during its first c.hold seconds. Nothing is sent to the server.
+        function at(k){var id=rotationPick(items.map(function(i){return i.id}),k);for(var i=0;i<items.length;i++)if(items[i].id===id)return items[i];return null}
+        function plan(t,P){var k=Math.floor(t/P),rem=c.hold*1000-(t-k*P);if(rem>=2000)return{k:k,at:t,rem:rem};k++;return{k:k,at:k*P,rem:c.hold*1000}}
+        function sync(t){var P=slotMs(c.period,c.hold),p=plan(t,P),w=p.at-(Date.now()+off);setTimeout(function(){load().then(function(){setTimeout(function(){var s=at(p.k);if(s){cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},p.rem)}sync(p.k*P+P)},Math.max(0,p.at-(Date.now()+off)))})},Math.max(0,w-3000))}
+        if(c.free)load().then(function(){setTimeout(cycle,c.startDelay*1000)});else load().then(function(){sync(Date.now()+off+c.startDelay*1000)})})();${elementScript}`,
     };
   },
 };

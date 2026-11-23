@@ -1199,7 +1199,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/home-assistant",
       "ref": "v1.109.2",
-      "version": "1.4.2",
+      "version": "1.5.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🏠",
@@ -2285,10 +2285,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/sponsor-ticker",
       "ref": "v1.109.2",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
+      "provides": [
+        "home.info"
+      ],
       "requires": {
         "core": "0.11.0"
       },

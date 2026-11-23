@@ -182,7 +182,9 @@ test("items : aucune source → liste vide en JSON, jamais mise en cache", async
   const { res, body } = await itemsOf({});
   assert.equal(res.headers.get("cache-control"), "no-store");
   assert.match(res.headers.get("content-type"), /json/);
-  assert.deepEqual(body, { items: [] });
+  assert.deepEqual(body.items, []);
+  assert.equal(typeof body.serverTime, "number", "the server time (ms) comes with the list: the page places its slots on it");
+  assert.deepEqual(Object.keys(body).sort(), ["items", "serverTime"]);
 });
 
 test("items : cartes sponsor.card — id, valeurs absentes → null, QR de la page du site (jamais du lien), logo filtré", async () => {
