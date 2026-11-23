@@ -66,7 +66,7 @@ const cfgOf = (out) => {
 test("manifeste : overlay avec route, sujets consommés (sponsor.card, core.entry), tous les réglages utilisés", () => {
   assert.equal(manifestJson.type, "overlay");
   assert.equal(typeof def.overlay, "function");
-  assert.deepEqual(Object.keys(def.routes), ["items", "shown"]);
+  assert.deepEqual(Object.keys(def.routes), ["items"]);
   assert.deepEqual(manifestJson.consumes.map((c) => c.topic).sort(), ["core.entry", "sponsor.card"]);
   assert.deepEqual(manifestJson.permissions.sort(), ["overlay", "routes", "topics"]);
   const keys = manifestJson.settings.map((s) => s.key).sort();
@@ -80,7 +80,7 @@ test("manifeste : overlay avec route, sujets consommés (sponsor.card, core.entr
 test("overlay : configuration par défaut", () => {
   const { out } = overlayOf();
   const c = cfgOf(out);
-  assert.deepEqual(c, { itemsUrl: "/m/ticker/items?lang=en", period: 90, hold: 10, startDelay: 5, visual: "neon", showQr: true, seed: null, badge: "Sponsor", isNew: "New", tr: { in: "auto", out: "auto", ms: 600 }, reportUrl: "/m/ticker/shown" });
+  assert.deepEqual(c, { itemsUrl: "/m/ticker/items?lang=en", period: 90, hold: 10, startDelay: 5, visual: "neon", showQr: true, seed: null, badge: "Sponsor", isNew: "New", tr: { in: "auto", out: "auto", ms: 600 } });
   assert.equal(out.title, "Mon ticker");
   assert.match(out.html, /id="tk-stage"/);
   assert.match(out.html, /--ticker-accent:#e8a23b/);
@@ -182,7 +182,9 @@ test("items : aucune source → liste vide en JSON, jamais mise en cache", async
   const { res, body } = await itemsOf({});
   assert.equal(res.headers.get("cache-control"), "no-store");
   assert.match(res.headers.get("content-type"), /json/);
-  assert.deepEqual(body, { items: [] });
+  assert.deepEqual(body.items, []);
+  assert.equal(typeof body.serverTime, "number", "the server time (ms) comes with the list: the page places its slots on it");
+  assert.deepEqual(Object.keys(body).sort(), ["items", "serverTime"]);
 });
 
 test("items : cartes sponsor.card — id, valeurs absentes → null, QR de la page du site (jamais du lien), logo filtré", async () => {
