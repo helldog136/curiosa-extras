@@ -65,11 +65,11 @@ const dump = (w) => JSON.stringify(w.ctx.dumpStore());
 test("le manifeste est valide et déclare le contrat exact", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.4.2"); assert.equal(manifest.minCore, "0.36.0");
+  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.5.0"); assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
-  assert.deepEqual(manifest.consumes.map((c) => c.topic), ["home.actions"], "les noms des actions viennent du Bot Twitch, en option : le connecteur n'est pas propriétaire des récompenses");
+  assert.deepEqual(manifest.consumes.map((c) => c.topic), ["home.actions", "home.info"], "les noms des actions viennent du Bot Twitch, en option : le connecteur n'est pas propriétaire des récompenses");
   assert.deepEqual(Object.keys(def.services["home-assistant.bridge"]).sort(), ["enqueue", "start", "status", "stop"]);
   assert.deepEqual(Object.keys(def.exports).sort(), ["ha.result", "ha.state"]);
   assert.deepEqual(Object.keys(def.routes).sort(), ["ack", "pair", "pull"]);

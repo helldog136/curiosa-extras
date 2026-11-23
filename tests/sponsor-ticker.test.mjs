@@ -80,7 +80,7 @@ test("manifeste : overlay avec route, sujets consommés (sponsor.card, core.entr
 test("overlay : configuration par défaut", () => {
   const { out } = overlayOf();
   const c = cfgOf(out);
-  assert.deepEqual(c, { itemsUrl: "/m/ticker/items?lang=en", period: 90, hold: 10, startDelay: 5, visual: "neon", showQr: true, seed: null, badge: "Sponsor", isNew: "New", tr: { in: "auto", out: "auto", ms: 600 } });
+  assert.deepEqual(c, { itemsUrl: "/m/ticker/items?lang=en", period: 90, hold: 10, startDelay: 5, visual: "neon", showQr: true, seed: null, badge: "Sponsor", isNew: "New", tr: { in: "auto", out: "auto", ms: 600 }, reportUrl: "/m/ticker/shown" });
   assert.equal(out.title, "Mon ticker");
   assert.match(out.html, /id="tk-stage"/);
   assert.match(out.html, /--ticker-accent:#e8a23b/);

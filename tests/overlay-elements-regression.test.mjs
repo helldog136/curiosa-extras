@@ -27,7 +27,9 @@ async function snapshot() {
   const realNow = Date.now; Date.now = () => NOW;
   try {
     const out = {};
-    const take = async (name, p) => { const r = await p; out[name] = [sha(r.title), sha(r.html), sha(r.css), sha(r.script)].join("."); };
+    // The reporting of the sponsor on screen (1.6.0) is the only thing added to the ticker page: it is taken out first, the rest must stay byte for byte the same (same cleaning as tests/sponsor-ticker-qr.test.mjs).
+    const withoutReport = (s) => String(s).replace(",\"reportUrl\":\"/m/ticker/shown\"", "").replace(/ function report\(id\)\{try\{.*?\}catch\(e\)\{\}\}/, "").replace("report(s.id);", "").replace("report(null);", "");
+    const take = async (name, p) => { const r = await p; if (name.startsWith("tk-")) r.script = withoutReport(r.script); out[name] = [sha(r.title), sha(r.html), sha(r.css), sha(r.script)].join("."); };
     await take("cd-default", cd.overlay(countdownCtx(), { query: new URLSearchParams() }));
     await take("cd-event", cd.overlay(countdownCtx(), { query: new URLSearchParams("e=stream") }));
     await take("cd-unknown-event", cd.overlay(countdownCtx(), { query: new URLSearchParams("e=nope") }));
