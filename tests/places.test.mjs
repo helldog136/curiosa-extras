@@ -45,7 +45,7 @@ const ROLLOUT = {
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
   "contacts": ["2.7.1", { main: "community.contacts" }],
-  "content-planner": ["1.1.3", { main: "calendar.notebook" }],
+  "content-planner": ["1.2.0", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
@@ -263,6 +263,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
     if (id === "home-assistant") rest.consumes = rest.consumes.filter((c) => c.topic !== "home.info"); // 1.5.0: the optional topic of the information provided by other modules
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
+    if (id === "content-planner") rest.mcp = rest.mcp.filter((t) => !t.name.startsWith("idea_doc_")).map((t) => (t.name === "idea_get" ? { ...t, description: oldRest.mcp.find((o) => o.name === "idea_get").description } : t)); // 1.2.0: the documents of an idea (four tools; idea_get says how many an idea holds)
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
     assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);
