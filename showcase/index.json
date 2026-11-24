@@ -571,6 +571,25 @@
       "shots": 1
     },
     {
+      "id": "discord-connector",
+      "category": "streaming",
+      "order": 79,
+      "title": {
+        "en": "Discord connector",
+        "fr": "Connecteur Discord"
+      },
+      "pitch": {
+        "en": "Links your site to your Discord server with a bot, once, for everything that talks to Discord. A guided setup takes about five minutes.",
+        "fr": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord. Un assistant guidé prend environ cinq minutes."
+      },
+      "tags": [
+        "discord",
+        "setup",
+        "connection"
+      ],
+      "shots": 1
+    },
+    {
       "id": "discord-announcer",
       "category": "streaming",
       "order": 80,

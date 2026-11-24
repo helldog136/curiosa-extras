@@ -766,6 +766,38 @@
       ]
     },
     {
+      "id": "discord-connector",
+      "name": "Discord connector",
+      "description": "Links your site to your Discord server with a bot, once, for everything that talks to Discord.",
+      "i18n": {
+        "en": {
+          "name": "Discord connector",
+          "description": "Links your site to your Discord server with a bot, once, for everything that talks to Discord."
+        },
+        "fr": {
+          "name": "Connecteur Discord",
+          "description": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord."
+        }
+      },
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/discord-connector",
+      "ref": "v1.110.0",
+      "version": "1.0.0",
+      "platform": "discord",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🤖",
+      "requires": {
+        "core": "0.46.0"
+      },
+      "offers": [
+        "discord.api"
+      ],
+      "places": [
+        "networks.discord"
+      ]
+    },
+    {
       "id": "events",
       "name": "Events",
       "description": "An agenda of events and trainings: upcoming dates with a filter by type and search, a monthly calendar, a detailed page (time where the visitor lives, programme, speakers, sign-up, video, add to one's calendar) and a look back at past events.",

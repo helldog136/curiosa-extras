@@ -67,7 +67,8 @@ test("SRP : Statistiques de la communauté collecte et garde les chiffres, sans 
 test("SRP : seul le Connecteur Twitch parle à Twitch (adresses, jetons, connexion) ; les autres passent par son service twitch.api (Ma Chaîne Twitch 2.0 comprise)", () => {
   for (const m of mods) {
     if (m.id === "twitch-connector") continue;
-    assert.ok(!/(?:id|api)\.twitch\.tv\/|oauth2\/(?:token|authorize|revoke|validate)|helix\//.test(m.code), `${m.id} parle à Twitch : passez par le service twitch.api`);
+    // The Discord invite link (discord.com/oauth2/authorize) is not a Twitch address.
+    assert.ok(!/(?:id|api)\.twitch\.tv\/|(?<!discord\.com\/)oauth2\/(?:token|authorize|revoke|validate)|helix\//.test(m.code), `${m.id} parle à Twitch : passez par le service twitch.api`);
     if (m.id === "twitch-channel") continue;   // ses anciennes collections de jetons ne sont plus que LUES une fois, pour les confier au Connecteur (handover.mjs)
     // Le Connecteur YouTube écrit « refresh_token » parce que c'est le nom du champ de Google (connexion au compte YouTube, 1.3.0) : ce qui compte ici, ce sont les collections de jetons Twitch.
     const twitchTokens = m.id === "youtube-connector" ? /twitchConnection|twitchPending/ : /twitchConnection|twitchPending|refresh_token/;
