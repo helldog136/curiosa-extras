@@ -12,7 +12,7 @@ export async function erasePage(ctx, id) {
   if (!r.ok) return [U.firstBlock(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a>`), { type: "banner", tone: "warning", text: t("notFound") }];
   const name = r.contact.name;
   // A card that follows a login account is not erased: the account goes first (Team page), then the card is a normal, unlinked card.
-  if (r.index.byId.get(id)?.l) return [U.firstBlock(`${nav(ctx, "contacts")}${back}<h2 class="ct-name">${U.esc(name)}</h2>`), { type: "banner", tone: "warning", text: t("accLinked") }];
+  if (r.index.byId.get(id)?.l) return [U.firstBlock(`${nav(ctx, "contacts")}${back}<h2 class="ct-name">${U.esc(name)}</h2>`), { type: "banner", tone: "warning", text: t("accLinked") }, { type: "html", html: `<div class="ct"><p class="ct-help"><a href="/admin/users">${U.esc(t("accTeamLink"))}</a></p></div>` }];
   const mods = await P.knownModules(ctx);
   const html = `${nav(ctx, r.contact.kind === "org" ? "orgs" : "contacts")}${back}
 <h2 class="ct-name">${U.esc(t("privEraseTitle", { name }))}</h2>

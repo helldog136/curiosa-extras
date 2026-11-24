@@ -159,6 +159,7 @@ test("deletion : a linked card cannot be deleted, by any way in (administration,
   assert.ok((await B.get(ctx, { id: nord.id })).ok, "the card is still there");
   const page = plain(await def.adminPanel(ctx, { query: { contact: nord.id, erase: "1" } }));
   assert.match(page, /cannot be deleted/);
+  assert.match(page, /href=\\"\/admin\/users\\"/, "the refusal page links to the Team page, where the account is removed");
   assert.ok(!page.includes('"action":"erase"'), "no erase form on a linked card");
 });
 
