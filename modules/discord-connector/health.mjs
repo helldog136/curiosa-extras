@@ -62,8 +62,17 @@ export async function problem(ctx) {
   const since = kept?.since;
   if (v.state === "token" || v.state === "guild") return { state: v.state, since };
   if (v.state === "rate") return { state: "rate", until: v.until };
-  if (kept?.state === "perms" && kept.feature) return { state: "perms", feature: kept.feature, since, missing: (v.missing ?? []).filter((m) => m.feature === kept.feature) };
-  return { state: v.state === "net" ? "net" : "ok" };
+  if (kept?.state === "perms" && kept.feature) {
+    // A permission refused earlier is a red card until the same thing works again, but not for ever: it is forgotten after an hour with no new refusal
+    // (a channel-level denial cannot be seen from the server's roles, so the next real refusal brings it back), or at once when the server's roles show a different state.
+    const stillMissing = (v.missing ?? []).filter((m) => m.feature === kept.feature);
+    const old = Date.now() - new Date(kept.since ?? 0).getTime() > 3_600_000;
+    if (old) { await store.setHealth(ctx, null); return { state: v.state === "net" ? "net" : "ok", ...(v.state === "net" ? { since: dc.netSince() ? new Date(dc.netSince()).toISOString() : undefined } : {}) }; }
+    return { state: "perms", feature: kept.feature, since, missing: stillMissing };
+  }
+  // Discord does not answer (timeout, server error, circuit open): never "configured" for a bot nobody can reach.
+  if (v.state === "net") return { state: "net", since: dc.netSince() ? new Date(dc.netSince()).toISOString() : undefined };
+  return { state: "ok" };
 }
 
 /** Every 10 minutes: ask Discord, note what changed (a change of state is one line of the central log). */

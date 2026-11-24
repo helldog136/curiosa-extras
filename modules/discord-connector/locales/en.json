@@ -64,5 +64,8 @@
   "perm_privateThreads": "create private threads",
   "perm_sendInThreads": "send messages in threads",
   "perm_unknown": "unknown",
-  "save": "Save the bot"
+  "save": "Save the bot",
+  "err_owner_only": "Only the owner can change the Discord bot.",
+  "reason_owner_only": "Ask the owner to fix the Discord bot.",
+  "health_net": "Discord does not answer."
 }

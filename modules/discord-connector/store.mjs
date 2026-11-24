@@ -1,10 +1,13 @@
 // What the Discord connector keeps in ITS private storage (an instance never reads another one's):
 //   discordApp      ONE document: { applicationId, guildId, botToken } — the bot code is a secret: it never leaves this file (no block, no service answer, no log, no error).
 //   discordManaged  one document per message kept up to date for a module: { id: "<owner>:<key>", channelId, messageId, hash, at } (bounded).
+//   discordSent     one document per message the bot itself wrote (channelId, messageId, at), the last 500: the only messages editMessage / deleteMessage accept.
 //   discordHealth   ONE document: { state, since, feature?, permission?, at } — what went wrong last, and since when.
-// There is deliberately NO `backup.readable` export: the secret is only in the encrypted backup of the core, never in the human-readable files.
-export const COL = { app: "discordApp", managed: "discordManaged", health: "discordHealth" };
-export const LIMITS = { managed: 200 };
+// There is deliberately NO `backup.readable` export: the secret never goes into the human-readable files of a backup.
+// HONESTLY: the core has no way for a module to seal a secret (its `seal` is internal). The bot code is kept as text in this module's storage, hence in the
+// database as the other module data are, and in the backup file, which the core encrypts with the password chosen when the backup is made.
+export const COL = { app: "discordApp", managed: "discordManaged", sent: "discordSent", health: "discordHealth" };
+export const LIMITS = { managed: 200, perOwner: 50, sent: 500 };
 
 export const text = (v) => (typeof v === "string" ? v.trim() : typeof v === "number" && Number.isFinite(v) ? String(v) : "");
 /** A Discord number (snowflake): digits only, 15 to 25 of them. */
@@ -42,6 +45,24 @@ export async function setHealth(ctx, next) {
 }
 
 export const managedList = (ctx) => all(ctx, COL.managed, LIMITS.managed);
+export const sentList = (ctx) => all(ctx, COL.sent, LIMITS.sent + 50);
+/** Notes a message the bot wrote (the last 500 are kept). Never throws. */
+export async function rememberSent(ctx, channelId, messageId) {
+  try {
+    const list = await sentList(ctx);
+    if (list.some((d) => d.data.messageId === messageId && d.data.channelId === channelId)) return;
+    await ctx.api.store.add(COL.sent, { channelId, messageId, at: new Date().toISOString() });
+    for (const d of list.slice(0, Math.max(0, list.length + 1 - LIMITS.sent))) await ctx.api.store.remove(d.id);
+  } catch { /* the message is on Discord anyway; only a later edit of it would be refused */ }
+}
+export async function forgetSent(ctx, messageId) {
+  try { for (const d of await sentList(ctx)) if (d.data.messageId === messageId) await ctx.api.store.remove(d.id); } catch { /* nothing */ }
+}
+/** Did this bot write that message (sent log) or keep it up to date for a module (managed list)? */
+export async function isOurs(ctx, channelId, messageId) {
+  return (await sentList(ctx)).some((d) => d.data.channelId === channelId && d.data.messageId === messageId)
+    || (await managedList(ctx)).some((d) => d.data.channelId === channelId && d.data.messageId === messageId);
+}
 
 /**
  * Writes in a queue, per instance: two simultaneous updates of the same message never create two documents or two messages.

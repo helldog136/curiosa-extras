@@ -11,7 +11,7 @@ const { CODE } = dc;
 export const FLAG_SILENT = 4096;   // SUPPRESS_NOTIFICATIONS (1 << 12)
 export const LIMITS = { content: 2000, intro: 1500, name: 100, embeds: 10, embedTotal: 6000, list: 500 };
 const ZWSP = "​";
-const CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g;
+const CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;   // controls and the bidirectional overrides (they reorder what people read)
 
 /** Plain text for Discord: control characters out, every way of pinging defused (@everyone, @here, <@…>, <@&…>). The text can never mention anybody. */
 export function plain(value, max) {
@@ -21,7 +21,7 @@ export function plain(value, max) {
 }
 /** A thread name: no control character, one line, 100 characters at most, never empty. */
 export function threadName(value) {
-  const t = String(typeof value === "string" ? value : "").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029]/g, " ").replace(/\s+/g, " ").trim();
+  const t = String(typeof value === "string" ? value : "").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim();
   const cut = [...t].slice(0, LIMITS.name).join("").trim();
   return cut || "thread";
 }
@@ -85,6 +85,28 @@ async function run(ctx, feature, req, opts) {
 const safe = (fn) => async (ctx, args) => { try { return await fn(ctx, args && typeof args === "object" ? args : {}); } catch { return fail("failed"); } };
 const messageIdOf = (r) => (r.ok && r.json && typeof r.json === "object" ? snow(r.json.id) : "");
 
+/* ───────────── Where the bot may write ───────────── */
+// A module hands over a channel number: the bot only writes in a text channel, an announcement channel or a thread OF THE CONFIGURED SERVER, never in another
+// server it may also be on. The answer of Discord is kept 10 minutes. (There is no owner list of channels yet: see the README.)
+const TEXT_TYPES = new Set([0, 5]);
+const WRITE_TYPES = new Set([0, 5, 10, 11, 12]);
+const seen = new Map();   // "<guild>:<channel>" → { until, type }
+const CHANNEL_MS = 10 * 60_000;
+async function channelCheck(ctx, channelId, { parentOnly = false } = {}) {
+  const creds = await store.credsOf(ctx);
+  if (!store.hasBot(creds)) return fail("not_configured");
+  const k = `${creds.guildId}:${channelId}`;
+  let type = seen.get(k)?.until > Date.now() ? seen.get(k).type : undefined;
+  if (type === undefined) {
+    const r = await run(ctx, "channel", { method: "GET", path: `/channels/${channelId}`, priority: "background" });
+    if (!r.ok) return failed(r);
+    if (snow(r.json?.guild_id) !== creds.guildId || !Number.isInteger(r.json?.type)) return fail("forbidden");   // another server, or not a channel of one
+    type = r.json.type;
+    seen.set(k, { until: Date.now() + CHANNEL_MS, type }); if (seen.size > 200) seen.delete(seen.keys().next().value);
+  }
+  return (parentOnly ? TEXT_TYPES : WRITE_TYPES).has(type) ? { ok: true } : fail("forbidden");
+}
+
 /* ───────────── Messages ───────────── */
 function messagePayload(a, { edit = false } = {}) {
   const content = a.content === undefined ? undefined : typeof a.content === "string" ? plain(a.content, LIMITS.content + 1) : null;
@@ -101,20 +123,25 @@ async function postMessage(ctx, a) {
   const body = channelId ? messagePayload(a) : null;
   if (!body) return fail("invalid_input");
   if (a.silent !== false) body.flags = FLAG_SILENT;   // silent unless the module asks otherwise
+  const where = await channelCheck(ctx, channelId);
+  if (!where.ok) return where;
   const r = await run(ctx, "post", { method: "POST", path: `/channels/${channelId}/messages`, body });
   const messageId = messageIdOf(r);
+  if (r.ok && messageId) await store.rememberSent(ctx, channelId, messageId);
   return r.ok && messageId ? { ok: true, messageId } : r.ok ? fail("failed") : failed(r);
 }
 async function editMessage(ctx, a) {
   const channelId = snow(a.channelId), messageId = snow(a.messageId);
   const body = channelId && messageId ? messagePayload(a, { edit: true }) : null;
   if (!body) return fail("invalid_input");
+  if (!(await store.isOurs(ctx, channelId, messageId))) return fail("forbidden");   // only a message this bot wrote
   const r = await run(ctx, "post", { method: "PATCH", path: `/channels/${channelId}/messages/${messageId}`, body });
   return r.ok ? { ok: true, messageId } : failed(r);
 }
 async function deleteMessage(ctx, a) {
   const channelId = snow(a.channelId), messageId = snow(a.messageId);
   if (!channelId || !messageId) return fail("invalid_input");
+  if (!(await store.isOurs(ctx, channelId, messageId))) return fail("forbidden");   // only a message this bot wrote
   const r = await run(ctx, "post", { method: "DELETE", path: `/channels/${channelId}/messages/${messageId}` });
   if (!r.ok && r.reason !== "not_found") return failed(r);   // already gone: the goal is reached
   await store.serial(ctx, async () => { for (const d of await store.managedList(ctx)) if (d.data.messageId === messageId) await ctx.api.store.remove(d.id); }).catch(() => {});
@@ -135,21 +162,28 @@ async function upsertManagedMessage(ctx, a) {
   const id = `${owner}:${key}`;
   const digest = hashOf({ channelId, c: body.content ?? "", e: body.embeds ?? [] });
   return store.serial(ctx, async () => {
-    const doc = (await store.managedList(ctx)).find((d) => d.data.id === id) ?? null;
+    const list = await store.managedList(ctx);
+    const doc = list.find((d) => d.data.id === id) ?? null;
     const label = typeof a.label === "string" ? plain(a.label, 60).trim() : "";
     const save = (messageId) => store.put(ctx, store.COL.managed, doc, { id, owner, key, ...(label ? { label } : {}), channelId, messageId, hash: digest, at: new Date().toISOString() });
-    const create = async (action) => {
-      const r = await run(ctx, "post", { method: "POST", path: `/channels/${channelId}/messages`, body: { ...body, ...(silent ? { flags: FLAG_SILENT } : {}) } });
+    // The cap is checked BEFORE anything is written on Discord: a full list never leaves a message nobody keeps up to date.
+    if (!doc && (list.length >= store.LIMITS.managed || list.filter((d) => d.data.owner === owner).length >= store.LIMITS.perOwner)) return fail("failed");
+    const where = await channelCheck(ctx, channelId);
+    if (!where.ok) return where;
+    // `nonce` + `enforce_nonce`: if the answer of a POST is lost (timeout), the same request sent again returns the message Discord already made instead of a second one.
+    // The nonce comes from what the message is (owner, key, content, and the number of the message it replaces), so a retry reuses it with nothing to remember.
+    const create = async (action, replaces = "") => {
+      const nonce = hashOf({ owner, key, digest, replaces }).slice(0, 25);
+      const r = await run(ctx, "post", { method: "POST", path: `/channels/${channelId}/messages`, body: { ...body, ...(silent ? { flags: FLAG_SILENT } : {}), nonce, enforce_nonce: true } });
       const messageId = messageIdOf(r);
       if (!messageId) return r.ok ? fail("failed") : failed(r);
-      if (!doc && (await store.managedList(ctx)).length >= store.LIMITS.managed) return fail("failed", { messageId });
       await save(messageId);
       return { ok: true, messageId, action };
     };
     if (!doc) return create("created");
     const { channelId: was, messageId } = doc.data;
     if (was !== channelId) {   // another channel: the new message first, then the old one goes (best effort)
-      const made = await create("created");
+      const made = await create("created", messageId);
       if (made.ok) await dc.call(ctx, await store.credsOf(ctx), { method: "DELETE", path: `/channels/${was}/messages/${messageId}`, priority: "background" });
       return made;
     }
@@ -158,7 +192,7 @@ async function upsertManagedMessage(ctx, a) {
     if (r.ok) { await save(messageId); return { ok: true, messageId, action: "edited" }; }
     if (r.reason === "not_found") {   // a person deleted it: once, we write it again
       await ctx.api.log?.write?.({ action: "message.recreated", target: id });
-      return create("recreated");
+      return create("recreated", messageId);
     }
     return failed(r);
   });
@@ -167,12 +201,14 @@ async function forgetManagedMessage(ctx, a) {
   const owner = typeof a.owner === "string" ? a.owner : "", key = typeof a.key === "string" ? a.key : "";
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(owner) || !/^[A-Za-z0-9._:-]{1,80}$/.test(key)) return fail("invalid_input");
   const id = `${owner}:${key}`;
-  const doc = (await store.managedList(ctx)).find((d) => d.data.id === id);
-  if (!doc) return { ok: true };
-  const r = await run(ctx, "post", { method: "DELETE", path: `/channels/${doc.data.channelId}/messages/${doc.data.messageId}` });
-  if (!r.ok && r.reason !== "not_found") return failed(r);
-  await ctx.api.store.remove(doc.id);
-  return { ok: true };
+  return store.serial(ctx, async () => {   // in the same queue as upsertManagedMessage: never a deletion in the middle of a rewrite
+    const doc = (await store.managedList(ctx)).find((d) => d.data.id === id);
+    if (!doc) return { ok: true };
+    const r = await run(ctx, "post", { method: "DELETE", path: `/channels/${doc.data.channelId}/messages/${doc.data.messageId}` });
+    if (!r.ok && r.reason !== "not_found") return failed(r);
+    await ctx.api.store.remove(doc.id);
+    return { ok: true };
+  });
 }
 
 /* ───────────── Threads ───────────── */
@@ -182,6 +218,8 @@ async function createPrivateThread(ctx, a) {
   const staffRoleId = a.staffRoleId === undefined || a.staffRoleId === null || a.staffRoleId === "" ? "" : snow(a.staffRoleId);
   const intro = a.intro === undefined ? "" : typeof a.intro === "string" ? a.intro : null;
   if (!channelId || !userId || (a.staffRoleId && !staffRoleId) || intro === null) return fail("invalid_input");   // every number is checked BEFORE any call
+  const where = await channelCheck(ctx, channelId, { parentOnly: true });
+  if (!where.ok) return where;
   const made = await run(ctx, "privateThread", { method: "POST", path: `/channels/${channelId}/threads`, body: { name: threadName(a.name), auto_archive_duration: ARCHIVE_MINUTES, type: 12, invitable: false } });
   const threadId = made.ok ? snow(made.json?.id) : "";
   if (!threadId) return made.ok ? fail("failed") : failed(made);
@@ -190,11 +228,15 @@ async function createPrivateThread(ctx, a) {
   const hello = `<@${userId}>${staffRoleId ? ` <@&${staffRoleId}>` : ""}${intro ? `\n${plain(intro, LIMITS.intro)}` : ""}`;
   const said = await run(ctx, "privateThread", { method: "POST", path: `/channels/${threadId}/messages`, body: { content: hello, allowed_mentions: { parse: [], users: [userId], roles: staffRoleId ? [staffRoleId] : [] } } });
   if (!said.ok) return { ...failed(said), threadId };
+  const openerId = messageIdOf(said);
+  if (openerId) await store.rememberSent(ctx, threadId, openerId);
   return { ok: true, threadId };
 }
 async function createThread(ctx, a) {
   const channelId = snow(a.channelId), messageId = a.messageId === undefined ? "" : snow(a.messageId);
   if (!channelId || (a.messageId !== undefined && !messageId) || (messageId && a.privateThread === true)) return fail("invalid_input");
+  const where = await channelCheck(ctx, channelId, { parentOnly: true });
+  if (!where.ok) return where;
   const name = threadName(a.name);
   const feature = a.privateThread === true ? "privateThread" : "publicThread";
   const req = messageId
@@ -214,7 +256,7 @@ async function setThreadArchived(ctx, a) {
 
 /* ───────────── Lists, status ───────────── */
 const lists = new Map();   // "<instance>:channels" → { until, value }
-export const resetLists = () => { lists.clear(); stats.clear(); };
+export const resetLists = () => { lists.clear(); stats.clear(); seen.clear(); };
 async function listOf(ctx, kind, build) {
   const creds = await store.credsOf(ctx);
   if (!store.hasBot(creds)) return fail("not_configured");
@@ -238,10 +280,13 @@ const roleList = (rows, creds) => rows.filter((r) => r && r.id !== creds.guildId
 const listChannels = (ctx) => listOf(ctx, "channels", textChannels);
 const listRoles = (ctx) => listOf(ctx, "roles", roleList);
 const fold = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-/** The channel picker of the core (`choice` setting, source "service"): search by name, a stable number as the value. A Discord failure gives an empty answer, never a guess. */
+/**
+ * The channel picker of the core (`choice` setting, source "service"): search by name, a stable number as the value. These two methods THROW when Discord cannot be asked
+ * (unlike the others): the core then treats the choice as "not verified" and keeps it, instead of reading an empty answer as "this channel is gone" (which would erase a good setting).
+ */
 async function channelChoices(ctx, a = {}) {
   const r = await listChannels(ctx);
-  if (!r.ok) return { items: [], next: null };
+  if (!r.ok) throw new Error("discord_unavailable");
   const q = fold(typeof a.q === "string" ? a.q.slice(0, 100) : "");
   const limit = Math.min(50, Math.max(1, Number(a.limit) || 20));
   const rows = r.channels.filter((c) => !q || fold(c.name).includes(q));
@@ -250,7 +295,7 @@ async function channelChoices(ctx, a = {}) {
 async function channelsByIds(ctx, a = {}) {
   const ids = (Array.isArray(a.ids) ? a.ids : []).map(snow).filter(Boolean).slice(0, 50);
   const r = await listChannels(ctx);
-  if (!r.ok) return { items: [], missing: [] };   // unknown: neither found nor gone
+  if (!r.ok) throw new Error("discord_unavailable");
   const by = new Map(r.channels.map((c) => [c.id, c]));
   return { items: ids.filter((i) => by.has(i)).map((i) => ({ id: i, label: `#${by.get(i).name}` })), missing: ids.filter((i) => !by.has(i)) };
 }
@@ -291,7 +336,7 @@ export const methods = {
   upsertManagedMessage: safe(upsertManagedMessage),
   forgetManagedMessage: safe(forgetManagedMessage),
   createThread: safe(createThread),
-  channelChoices: safe(channelChoices),
-  channelsByIds: safe(channelsByIds),
+  channelChoices: (ctx, args) => channelChoices(ctx, args && typeof args === "object" ? args : {}),   // not `safe`: see above
+  channelsByIds: (ctx, args) => channelsByIds(ctx, args && typeof args === "object" ? args : {}),
 };
 export const READ_ONLY = ["status", "listChannels", "listRoles", "guildStats", "channelChoices", "channelsByIds"];

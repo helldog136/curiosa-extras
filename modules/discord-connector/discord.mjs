@@ -8,7 +8,7 @@ const store = await import(new URL(`./store.mjs${version}`, import.meta.url).hre
 
 export const HOST = "discord.com";
 export const API = "https://discord.com/api/v10";
-export const USER_AGENT = "DiscordBot (https://example.org, 1)";
+export const USER_AGENT = "DiscordBot (https://github.com/helldog136/Curiosa, 1)";   // the form Discord asks for: DiscordBot ($url, $versionNumber)
 export const timing = { requestMs: 8000 };
 
 /** Reasons of the service: a closed list. */
@@ -43,13 +43,15 @@ const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 24);
 /** One bucket for the whole bot: a pause after "too many requests" stops every module that uses it, without network, until the time Discord gave. */
 export const bucketOf = (c) => `discord-bot:${hash(c.botToken)}`;
 
-const mem = { good: null, pause: null };
-export const resetDiscord = () => { mem.good = null; mem.pause = null; };
+const mem = { good: null, pause: null, netSince: null };
+export const resetDiscord = () => { mem.good = null; mem.pause = null; mem.netSince = null; };
+/** Since when Discord does not answer (timeouts, 5xx, open circuit), or null while it does. */
+export const netSince = () => mem.netSince;
 export const lastGood = () => mem.good;
 export const pausedUntil = () => (mem.pause && mem.pause > Date.now() ? mem.pause : null);
 
 /** Discord error codes that change the meaning of a status. */
-const CODE = { unknownGuild: 10004, unknownMember: 10007, unknownUser: 10013, missingAccess: 50001, missingPermissions: 50013, archivedThread: 50083, notAuthor: 50005 };
+const CODE = { unknownChannel: 10003, unknownGuild: 10004, unknownMember: 10007, unknownUser: 10013, missingAccess: 50001, missingPermissions: 50013, archivedThread: 50083, notAuthor: 50005 };
 
 /**
  * One call. { ok: true, status, json } or { ok: false, reason, status?, code?, retryAt? }; never throws, never carries the body of an error.
@@ -64,19 +66,21 @@ export async function call(ctx, creds, { method, path, body, priority = "interac
       headers: { authorization: `Bot ${creds.botToken}`, "user-agent": USER_AGENT, accept: "application/json" },
       ...(body === undefined ? {} : { body }),
     });
-  } catch { return { ok: false, reason: "unavailable" }; }
+  } catch { mem.netSince ??= Date.now(); return { ok: false, reason: "unavailable" }; }
   if (!r.ok) {
     if (r.error === "rate" || r.error === "quota") { if (r.retryAt) mem.pause = Number(r.retryAt) || mem.pause; return { ok: false, reason: "rate_limited", ...(r.retryAt ? { retryAt: Number(r.retryAt) } : {}) }; }
     if (r.error === "busy") return { ok: false, reason: "rate_limited" };
     if (r.error === "invalid" || r.error === "too_large") return { ok: false, reason: "failed" };
+    mem.netSince ??= Date.now();
     return { ok: false, reason: "unavailable" };
   }
   const status = r.status;
   const code = r.json && typeof r.json === "object" && Number.isInteger(r.json.code) ? r.json.code : undefined;
+  if (status >= 500) { mem.netSince ??= Date.now(); return { ok: false, reason: "unavailable", status }; }
+  mem.netSince = null;
   if (status >= 200 && status < 300) { mem.good = Date.now(); mem.pause = null; return { ok: true, status, json: r.json ?? null }; }
   mem.good = Date.now();   // Discord answered: it is reachable
-  if (status === 429) { const at = Date.now() + 60_000; mem.pause = at; return { ok: false, reason: "rate_limited", status, retryAt: at }; }
-  if (status >= 500) return { ok: false, reason: "unavailable", status };
+  // (a 429 never gets here: the core's client turns it into error "rate" above, with the pause shared by the whole site)
   if (status === 401) return { ok: false, reason: "forbidden", status, code: "token" };
   if (status === 403) {
     if (code === CODE.missingAccess && guild) return { ok: false, reason: "not_member", status, code };

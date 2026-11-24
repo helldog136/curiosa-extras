@@ -64,5 +64,8 @@
   "perm_privateThreads": "créer des fils privés",
   "perm_sendInThreads": "envoyer des messages dans les fils",
   "perm_unknown": "inconnue",
-  "save": "Enregistrer le bot"
+  "save": "Enregistrer le bot",
+  "err_owner_only": "Seule la personne propriétaire peut modifier le bot Discord.",
+  "reason_owner_only": "Demandez à la personne propriétaire de réparer le bot Discord.",
+  "health_net": "Discord ne répond pas."
 }
