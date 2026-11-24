@@ -51,7 +51,7 @@ const ROLLOUT = {
   "directory": ["1.3.0", { main: "content.directory" }],
   "discord-connector": ["1.0.0", { main: "networks.discord" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
-  "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
+  "discord": ["1.5.0", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
   "faq": ["1.2.0", { main: "content.faq", inbox: "content.faq.inbox" }],
@@ -267,6 +267,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
     if (id === "home-assistant") rest.consumes = rest.consumes.filter((c) => c.topic !== "home.info"); // 1.5.0: the optional topic of the information provided by other modules
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
+    if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
     assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);

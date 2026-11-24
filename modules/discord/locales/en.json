@@ -5,5 +5,10 @@
   "err_rate": "Discord is limiting requests.",
   "err_network": "Discord is not answering.",
   "err_config_invite": "Add your Discord's invitation link in Settings to count your members.",
-  "err_config_expired": "This invitation no longer exists: create one that never expires, then paste it in Settings."
+  "err_config_expired": "This invitation no longer exists: create one that never expires, then paste it in Settings.",
+  "source_bot": "Counted by your Discord bot",
+  "source_invite": "Counted from the public invite",
+  "link_setup": "Set up the Discord bot →",
+  "link_check": "Check the Discord bot →",
+  "suggest_reason": "counts your members with a Discord bot"
 }

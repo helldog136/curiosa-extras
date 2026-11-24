@@ -5,5 +5,10 @@
   "err_rate": "Discord limite les demandes.",
   "err_network": "Discord ne répond pas.",
   "err_config_invite": "Ajoutez le lien d'invitation de votre Discord dans Réglages pour compter vos membres.",
-  "err_config_expired": "Cette invitation n'existe plus : créez-en une sans date de fin, puis collez-la dans Réglages."
+  "err_config_expired": "Cette invitation n'existe plus : créez-en une sans date de fin, puis collez-la dans Réglages.",
+  "source_bot": "Compté par votre bot Discord",
+  "source_invite": "Compté depuis l'invitation publique",
+  "link_setup": "Configurer le bot Discord →",
+  "link_check": "Vérifier le bot Discord →",
+  "suggest_reason": "compte vos membres avec un bot Discord"
 }
