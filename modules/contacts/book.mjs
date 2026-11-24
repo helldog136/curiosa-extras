@@ -7,7 +7,7 @@ const { normalizeAccount, accountKey, pickPhoto, clean, fold, NETWORKS } = await
 const {
   LIMITS, FIELDS, ORG_NAME_MAX, KINDS, STATUSES, PALETTE, idOk, validEmail, emailKey, maxContacts, getIndex, withLock, forgetIndex, readContact,
   readMany, latestNotes, allNotes, movedTarget, liveCategory, liveCategories, categoryView, indexPut, indexDrop, indexPutCategory, indexDropCategory,
-  encCursor, decCursor, after, kindOf, getByKey, collectionOf, CARD_COLLECTIONS, keysOf, SEP,
+  encCursor, decCursor, after, kindOf, getByKey, collectionOf, CARD_COLLECTIONS, keysOf, SEP, accountLinkOf,
 } = await import(`./data.mjs${v}`);
 const { callSubjects } = await import(`./subjects.mjs${v}`);
 
@@ -102,11 +102,12 @@ export async function find(ctx, a) {
 }
 
 /** Filtre de l'index : catégorie (suivie si fusionnée), kind, organisation, réseau, « à vérifier ». */
-export function matcher(idx, { cat, kind, orgId, network, review }) {
+export function matcher(idx, { cat, kind, orgId, network, review, account }) {
   const netPrefix = network ? `${network}:` : null;
   return (e) => (!kind || (kind === "org" ? (e.k & 1) === 1 : (e.k & 1) === 0))
     && (!orgId || e.o === orgId)
     && (!review || (e.k & 2) === 2)
+    && (!account || (e.k & 4) === 4)
     && (!netPrefix || (e.a !== null && (e.a.startsWith(netPrefix) || e.a.includes(SEP + netPrefix))))
     && (!cat || (e.c ?? []).some((k) => k === cat || liveCategory(idx, k) === cat));
 }
@@ -402,7 +403,7 @@ export async function update(ctx, a, { allowContact = true, allowStatus = false 
     if (a.email !== undefined && allowContact) {
       const email = clean(a.email, FIELDS.email).toLowerCase();
       if (email && !validEmail(email)) return err("invalid_email");
-      if (email) { const other = await byEmail(ctx, idx, email); if (other && other.id !== rec.id) return err("email_taken", { id: other.id }); }
+      if (email && email !== (rec.data.email ?? "")) { const other = await byEmail(ctx, idx, email); if (other && other.id !== rec.id) return err("email_taken", { id: other.id }); }
       data.email = email;
     }
     for (const k of Object.keys(FIELDS)) if (k !== "email" && a[k] !== undefined && (allowContact || k !== "phone")) data[k] = clean(a[k], k === "name" && org ? ORG_NAME_MAX : FIELDS[k], k === "others");
@@ -577,7 +578,7 @@ export async function saveCard(ctx, values, { withContact }) {
       if (v.email !== undefined) {
         const email = clean(v.email, FIELDS.email).toLowerCase();
         if (email && !validEmail(email)) return err("invalid_email", { field: "email" });
-        if (email) { const other = await byEmail(ctx, idx, email); if (other && other.id !== rec?.id) return err("email_taken", { field: "email", id: other.id }); }
+        if (email && email !== (rec?.data.email ?? "")) { const other = await byEmail(ctx, idx, email); if (other && other.id !== rec?.id) return err("email_taken", { field: "email", id: other.id }); }
         data.email = email;
       }
       if (v.phone !== undefined) data.phone = clean(v.phone, FIELDS.phone);
@@ -615,6 +616,8 @@ export function planMerge(idx, keep, drop) {
   for (const f of ["email", "phone", "role", "others", "relation", "photo"]) if (!k[f] && d[f]) { k[f] = d[f]; filled.push(f); }
   let org = false;
   if (!k.orgId && d.orgId && d.orgId !== keep.id) { k.orgId = d.orgId; org = true; }
+  let link = false;
+  if (!accountLinkOf(k) && accountLinkOf(d)) { k.account = d.account; delete k.accountGone; link = true; }
   const status = d.status === "active" && k.status !== "active";
   if (d.status === "active") k.status = "active";
   const before = liveCategoryIds(idx, k.categoryIds ?? []);
@@ -632,7 +635,7 @@ export function planMerge(idx, keep, drop) {
   }
   k.accounts = accs;
   const members = kindOf(d) === "org" ? idx.list.reduce((n, x) => n + (x.o === drop.id ? 1 : 0), 0) : 0;
-  return { data: k, filled, status, accounts: taken, skippedAccounts, categories, org, members };
+  return { data: k, filled, status, accounts: taken, skippedAccounts, categories, org, members, link };
 }
 
 /** Fusion : tout passe sur la fiche gardée (comptes, catégories, notes, champs vides complétés, membres d'organisation), l'ancien id devient « moved ». */
@@ -644,6 +647,8 @@ export async function merge(ctx, a) {
     const keep = idx.byId.has(a.keep) ? await readContact(ctx, a.keep) : null, drop = idx.byId.has(a.drop) ? await readContact(ctx, a.drop) : null;
     if (!keep || !drop) return err("not_found");
     if (kindOf(keep.data) !== kindOf(drop.data)) return err("invalid");
+    // Two cards of two different login accounts never become one: each account keeps its own card.
+    if (accountLinkOf(keep.data) && accountLinkOf(drop.data)) return err("both_linked");
     const plan = planMerge(idx, keep, drop);
     // La fiche abandonnée sort de l'index (ses comptes et son e-mail se libèrent), puis la fiche gardée reçoit tout.
     indexDrop(idx, drop.id);
@@ -671,6 +676,7 @@ export async function erase(ctx, a) {
   if (!a || !idOk(a.id)) return err("invalid");
   const idx = await getIndex(ctx);
   if (!idx.byId.has(a.id)) return err("not_found");
+  if (idx.byId.get(a.id).l) return err("account_linked");   // before any other module is told to forget the person
   if (a.confirm !== true) return err("confirm_required");
   const res = await callSubjects(ctx, "erase", { contactId: a.id });
   const r = await deleteContact(ctx, a.id);
@@ -682,6 +688,7 @@ export async function deleteContact(ctx, id) {
   return withLock(ctx, async () => {
     const idx = await getIndex(ctx);
     if (!idOk(id) || !idx.byId.has(id)) return err("not_found");
+    if (idx.byId.get(id).l) return err("account_linked");   // a card cannot be deleted while the login account it follows exists
     const members = idx.list.filter((x) => x.o === id);
     await ctx.api.store.remove(id);
     indexDrop(idx, id);

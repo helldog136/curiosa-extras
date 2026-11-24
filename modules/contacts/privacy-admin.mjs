@@ -11,6 +11,8 @@ export async function erasePage(ctx, id) {
   const back = `<a class="ct-back" href="${U.esc(`?contact=${encodeURIComponent(id)}`)}">${U.esc(t("privBack"))}</a>`;
   if (!r.ok) return [U.firstBlock(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a>`), { type: "banner", tone: "warning", text: t("notFound") }];
   const name = r.contact.name;
+  // A card that follows a login account is not erased: the account goes first (Team page), then the card is a normal, unlinked card.
+  if (r.index.byId.get(id)?.l) return [U.firstBlock(`${nav(ctx, "contacts")}${back}<h2 class="ct-name">${U.esc(name)}</h2>`), { type: "banner", tone: "warning", text: t("accLinked") }, { type: "html", html: `<div class="ct"><p class="ct-help"><a href="/admin/users">${U.esc(t("accTeamLink"))}</a></p></div>` }];
   const mods = await P.knownModules(ctx);
   const html = `${nav(ctx, r.contact.kind === "org" ? "orgs" : "contacts")}${back}
 <h2 class="ct-name">${U.esc(t("privEraseTitle", { name }))}</h2>
@@ -40,7 +42,7 @@ export const actions = {
     const t = ctx.t;
     if (!["on", "1", "true"].includes(String(v.confirm ?? ""))) return { errors: { confirm: t("privEraseCheckError") } };
     const r = await P.erasePerson(ctx, v.id);
-    if (!r.ok) return { error: t("notFound") };
+    if (!r.ok) return { error: t(r.error === "account_linked" ? "accLinked" : "notFound") };
     const silent = r.modules.filter((m) => !m.ok).map((m) => m.name);
     return { ok: silent.length ? t("deletedSilent", { modules: silent.join(", ") }) : t("deleted"), redirect: "?view=erased" };
   },

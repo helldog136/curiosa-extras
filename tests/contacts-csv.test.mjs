@@ -37,8 +37,8 @@ test("séparateur : détecté sur la première ligne (point-virgule d'un tableur
 });
 
 test("titres : français, anglais, synonymes, accents et majuscules ignorés ; une colonne inconnue est ignorée (jamais une erreur)", () => {
-  const fr = C.readHeader(["Nom", "Type", "Fonction", "Organisation", "E-mail", "Téléphone", "Comptes", "Catégories", "Notes", "Statut", "Relation", "Autres canaux", "Photo", "Origine", "Id"]);
-  const en = C.readHeader(["name", "type", "role", "organisation", "email", "phone", "accounts", "categories", "notes", "status", "relation", "others", "photo", "source", "id"]);
+  const fr = C.readHeader(["Nom", "Type", "Fonction", "Organisation", "E-mail", "Téléphone", "Comptes", "Catégories", "Notes", "Statut", "Relation", "Autres canaux", "Photo", "Origine", "Id", "Compte du site"]);
+  const en = C.readHeader(["name", "type", "role", "organisation", "email", "phone", "accounts", "categories", "notes", "status", "relation", "others", "photo", "source", "id", "site account"]);
   assert.deepEqual(Object.keys(fr.map).sort(), C.COLUMNS.map((c) => c.key).sort());
   assert.deepEqual(fr.map, en.map);
   const odd = C.readHeader(["COURRIEL", "tel", "Entreprise", "Réseaux", "Commentaire", "Couleur préférée", ""]);
