@@ -49,6 +49,7 @@ const ROLLOUT = {
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
+  "discord-connector": ["1.0.0", { main: "networks.discord" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
@@ -102,6 +103,8 @@ const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
 const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
+/** Modules created after the migration: nothing to compare with in the older releases. */
+const NEW_MODULES = new Set(["discord-connector"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
@@ -252,6 +255,7 @@ const needHistory = missingTag && process.env.HOT_UPDATE_REQUIRE_HISTORY !== "1"
 test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core sees the same module (only « places » and the version change; adminMenu, settings, tabs, tools, elements, data kept)`, { skip: needHistory }, () => {
   const beforeBy = Object.fromEntries(tagsUsed.map((tag) => [tag, manifestsAt(root, tag)]));
   for (const id of Object.keys(MIGRATED)) {
+    if (NEW_MODULES.has(id)) continue; // no earlier release to upgrade from
     const before = beforeBy[BEFORE(id)];
     const old = before[id], now = manifests[id];
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
