@@ -327,14 +327,24 @@
     {
       "name": "story_week",
       "readOnly": true,
-      "description": "What the week's story would list: the events of 7 days (from 'weekStart', today by default) from ALL active sources, sorted by day and time, as the video shows them: 'events' (at most 'rowsPerVideo' = 8), 'more' (how many do not fit), and, for a busy week, 'parts' (whole days, one video each, to give to story_prepare as 'weekPart'). 'state' is 'ok', 'empty' (nothing planned: no video can be made) or 'slow' (no source answered). Read only.",
+      "description": "What the week's story would list: the events of 7 days (chosen by 'range', the next 7 days by default) from ALL active sources, sorted by day and time, as the video shows them: 'events' (at most 'rowsPerVideo' = 8), 'more' (how many do not fit), and, for a busy week, 'parts' (whole days, one video each, to give to story_prepare as 'weekPart'). 'state' is 'ok', 'empty' (nothing planned: no video can be made) or 'slow' (no source answered). Read only.",
       "input": {
         "type": "object",
         "properties": {
-          "weekStart": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "next_7_days",
+              "this_week",
+              "next_week",
+              "week_of"
+            ],
+            "description": "Which 7 days: next_7_days (default: today and the 6 days after), this_week (Monday to Sunday, today inside), next_week (the Monday to Sunday after) or week_of (the Monday to Sunday that contains 'date')."
+          },
+          "date": {
             "type": "string",
             "maxLength": 10,
-            "description": "First day of the 7 days, written YYYY-MM-DD: today or a later day, at most 83 days ahead. Default: today."
+            "description": "Any day of the wanted week, written YYYY-MM-DD. Only with range 'week_of' (required there). The week must not be over, and start at most 83 days ahead."
           }
         }
       }
@@ -351,7 +361,7 @@
     {
       "name": "story_prepare",
       "default": false,
-      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The event is chosen with 'event' (an id from story_events, any source), or the stream with 'stream' ('next' by default, or a key from story_next_streams), or hand-written (streamTitle + streamDate [+ streamTime]); give only one of the three. Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation. 'variant' picks one of the owner's saved style variants. kind 'week' = the week's schedule (events of 7 days, see story_week) instead of one event: give none of event/stream/hand-written; a week with no event is refused.",
+      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The event is chosen with 'event' (an id from story_events, any source), or the stream with 'stream' ('next' by default, or a key from story_next_streams), or hand-written (streamTitle + streamDate [+ streamTime]); give only one of the three. Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation. 'variant' picks one of the owner's saved style variants. kind 'week' = the week's schedule (7 days: 'range', 'date'; see story_week) instead of one event: give none of event/stream/hand-written; a week with no event is refused.",
       "input": {
         "type": "object",
         "properties": {
@@ -472,10 +482,20 @@
             ],
             "description": "event (default) = one event; week = one video listing the events of 7 days, from all sources."
           },
-          "weekStart": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "next_7_days",
+              "this_week",
+              "next_week",
+              "week_of"
+            ],
+            "description": "Which 7 days: next_7_days (default: today and the 6 days after), this_week (Monday to Sunday, today inside), next_week (the Monday to Sunday after) or week_of (the Monday to Sunday that contains 'date')."
+          },
+          "date": {
             "type": "string",
             "maxLength": 10,
-            "description": "With kind 'week': the first day, written YYYY-MM-DD (today or later, at most 83 days ahead). Default: today, so the next 7 days."
+            "description": "Any day of the wanted week, written YYYY-MM-DD. Only with range 'week_of' (required there). The week must not be over, and start at most 83 days ahead."
           },
           "weekPart": {
             "type": "integer",
@@ -647,7 +667,7 @@
       "mcp.style_variants_list": "Les variantes de style enregistrées par la personne (« Mes styles ») : un nom, un style de départ parmi les quatorze, des couleurs facultatives (principale, secondaire, fond, texte en #rrggbb) et des lettres (site, simple, serif, mono). À lire avant style_variant_create pour éviter un nom déjà pris, ou pour en choisir une pour story_prepare. Lecture seule.",
       "mcp.style_variant_create": "Crée une variante de style : la même animation qu'un des quatorze styles, avec ses propres couleurs et ses propres lettres, gardée sous un nom pour apparaître comme une carte à l'étape du style de la story d'annonce. « style » est le style de départ. Les couleurs s'écrivent #rrggbb ou #rgb ; une couleur difficile à lire est ajustée automatiquement et listée dans « adjusted ». 30 variantes au plus, aux noms différents. La personne peut la modifier ou la supprimer dans l'administration (onglet Mes styles). Ne supprime rien et ne fabrique aucune vidéo.",
       "mcp.style_variant_update": "Modifie une variante de style enregistrée, retrouvée par son nom ou son identifiant (voir style_variants_list). Seuls les champs donnés changent ; un texte vide retire la couleur. Mêmes règles qu'à la création (couleurs, ajustement, noms uniques). Les vidéos et modèles qui utilisent la variante continuent de marcher. Ne supprime rien.",
-      "mcp.story_week": "Ce que la story de la semaine listerait : les événements de 7 jours (à partir de « weekStart », aujourd'hui par défaut) de TOUTES les sources actives, triés par jour et heure, comme la vidéo les montre : « events » (« rowsPerVideo » = 8 au plus), « more » (combien ne tiennent pas) et, pour une semaine chargée, « parts » (des jours entiers, une vidéo chacune, à donner à story_prepare comme « weekPart »). « state » vaut « ok », « empty » (rien de prévu : aucune vidéo possible) ou « slow » (aucune source n'a répondu). Lecture seule."
+      "mcp.story_week": "Ce que la story de la semaine listerait : les événements de 7 jours (choisis par « range », les 7 prochains jours par défaut) de TOUTES les sources actives, triés par jour et heure, comme la vidéo les montre : « events » (« rowsPerVideo » = 8 au plus), « more » (combien ne tiennent pas) et, pour une semaine chargée, « parts » (des jours entiers, une vidéo chacune, à donner à story_prepare comme « weekPart »). « state » vaut « ok », « empty » (rien de prévu : aucune vidéo possible) ou « slow » (aucune source n'a répondu). Lecture seule."
     }
   }
 }

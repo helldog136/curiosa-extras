@@ -203,9 +203,9 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
 }
 function pickWeek(r, d) {
   if (!(r.kind === "week" || (r.kind === undefined && d.kind === "week"))) return {};
-  const own = r.kind === "week";   // an explicit week: its own start, part and title; otherwise those of the fallback
-  const src = own ? r : d;
-  return { kind: "week", weekStart: isDay(src.weekStart) ? src.weekStart : "", weekPart: Number.isInteger(src.weekPart) && src.weekPart >= 1 && src.weekPart <= WEEK.days ? src.weekPart : 0, weekTitle: oneLine(src.weekTitle, LIMITS.title) };
+  const own = r.kind === "week";   // an explicit week: its own range, part and title; otherwise those of the fallback
+  const src = own ? r : d, range = WEEK_RANGES.includes(src.weekRange) ? src.weekRange : WEEK_RANGES[0];
+  return { kind: "week", weekRange: range, weekDate: range === "week_of" && isDay(src.weekDate) ? src.weekDate : "", weekPart: Number.isInteger(src.weekPart) && src.weekPart >= 1 && src.weekPart <= WEEK.days ? src.weekPart : 0, weekTitle: oneLine(src.weekTitle, LIMITS.title) };
 }
 function pickEvent(r, d) {
   const read = (x) => (typeof x?.eventId === "string" && EVENT_ID.test(x.eventId) && typeof x?.eventSource === "string" && SOURCE_KIND.test(x.eventSource) ? { eventId: x.eventId, eventSource: x.eventSource } : null);
@@ -432,11 +432,13 @@ export function streamFromInfo(info, { base = null, tz = "UTC" } = {}) {
 
 /* ───────────── The week's schedule (2.16.0) ─────────────
  * A second kind of story: ONE video that lists the events of a window of 7 days, from the same sources as the single-event story.
- * The window starts on the day asked (the day of the request by default: "the next 7 days", today included), on the clock of the site's time zone; the days are counted on the
+ * The window is one of `WEEK_RANGES` (by default "the next 7 days", today included; or a Monday-to-Sunday week), on the clock of the site's time zone; the days are counted on the
  * calendar, never as 7 × 24 hours, so a daylight-saving week is still 7 days. At most `rowsMax` rows fit a video: beyond that the first rows are shown with "and N more", or the
  * week is cut by whole days into parts (one video each). Nothing here reads a clock: the caller gives `nowMs`. */
 export const KINDS = ["event", "week"];
 export const WEEK = Object.freeze({ days: 7, rowsMax: 8, horizonDays: 83 });
+/** Which 7 days: the next 7 days from today (default), the Monday-to-Sunday week of today, the one after, or the one that contains a chosen date. */
+export const WEEK_RANGES = Object.freeze(["next_7_days", "this_week", "next_week", "week_of"]);
 /** The elements a week video can show: the heading with its dates, the day and time of each row, the cover, the channel name and the free sentence. The others only make sense for one event. */
 export const WEEK_ELEMENTS = Object.freeze(["title", "when", "game", "brand", "text"]);
 /** The words the week video writes itself, with the other words of the video (the rest of the sentences comes from the editor). */
@@ -456,20 +458,28 @@ export function addDays(day, n) {
   const [y, m, d] = String(day).split("-").map(Number), t = new Date(Date.UTC(y, m - 1, d + n));
   return `${String(t.getUTCFullYear()).padStart(4, "0")}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
 }
+/** The Monday of the week that contains `day` (weeks run Monday to Sunday). */
+export function mondayOf(day) {
+  const [y, m, d] = String(day).split("-").map(Number);
+  return addDays(day, -((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7));
+}
 /**
- * The window of the video: { startDay, endDay, startMs, endMs (the start of the day after, exclusive), today, zone, days } or { error }.
- * `startDay` empty = today on the clock of `tz`. A start before today ("range"), more than 83 days ahead ("range": the sources only look 90 days ahead) or not a real day ("start") is refused.
+ * The window of the video: { range, startDay, endDay, startMs, endMs (the start of the day after, exclusive), today, zone, days } or { error }.
+ * `range`: "next_7_days" (today and the 6 days after), "this_week" (Monday to Sunday, today inside), "next_week" (the Monday to Sunday after), "week_of" (Monday to Sunday of `date`, any day of it).
+ * `date` goes only with "week_of". Errors: "range" (not one of the four, or a week already over, or starting more than 83 days ahead: the sources only look 90 days ahead),
+ * "date" (missing, not a real day, or given with another range), "now".
  */
-export function weekWindow({ nowMs, tz, startDay = "", days = WEEK.days } = {}) {
+export function weekWindow({ nowMs, tz, range = WEEK_RANGES[0], date = "" } = {}) {
   const zone = validZone(tz) ? tz : "UTC";
   if (!Number.isFinite(nowMs)) return { error: "now" };
-  const today = isoDay(nowMs, zone), n = Math.min(WEEK.days, Math.max(1, Math.trunc(Number(days)) || WEEK.days));
-  if (startDay !== "" && startDay !== undefined && startDay !== null) {
-    if (!isDay(startDay)) return { error: "start" };
-    if (startDay < today || startDay > addDays(today, WEEK.horizonDays)) return { error: "range" };
-  }
-  const start = startDay || today, end = addDays(start, n - 1), after = addDays(end, 1), at = (day) => { const [y, m, d] = day.split("-").map(Number); return zonedToUtc(y, m, d, 0, 0, zone); };
-  return { startDay: start, endDay: end, startMs: at(start), endMs: at(after), today, zone, days: Array.from({ length: n }, (_, i) => addDays(start, i)) };
+  if (!WEEK_RANGES.includes(range)) return { error: "range" };
+  const has = date !== "" && date !== undefined && date !== null;
+  if (range === "week_of" ? !isDay(date) : has) return { error: "date" };
+  const today = isoDay(nowMs, zone);
+  const start = range === "next_7_days" ? today : range === "this_week" ? mondayOf(today) : range === "next_week" ? addDays(mondayOf(today), 7) : mondayOf(date);
+  const end = addDays(start, WEEK.days - 1), after = addDays(end, 1), at = (day) => { const [y, m, d] = day.split("-").map(Number); return zonedToUtc(y, m, d, 0, 0, zone); };
+  if (end < today || start > addDays(today, WEEK.horizonDays)) return { error: "range" };
+  return { range, startDay: start, endDay: end, startMs: at(start), endMs: at(after), today, zone, days: Array.from({ length: WEEK.days }, (_, i) => addDays(start, i)) };
 }
 const byDayThenTime = (a, b) => (a.wday < b.wday ? -1 : a.wday > b.wday ? 1 : 0) || (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1) || a.startMs - b.startMs || oneLine(a.title, 80).localeCompare(oneLine(b.title, 80)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 /** Cuts a list already sorted by day into parts of at most `cap` events, keeping each day whole (one day with more than `cap` events is a part of its own). */
@@ -488,8 +498,8 @@ export function splitDays(list, cap = WEEK.rowsMax) {
  * when the window holds more than `cap` events), from, to (the days the video covers), empty } or { error }.
  * An event that is already over is left out; a whole-day event stays on its own day whatever the zone of its source.
  */
-export function weekPlan(events, { nowMs, tz, startDay = "", part = 0, cap = WEEK.rowsMax } = {}) {
-  const win = weekWindow({ nowMs, tz, startDay });
+export function weekPlan(events, { nowMs, tz, range = WEEK_RANGES[0], date = "", part = 0, cap = WEEK.rowsMax } = {}) {
+  const win = weekWindow({ nowMs, tz, range, date });
   if (win.error) return { error: win.error };
   const max = Math.min(WEEK.rowsMax, Math.max(1, Math.trunc(Number(cap)) || WEEK.rowsMax)), seen = new Set(), list = [];
   for (const e of Array.isArray(events) ? events : []) {

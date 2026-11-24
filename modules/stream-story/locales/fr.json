@@ -303,12 +303,17 @@
   "ui_week_part_label": "Partie de la semaine",
   "ui_week_part_all": "Les {n} premiers",
   "ui_week_part": "{from} au {to}",
-  "ui_week_start": "Premier jour",
-  "ui_week_start_hint": "Vide : aujourd'hui. La vidéo couvre 7 jours.",
   "ui_week_f_title": "Titre",
   "ui_week_ph_title": "Par exemple : Semaine du 22",
   "ui_week_f_when": "Jours et heures",
   "ui_week_f_game": "Jaquettes",
   "ui_week_g_event": "La semaine",
-  "ui_week_fail": "Le planning n'a pas répondu. Réessayez."
+  "ui_week_fail": "Le planning n'a pas répondu. Réessayez.",
+  "ui_week_range_label": "Jours couverts",
+  "ui_week_range_7": "Les 7 prochains jours",
+  "ui_week_range_this": "Cette semaine",
+  "ui_week_range_next": "La semaine prochaine",
+  "ui_week_range_of": "La semaine du…",
+  "ui_week_date": "N'importe quel jour de cette semaine",
+  "ui_week_over": "Choisissez une date entre aujourd'hui et dans 12 semaines."
 }

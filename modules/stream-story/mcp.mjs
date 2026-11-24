@@ -11,6 +11,17 @@ const expose = (message) => Object.assign(new Error(message), { expose: true });
  * A model as the AI sees it. The guest streamers are given by their NAME (the one Contacts gives to the card, or the handle typed by hand): `names` is a Map
  * card identifier → name; a card that Contacts no longer knows (or that could not be read) is simply left out.
  */
+/** The two inputs that choose the 7 days, shared by story_week and story_prepare: `range` (one of P.WEEK_RANGES, default next_7_days) and `date` (only with "week_of"). Returns { range, date } or throws a clear error. */
+export function weekChoice(a) {
+  if (a.range !== undefined && (typeof a.range !== "string" || !P.WEEK_RANGES.includes(a.range))) throw expose(`'range' must be one of: ${P.WEEK_RANGES.join(", ")}.`);
+  const range = a.range ?? P.WEEK_RANGES[0];
+  if (a.date !== undefined && range !== "week_of") throw expose("'date' only goes with range 'week_of'.");
+  if (range === "week_of" && a.date === undefined) throw expose("The range 'week_of' needs 'date': any day of the week, written YYYY-MM-DD.");
+  if (a.date !== undefined && !P.isDay(a.date)) throw expose("'date' must be a real date written YYYY-MM-DD.");
+  return { range, date: a.date ?? "" };
+}
+export const weekRangeError = () => expose(`That week is over or too far ahead: choose a week that is not over, starting at most ${P.WEEK.horizonDays} days from today.`);
+
 export const publicModel = (m, names = new Map()) => ({
   name: m.name, style: m.config.style, format: m.config.format, durationSeconds: m.config.duration, elements: m.config.elements, text: m.config.text, channelName: m.config.channelName,
   costreamers: m.config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), language: m.config.lang,
@@ -78,19 +89,19 @@ export function strictPrepare(args, { models, tz, events = [], nowMs = Date.now(
   // The week's schedule (2.16.0): `kind: "week"` makes one video of the events of 7 days, from the same sources. It lists the events itself, so no single event goes with it.
   if (a.kind !== undefined && !P.KINDS.includes(a.kind)) throw expose(`'kind' must be one of: ${P.KINDS.join(", ")}.`);
   const week = a.kind === "week";
-  if (!week && (a.weekStart !== undefined || a.weekPart !== undefined || a.weekTitle !== undefined)) throw expose("'weekStart', 'weekPart' and 'weekTitle' only go with kind 'week'.");
+  if (!week && (a.range !== undefined || a.date !== undefined || a.weekPart !== undefined || a.weekTitle !== undefined)) throw expose("'range', 'date', 'weekPart' and 'weekTitle' only go with kind 'week'.");
   if (week) {
     if (a.event !== undefined || a.stream !== undefined || a.streamTitle !== undefined || a.streamDate !== undefined || a.streamTime !== undefined) throw expose("A week story lists the events itself: leave out 'event', 'stream' and the hand-written stream.");
-    if (a.weekStart !== undefined && (typeof a.weekStart !== "string" || !P.isDay(a.weekStart))) throw expose("'weekStart' must be a real date written YYYY-MM-DD.");
+    const choice = weekChoice(a);
     if (a.weekPart !== undefined && (!Number.isInteger(a.weekPart) || a.weekPart < 1 || a.weekPart > P.WEEK.days)) throw expose(`'weekPart' must be a whole number from 1 to ${P.WEEK.days}.`);
     if (a.weekTitle !== undefined && (typeof a.weekTitle !== "string" || [...a.weekTitle].length > P.LIMITS.title)) throw expose(`'weekTitle' must be a text of at most ${P.LIMITS.title} characters.`);
-    const plan = P.weekPlan(events, { nowMs, tz, startDay: a.weekStart ?? "", part: a.weekPart ?? 0 });
-    if (plan.error === "range") throw expose(`'weekStart' must be today or a later day, at most ${P.WEEK.horizonDays} days ahead.`);
+    const plan = P.weekPlan(events, { nowMs, tz, range: choice.range, date: choice.date, part: a.weekPart ?? 0 });
+    if (plan.error === "range") throw weekRangeError();
     if (plan.error) throw expose("The week could not be computed.");
     if (sourcesDown && plan.empty) throw expose("No event could be checked: the sources did not answer. Try again in a minute.");
-    if (plan.empty) throw expose(`No event is planned from ${plan.window.startDay} to ${plan.window.endDay}: nothing to announce. Choose another 'weekStart' (story_week shows what a week holds).`);
+    if (plan.empty) throw expose(`No event is planned from ${plan.window.startDay} to ${plan.window.endDay}: nothing to announce. Choose another 'range' (story_week shows what a week holds).`);
     if (a.weekPart !== undefined && plan.part !== a.weekPart) throw expose(plan.parts.length ? `'weekPart' must be from 1 to ${plan.parts.length} for this week (or left out for the whole week).` : "This week fits one video: leave 'weekPart' out.");
-    next.kind = "week"; next.weekStart = a.weekStart ?? ""; next.weekPart = a.weekPart ?? 0; next.weekTitle = a.weekTitle === undefined ? "" : P.oneLine(a.weekTitle, P.LIMITS.title);
+    next.kind = "week"; next.weekRange = choice.range; next.weekDate = choice.date; next.weekPart = a.weekPart ?? 0; next.weekTitle = a.weekTitle === undefined ? "" : P.oneLine(a.weekTitle, P.LIMITS.title);
     next.streamKey = ""; next.eventId = ""; next.eventSource = ""; next.elements = next.elements.filter((e) => P.WEEK_ELEMENTS.includes(e));
     return { config: P.cleanConfig(next), manual: null, event: null, plan };
   }

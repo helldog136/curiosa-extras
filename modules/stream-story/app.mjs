@@ -61,7 +61,12 @@ const streamNow = () => {
 const selectedStream = () => streamNow().stream;
 /** The week's schedule instead of one event (2.16.0). */
 const isWeek = () => S.cfg.kind === "week";
-const weekPlanNow = () => P.weekPlan(S.week.events, { nowMs: Date.now(), tz: TZ, startDay: S.cfg.weekStart || "", part: S.cfg.weekPart || 0 });
+const weekAsk = () => ({ nowMs: Date.now(), tz: TZ, range: S.cfg.weekRange || "next_7_days", date: S.cfg.weekDate || "" });
+/** The plan of the chosen days; a week that cannot be (over, too far) is an empty plan that carries the error, so nothing is ever drawn from it. */
+const weekPlanNow = () => {
+  const plan = P.weekPlan(S.week.events, { ...weekAsk(), part: S.cfg.weekPart || 0 });
+  return plan.error ? { ...P.weekPlan([], { nowMs: Date.now(), tz: TZ }), error: plan.error } : plan;
+};
 /** The style drawn in the preview: the person's default style (else the plain editing style) until a style is chosen (steps 1 and 2); on the last step, the style of the cards. */
 const previewStyle = () => P.previewStyleFor({ step: S.step, styleChosen: S.styleChosen, style: S.cfg.style, defaultStyle: S.defaultStyle });
 /** The saved variant ("My styles") in use for a style, or null: a variant deleted since, or sitting on another base style, is simply not found and the base style is used. */
@@ -649,7 +654,9 @@ async function loadWeek({ fresh = false } = {}) {
   const W = S.week, mine = ++W.seq;
   W.state = "loading"; renderKind();
   const qs = new URLSearchParams({ tz: TZ });
-  if (S.cfg.weekStart) qs.set("start", S.cfg.weekStart);
+  const ask = weekAsk(), w = P.weekWindow(ask);
+  if (w.error) { W.state = "ok"; W.events = []; W.covers = {}; renderKind(); rebuild(); return; }   // a week that is over or too far: nothing to read
+  qs.set("range", ask.range); if (ask.date) qs.set("date", ask.date);
   if (fresh) qs.set("fresh", "1");
   const r = await api(`week?${qs}`, { ms: 20000 });
   if (mine !== W.seq) return;
@@ -658,15 +665,21 @@ async function loadWeek({ fresh = false } = {}) {
   else { W.state = "ok"; W.events = Array.isArray(r.events) ? r.events : []; W.covers = r.covers && typeof r.covers === "object" ? r.covers : {}; W.sources = r.sources ?? []; if (S.cfg.weekPart && !weekPlanNow().part) S.cfg.weekPart = 0; }
   renderKind(); rebuild();
 }
+/** The controls of the days: the list shows the choice; the date picker only shows for "Week of…", from today to the farthest day the sources know. */
+function syncWeekRange() {
+  const range = P.WEEK_RANGES.includes(S.cfg.weekRange) ? S.cfg.weekRange : "next_7_days", today = P.isoDay(Date.now(), TZ);
+  $("week-range").value = range; $("week-date-box").hidden = range !== "week_of";
+  const d = $("week-date"); d.min = today; d.max = P.addDays(P.mondayOf(P.addDays(today, P.WEEK.horizonDays)), 6); d.value = range === "week_of" ? S.cfg.weekDate || today : "";
+}
 /** Switches between one event and the week: the first step, the information step and the preview follow. */
 function setKind(kind) {
   if (S.job) return;
   S.cfg.kind = kind === "week" ? "week" : "event";
-  if (isWeek()) { S.cfg.weekStart = S.cfg.weekStart || ""; S.cfg.weekPart = S.cfg.weekPart || 0; S.cfg.weekTitle = S.cfg.weekTitle || ""; if (S.week.state === "idle" || S.week.state === "slow") loadWeek(); }
+  if (isWeek()) { S.cfg.weekRange = S.cfg.weekRange || "next_7_days"; S.cfg.weekDate = S.cfg.weekDate || ""; S.cfg.weekPart = S.cfg.weekPart || 0; S.cfg.weekTitle = S.cfg.weekTitle || ""; if (S.week.state === "idle" || S.week.state === "slow") loadWeek(); }
   else if (!S.ev.selected && !S.noEvent) { const n = P.nextEvent(S.ev.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); else chooseNoEvent({ quiet: true }); }
   syncControls(); renderCoverWarn(); rebuild();
 }
-function partLabel(p) { return L("week_part", { from: P.formatDayShort(p.from, S.cfg.lang), to: P.formatDayShort(p.to, S.cfg.lang) }); }
+function partLabel(p) { if (p.from === p.to) return P.formatDayShort(p.from, S.cfg.lang); return L("week_part", { from: P.formatDayShort(p.from, S.cfg.lang), to: P.formatDayShort(p.to, S.cfg.lang) }); }
 /** Everything that depends on the kind: which panel of step 1 shows, the words of step 2, and the summary of the week (count, dates, parts, empty week, sources that did not answer). */
 function renderKind() {
   const week = isWeek();
@@ -680,7 +693,7 @@ function renderKind() {
   retry.hidden = W.state !== "slow"; note.textContent = ""; parts.replaceChildren(); $("week-parts-box").hidden = true;
   if (W.state === "idle" || W.state === "loading") { sum.textContent = L("event_loading"); return; }
   if (W.state === "slow") { sum.textContent = ""; note.textContent = L("week_fail"); return; }
-  if (plan.error) { sum.textContent = ""; return; }
+  if (plan.error) { sum.textContent = L("week_over"); return; }
   if (plan.empty) { sum.textContent = L("week_empty"); return; }
   sum.textContent = L(plan.total === 1 ? "week_one" : "week_many", { n: plan.total, range: P.formatRange(plan.window.startDay, plan.window.endDay, S.cfg.lang) });
   if (plan.parts.length) {
@@ -705,7 +718,7 @@ function renderModels() {
   }) : [h("li", { class: "muted", text: L("models_none") })]));
 }
 function loadModel(m) {
-  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark, kind: S.cfg.kind, weekStart: S.cfg.weekStart, weekPart: S.cfg.weekPart, weekTitle: S.cfg.weekTitle };
+  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark, kind: S.cfg.kind, weekRange: S.cfg.weekRange, weekDate: S.cfg.weekDate, weekPart: S.cfg.weekPart, weekTitle: S.cfg.weekTitle };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
   S.styleChosen = true; S.autoTicked = "";   // a model carries its style: it is shown at once, on the style step
   syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);
@@ -778,7 +791,7 @@ function syncControls() {
   $("schedule-people").checked = S.cfg.schedulePeople !== false; $("show-day").checked = (S.cfg.showDay ?? S.showDay) !== false;
   if (S.cfg.lang !== (C.lang === "en" ? "en" : "fr")) $("more-2").open = true;   // a setting that was already changed (model, assistant) is never left hidden
   if (S.cfg.duration !== P.DEFAULT_CONFIG.duration) $("more-3").open = true;
-  $("kind-event").checked = !isWeek(); $("kind-week").checked = isWeek(); $("week-start").value = S.cfg.weekStart || "";
+  $("kind-event").checked = !isWeek(); $("kind-week").checked = isWeek(); syncWeekRange();
   renderItems(); renderInfo(); renderStyleNote(); renderSteps();
   renderStreamPicker(); renderKind();
 }
@@ -820,7 +833,8 @@ function bind() {
   on("step-prev", "click", () => setStep(S.step - 1)); on("step-next", "click", () => setStep(S.step + 1));
   on("generate-now", "click", generateNow);
   on("kind-event", "change", () => setKind("event")); on("kind-week", "change", () => setKind("week"));
-  on("week-start", "change", () => { const v = $("week-start").value; S.cfg.weekStart = P.isDay(v) ? v : ""; S.cfg.weekPart = 0; loadWeek({ fresh: true }); });
+  on("week-range", "change", () => { const v = $("week-range").value; S.cfg.weekRange = P.WEEK_RANGES.includes(v) ? v : "next_7_days"; S.cfg.weekDate = S.cfg.weekRange === "week_of" ? S.cfg.weekDate || P.isoDay(Date.now(), TZ) : ""; S.cfg.weekPart = 0; syncWeekRange(); loadWeek(); });
+  on("week-date", "change", () => { const v = $("week-date").value; S.cfg.weekDate = P.isDay(v) ? v : P.isoDay(Date.now(), TZ); S.cfg.weekPart = 0; syncWeekRange(); loadWeek(); });
   on("week-retry", "click", () => loadWeek({ fresh: true }));
   on("event-q", "input", onEventSearch);
   on("event-more", "click", () => loadEvents(true));

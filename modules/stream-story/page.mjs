@@ -26,7 +26,7 @@ export const KEYS = [
   "cover_down", "schedule_people_label", "schedule_people_help", "next_info", "next_style", "event_none_btn", "event_none_set", "event_pick", "h_info", "info_intro", "g_event", "g_own", "in_video", "f_title",
   "ph_title", "f_when", "f_date", "f_time", "f_game", "ph_game", "game_help", "f_countdown", "countdown_off", "countdown_need", "ph_text", "members_pick", "f_brand", "more_options",
   "info_need_date", "h_style", "style_intro", "pv_plain",
-  "kind_label", "kind_event", "kind_week", "h_week", "week_one", "week_many", "week_empty", "week_shown", "week_part_label", "week_part_all", "week_part", "week_start", "week_start_hint", "week_f_title", "week_ph_title", "week_f_when", "week_f_game", "week_g_event", "week_fail",
+  "kind_label", "kind_event", "kind_week", "h_week", "week_one", "week_many", "week_empty", "week_shown", "week_part_label", "week_part_all", "week_part", "week_range_label", "week_range_7", "week_range_this", "week_range_next", "week_range_of", "week_date", "week_over", "week_f_title", "week_ph_title", "week_f_when", "week_f_game", "week_g_event", "week_fail",
 ];
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`ui_${k}`)]));
 
@@ -179,10 +179,11 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <p id="event-count" class="muted" role="status" aria-live="polite"></p>
 <div class="bar"><button type="button" id="event-more" class="wide" hidden>${T("event_more")}</button></div></div>
 <div id="event-sources" class="srcnotes" role="status" aria-live="polite"></div></div>
-<div id="week-mode" hidden><p id="week-sum" class="chosen" role="status" aria-live="polite"></p><p id="week-note" class="muted" role="status" aria-live="polite"></p>
+<div id="week-mode" hidden><div class="field"><label for="week-range">${T("week_range_label")}</label><select id="week-range"><option value="next_7_days">${T("week_range_7")}</option><option value="this_week">${T("week_range_this")}</option><option value="next_week">${T("week_range_next")}</option><option value="week_of">${T("week_range_of")}</option></select></div>
+<div class="field" id="week-date-box" hidden><label for="week-date">${T("week_date")}</label><input type="date" id="week-date"></div><p id="week-sum" class="chosen" role="status" aria-live="polite"></p><p id="week-note" class="muted" role="status" aria-live="polite"></p>
 <div id="week-parts-box" hidden><p class="sub" id="week-parts-label">${T("week_part_label")}</p><div id="week-parts" class="chips" role="group" aria-labelledby="week-parts-label"></div></div>
 <div class="bar"><button type="button" id="week-retry" class="wide" hidden>${T("event_retry")}</button></div>
-<details id="week-more" class="sub-d"><summary>${T("more_options")}</summary><div class="inner"><div class="field"><label for="week-start">${T("week_start")}</label><input type="date" id="week-start" aria-describedby="week-start-hint"><p id="week-start-hint" class="muted">${T("week_start_hint")}</p></div></div></details></div></section>
+</div></section>
 <section id="step-2" class="step" aria-labelledby="h-info" hidden><h2 id="h-info" tabindex="-1">${T("h_info")}</h2><p class="muted">${T("info_intro")}</p>
 <fieldset class="group"><legend id="g-event">${T("g_event")}</legend>
 <div class="item" id="item-title">${head("title", "info-title", "f_title")}<input type="text" id="info-title" maxlength="${P.LIMITS.title}" autocomplete="off" placeholder="${T("ph_title")}"></div>

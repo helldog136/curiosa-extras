@@ -135,7 +135,7 @@ const cleanModel = (x) => {
 export async function readModels(ctx) { return (await readList(ctx, MODELS)).items.map(cleanModel).filter(Boolean).slice(0, LIMITS.models); }
 /** Enregistre un modèle sous un nom. Un nom déjà pris n'est remplacé que si `replaceId` le dit (la confirmation est demandée par la page). Rend { ok, items } ou { error: "name" | "exists" | "full" | "missing" }. */
 /** A model is a look, not a week: the week and its days are chosen for each video (a saved model never carries them). */
-const oneEventConfig = ({ kind, weekStart, weekPart, weekTitle, ...rest }) => rest;
+const oneEventConfig = ({ kind, weekRange, weekDate, weekPart, weekTitle, ...rest }) => rest;
 export async function saveModel(ctx, { name, config, replaceId }) {
   const nm = oneLine(name, LIMITS.modelName);
   if (!nm) return { error: "name" };

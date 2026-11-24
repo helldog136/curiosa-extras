@@ -24,37 +24,70 @@ const at = (day, h = 18, mi = 0, tz = PARIS) => { const [y, m, d] = day.split("-
 
 /* ───────────── The window of 7 days ───────────── */
 
-test("window: today by default on the clock of the zone, 7 calendar days, the end is the start of the day after", () => {
-  const w = P.weekWindow({ nowMs: NOW, tz: PARIS });
-  assert.deepEqual([w.startDay, w.endDay, w.today, w.zone], ["2026-10-22", "2026-10-28", "2026-10-22", PARIS]);
-  assert.equal(w.days.length, 7); assert.equal(w.days[0], "2026-10-22"); assert.equal(w.days[6], "2026-10-28");
-  assert.equal(w.startMs, at("2026-10-22", 0, 0)); assert.equal(w.endMs, at("2026-10-29", 0, 0));
+const win = (o) => P.weekWindow({ nowMs: NOW, tz: PARIS, ...o });
+const span = (w) => [w.startDay, w.endDay];
+
+test("window: the four choices on the calendar of the zone (Thursday 22 October 2026): next 7 days from today, this week and next week Monday to Sunday", () => {
+  assert.deepEqual(P.WEEK_RANGES, ["next_7_days", "this_week", "next_week", "week_of"]);
+  const a = win({});   // the default is the next 7 days
+  assert.deepEqual([a.range, ...span(a), a.today, a.zone], ["next_7_days", "2026-10-22", "2026-10-28", "2026-10-22", PARIS]);
+  assert.equal(a.days.length, 7); assert.equal(a.days[6], "2026-10-28"); assert.equal(a.startMs, at("2026-10-22", 0, 0)); assert.equal(a.endMs, at("2026-10-29", 0, 0));
+  assert.deepEqual(span(win({ range: "this_week" })), ["2026-10-19", "2026-10-25"], "Monday to Sunday, today inside (the days before today are in the window)");
+  assert.deepEqual(span(win({ range: "next_week" })), ["2026-10-26", "2026-11-01"]);
+  assert.deepEqual(span(win({ range: "week_of", date: "2026-11-05" })), ["2026-11-02", "2026-11-08"]);
+  for (const r of ["next_7_days", "this_week", "next_week", "week_of"]) assert.equal(win({ range: r, date: r === "week_of" ? "2026-10-30" : "" }).days.length, 7, r);
+});
+
+test("window: Monday is the first day, whatever the day of today; Sunday still belongs to the week that ends on it", () => {
+  assert.equal(P.mondayOf("2026-10-19"), "2026-10-19"); assert.equal(P.mondayOf("2026-10-25"), "2026-10-19"); assert.equal(P.mondayOf("2026-10-26"), "2026-10-26");
+  assert.equal(P.mondayOf("2027-01-01"), "2026-12-28", "across the year"); assert.equal(P.mondayOf("2028-03-01"), "2028-02-28", "leap year");
+  for (const [day, from] of [["2026-10-19", "2026-10-19"], ["2026-10-20", "2026-10-19"], ["2026-10-21", "2026-10-19"], ["2026-10-22", "2026-10-19"], ["2026-10-23", "2026-10-19"], ["2026-10-24", "2026-10-19"], ["2026-10-25", "2026-10-19"]]) {
+    const now = at(day, 9);   // every weekday of the same week
+    assert.deepEqual(span(P.weekWindow({ nowMs: now, tz: PARIS, range: "this_week" })), [from, "2026-10-25"], `this week, on ${day}`);
+    assert.deepEqual(span(P.weekWindow({ nowMs: now, tz: PARIS, range: "next_week" })), ["2026-10-26", "2026-11-01"], `next week, on ${day}`);
+    assert.equal(P.weekWindow({ nowMs: now, tz: PARIS }).startDay, day, `the next 7 days start on ${day}`);
+  }
+  for (const d of ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"]) assert.deepEqual(span(win({ range: "week_of", date: d })), ["2026-11-02", "2026-11-08"], `week of ${d}`);
 });
 
 test("window: the day is the one of the zone, not of UTC (late evening in UTC is already tomorrow in Auckland, still yesterday in Los Angeles)", () => {
-  const late = Date.UTC(2026, 9, 22, 23, 30);
-  assert.equal(P.weekWindow({ nowMs: late, tz: "Pacific/Auckland" }).startDay, "2026-10-23");
-  assert.equal(P.weekWindow({ nowMs: late, tz: PARIS }).startDay, "2026-10-23");
-  assert.equal(P.weekWindow({ nowMs: late, tz: "America/Los_Angeles" }).startDay, "2026-10-22");
-  assert.equal(P.weekWindow({ nowMs: late, tz: "Pas/UnFuseau" }).zone, "UTC", "an unknown zone is UTC");
+  const late = Date.UTC(2026, 9, 25, 23, 30);   // Sunday 25 October in UTC
+  const f = (tz, range) => P.weekWindow({ nowMs: late, tz, range }).startDay;
+  assert.equal(f("Pacific/Auckland"), "2026-10-26"); assert.equal(f(PARIS), "2026-10-26"); assert.equal(f("America/Los_Angeles"), "2026-10-25"); assert.equal(f("Pas/UnFuseau"), "2026-10-25", "an unknown zone is UTC");
+  assert.equal(f("Pacific/Auckland", "this_week"), "2026-10-26", "already Monday in Auckland"); assert.equal(f("America/Los_Angeles", "this_week"), "2026-10-19");
+  assert.equal(f(PARIS, "next_week"), "2026-11-02"); assert.equal(f("America/Los_Angeles", "next_week"), "2026-10-26");
 });
 
 test("window: a daylight-saving week is still 7 days (169 h when the clocks go back, 167 h when they go forward), in Europe and in America", () => {
-  const back = P.weekWindow({ nowMs: Date.UTC(2026, 9, 24, 10), tz: PARIS, startDay: "2026-10-24" });   // the night of 25 October 2026
-  assert.deepEqual([back.startDay, back.endDay, (back.endMs - back.startMs) / H], ["2026-10-24", "2026-10-30", 169]);
-  const fwd = P.weekWindow({ nowMs: Date.UTC(2027, 2, 27, 10), tz: PARIS, startDay: "2027-03-27" });   // the night of 28 March 2027
-  assert.deepEqual([fwd.endDay, (fwd.endMs - fwd.startMs) / H], ["2027-04-02", 167]);
-  const ny = P.weekWindow({ nowMs: Date.UTC(2026, 10, 1, 12), tz: "America/New_York", startDay: "2026-11-01" });   // 1 November 2026: the clocks go back
-  assert.deepEqual([ny.endDay, ny.startMs, ny.endMs - ny.startMs], ["2026-11-07", Date.UTC(2026, 10, 1, 4), 7 * DAY + H]);
-  const utc = P.weekWindow({ nowMs: NOW, tz: "UTC" }); assert.equal(utc.endMs - utc.startMs, 7 * DAY);
+  const back = P.weekWindow({ nowMs: Date.UTC(2026, 9, 20, 10), tz: PARIS, range: "this_week" });   // Monday 19 to Sunday 25 October 2026: the night of the 25th
+  assert.deepEqual([...span(back), (back.endMs - back.startMs) / H], ["2026-10-19", "2026-10-25", 169], "Monday to Sunday: Sunday 25 October has 25 hours");
+  const night = P.weekWindow({ nowMs: Date.UTC(2026, 9, 25, 10), tz: PARIS, range: "week_of", date: "2026-10-26" });
+  assert.deepEqual([...span(night), (night.endMs - night.startMs) / H], ["2026-10-26", "2026-11-01", 168]);
+  const back2 = P.weekWindow({ nowMs: Date.UTC(2026, 9, 24, 10), tz: PARIS });   // 24 to 30 October: contains the night of the 25th
+  assert.deepEqual([...span(back2), (back2.endMs - back2.startMs) / H], ["2026-10-24", "2026-10-30", 169]);
+  const fwd = P.weekWindow({ nowMs: Date.UTC(2027, 2, 27, 10), tz: PARIS });   // 27 March to 2 April 2027: the night of 28 March
+  assert.deepEqual([...span(fwd), (fwd.endMs - fwd.startMs) / H], ["2027-03-27", "2027-04-02", 167]);
+  const ny = P.weekWindow({ nowMs: Date.UTC(2026, 10, 1, 12), tz: "America/New_York", range: "week_of", date: "2026-11-01" });   // Sunday 1 November 2026: the clocks go back at 2 am
+  assert.deepEqual([...span(ny), ny.startMs, ny.endMs - ny.startMs], ["2026-10-26", "2026-11-01", Date.UTC(2026, 9, 26, 4), 7 * DAY + H]);
+  const utc = P.weekWindow({ nowMs: NOW, tz: "UTC", range: "next_week" }); assert.equal(utc.endMs - utc.startMs, 7 * DAY);
+  // next week across a change: the Monday after the night of 25 October
+  const nw = P.weekWindow({ nowMs: Date.UTC(2026, 9, 22, 10), tz: PARIS, range: "next_week" }); assert.equal(nw.startMs, at("2026-10-26", 0, 0)); assert.equal(Date.UTC(2026, 9, 25, 23), nw.startMs, "midnight of Monday is 23:00 UTC after the change");
 });
 
-test("window: the first day is today or later, at most 83 days ahead; anything else is refused with a reason", () => {
-  const ok = (d) => P.weekWindow({ nowMs: NOW, tz: PARIS, startDay: d });
-  assert.equal(ok("2026-10-22").startDay, "2026-10-22"); assert.equal(ok("2026-10-30").endDay, "2026-11-05");
-  assert.equal(ok(P.addDays("2026-10-22", 83)).error, undefined); assert.equal(ok(P.addDays("2026-10-22", 84)).error, "range", "the sources look 90 days ahead");
-  assert.equal(ok("2026-10-21").error, "range", "yesterday");
-  for (const bad of ["2026-02-31", "2026-13-01", "22/10/2026", "2026-1-5", 20261022, {}, "<b>"]) assert.equal(ok(bad).error, "start", String(bad));
+test("window: 'week_of' needs a real date and no other choice takes one; a week already over, or starting more than 83 days ahead, is refused", () => {
+  assert.equal(win({ range: "week_of" }).error, "date", "no date");
+  for (const bad of ["2026-02-31", "2026-13-01", "22/10/2026", "2026-1-5", 20261022, {}, "<b>", "", null]) assert.equal(win({ range: "week_of", date: bad }).error, "date", String(bad));
+  for (const r of ["next_7_days", "this_week", "next_week"]) assert.equal(win({ range: r, date: "2026-10-30" }).error, "date", `${r} takes no date`);
+  for (const bad of ["weeks", "", "NEXT_WEEK", 3, null, "week_of "]) assert.equal(win({ range: bad, date: "2026-10-30" }).error, "range", String(bad));
+  assert.equal(win({ range: "week_of", date: "2026-10-19" }).error, undefined, "the week of today, from its Monday");
+  assert.equal(win({ range: "week_of", date: "2026-10-18" }).error, "range", "the week before is over (it ended yesterday)");
+  assert.equal(win({ range: "week_of", date: "2020-01-01" }).error, "range");
+  const last = P.mondayOf(P.addDays("2026-10-22", 83));   // the farthest Monday that starts at most 83 days ahead is not after today + 83
+  assert.equal(win({ range: "week_of", date: P.addDays("2026-10-22", 83) }).error, undefined);
+  const lastDay = P.addDays(last, 6);   // the Sunday of the last week that starts at most 83 days ahead (2027-01-17)
+  assert.equal(lastDay, "2027-01-17"); assert.equal(win({ range: "week_of", date: lastDay }).error, undefined);
+  assert.equal(win({ range: "week_of", date: P.addDays(lastDay, 1) }).error, "range", "the next Monday starts 84 days ahead: the sources look 90 days ahead");
+  assert.equal(win({ range: "week_of", date: P.addDays("2026-10-22", 200) }).error, "range");
   assert.equal(P.weekWindow({ nowMs: NaN, tz: PARIS }).error, "now");
   assert.equal(P.isDay("2028-02-29"), true); assert.equal(P.isDay("2027-02-29"), false);
   assert.equal(P.addDays("2026-12-30", 3), "2027-01-02"); assert.equal(P.addDays("2028-02-28", 1), "2028-02-29"); assert.equal(P.addDays("2026-03-01", -1), "2026-02-28");
@@ -77,6 +110,19 @@ test("plan: only the events of the window, sorted by day then whole-day first th
   assert.deepEqual([p.from, p.to], ["2026-10-22", "2026-10-28"]);
 });
 
+test("plan: this week, next week and the week of a date list the events of their Monday to Sunday (what is over is left out)", () => {
+  const events = [ev("c:mon", "Monday show", at("2026-10-19", 20)), ev("c:thu", "Under way", NOW - 30 * 60_000), ev("c:sun", "Sunday show", at("2026-10-25", 20)), ev("c:nmon", "Next Monday", at("2026-10-26", 0, 30)), ev("c:nsun", "Next Sunday", at("2026-11-01", 23, 30)), ev("c:after", "The Monday after", at("2026-11-02", 9)), ev("c:old", "Last Sunday", at("2026-10-18", 20))];
+  const ids = (o) => P.weekPlan(events, { nowMs: NOW, tz: PARIS, ...o }).shown.map((e) => e.id);
+  assert.deepEqual(ids({ range: "next_7_days" }), ["c:thu", "c:sun", "c:nmon"]);
+  assert.deepEqual(ids({ range: "this_week" }), ["c:thu", "c:sun"], "Monday's show is over: the days before today are in the window but their ended events are not listed");
+  assert.deepEqual(ids({ range: "next_week" }), ["c:nmon", "c:nsun"]);
+  assert.deepEqual(ids({ range: "week_of", date: "2026-11-04" }), ["c:after"]);
+  assert.deepEqual(ids({ range: "week_of", date: "2026-10-27" }), ["c:nmon", "c:nsun"], "any day of the week gives the same week");
+  const p = P.weekPlan(events, { nowMs: NOW, tz: PARIS, range: "next_week" });
+  assert.deepEqual([p.from, p.to, p.window.range], ["2026-10-26", "2026-11-01", "next_week"]);
+  assert.equal(P.buildWeekContent(CFG({ lang: "en" }), { plan: p }).range, "26 Oct – 1 Nov");
+});
+
 test("plan: a whole-day event keeps its own day whatever the zone of its source; duplicates by id and unreadable items are dropped; the inputs are never changed", () => {
   const events = [ev("c:a", "A", at("2026-10-24", 0, 0, "Pacific/Auckland"), { allDay: true, day: "2026-10-24" }), ev("c:a", "A again", at("2026-10-25", 12)), null, "x", { id: "c:b" }, ev("c:c", "C", NaN)]; 
   const copy = JSON.stringify(events), p = P.weekPlan(events, { nowMs: NOW, tz: PARIS });
@@ -84,10 +130,11 @@ test("plan: a whole-day event keeps its own day whatever the zone of its source;
   assert.equal(JSON.stringify(events), copy);
 });
 
-test("plan: an empty week says so (and offers nothing to draw); a bad start is an error, never an empty plan", () => {
+test("plan: an empty week says so (and offers nothing to draw); a bad choice is an error, never an empty plan", () => {
   for (const list of [[], null, undefined, "x", [ev("c:far", "Far", at("2026-12-25"))]]) { const p = P.weekPlan(list, { nowMs: NOW, tz: PARIS }); assert.deepEqual([p.empty, p.total, p.shown, p.more, p.parts], [true, 0, [], 0, []]); }
-  assert.equal(P.weekPlan([], { nowMs: NOW, tz: PARIS, startDay: "2026-02-31" }).error, "start");
-  assert.equal(P.weekPlan([], { nowMs: NOW, tz: PARIS, startDay: "2020-01-01" }).error, "range");
+  assert.equal(P.weekPlan([], { nowMs: NOW, tz: PARIS, range: "week_of", date: "2026-02-31" }).error, "date");
+  assert.equal(P.weekPlan([], { nowMs: NOW, tz: PARIS, range: "week_of", date: "2020-01-01" }).error, "range");
+  assert.equal(P.weekPlan([], { nowMs: NOW, tz: PARIS, range: "next_week", date: "2026-10-27" }).error, "date");
   const content = P.buildWeekContent({ ...P.DEFAULT_CONFIG, kind: "week" }, { plan: P.weekPlan([], { nowMs: NOW, tz: PARIS }) });
   assert.equal(content.empty, true); assert.deepEqual(content.rows, []);
 });
@@ -155,13 +202,17 @@ test("content: texts are cut to their limits, controls characters removed; nothi
   assert.ok([...c.rows[0].title].length <= 80 && !/[\u0000-\u001f]/.test(c.rows[0].title)); assert.ok([...c.heading].length <= 80); assert.ok([...c.text].length <= 140); assert.ok([...c.rows[0].game].length <= 80);
 });
 
-test("config: a week keeps its start, part and title; one event stays exactly as before; bad values are dropped", () => {
-  const w = P.cleanConfig({ kind: "week", weekStart: "2026-10-26", weekPart: 2, weekTitle: "  Week   plan " });
-  assert.deepEqual([w.kind, w.weekStart, w.weekPart, w.weekTitle], ["week", "2026-10-26", 2, "Week plan"]);
-  const bad = P.cleanConfig({ kind: "week", weekStart: "2026-02-31", weekPart: 99, weekTitle: 12 });
-  assert.deepEqual([bad.weekStart, bad.weekPart, bad.weekTitle], ["", 0, "12"]);
+test("config: a week keeps its range, date, part and title; one event stays exactly as before; bad values are dropped", () => {
+  const w = P.cleanConfig({ kind: "week", weekRange: "week_of", weekDate: "2026-10-28", weekPart: 2, weekTitle: "  Week   plan " });
+  assert.deepEqual([w.kind, w.weekRange, w.weekDate, w.weekPart, w.weekTitle], ["week", "week_of", "2026-10-28", 2, "Week plan"]);
+  const bad = P.cleanConfig({ kind: "week", weekRange: "weeks", weekDate: "2026-02-31", weekPart: 99, weekTitle: 12 });
+  assert.deepEqual([bad.weekRange, bad.weekDate, bad.weekPart, bad.weekTitle], ["next_7_days", "", 0, "12"], "the default range, no date");
+  assert.deepEqual([P.cleanConfig({ kind: "week" }).weekRange, P.cleanConfig({ kind: "week" }).weekDate], ["next_7_days", ""]);
+  const other = P.cleanConfig({ kind: "week", weekRange: "next_week", weekDate: "2026-10-28" });
+  assert.deepEqual([other.weekRange, other.weekDate], ["next_week", ""], "a date only goes with week_of");
+  assert.equal(P.cleanConfig({ kind: "week", weekRange: "week_of", weekDate: "nope" }).weekDate, "");
   assert.equal(P.cleanConfig({ kind: "week", weekPart: 2.5 }).weekPart, 0);
-  for (const k of ["weekStart", "weekPart", "weekTitle", "kind"]) { assert.ok(!(k in P.cleanConfig({})), `${k} absent from an event config`); assert.ok(!(k in P.cleanConfig({ kind: "event", weekStart: "2026-10-26" })) || k === "x"); assert.ok(!(k in P.cleanConfig({ kind: "bizarre" }))); }
+  for (const k of ["weekRange", "weekDate", "weekPart", "weekTitle", "kind"]) { assert.ok(!(k in P.cleanConfig({})), `${k} absent from an event config`); assert.ok(!(k in P.cleanConfig({ kind: "event", weekRange: "next_week", weekDate: "2026-10-26" })) || k === "x"); assert.ok(!(k in P.cleanConfig({ kind: "bizarre" }))); }
   assert.deepEqual(Object.keys(P.cleanConfig({})).sort(), Object.keys(P.cleanConfig(P.DEFAULT_CONFIG)).sort());
   assert.equal(P.cleanConfig({}, w).kind, "week", "the fallback is read when nothing is said"); assert.equal(P.cleanConfig({ kind: "event" }, w).kind, undefined);
   assert.equal(P.fileName({ startMs: at("2026-10-22", 12), tz: PARIS, format: "vertical", lang: "en", ext: "mp4", kind: "week" }), "week-2026-10-22-vertical.mp4");
@@ -250,13 +301,17 @@ const models = [], variants = [];
 const prep = (args, over = {}) => tools.strictPrepare(args, { models, tz: PARIS, events: busy(13), nowMs: NOW, variants, ...over });
 const refused = (args, re, over) => assert.throws(() => prep(args, over), (e) => e.expose === true && re.test(e.message), JSON.stringify(args));
 
-test("story_prepare: kind week prepares the week (start, part, heading); the events and the single-event fields are cleared; only the elements of a week stay", () => {
+test("story_prepare: kind week prepares the week (range, date, part, heading); the events and the single-event fields are cleared; only the elements of a week stay", () => {
   const a = prep({ kind: "week" });
-  assert.deepEqual([a.config.kind, a.config.weekStart, a.config.weekPart, a.config.weekTitle, a.config.eventId, a.config.streamKey], ["week", "", 0, "", "", ""]);
+  assert.deepEqual([a.config.kind, a.config.weekRange, a.config.weekDate, a.config.weekPart, a.config.weekTitle, a.config.eventId, a.config.streamKey], ["week", "next_7_days", "", 0, "", "", ""], "the next 7 days by default");
   assert.equal(a.manual, null); assert.equal(a.event, null); assert.deepEqual([a.plan.total, a.plan.shown.length, a.plan.more], [13, 8, 5]);
   assert.deepEqual(a.config.elements, ["title", "when", "game", "brand", "text"], "the countdown and the guests mean nothing for a week");
-  const b = prep({ kind: "week", weekStart: "2026-10-24", weekPart: 1, weekTitle: "Cette semaine chez nous", style: "arcade", format: "passeport", elements: ["title", "countdown", "costreamers"] }, { events: busy(13) });
-  assert.deepEqual([b.config.weekStart, b.config.weekPart, b.config.weekTitle, b.config.style, b.config.format, b.config.elements], ["2026-10-24", 0 || b.config.weekPart, "Cette semaine chez nous", "arcade", "passeport", ["title"]]);
+  const b = prep({ kind: "week", range: "week_of", date: "2026-10-28", weekTitle: "Cette semaine chez nous", style: "arcade", format: "passeport", elements: ["title", "countdown", "costreamers"] });
+  assert.deepEqual([b.config.weekRange, b.config.weekDate, b.config.weekPart, b.config.weekTitle, b.config.style, b.config.format, b.config.elements], ["week_of", "2026-10-28", 0, "Cette semaine chez nous", "arcade", "passeport", ["title"]]);
+  assert.deepEqual([b.plan.from, b.plan.to, b.plan.total], ["2026-10-26", "2026-11-01", 5], "the Monday to Sunday of the date");
+  const t = prep({ kind: "week", range: "this_week" }), n = prep({ kind: "week", range: "next_week" }, { events: [ev("c:n", "N", at("2026-10-27", 18))] });
+  assert.deepEqual([t.config.weekRange, t.config.weekDate, t.plan.from, t.plan.to], ["this_week", "", "2026-10-19", "2026-10-25"]); assert.deepEqual([n.config.weekRange, n.plan.from, n.plan.shown.length], ["next_week", "2026-10-26", 1]);
+  assert.equal(prep({ kind: "week", range: "next_7_days" }).config.weekRange, "next_7_days");
   assert.equal(prep({ kind: "week", style: "countdown" }).config.elements.includes("countdown"), false);
   const c = prep({ kind: "week", weekPart: 2, watermark: true, language: "en", durationSeconds: 8, text: "Hi" });
   assert.deepEqual([c.config.weekPart, c.config.watermark, c.config.lang, c.config.duration, c.config.text], [2, true, "en", 8, "Hi"]);
@@ -266,9 +321,14 @@ test("story_prepare: kind week prepares the week (start, part, heading); the eve
 
 test("story_prepare: every week input is checked, with a clear message that gives the way out", () => {
   refused({ kind: "weeks" }, /'kind' must be one of: event, week/); refused({ kind: 3 }, /'kind'/);
-  for (const k of [{ weekStart: "2026-10-24" }, { weekPart: 1 }, { weekTitle: "x" }]) refused(k, /only go with kind 'week'/);
-  refused({ kind: "week", weekStart: "2026-02-31" }, /real date written YYYY-MM-DD/); refused({ kind: "week", weekStart: "22/10/2026" }, /YYYY-MM-DD/); refused({ kind: "week", weekStart: 20261022 }, /YYYY-MM-DD/);
-  refused({ kind: "week", weekStart: "2026-10-21" }, /today or a later day, at most 83 days ahead/); refused({ kind: "week", weekStart: "2027-06-01" }, /at most 83 days/);
+  for (const k of [{ range: "next_week" }, { date: "2026-10-24" }, { weekPart: 1 }, { weekTitle: "x" }]) refused(k, /only go with kind 'week'/);
+  for (const bad of ["weeks", "", "NEXT_WEEK", 3, null, ["this_week"]]) refused({ kind: "week", range: bad }, /'range' must be one of: next_7_days, this_week, next_week, week_of/);
+  for (const r of ["next_7_days", "this_week", "next_week"]) refused({ kind: "week", range: r, date: "2026-10-28" }, /'date' only goes with range 'week_of'/);
+  refused({ kind: "week", date: "2026-10-28" }, /'date' only goes with range 'week_of'/);
+  refused({ kind: "week", range: "week_of" }, /needs 'date'/);
+  refused({ kind: "week", range: "week_of", date: "2026-02-31" }, /real date written YYYY-MM-DD/); refused({ kind: "week", range: "week_of", date: "22/10/2026" }, /YYYY-MM-DD/); refused({ kind: "week", range: "week_of", date: 20261022 }, /YYYY-MM-DD/);
+  refused({ kind: "week", range: "week_of", date: "2026-10-18" }, /over or too far ahead/); refused({ kind: "week", range: "week_of", date: "2027-06-01" }, /at most 83 days from today/);
+  assert.equal(prep({ kind: "week", range: "week_of", date: "2026-10-19" }).config.weekDate, "2026-10-19", "any day of today's week, from its Monday");
   for (const bad of [0, 8, 1.5, "1", null]) refused({ kind: "week", weekPart: bad }, /'weekPart' must be a whole number from 1 to 7/);
   refused({ kind: "week", weekPart: 3 }, /'weekPart' must be from 1 to 2 for this week/); refused({ kind: "week", weekPart: 1 }, /fits one video/, { events: busy(4) });
   refused({ kind: "week", weekTitle: "T".repeat(81) }, /at most 80 characters/); refused({ kind: "week", weekTitle: 5 }, /'weekTitle'/);
@@ -278,7 +338,8 @@ test("story_prepare: every week input is checked, with a clear message that give
 
 test("story_prepare: an empty week is refused (no blank video), and so is a week when no source answered", () => {
   refused({ kind: "week" }, /No event is planned from 2026-10-22 to 2026-10-28: nothing to announce/, { events: [] });
-  refused({ kind: "week", weekStart: "2026-11-30" }, /No event is planned from 2026-11-30 to 2026-12-06/, { events: busy(5) });
+  refused({ kind: "week", range: "week_of", date: "2026-12-02" }, /No event is planned from 2026-11-30 to 2026-12-06/, { events: busy(5) });
+  refused({ kind: "week", range: "next_week" }, /No event is planned from 2026-10-26 to 2026-11-01/, { events: busy(5) });
   refused({ kind: "week" }, /sources did not answer/, { events: [], sourcesDown: true });
 });
 
@@ -303,26 +364,30 @@ test("story_week: lists the next 7 days from all sources as the video shows them
   assert.equal(r.state, "ok"); assert.equal(r.total, 3); assert.equal(r.rowsPerVideo, 8); assert.equal(r.more, 0); assert.deepEqual(r.parts, []);
   assert.deepEqual(r.events.map((e) => e.title), ["Stream one", "Stream two", "Premiere"]); assert.deepEqual(r.events.map((e) => e.source), ["calendar", "calendar", "youtube"]);
   assert.match(r.from, /^\d{4}-\d{2}-\d{2}$/); assert.equal(r.to, P.addDays(r.from, 6)); assert.deepEqual(r.events[0].games, ["Hades"]);
-  const later = await def.mcp.story_week(ctx, { weekStart: P.addDays(r.from, 10) }); assert.deepEqual([later.total, later.events.map((e) => e.title)], [1, ["Too far"]]);
+  const later = await def.mcp.story_week(ctx, { range: "week_of", date: P.isoDay(t + 12 * DAY, "UTC") }); assert.deepEqual([later.total, later.events.map((e) => e.title)], [1, ["Too far"]]);
+  assert.deepEqual([later.from, later.to], [P.mondayOf(later.from), P.addDays(later.from, 6)], "a Monday to Sunday week");
+  const mon = await def.mcp.story_week(ctx, { range: "this_week" }); assert.equal(mon.from, P.mondayOf(P.isoDay(t, "UTC"))); assert.equal(mon.to, P.addDays(mon.from, 6));
+  assert.equal((await def.mcp.story_week(ctx, { range: "next_week" })).from, P.addDays(mon.from, 7)); assert.equal((await def.mcp.story_week(ctx, { range: "next_7_days" })).from, r.from);
   src.resetEvents(); const none = await def.mcp.story_week(site([]), {}); assert.deepEqual([none.state, none.total, none.events], ["empty", 0, []]);
-  await assert.rejects(def.mcp.story_week(ctx, { weekStart: "2020-01-01" }), (e) => e.expose && /today or a later day/.test(e.message));
-  await assert.rejects(def.mcp.story_week(ctx, { weekStart: "nope" }), (e) => e.expose && /YYYY-MM-DD/.test(e.message));
+  const no = (args, re) => assert.rejects(def.mcp.story_week(ctx, args), (e) => e.expose && re.test(e.message), JSON.stringify(args));
+  await no({ range: "week_of", date: "2020-01-01" }, /over or too far ahead/); await no({ range: "week_of", date: "nope" }, /YYYY-MM-DD/); await no({ range: "week_of" }, /needs 'date'/);
+  await no({ date: "2030-01-01" }, /only goes with range 'week_of'/); await no({ range: "next_week", date: "2030-01-01" }, /only goes with range 'week_of'/); await no({ range: "weeks" }, /'range' must be one of/); await no({ range: 5 }, /'range'/);
   const d = manifest.mcp.find((x) => x.name === "story_week"); assert.equal(d.readOnly, true); assert.ok(d.default !== false); assert.ok(d.name.length <= 31 && d.description.length > 40 && d.description.length <= 1000);
-  assert.equal(d.input.properties.weekStart.maxLength, 10);
+  assert.deepEqual(d.input.properties.range.enum, ["next_7_days", "this_week", "next_week", "week_of"]); assert.equal(d.input.properties.date.maxLength, 10); assert.ok(!("weekStart" in d.input.properties));
 });
 
 test("story_prepare with the module: a week is saved as a preparation (link, 7 days), the answer describes the week; an empty week writes nothing", async () => {
   const t = Date.now(), ctx = site(Array.from({ length: 11 }, (_, i) => SLOT(`s${i}`, `Stream ${i}`, t + (2 + i * 9) * H)));
-  const out = await def.mcp.story_prepare(ctx, { kind: "week", style: "geometric", weekTitle: "Cette semaine" });
+  const out = await def.mcp.story_prepare(ctx, { kind: "week", style: "geometric", weekTitle: "Cette semaine", range: "next_7_days" });
   assert.equal(out.ok, true); assert.match(out.link, /^https:\/\/site\.example\.test\/admin\/instances\/id-story\?prep=/);
   assert.equal(out.prepared.kind, "week"); assert.equal(out.prepared.stream, undefined); assert.equal(out.prepared.style, "geometric");
   assert.ok(out.prepared.week.events >= 1 && out.prepared.week.events <= 8); assert.deepEqual(out.prepared.elements, ["title", "when", "game", "brand", "text"]);
   const data = await import("../modules/stream-story/data.mjs"), saved = await data.readPrep(ctx, new URL(out.link).searchParams.get("prep"));
-  assert.equal(saved.config.kind, "week"); assert.equal(saved.config.weekTitle, "Cette semaine"); assert.equal(saved.manual, null);
+  assert.equal(saved.config.kind, "week"); assert.deepEqual([saved.config.weekRange, saved.config.weekDate], ["next_7_days", ""]); assert.equal(saved.config.weekTitle, "Cette semaine"); assert.equal(saved.manual, null);
   src.resetEvents(); await assert.rejects(def.mcp.story_prepare(site([]), { kind: "week" }), (e) => e.expose && /nothing to announce/.test(e.message));
   src.resetEvents(); const plain = await def.mcp.story_prepare(site([SLOT("s1", "One", t + 5 * H)]), {}); assert.equal(plain.prepared.kind, undefined); assert.ok(plain.prepared.stream);
   const p = manifest.mcp.find((x) => x.name === "story_prepare").input.properties;
-  assert.deepEqual(p.kind.enum, ["event", "week"]); assert.equal(p.weekStart.maxLength, 10); assert.deepEqual([p.weekPart.minimum, p.weekPart.maximum], [1, 7]); assert.equal(p.weekTitle.maxLength, 80);
+  assert.deepEqual(p.kind.enum, ["event", "week"]); assert.deepEqual(p.range.enum, ["next_7_days", "this_week", "next_week", "week_of"]); assert.equal(p.date.maxLength, 10); assert.ok(!("weekStart" in p)); assert.deepEqual([p.weekPart.minimum, p.weekPart.maximum], [1, 7]); assert.equal(p.weekTitle.maxLength, 80);
   assert.ok(Object.values(p).every((x) => x.description)); assert.ok(manifest.mcp.find((x) => x.name === "story_prepare").description.length <= 1000);
 });
 
@@ -335,34 +400,41 @@ test("models: a saved model never carries the week (the days are chosen for each
 
 /* ───────────── The route, the page and the texts ───────────── */
 
-test("route week: the events of the window and the covers of their games; a wrong start is refused in one sentence; the files of the page include week.mjs", async () => {
+test("route week: the events of the window and the covers of their games; a wrong choice is refused in one sentence; the files of the page include week.mjs", async () => {
   const t = Date.now(), ctx = site([SLOT("s1", "Stream one", t + 3 * H, { games: ["Hades"] })]);
   const token = await (await import("../modules/stream-story/data.mjs")).mintToken(ctx);
   const call = (q) => def.routes.week(new Request(`${SITE}/m/story/week${q}`, { headers: { "x-story-token": token } }), ctx);
   const ok = await call("?tz=Europe/Paris"), body = await ok.json();
   assert.equal(ok.status, 200); assert.equal(body.ok, true); assert.deepEqual(body.events.map((e) => e.title), ["Stream one"]); assert.deepEqual(Object.keys(body.events[0]).sort(), ["allDay", "day", "endMs", "games", "id", "image", "source", "startMs", "timezone", "title", "type"].sort());
   assert.equal(body.window.endDay, P.addDays(body.window.startDay, 6)); assert.equal(typeof body.coverState, "string");
-  const bad = await call("?start=2020-01-01"); assert.equal(bad.status, 400); assert.deepEqual(await bad.json(), { ok: false, error: "invalid", field: "range" });
-  assert.equal((await call("?start=2026-02-31")).status, 400);
+  const bad = await call("?range=week_of&date=2020-01-01"); assert.equal(bad.status, 400); assert.deepEqual(await bad.json(), { ok: false, error: "invalid", field: "range" });
+  assert.deepEqual(await (await call("?range=week_of&date=2026-02-31")).json(), { ok: false, error: "invalid", field: "date" });
+  assert.deepEqual(await (await call("?range=week_of")).json(), { ok: false, error: "invalid", field: "date" });
+  assert.deepEqual(await (await call("?date=2030-01-01")).json(), { ok: false, error: "invalid", field: "date" }, "a date goes only with week_of");
+  assert.deepEqual(await (await call("?range=weeks")).json(), { ok: false, error: "invalid", field: "range" });
+  const tw = await (await call("?range=this_week&tz=Europe/Paris")).json(); assert.equal(tw.window.startDay, P.mondayOf(tw.window.today)); assert.equal(tw.window.endDay, P.addDays(tw.window.startDay, 6));
   assert.equal((await def.routes.week(new Request(`${SITE}/m/story/week`), ctx)).status, 401, "no token, no data");
   assert.equal((await def.routes.week(new Request(`${SITE}/m/story/week`, { method: "POST", headers: { "x-story-token": token } }), ctx)).status, 405);
   assert.ok(page.LIB.includes("week.mjs"));
   assert.equal((await def.routes["lib/week.mjs"](new Request(`${SITE}/m/story/lib/week.mjs`), ctx)).status, 200);
 });
 
-test("page: the choice 'One event / The week' is a two-choice radio group at the top of step 1; the week panel has the summary, the parts and ONE folded option (the first day)", async () => {
+test("page: 'One event / The week' is a two-choice radio group at the top of step 1; the week panel has ONE list of four choices, a date picker only for 'Week of…', the summary and the parts; nothing folded", async () => {
   const html = await (await page.studioPage(site([]), { base: "/m/story", colors: {}, timezone: "", font: "", accent: "#4f46e5", accentFg: "#ffffff" })).text();
   const step1 = html.slice(html.indexOf('id="step-1"'), html.indexOf('id="step-2"'));
   assert.equal((step1.match(/name="kind"/g) ?? []).length, 2); assert.ok(step1.indexOf('name="kind"') < step1.indexOf('id="event-mode"') && step1.indexOf('id="event-mode"') < step1.indexOf('id="week-mode"'));
   assert.match(/<div id="week-mode"[^>]*>/.exec(step1)[0], /hidden/, "the event mode is the default");
-  assert.equal((step1.match(/<details/g) ?? []).length, 1 + (step1.match(/id="event-picker"/g) ? 0 : 0), "only one folded block in the week panel");
-  const week = step1.slice(step1.indexOf('id="week-mode"')); assert.equal((week.match(/<input/g) ?? []).length, 1, "the week panel has one field, the first day, folded");
-  assert.ok(week.indexOf("<details") < week.indexOf('id="week-start"'));
+  const week = step1.slice(step1.indexOf('id="week-mode"'));
+  assert.deepEqual([...week.matchAll(/<option value="([a-z_0-9]+)">([^<]+)</g)].map((m) => m[1]), ["next_7_days", "this_week", "next_week", "week_of"], "the four choices, in this order, the first one is the default");
+  assert.match(week, /<label for="week-range">/); assert.match(week, /<select id="week-range">/); assert.match(week, /<label for="week-date">/);
+  assert.match(/<div class="field" id="week-date-box"[^>]*>/.exec(week)[0], /hidden/, "the date picker is hidden until 'Week of…'");
+  assert.equal((week.match(/<input/g) ?? []).length, 1, "one native date field"); assert.match(week, /<input type="date" id="week-date">/);
+  assert.equal((week.match(/<details/g) ?? []).length, 0, "nothing folded: the choice is one visible list"); assert.ok(!/week-start|week-more/.test(html));
   assert.match(html, /body\.week \[data-only=event\]\{display:none!important\}/);
   for (const id of ["item-countdown", "item-costreamers"]) assert.match(html, new RegExp(`id="${id}" data-only="event"`));
 });
 
-const WEEK_KEYS = ["kind_label", "kind_event", "kind_week", "h_week", "week_one", "week_many", "week_empty", "week_shown", "week_part_label", "week_part_all", "week_part", "week_start", "week_start_hint", "week_f_title", "week_ph_title", "week_f_when", "week_f_game", "week_g_event", "week_fail"];
+const WEEK_KEYS = ["kind_label", "kind_event", "kind_week", "h_week", "week_one", "week_many", "week_empty", "week_shown", "week_part_label", "week_part_all", "week_part", "week_range_label", "week_range_7", "week_range_this", "week_range_next", "week_range_of", "week_date", "week_over", "week_f_title", "week_ph_title", "week_f_when", "week_f_game", "week_g_event", "week_fail"];
 test("texts: the week's sentences exist in French and English with the same {variables}; the page asks for them; labels stay short, with no colon", () => {
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
@@ -370,11 +442,14 @@ test("texts: the week's sentences exist in French and English with the same {var
     assert.ok(fr[`ui_${k}`] && en[`ui_${k}`], k); assert.ok(page.KEYS.includes(k), `${k} is passed to the page`); assert.equal(vars(fr[`ui_${k}`]), vars(en[`ui_${k}`]), k);
     for (const text of [fr[`ui_${k}`], en[`ui_${k}`]]) assert.ok(!/[!:]\s*$/.test(text) && !/ !/.test(text.replace(/ ?[!?]$/, "")), `${k}: no colon at the end, no exclamation`);
   }
-  for (const k of ["kind_label", "kind_event", "kind_week", "week_f_title", "week_f_when", "week_f_game", "week_start", "week_part_label"]) assert.ok(en[`ui_${k}`].length <= 60 && fr[`ui_${k}`].length <= 60, k);
-  for (const k of ["week_start_hint", "week_shown"]) assert.ok(en[`ui_${k}`].length <= 60 && fr[`ui_${k}`].length <= 60, `${k}: a visible help is 60 characters at most`);
+  for (const k of ["kind_label", "kind_event", "kind_week", "week_f_title", "week_f_when", "week_f_game", "week_range_label", "week_range_7", "week_range_this", "week_range_next", "week_range_of", "week_date", "week_part_label"]) assert.ok(en[`ui_${k}`].length <= 60 && fr[`ui_${k}`].length <= 60, k);
+  for (const k of ["week_over", "week_shown"]) assert.ok(en[`ui_${k}`].length <= 60 && fr[`ui_${k}`].length <= 60, `${k}: a visible help is 60 characters at most`);
   const app = fs.readFileSync(`${DIR}/app.mjs`, "utf8"), used = [...app.matchAll(/\bL\("([a-z0-9_]+)"/g)].map((m) => m[1]).concat([...app.matchAll(/"(week_[a-z_]+|kind_[a-z]+|h_week)"/g)].map((m) => m[1]));
-  for (const k of used) assert.ok(fr[`ui_${k}`] !== undefined || /^(err|style|type|net)_/.test(k) || k.startsWith("{"), `${k} is a sentence of the page`);
+  for (const k of used) assert.ok(fr[`ui_${k}`] !== undefined || /^(err|style|type|net)_/.test(k) || k === "week_of" || k.startsWith("{"), `${k} is a sentence of the page`);
   for (const k of ["title", "range"]) void k;
+  assert.deepEqual([fr.ui_week_range_7, fr.ui_week_range_this, fr.ui_week_range_next, fr.ui_week_range_of], ["Les 7 prochains jours", "Cette semaine", "La semaine prochaine", "La semaine du…"]);
+  assert.deepEqual([en.ui_week_range_7, en.ui_week_range_this, en.ui_week_range_next, en.ui_week_range_of], ["Next 7 days", "This week", "Next week", "Week of…"]);
+  assert.ok(!("ui_week_start" in en) && !("ui_week_start_hint" in en) && !("ui_week_start" in fr), "the old first-day field is gone");
   assert.equal(manifest.version, "2.16.0"); assert.equal(manifest.minCore, "0.6.7", "the minimum core does not move");
   assert.ok(manifest.description.en.split(/\s+/).length <= 20 && manifest.description.fr.split(/\s+/).length <= 20);
 });

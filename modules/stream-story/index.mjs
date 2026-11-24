@@ -119,12 +119,12 @@ const routes = {
     const selected = wanted || key ? E.findEvent(all.events, { id: P.EVENT_ID.test(wanted) ? wanted : "", key: /^[a-z0-9]{1,20}$/.test(key) ? key : "" }) : null;
     return json({ ok: true, items: page.items.map(E.publicEvent), next: page.next, total: list.length, totalAll: all.events.length, sources: all.sources, selected: selected ? E.publicEvent(selected) : null, at: all.at });
   }),
-  // The week's schedule: every event of the window (7 days from `start`, today by default, on the clock of the site's zone), and the covers of their games. The page cuts the rows itself.
+  // The week's schedule: every event of the window (the 7 days of `range`, `date` with week_of, on the clock of the site's zone), and the covers of their games. The page cuts the rows itself.
   week: guarded("GET", async (request, ctx) => {
     const q = new URL(request.url).searchParams, own = zoneSetting(ctx), asked = q.get("tz") ?? "";
-    const zone = own || (P.validZone(asked) ? asked : "UTC"), start = (q.get("start") ?? "").slice(0, 10);
+    const zone = own || (P.validZone(asked) ? asked : "UTC"), range = (q.get("range") ?? "next_7_days").slice(0, 20), date = (q.get("date") ?? "").slice(0, 10);
     const all = await src.loadEvents(ctx, { zone: own, force: q.get("fresh") === "1" });
-    const plan = P.weekPlan(all.events, { nowMs: Date.now(), tz: zone, startDay: start });
+    const plan = P.weekPlan(all.events, { nowMs: Date.now(), tz: zone, range, date });
     if (plan.error) return json({ ok: false, error: "invalid", field: plan.error }, 400);
     const covers = await src.coversOf(ctx, plan.all.flatMap((e) => e.games.slice(0, 1)));
     return json({ ok: true, events: plan.all.map(E.weekEvent), window: { startDay: plan.window.startDay, endDay: plan.window.endDay, today: plan.window.today, zone: plan.window.zone }, sources: all.sources, covers: covers.covers, coverState: covers.coverState, at: all.at });
@@ -221,10 +221,10 @@ export default {
     /** Read only: what the week's story would list: the events of 7 days (today by default) from all sources, the rows that fit a video, what does not, and the parts to split a busy week. */
     async story_week(ctx, args = {}) {
       const a = args && typeof args === "object" ? args : {};
-      if (a.weekStart !== undefined && (typeof a.weekStart !== "string" || !P.isDay(a.weekStart))) throw Object.assign(new Error("'weekStart' must be a real date written YYYY-MM-DD."), { expose: true });
+      const choice = tools.weekChoice(a);
       const all = await src.loadEvents(ctx, { zone: zoneSetting(ctx) });
-      const plan = P.weekPlan(all.events, { nowMs: Date.now(), tz: zoneSetting(ctx) || "UTC", startDay: a.weekStart ?? "" });
-      if (plan.error) throw Object.assign(new Error(`'weekStart' must be today or a later day, at most ${P.WEEK.horizonDays} days ahead.`), { expose: true });
+      const plan = P.weekPlan(all.events, { nowMs: Date.now(), tz: zoneSetting(ctx) || "UTC", range: choice.range, date: choice.date });
+      if (plan.error) throw tools.weekRangeError();
       const state = plan.total ? "ok" : all.sources.length && all.sources.every((s) => s.state === "down") ? "slow" : "empty";
       return {
         state, from: plan.window.startDay, to: plan.window.endDay, timezone: plan.window.zone, total: plan.total, rowsPerVideo: P.WEEK.rowsMax, more: plan.more,

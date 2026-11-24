@@ -303,12 +303,17 @@
   "ui_week_part_label": "Part of the week",
   "ui_week_part_all": "First {n} events",
   "ui_week_part": "{from} to {to}",
-  "ui_week_start": "First day",
-  "ui_week_start_hint": "Empty means today. The video covers 7 days.",
   "ui_week_f_title": "Heading",
   "ui_week_ph_title": "For example: Week of the 22nd",
   "ui_week_f_when": "Days and times",
   "ui_week_f_game": "Covers",
   "ui_week_g_event": "About the week",
-  "ui_week_fail": "The planning did not answer. Try again."
+  "ui_week_fail": "The planning did not answer. Try again.",
+  "ui_week_range_label": "Days covered",
+  "ui_week_range_7": "Next 7 days",
+  "ui_week_range_this": "This week",
+  "ui_week_range_next": "Next week",
+  "ui_week_range_of": "Week of…",
+  "ui_week_date": "Any day of that week",
+  "ui_week_over": "Choose a date from today to 12 weeks ahead."
 }
