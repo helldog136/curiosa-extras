@@ -7,6 +7,10 @@ const hl = await import(new URL(`./health.mjs${version}`, import.meta.url).href)
 const service = await import(new URL(`./service.mjs${version}`, import.meta.url).href);
 const { COL } = store;
 
+/** The one right that changes or reads the bot: held by the owner only by default (module.json `rights`). The core checks it before an action runs; the code checks it again. */
+export const RIGHT = "bot.manage";
+export const owns = (ctx) => { try { return typeof ctx.can === "function" && ctx.can(RIGHT) === true; } catch { return false; } };
+
 const EDIT = "?edit=app";
 const time = (ctx, ms) => { try { return new Date(ms).toLocaleTimeString(ctx.locale || "en", { hour: "2-digit", minute: "2-digit", timeZone: ctx.timezone || "UTC" }); } catch { return ""; } };
 const words = (ctx, missing) => [...new Set(missing.map((m) => ctx.t(`perm_${m.permission}`)))].join(", ");
@@ -18,8 +22,12 @@ export function missingText(ctx, missing) {
   return [...by].map(([f, list]) => `${ctx.t(`feature_${f}`)} (${words(ctx, list)})`).join(" · ");
 }
 
-async function card(ctx, creds, p) {
+async function card(ctx, creds, p, can) {
   const head = { type: "connection", id: "bot", title: ctx.t("app_title") };
+  if (!can) {   // somebody who may open the page but not change the bot: the state, and who can change it
+    const state = !store.complete(creds) ? "notConfigured" : p.state === "ok" ? "configured" : "degraded";
+    return { ...head, state, reason: state === "configured" ? undefined : ctx.t("reason_owner_only") };
+  }
   if (!store.complete(creds)) {
     return {
       ...head, state: "notConfigured", reason: ctx.t("reason_none"), primary: { label: ctx.t("register"), href: EDIT },
@@ -37,11 +45,13 @@ async function card(ctx, creds, p) {
   if (p.state === "guild") return { ...base, state: "degraded", reason: ctx.t("health_guild"), ...since, ...(invite ? { primary: { label: ctx.t("fix_guild"), href: invite } } : {}) };
   if (p.state === "perms") return { ...base, state: "degraded", reason: ctx.t("health_perms", { feature: ctx.t(`feature_${p.feature}`), list: words(ctx, p.missing?.length ? p.missing : []) || ctx.t("perm_unknown") }), ...since, ...(invite ? { primary: { label: ctx.t("fix_perms"), href: invite } } : {}) };
   if (p.state === "rate") return { ...base, state: "degraded", reason: ctx.t("health_rate", { time: p.until ? time(ctx, p.until) : "…" }) };
+  if (p.state === "net") return { ...base, state: "degraded", reason: ctx.t("health_net"), ...since, primary: { label: ctx.t("test"), action: "test" } };
   return { ...base, state: "configured" };
 }
 
-async function keptTable(ctx) {
-  const docs = await store.managedList(ctx);
+async function keptTable(ctx, can) {
+  let docs = [];
+  try { docs = await store.managedList(ctx); } catch { return []; }
   if (!docs.length) return [];
   const names = new Map();
   const chans = await service.methods.listChannels(ctx, {});
@@ -58,7 +68,7 @@ async function keptTable(ctx) {
     columns: [ctx.t("col_module"), ctx.t("col_message"), ctx.t("col_channel"), ctx.t("col_updated")],
     rows: docs.map((d) => [owners.get(d.data.owner) ?? d.data.owner ?? "", d.data.label || d.data.key || "", names.get(d.data.channelId) ?? `…${String(d.data.channelId).slice(-4)}`, date(d.data.at)]),
     rowIds: docs.map((d) => d.id),
-    rowActions: [{ label: ctx.t("forget_row"), action: "forgetKept", confirm: ctx.t("forget_confirm"), danger: true, inMenu: true }],
+    ...(can ? { rowActions: [{ label: ctx.t("forget_row"), action: "forgetKept", confirm: ctx.t("forget_confirm"), danger: true, inMenu: true }] } : {}),
   }];
 }
 
@@ -77,15 +87,16 @@ function dialog(ctx, creds) {
 export async function render(ctx, { query } = {}) {
   const creds = await store.credsOf(ctx);
   const p = await hl.problem(ctx);
-  const out = [await card(ctx, creds, p)];
-  if (store.hasBot(creds)) out.push(...(await keptTable(ctx)));
-  if (query?.edit === "app") out.push(dialog(ctx, creds));
+  const can = owns(ctx);
+  const out = [await card(ctx, creds, p, can)];
+  if (store.hasBot(creds)) out.push(...(await keptTable(ctx, can)));
+  if (can && query?.edit === "app") out.push(dialog(ctx, creds));
   return out;
 }
 
 const forget = () => { hl.resetHealth(); service.resetLists(); };
 
-export const actions = {
+const raw = {
   /** Saves what was typed; an empty field keeps the current value. Errors go under the field, with an example. */
   async saveApp(ctx, values) {
     const cur = await store.credsOf(ctx);
@@ -132,3 +143,6 @@ export const actions = {
     return r.ok ? { ok: ctx.t("forgotten"), redirect: "?" } : { error: ctx.t(`why_${r.reason}`) };
   },
 };
+
+/** Every action refuses anybody but the holder of the right (the core refuses first; this is the second lock, which also holds in a test or an older core). */
+export const actions = Object.fromEntries(Object.entries(raw).map(([name, run]) => [name, async (ctx, values) => (owns(ctx) ? run(ctx, values) : { error: ctx.t("err_owner_only") })]));

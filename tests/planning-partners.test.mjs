@@ -246,10 +246,11 @@ test("textes : FR/EN à parité exacte ({variables} comprises) et aucun mot tech
 
 test("manifestes : contact.book est FACULTATIF, le sujet déclare `partners`, l'outil de l'assistant reste en lecture seule sous le même nom, versions montées (mineure)", () => {
   const m = manifest("planning");
-  assert.deepEqual(m.requires.find((r) => r.service === "contact.book"), { service: "contact.book", min: 2, optional: true, label: m.requires.at(-1).label });
+  const book = m.requires.find((r) => r.service === "contact.book");
+  assert.deepEqual(book, { service: "contact.book", min: 2, optional: true, label: book.label });
   assert.deepEqual(m.consumes.find((c) => c.topic === "planning.slot").schema.find((f) => f.key === "partners"), { key: "partners", type: "string[]" });
   assert.deepEqual(m.mcp.map((t) => [t.name, t.readOnly, t.default]), [["planning_upcoming", true, true]]);
   assert.equal(m.minCore, "0.11.0", "le Planning n'utilise aucune brique de la 0.6.0 : minCore inchangé");
-  assert.deepEqual([m.version, manifest("calendar-manual").version, manifest("calendar-ical").version], ["2.9.2", "1.4.0", "1.2.1"]);
+  assert.deepEqual([m.version, manifest("calendar-manual").version, manifest("calendar-ical").version], ["2.10.0", "1.4.0", "1.2.1"]);
   assert.equal(m.logEvents, undefined, "pas de nouvel événement au journal");
 });

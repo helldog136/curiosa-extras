@@ -52,6 +52,10 @@
   "why_rate_limited": "Discord asks for a pause. Try again later.",
   "why_unavailable": "Discord does not answer. Try again later.",
   "why_failed": "Discord could not do it.",
+  "feature_channel": "checking a channel",
+  "feature_list": "reading channels and roles",
+  "feature_stats": "counting members",
+  "feature_verify": "checking the connection",
   "feature_post": "posting messages",
   "feature_privateThread": "private threads",
   "feature_publicThread": "public threads",
@@ -64,5 +68,8 @@
   "perm_privateThreads": "create private threads",
   "perm_sendInThreads": "send messages in threads",
   "perm_unknown": "unknown",
-  "save": "Save the bot"
+  "save": "Save the bot",
+  "err_owner_only": "Only the owner can change the Discord bot.",
+  "reason_owner_only": "Ask the owner to fix the Discord bot.",
+  "health_net": "Discord does not answer."
 }

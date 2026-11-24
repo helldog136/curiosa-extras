@@ -113,5 +113,23 @@
     "fr": {
       "mcp.connector_discord_status": "Dit si le bot Discord du site fonctionne vraiment, depuis quand, et quelles permissions lui manquent."
     }
-  }
+  },
+  "rights": [
+    {
+      "id": "bot.manage",
+      "label": {
+        "en": "change or remove the Discord bot",
+        "fr": "modifier ou retirer le bot Discord"
+      },
+      "help": {
+        "en": "Enter, test or remove the bot's secret code, and delete the messages it keeps up to date.",
+        "fr": "Saisir, tester ou retirer le code secret du bot, et supprimer les messages qu'il tient à jour."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": false,
+        "editor": false
+      }
+    }
+  ]
 }

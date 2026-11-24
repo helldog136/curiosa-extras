@@ -36,7 +36,11 @@ Checked against the Discord documentation ([Permissions](https://docs.discord.co
 
 ## What the bot can and cannot do
 
-- It posts, edits and deletes **its own** messages. It never touches the messages of a person.
+- It posts, edits and deletes **its own** messages. It never touches the messages of a person: `editMessage` and `deleteMessage` only accept a message the bot itself wrote (the managed ones, plus a log of the last 500 messages it sent), anything else is refused with `forbidden` before any call.
+- It only writes in channels of **your** server: before a write, the channel is looked up and refused (`forbidden`, no write) when it belongs to another server or is not a text, announcement or thread channel (a thread is checked on its parent). There is no owner-chosen channel allowlist in this version: it needs a settings page or the caller identity from the core (see below).
+- A refusal about a channel (`forbidden` with `scope: "channel"`) never turns the owner's card red; only what the bot lacks on the whole server does. A store that cannot be read stops writes (`unavailable`), because caps and the sent log cannot be checked. A message moved to another channel whose old copy cannot be deleted is remembered and deleted on a later pass.
+- A kept message count is capped before anything is sent: 200 in all, 50 per module.
+- Only the **owner** (right `bot.manage`, sensitive, given to nobody by default) can replace, test or remove the bot code; anybody else sees the state and a line saying it is owner-only, and the actions refuse in code too.
 - Every message is **silent** (no push notification) unless the module asks otherwise, and **nobody can be mentioned** by a message: `@everyone`, `@here`, users and roles are defused. The only exception is the opening message of a private thread, which mentions the person and the staff role it was asked for, and nobody else.
 - It does not create, rename or delete channels or categories (possible follow-up, with a designated category).
 
@@ -49,23 +53,23 @@ Declare `"requires": [{ "service": "discord.api" }]` (add `"optional": true` for
 | `status` | `{}` → `{ ok, bot, oauth, guildId? }` (no network; `oauth` is always `false` in 1.0) |
 | `listChannels`, `listRoles` | `{}` → `{ ok, channels: [{ id, name }] }` / `{ ok, roles: [{ id, name }] }` (text channels; no @everyone, no bot role; kept 1 minute) |
 | `guildStats` | `{}` → `{ ok, memberCount, onlineCount? }`: the approximate counts Discord shows publicly (`GET /guilds/{id}?with_counts=true`), kept 5 minutes so a public page may call it freely; honours the site-wide pause |
-| `channelChoices`, `channelsByIds` | For the core's `choice` setting (source `service`): `{ q?, limit? }` → `{ items: [{ id, label }], next }`; `{ ids }` → `{ items, missing }`. No `ok` field (the core's own shape); a Discord failure gives an empty answer, never "gone". |
+| `channelChoices`, `channelsByIds` | For the core's `choice` setting (source `service`): `{ q?, limit? }` → `{ items: [{ id, label }], next }`; `{ ids }` → `{ items, missing }`. No `ok` field (the core's own shape); a Discord failure **throws**, so the core keeps the chosen value as "unverified" instead of reporting the channel as gone. |
 | `createPrivateThread` | `{ channelId, name, userId, staffRoleId?, intro? }` → `{ ok, threadId }` or `{ ok: false, reason, threadId? }`. Private thread (type 12, not invitable, closes itself after 7 days), name cleaned (no control characters, 100 characters, never empty), the person added, then the opening message mentioning only the person and the role. `intro` is plain text, 1500 characters, pings defused. `threadId` is present when the thread exists but a later step failed. |
 | `setThreadArchived` | `{ threadId, archived }` → `{ ok }` (`true` archives and locks, `false` reopens) |
 | `postMessage` | `{ channelId, content?, embeds?, silent? }` → `{ ok, messageId }`. `silent` is `true` by default. A thread is a channel: pass its number. |
-| `editMessage` | `{ channelId, messageId, content?, embeds? }` → `{ ok, messageId }` |
+| `editMessage` | `{ channelId, messageId, content?, embeds? }` → `{ ok, messageId }` (only a message the bot sent) |
 | `deleteMessage` | `{ channelId, messageId }` → `{ ok }` (already gone counts as done) |
-| `upsertManagedMessage` | `{ owner, key, channelId, content?, embeds?, silent?, label? }` → `{ ok, messageId, action }`, `action` being `created`, `edited`, `unchanged` or `recreated`. Keeps **one** message per `owner:key`: edited in place, nothing sent when the content is the same, written again once if a person deleted it (a line in the log). Two simultaneous calls make one message. A new channel moves it. `owner` is the id of the calling module (it only namespaces the keys: the core does not tell a service who calls). `label` is the name shown in the connector page. |
+| `upsertManagedMessage` | `{ owner, key, channelId, content?, embeds?, silent?, label?, verify? }` → `{ ok, messageId, action }`, `action` being `created`, `edited`, `unchanged` or `recreated`. Keeps **one** message per `owner:key`: edited in place, nothing sent when the content is the same, written again once if a person deleted it (a line in the log). With `verify: true` and the same content, the message is edited with itself, so one that a person deleted is written again (`recreated`) instead of being trusted. Two simultaneous calls make one message. A new channel moves it. The first write carries a `nonce` (from owner, key, content) with `enforce_nonce`, so a retry after a lost reply never makes a second message. `owner` is the id of the calling module. **It is advisory**: the core does not tell a service who calls, so any module that can call the service can claim any owner, and the caps and the sent-log are the real limits. `label` is the name shown in the connector page. |
 | `forgetManagedMessage` | `{ owner, key }` → `{ ok }` deletes the kept message |
 | `createThread` | `{ channelId, name, messageId?, privateThread? }` → `{ ok, threadId }` (public thread, from a message, or private) |
 
 Embeds: `title`, `description`, `url` (https), `color`, `timestamp`, `fields` (25), `footer`; 10 per message, 6000 characters in all.
 
-Limits and pauses: every call goes through `ctx.api.net` (never `fetch`), with the user agent `DiscordBot (https://example.org, 1)`. When Discord says “too many requests”, **the whole site** stops calling until the time Discord gave (one bucket per bot), then resumes alone; the card shows the pause.
+Limits and pauses: every call goes through `ctx.api.net` (never `fetch`), with the user agent `DiscordBot (https://github.com/helldog136/Curiosa, 1)`. When Discord says “too many requests”, **the whole site** stops calling until the time Discord gave (one bucket per bot), then resumes alone; the card shows the pause.
 
 ## Where things are kept
 
-The application number, the server number and the secret code are one document in the connector's private storage. They are never in a setting, a block, a service answer, a log line, an error, or the readable backup (the module has none; the core's encrypted backup holds the storage like all module data). Kept messages (module, key, channel, message number, a hash of the content) are listed on the page with a search and “Delete the message”.
+The application number, the server number and the secret code are one document in the connector's private storage. They are never in a setting, a block, a service answer, a log line, an error, or the readable backup (the module has none). **Plain truth about storage:** the core has no secret-sealing API for modules, so the code is stored as text in the site's database like any module data, and it is encrypted only inside the core's backup file (with your backup password). Anyone who can read the database or the live storage sees it: restrict that access, and regenerate the code in the Discord developer portal if you suspect a leak. Kept messages (module, key, channel, message number, a hash of the content) are listed on the page with a search and “Delete the message”.
 
 ## Not in this version
 

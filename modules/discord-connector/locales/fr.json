@@ -52,6 +52,10 @@
   "why_rate_limited": "Discord demande une pause. Réessayez plus tard.",
   "why_unavailable": "Discord ne répond pas. Réessayez plus tard.",
   "why_failed": "Discord n'a pas pu le faire.",
+  "feature_channel": "la vérification d'un salon",
+  "feature_list": "la lecture des salons et des rôles",
+  "feature_stats": "le comptage des membres",
+  "feature_verify": "la vérification de la connexion",
   "feature_post": "la publication de messages",
   "feature_privateThread": "les fils privés",
   "feature_publicThread": "les fils publics",
@@ -64,5 +68,8 @@
   "perm_privateThreads": "créer des fils privés",
   "perm_sendInThreads": "envoyer des messages dans les fils",
   "perm_unknown": "inconnue",
-  "save": "Enregistrer le bot"
+  "save": "Enregistrer le bot",
+  "err_owner_only": "Seule la personne propriétaire peut modifier le bot Discord.",
+  "reason_owner_only": "Demandez à la personne propriétaire de réparer le bot Discord.",
+  "health_net": "Discord ne répond pas."
 }
