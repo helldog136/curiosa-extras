@@ -41,7 +41,7 @@ export const channelOf = (ctx) => { const v = String(setting(ctx, "discordChanne
 
 /** Markdown from a calendar is data: neither bold, links nor a mention can come out of a title. */
 // `<` is followed by an invisible space so that nothing can become a timestamp (<t:), a channel (<#), a command (</), an emoji (<:, <a:) or a mention (<@).
-const esc = (s) => String(s ?? "").replace(/[\u0000-\u001f\u007f\u202A-\u202E\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim().replace(/([\\`*_~|>[\]()#])/g, "\\$1").replace(/</g, "<\u200b").replace(/@/g, "@\u200b");
+const esc = (s) => String(s ?? "").replace(/[\u0000-\u001f\u007f\u061c\u200e\u200f\u202A-\u202E\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim().replace(/([\\`*_~|>[\]()#])/g, "\\$1").replace(/</g, "<\u200b").replace(/@/g, "@\u200b");
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 /** Whole lines only, so a limit never cuts a timestamp or a bold mark in two; the last line says how many were left out. */
 const fit = (lines, max, more) => {
@@ -231,14 +231,18 @@ async function pass(ctx, deps, now) {
   const verify = state.digest === w.digest;   // nothing new to say: only check the message is still there (a person may have deleted it)
   const r = await call(ctx, "upsertManagedMessage", { owner: OWNER, key, label: "Weekly planning", channelId, embeds: [weekEmbed(w.rows, w.week, text)], silent, verify });
   const ok = r.ok === true;
-  const prevFails = Number(state.fails) || 0;
-  const fails = ok ? 0 : prevFails + 1;
-  const retryAt = ok ? 0 : now + (r.retryAt ? Math.max(60_000, Number(r.retryAt) - now) : LIMITS.backoffMs[Math.min(fails - 1, LIMITS.backoffMs.length - 1)]);
-  const next = {
-    ...state, off: undefined,
-    last: { at: new Date(now).toISOString(), ok, channelId, ...(ok ? {} : { reason: String(r.reason ?? "failed"), retryAt }) },
-    fails, retryAt, retryDigest: ok ? "" : w.digest,
+  // After a failure: the wait grows 1, 5, 15, 60 minutes; the connector's own end of pause (an ISO date) is honoured when it is later.
+  const trouble = (res, fails) => {
+    const asked = typeof res.retryAt === "string" ? Date.parse(res.retryAt) : Number(res.retryAt);
+    const wait = LIMITS.backoffMs[Math.min(fails - 1, LIMITS.backoffMs.length - 1)];
+    const retryAt = Number.isFinite(asked) && asked > now ? Math.max(asked, now + 60_000) : now + wait;
+    const reason = res.reason === "forbidden" && res.scope === "channel" ? "forbidden_channel" : String(res.reason ?? "failed");
+    return { fails, retryAt, retryDigest: w.digest, last: { at: new Date(now).toISOString(), ok: false, channelId, reason, retryAt } };
   };
+  const fails = (Number(state.fails) || 0) + 1;
+  const next = ok
+    ? { ...state, off: undefined, last: { at: new Date(now).toISOString(), ok: true, channelId }, fails: 0, retryAt: 0, retryDigest: "" }
+    : { ...state, off: undefined, ...trouble(r, fails) };
   if (!ok) { await save(ctx, d0, next); return "failed"; }
   next.digest = w.digest; next.verifiedAt = now; next.channelId = channelId;
   const sameWeek = state.week === w.weekKey;
@@ -246,7 +250,10 @@ async function pass(ctx, deps, now) {
     const changes = changesOf(state.snapshot, w.all, { week: w.week, from: w.from, to: w.to, now });
     if (changes.length) {
       const e = await call(ctx, "postMessage", { channelId, content: eventsText(changes, text), silent });
-      if (e.ok !== true) { next.snapshot = state.snapshot; next.week = state.week; await save(ctx, d0, { ...next, digest: state.digest ?? "" }); return "failed"; }   // the edit is done; the line is retried next pass
+      if (e.ok !== true) {   // the edit is done; the line is retried after the same wait as any failure, and the page says so
+        await save(ctx, d0, { ...next, ...trouble(e, fails), snapshot: state.snapshot, week: state.week, digest: state.digest ?? "", verifiedAt: now });
+        return "failed";
+      }
     }
   }
   if (!verify || !Array.isArray(state.snapshot)) { next.snapshot = snapshotOf(w.all); next.week = w.weekKey; }

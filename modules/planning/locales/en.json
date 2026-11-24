@@ -121,6 +121,7 @@
   "adminDiscordRetry": "Next try at {when}.",
   "adminDiscordFail": "Posting failed on {when}: {reason}",
   "discordReason_forbidden": "Discord refuses the bot. Open the Discord connector to enter the secret code again.",
+  "discordReason_forbidden_channel": "Discord refuses this channel. Choose another channel, or give the bot access to it.",
   "discordReason_not_found": "the channel no longer exists. Choose another one.",
   "discordReason_not_member": "the bot is not on the server. Add it from the Discord connector.",
   "discordReason_rate_limited": "Discord asks to wait. Posting resumes by itself.",

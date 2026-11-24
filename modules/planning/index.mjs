@@ -544,7 +544,7 @@ async function discordAdminBlocks(ctx) {
   const last = await Discord.lastResult(ctx);
   if (!last) return [...blocks, { type: "markdown", text: t("adminDiscordWaiting") }];
   const when = new Intl.DateTimeFormat(ctx.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(last.at));
-  const reason = ["forbidden", "not_found", "not_member", "rate_limited", "unavailable", "not_configured", "no_connector"].includes(last.reason) ? last.reason : "failed";
+  const reason = ["forbidden", "forbidden_channel", "not_found", "not_member", "rate_limited", "unavailable", "not_configured", "no_connector"].includes(last.reason) ? last.reason : "failed";
   const retry = !last.ok && last.retryAt && last.retryAt > Date.now() ? ` ${t("adminDiscordRetry", { when: new Intl.DateTimeFormat(ctx.locale, { timeStyle: "short" }).format(new Date(last.retryAt)) })}` : "";
   return [...blocks, { type: "markdown", text: last.ok ? t("adminDiscordOk", { when }) : `${t("adminDiscordFail", { when, reason: t(`discordReason_${reason}`) })}${retry}` }];
 }

@@ -302,3 +302,60 @@ test("dates are written in the site's default language, not the language of whoe
   await pass(mk({}, { locale: "en", defaultLocale: "fr" }));
   assert.match(upserts()[0].args.embeds[0].description, /mardi/i);
 });
+
+test("a pause given by the connector as an ISO date is honoured: no call before it, 'Next try at' on the page", async () => {
+  items = [slot("a", 16, 19)];
+  const until = new Date(NOW + 20 * 60_000).toISOString();
+  discordAnswer = () => ({ ok: false, reason: "rate_limited", retryAt: until });
+  const ctx = mk();
+  assert.equal(await pass(ctx, NOW), "failed");
+  const n = calls.length;
+  assert.equal(await pass(ctx, NOW + 19 * 60_000), "backoff");
+  assert.equal(calls.length, n, "no call before the date Discord gave");
+  discordAnswer = () => ({ ok: true, messageId: "700000000000000001", action: "created" });
+  assert.equal(await pass(ctx, NOW + 20 * 60_000 + 1000), "posted");
+  // the page, with a pause in the future
+  discordAnswer = () => ({ ok: false, reason: "rate_limited", retryAt: new Date(Date.now() + 20 * 60_000).toISOString() });
+  items = [slot("a", 16, 19), slot("b", 17, 19)];
+  await pass(ctx, Date.now());
+  const admin = JSON.stringify(await def.adminPanel(ctx));
+  assert.match(admin, /Discord asks to wait/); assert.match(admin, /Next try at/);
+  assert.ok(!/NaN|Invalid/.test(admin));
+});
+
+test("when only the short line fails, the module waits and the page says so instead of retrying every minute", async () => {
+  items = [slot("a", 16, 19)];
+  const ctx = mk({ discordEvents: true });
+  await pass(ctx, NOW);
+  items = [slot("a", 16, 21)];
+  discordAnswer = (m) => (m === "postMessage" ? { ok: false, reason: "unavailable" } : { ok: true, messageId: "700000000000000001", action: "edited" });
+  assert.equal(await pass(ctx, NOW + 60_000), "failed");
+  const n = calls.length;
+  assert.equal(await pass(ctx, NOW + 90_000), "backoff");
+  assert.equal(calls.length, n, "no new call during the wait");
+  assert.equal((await D.lastResult(ctx)).ok, false, "the page does not keep saying the week was posted");
+  discordAnswer = () => ({ ok: true, messageId: "700000000000000001", action: "edited" });
+  assert.equal(await pass(ctx, NOW + 200_000), "posted");
+  assert.equal(posts().filter((c) => /Stream moved/.test(c.args.content)).length >= 1, true);
+  assert.equal((await D.lastResult(ctx)).ok, true);
+});
+
+test("a refusal about the channel is not told as a wrong secret code", async () => {
+  items = [slot("a", 16, 19)];
+  discordAnswer = () => ({ ok: false, reason: "forbidden", scope: "channel" });
+  const ctx = mk();
+  await pass(ctx, Date.now());
+  assert.equal((await D.lastResult(ctx)).reason, "forbidden_channel");
+  const admin = JSON.stringify(await def.adminPanel(ctx));
+  assert.match(admin, /refuses this channel/); assert.ok(!/secret code/.test(admin));
+  const en = rd("planning", "locales/en.json"), fr = rd("planning", "locales/fr.json");
+  assert.ok(en.discordReason_forbidden_channel && fr.discordReason_forbidden_channel);
+});
+
+test("titles lose direction controls and marks: no override can reorder the line", async () => {
+  items = [slot("a", 16, 19, { title: "ab‮cd⁦ef‎gh‏ij؜kl" })];
+  await pass(mk());
+  const d = upserts()[0].args.embeds[0].description;
+  assert.ok(!/[‪-‮⁦-⁩‎‏؜]/.test(d));
+  assert.match(d, /ab cd ef gh ij kl/);
+});
