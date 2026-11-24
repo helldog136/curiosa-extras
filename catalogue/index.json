@@ -686,7 +686,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
       "ref": "v1.110.0",
-      "version": "1.4.1",
+      "version": "1.5.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -724,6 +724,12 @@
       "requires": {
         "core": "0.6.0"
       },
+      "needs": [
+        {
+          "service": "discord.api",
+          "optional": true
+        }
+      ],
       "places": [
         "networks.discord",
         "networks.stats"
@@ -763,6 +769,38 @@
       "places": [
         "networks.discord",
         "live.golive"
+      ]
+    },
+    {
+      "id": "discord-connector",
+      "name": "Discord connector",
+      "description": "Links your site to your Discord server with a bot, once, for everything that talks to Discord.",
+      "i18n": {
+        "en": {
+          "name": "Discord connector",
+          "description": "Links your site to your Discord server with a bot, once, for everything that talks to Discord."
+        },
+        "fr": {
+          "name": "Connecteur Discord",
+          "description": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord."
+        }
+      },
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/discord-connector",
+      "ref": "v1.110.0",
+      "version": "1.0.0",
+      "platform": "discord",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🤖",
+      "requires": {
+        "core": "0.46.0"
+      },
+      "offers": [
+        "discord.api"
+      ],
+      "places": [
+        "networks.discord"
       ]
     },
     {
@@ -1881,7 +1919,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.110.0",
-      "version": "2.9.2",
+      "version": "2.10.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -1900,6 +1938,10 @@
         {
           "service": "contact.book",
           "min": 2,
+          "optional": true
+        },
+        {
+          "service": "discord.api",
           "optional": true
         }
       ],
