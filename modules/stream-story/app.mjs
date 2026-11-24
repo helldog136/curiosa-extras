@@ -44,6 +44,7 @@ const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
   ev: { partners: [], items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false },
   // The editable information (step 2): copied from the event that is picked, or empty for "no event". `cov`: the cover of the game written in `info.game`.
+  week: { state: "idle", events: [], covers: {}, sources: [], seq: 0, busy: false },   // the week's schedule: the events of the 7 days and the covers of their games
   info: { title: "", date: "", time: "", game: "" }, noEvent: false, cov: { game: "", url: "", state: "", ambiguous: false, title: "", found: "" },
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
   images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", defaultStyle: null, defaultVariant: "", showDay: true, variants: [], styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
@@ -58,6 +59,9 @@ const streamNow = () => {
   return r;
 };
 const selectedStream = () => streamNow().stream;
+/** The week's schedule instead of one event (2.16.0). */
+const isWeek = () => S.cfg.kind === "week";
+const weekPlanNow = () => P.weekPlan(S.week.events, { nowMs: Date.now(), tz: TZ, startDay: S.cfg.weekStart || "", part: S.cfg.weekPart || 0 });
 /** The style drawn in the preview: the person's default style (else the plain editing style) until a style is chosen (steps 1 and 2); on the last step, the style of the cards. */
 const previewStyle = () => P.previewStyleFor({ step: S.step, styleChosen: S.styleChosen, style: S.cfg.style, defaultStyle: S.defaultStyle });
 /** The saved variant ("My styles") in use for a style, or null: a variant deleted since, or sitting on another base style, is simply not found and the base style is used. */
@@ -120,6 +124,7 @@ function loadWordmarkFont() {
 
 /* ───────────── The scene and the preview ───────────── */
 function contentNow() {
+  if (isWeek()) { const plan = weekPlanNow(); return { stream: null, plan, content: P.buildWeekContent(S.cfg, { plan, site: { name: S.brand.name }, tz: TZ }) }; }
   const stream = selectedStream();
   return { stream, content: P.buildContent(S.cfg, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ, showDayDefault: S.showDay }) };
 }
@@ -127,6 +132,7 @@ async function buildScene(nowMs = Date.now(), style = previewStyle()) {
   const mine = ++S.building;
   S.nowMs = nowMs;
   const wordmarkOk = S.cfg.watermark === true && (await loadWordmarkFont());
+  if (isWeek()) return buildWeekScene(mine, style, wordmarkOk);
   const { stream, content } = contentNow();
   const members = chosenMembers();
   const [logo, cover, ...av] = await Promise.all([
@@ -140,6 +146,26 @@ async function buildScene(nowMs = Date.now(), style = previewStyle()) {
   S.thumbAssets = { logo, cover, avatars };   // the same images serve the thumbnails of the style picker
   return { scene, style, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
+/** The pictures of the rows of the week: the cover of the game when the site has it, else the picture of the event. [[key, address]] */
+function weekThumbUrls(plan) {
+  const out = [];
+  for (const e of plan.shown ?? []) {
+    const game = P.oneLine(e.games?.[0], 80);
+    if (game && S.week.covers[game]) out.push([`g:${game}`, S.week.covers[game]]);
+    else if (!game && e.image) out.push([`e:${e.id}`, e.image]);
+  }
+  return out.filter(([k], i, all) => all.findIndex(([x]) => x === k) === i);
+}
+async function buildWeekScene(mine, style, wordmarkOk) {
+  const { content, plan } = contentNow(), urls = S.cfg.elements.includes("game") ? weekThumbUrls(plan) : [];
+  const [logo, ...imgs] = await Promise.all([S.cfg.elements.includes("brand") ? loadImage(S.brand.logo) : null, ...urls.map(([, u]) => loadImage(u))]);
+  if (mine !== S.building) return null;
+  const thumbs = Object.fromEntries(urls.map(([k], i) => [k, imgs[i]]).filter(([, img]) => img));
+  const variant = style === previewStyle() ? previewVariant() : null;
+  const scene = createScene({ style, format: S.cfg.format, duration: S.cfg.duration, content: { lang: S.cfg.lang }, week: content, assets: { logo, thumbs }, colors: P.mergeColors(colors, variant), font: P.fontFamilyOf(variant?.font, C.font), measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
+  S.thumbAssets = { logo, thumbs };
+  return { scene, style, empty: content.empty };
+}
 let rebuildTimer = null;
 function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; $("preview").dataset.style = r.style; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); scheduleThumbs(); }, 140); }
 /* ───────────── The style picker: one live thumbnail per style ───────────── */
@@ -149,13 +175,13 @@ function scheduleThumbs() { thumbDirty = true; clearTimeout(thumbTimer); if (S.s
 function renderThumbs() {
   if (!thumbDirty || !S.thumbAssets) return;
   thumbDirty = false;
-  const stream = selectedStream(), fmt = P.formatOf(S.cfg.format);
+  const stream = selectedStream(), fmt = P.formatOf(S.cfg.format), weekContent = isWeek() ? contentNow().content : null;
   for (const cv of document.querySelectorAll("canvas.thumb")) {
     const variant = cv.dataset.variant ? S.variants.find((x) => x.id === cv.dataset.variant) ?? null : null, st = variant ? variant.base : cv.dataset.style;
     if (!P.STYLES.includes(st)) continue;
     try {
-      const content = P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ, showDayDefault: S.showDay });
-      const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, assets: S.thumbAssets, colors: P.mergeColors(colors, variant), font: P.fontFamilyOf(variant?.font, C.font), measureContext: mctx });
+      const content = weekContent ? { lang: S.cfg.lang } : P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ, showDayDefault: S.showDay });
+      const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, ...(weekContent ? { week: weekContent } : {}), assets: S.thumbAssets, colors: P.mergeColors(colors, variant), font: P.fontFamilyOf(variant?.font, C.font), measureContext: mctx });
       cv.width = 108; cv.height = Math.round(108 * fmt.height / fmt.width); cv.style.aspectRatio = `${fmt.width} / ${fmt.height}`;
       const ctx = cv.getContext("2d"); ctx.setTransform(cv.width / sc.width, 0, 0, cv.height / sc.height, 0, 0); sc.draw(ctx, sc.restTime);
     } catch { /* a thumbnail that fails stays empty: the name and the sentence are enough */ }
@@ -577,6 +603,7 @@ const STEPS = [1, 2, 3];
 const stepName = (n) => L(`step_${n}`);
 /** The information of step 2 refuses to go on while the day written is not valid: the field is told, it takes the focus, and what was typed stays. */
 function infoBlocked() {
+  if (isWeek()) return false;
   const { error } = streamNow();
   if (!error || !(S.info.date || S.info.time)) return false;
   renderInfo();
@@ -616,8 +643,56 @@ function generateNow() {
   setStep(3, { focus: false }); generate();
 }
 
+/* ───────────── The week's schedule ───────────── */
+/** Reads the events of the 7 days (and the covers of their games). Answers that arrive late from a previous request are ignored. */
+async function loadWeek({ fresh = false } = {}) {
+  const W = S.week, mine = ++W.seq;
+  W.state = "loading"; renderKind();
+  const qs = new URLSearchParams({ tz: TZ });
+  if (S.cfg.weekStart) qs.set("start", S.cfg.weekStart);
+  if (fresh) qs.set("fresh", "1");
+  const r = await api(`week?${qs}`, { ms: 20000 });
+  if (mine !== W.seq) return;
+  if (r.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
+  if (!r.ok) { W.state = "slow"; W.events = []; W.covers = {}; }
+  else { W.state = "ok"; W.events = Array.isArray(r.events) ? r.events : []; W.covers = r.covers && typeof r.covers === "object" ? r.covers : {}; W.sources = r.sources ?? []; if (S.cfg.weekPart && !weekPlanNow().part) S.cfg.weekPart = 0; }
+  renderKind(); rebuild();
+}
+/** Switches between one event and the week: the first step, the information step and the preview follow. */
+function setKind(kind) {
+  if (S.job) return;
+  S.cfg.kind = kind === "week" ? "week" : "event";
+  if (isWeek()) { S.cfg.weekStart = S.cfg.weekStart || ""; S.cfg.weekPart = S.cfg.weekPart || 0; S.cfg.weekTitle = S.cfg.weekTitle || ""; if (S.week.state === "idle" || S.week.state === "slow") loadWeek(); }
+  else if (!S.ev.selected && !S.noEvent) { const n = P.nextEvent(S.ev.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); else chooseNoEvent({ quiet: true }); }
+  syncControls(); renderCoverWarn(); rebuild();
+}
+function partLabel(p) { return L("week_part", { from: P.formatDayShort(p.from, S.cfg.lang), to: P.formatDayShort(p.to, S.cfg.lang) }); }
+/** Everything that depends on the kind: which panel of step 1 shows, the words of step 2, and the summary of the week (count, dates, parts, empty week, sources that did not answer). */
+function renderKind() {
+  const week = isWeek();
+  document.body.classList.toggle("week", week);
+  $("event-mode").hidden = week; $("week-mode").hidden = !week;
+  $("h-event").textContent = L(week ? "h_week" : "h_event");
+  $("lbl-title").textContent = L(week ? "week_f_title" : "f_title"); $("info-title").setAttribute("placeholder", L(week ? "week_ph_title" : "ph_title"));
+  $("lbl-when").textContent = L(week ? "week_f_when" : "f_when"); $("lbl-game").textContent = L(week ? "week_f_game" : "f_game"); $("g-event").textContent = L(week ? "week_g_event" : "g_event");
+  if (!week) return;
+  const W = S.week, plan = weekPlanNow(), sum = $("week-sum"), note = $("week-note"), retry = $("week-retry"), parts = $("week-parts");
+  retry.hidden = W.state !== "slow"; note.textContent = ""; parts.replaceChildren(); $("week-parts-box").hidden = true;
+  if (W.state === "idle" || W.state === "loading") { sum.textContent = L("event_loading"); return; }
+  if (W.state === "slow") { sum.textContent = ""; note.textContent = L("week_fail"); return; }
+  if (plan.error) { sum.textContent = ""; return; }
+  if (plan.empty) { sum.textContent = L("week_empty"); return; }
+  sum.textContent = L(plan.total === 1 ? "week_one" : "week_many", { n: plan.total, range: P.formatRange(plan.window.startDay, plan.window.endDay, S.cfg.lang) });
+  if (plan.parts.length) {
+    note.textContent = L("week_shown", { shown: P.WEEK.rowsMax });
+    $("week-parts-box").hidden = false;
+    const chip = (label, n) => h("button", { type: "button", "aria-pressed": plan.part === n ? "true" : "false", text: label, onclick: () => { S.cfg.weekPart = n; renderKind(); rebuild(); } });
+    parts.replaceChildren(chip(L("week_part_all", { n: P.WEEK.rowsMax }), 0), ...plan.parts.map((p, i) => chip(partLabel(p), i + 1)));
+  }
+}
+
 /* ───────────── The models ───────────── */
-function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "", watermark: false }; }   // the mention is never in a model: it follows the box
+function configForModel() { return { ...S.cfg, kind: "event", streamKey: "", eventId: "", eventSource: "", watermark: false }; }   // the week and its days are chosen for each video   // the mention is never in a model: it follows the box
 function renderModels() {
   const box = $("model-list");
   box.replaceChildren(...(S.models.length ? S.models.map((m) => {
@@ -630,7 +705,7 @@ function renderModels() {
   }) : [h("li", { class: "muted", text: L("models_none") })]));
 }
 function loadModel(m) {
-  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark };
+  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark, kind: S.cfg.kind, weekStart: S.cfg.weekStart, weekPart: S.cfg.weekPart, weekTitle: S.cfg.weekTitle };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
   S.styleChosen = true; S.autoTicked = "";   // a model carries its style: it is shown at once, on the style step
   syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);
@@ -669,6 +744,7 @@ function renderItems() {
 let brandKey = null;
 /** The fields of step 2 follow `S.info`, the list of guests and the site. */
 function renderInfo() {
+  if (isWeek()) return renderInfoWeek();
   const { stream, error } = streamNow(), i = S.info;
   for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) if ($(id).value !== i[key]) $(id).value = i[key];
   const bad = error && (i.date || i.time) ? error : "";
@@ -684,6 +760,14 @@ function renderInfo() {
   const dated = Number.isFinite(stream?.startMs);
   $("countdown-note").textContent = !S.cfg.elements.includes("countdown") ? L("countdown_off") : dated ? L("countdown_is", { text: contentNow().content.countdown }) : L("countdown_need");
 }
+/** The information step of a week: the heading is the only text of the schedule itself; the rest (switches, sentence, channel name) is the same as for an event. */
+function renderInfoWeek() {
+  if ($("info-title").value !== (S.cfg.weekTitle || "")) $("info-title").value = S.cfg.weekTitle || "";
+  $("channel").setAttribute("placeholder", S.brand.name || "");
+  const bk = `${S.brand.logo}|${S.brand.name}`;
+  if (bk !== brandKey) { brandKey = bk; $("brand-logo").replaceChildren(thumb(S.brand.logo, S.brand.name || "")); }
+  $("game-help").textContent = L("game_help");
+}
 function syncControls() {
   for (const e of ELEMENT_KEYS) $(`el-${e}`).checked = S.cfg.elements.includes(e);
   syncStyleRadios();
@@ -694,13 +778,15 @@ function syncControls() {
   $("schedule-people").checked = S.cfg.schedulePeople !== false; $("show-day").checked = (S.cfg.showDay ?? S.showDay) !== false;
   if (S.cfg.lang !== (C.lang === "en" ? "en" : "fr")) $("more-2").open = true;   // a setting that was already changed (model, assistant) is never left hidden
   if (S.cfg.duration !== P.DEFAULT_CONFIG.duration) $("more-3").open = true;
+  $("kind-event").checked = !isWeek(); $("kind-week").checked = isWeek(); $("week-start").value = S.cfg.weekStart || "";
   renderItems(); renderInfo(); renderStyleNote(); renderSteps();
-  renderStreamPicker();
+  renderStreamPicker(); renderKind();
 }
 function updateInfo() {
   const s = S.scene;
-  $("empty").hidden = !S.empty;
+  $("empty").hidden = !S.empty; $("empty").textContent = L(isWeek() ? "week_empty" : "empty");
   $("generate").disabled = !!S.job || !s || S.empty; $("generate-now").disabled = $("generate").disabled;
+  $("step-next").disabled = isWeek() && S.empty && S.step === 1;   // an empty week has nothing to edit
   $("fmt-note").textContent = L(S.cfg.format === "vertical" ? "format_help_vertical" : "format_help_passeport");
   renderInfo();
 }
@@ -715,7 +801,7 @@ function bind() {
   on("channel", "input", () => { S.cfg.channelName = P.oneLine($("channel").value, P.LIMITS.channelName); rebuild(); });
   on("lang", "change", () => { S.cfg.lang = $("lang").value === "en" ? "en" : "fr"; renderStreamPicker(); rebuild(); });
   // The information of step 2: what is typed replaces what came from the event; the preview follows.
-  for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) on(id, "input", () => { S.info[key] = $(id).value; if (key === "game") syncCover(); renderInfo(); rebuild(); });
+  for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) on(id, "input", () => { if (isWeek() && key === "title") S.cfg.weekTitle = P.oneLine($(id).value, P.LIMITS.title); else S.info[key] = $(id).value; if (key === "game") syncCover(); renderInfo(); rebuild(); });
   // The "Made with Curiosa" mention: the preview follows at once; the choice is remembered for the next videos (a failure does not prevent making this one).
   on("show-day", "change", () => { S.cfg.showDay = $("show-day").checked; renderInfo(); rebuild(); });   // this video only: an explicit true/false, remembered by a saved model
   on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; renderInfo(); rebuild(); });
@@ -733,6 +819,9 @@ function bind() {
   for (const n of STEPS) on(`step-btn-${n}`, "click", () => setStep(n));
   on("step-prev", "click", () => setStep(S.step - 1)); on("step-next", "click", () => setStep(S.step + 1));
   on("generate-now", "click", generateNow);
+  on("kind-event", "change", () => setKind("event")); on("kind-week", "change", () => setKind("week"));
+  on("week-start", "change", () => { const v = $("week-start").value; S.cfg.weekStart = P.isDay(v) ? v : ""; S.cfg.weekPart = 0; loadWeek({ fresh: true }); });
+  on("week-retry", "click", () => loadWeek({ fresh: true }));
   on("event-q", "input", onEventSearch);
   on("event-more", "click", () => loadEvents(true));
   on("event-retry", "click", async () => { const b = $("event-retry"); b.disabled = true; b.textContent = L("busy_reading"); b.setAttribute("aria-busy", "true"); await loadEvents(false, { fresh: true }); b.disabled = false; b.textContent = L("event_retry"); b.setAttribute("aria-busy", "false"); const r = S.ev; if (!S.ev.selected && !S.noEvent) { const n = P.nextEvent(r.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); } });
@@ -776,8 +865,8 @@ async function generate() {
   try {
     const out = await renderVideo({ scene, caps, env, signal: ctl.signal, onProgress: (f, phase) => { $("progress").value = f; $("generate").textContent = phase === "finish" ? L("progress_finish") : L("busy_generate", { pct: Math.round(f * 100) }); $("progress-text").textContent = phase === "finish" ? L("progress_finish") : L("progress", { pct: Math.round(f * 100) }); } });
     const blob = out.blob ?? new Blob([out.bytes], { type: out.mime });
-    const { stream } = contentNow();
-    const name = P.fileName({ startMs: stream?.startMs, tz: zoneOf(stream), format: S.cfg.format, lang: S.cfg.lang, ext: out.ext, nowMs: Date.now() });
+    const { stream, plan } = contentNow();
+    const name = P.fileName({ startMs: isWeek() ? plan?.window?.startMs : stream?.startMs, tz: isWeek() ? TZ : zoneOf(stream), format: S.cfg.format, lang: S.cfg.lang, ext: out.ext, nowMs: Date.now(), kind: S.cfg.kind });
     const url = URL.createObjectURL(blob);
     const link = h("a", { href: url, download: name, class: "button", text: L("download_again", { name }) });
     resultBox.replaceChildren(...[h("p", { class: "ok", text: L("done", { name, size: (blob.size / 1048576).toFixed(1) }) }), link,
@@ -793,6 +882,7 @@ async function generate() {
 function applyPrep(prep) {
   S.cfg = P.cleanConfig(prep.config);
   S.styleChosen = true;   // an assistant preparation carries its style
+  if (isWeek()) { $("prep-note").hidden = false; return; }   // a week: no event to pick, the days are in the settings
   if (prep.manual && prep.manual.title) {
     // an event written by the assistant: no event picked, the information is already there
     S.noEvent = true; S.info = { title: prep.manual.title, date: prep.manual.date || "", time: prep.manual.time || "", game: "" };
@@ -822,13 +912,14 @@ async function start() {
   else say(errText(data.error), "error");
   if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // an assistant preparation fills everything: we open on the last step, the style
   renderVariantCards(); syncControls();
+  if (isWeek()) loadWeek();   // a week prepared by the assistant: its events are read at once
   // The events of all sources. The event already chosen (by a preparation) is found again even if it is not in the first page.
   const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
   const handWritten = S.noEvent && PREP;   // an event written by the assistant stays as it is
   const ev = await loadEvents(false, { id: wantId, key: wantKey });
   if (ev?.error === "auth") return;
   const first = P.nextEvent(S.ev.items, Date.now(), TZ);   // the NEXT upcoming one (not an event that has already started), all sources together
-  if (handWritten) renderEvents();
+  if (handWritten || isWeek()) renderEvents();
   else if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true, auto: ev.selected.id === first?.id });
   else {
     if (wantId || wantKey) { if (first) $("prep-stream-gone").hidden = false; }

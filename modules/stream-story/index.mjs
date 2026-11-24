@@ -9,6 +9,7 @@
 // Aucune vidéo, aucune image n'est gardée sur le serveur : le fichier est téléchargé par le navigateur et c'est tout.
 //
 // Routes (toutes servies par `/m/<clé>/…`) :
+//   week                   les événements de la fenêtre de 7 jours de la story « de la semaine » et les jaquettes de leurs jeux ;
 //   studio, lib/*.mjs, wordmark   la page de l'éditeur, son code et la police du nom « Curiosa » (rien de personnel : aucun jeton requis) ;
 //   events, cover          la liste « Pour quoi veux-tu une story ? » (événements de toutes les sources, par pages) et la jaquette d'un jeu ;
 //   data, streams, prep    lectures, avec le jeton de l'éditeur (en-tête X-Story-Token) ;
@@ -118,6 +119,16 @@ const routes = {
     const selected = wanted || key ? E.findEvent(all.events, { id: P.EVENT_ID.test(wanted) ? wanted : "", key: /^[a-z0-9]{1,20}$/.test(key) ? key : "" }) : null;
     return json({ ok: true, items: page.items.map(E.publicEvent), next: page.next, total: list.length, totalAll: all.events.length, sources: all.sources, selected: selected ? E.publicEvent(selected) : null, at: all.at });
   }),
+  // The week's schedule: every event of the window (7 days from `start`, today by default, on the clock of the site's zone), and the covers of their games. The page cuts the rows itself.
+  week: guarded("GET", async (request, ctx) => {
+    const q = new URL(request.url).searchParams, own = zoneSetting(ctx), asked = q.get("tz") ?? "";
+    const zone = own || (P.validZone(asked) ? asked : "UTC"), start = (q.get("start") ?? "").slice(0, 10);
+    const all = await src.loadEvents(ctx, { zone: own, force: q.get("fresh") === "1" });
+    const plan = P.weekPlan(all.events, { nowMs: Date.now(), tz: zone, startDay: start });
+    if (plan.error) return json({ ok: false, error: "invalid", field: plan.error }, 400);
+    const covers = await src.coversOf(ctx, plan.all.flatMap((e) => e.games.slice(0, 1)));
+    return json({ ok: true, events: plan.all.map(E.weekEvent), window: { startDay: plan.window.startDay, endDay: plan.window.endDay, today: plan.window.today, zone: plan.window.zone }, sources: all.sources, covers: covers.covers, coverState: covers.coverState, at: all.at });
+  }),
   cover: guarded("GET", async (request, ctx) => json({ ok: true, ...(await src.coverOf(ctx, new URL(request.url).searchParams.get("game") ?? "")) })),
   // Les personnes que le planning indique pour un stream (« Avec … ») : nom et photo d'une fiche affichable de Contacts, rien d'autre.
   partners: guarded("GET", async (request, ctx) => {
@@ -207,6 +218,20 @@ export default {
       const r = await src.loadStreams(ctx, { zone: zoneSetting(ctx), max: 8 });
       return { state: r.state, streams: r.streams.map((s) => ({ key: s.key, title: s.title, start: s.start, allDay: s.allDay, games: s.games, timezone: s.timezone || null })) };
     },
+    /** Read only: what the week's story would list: the events of 7 days (today by default) from all sources, the rows that fit a video, what does not, and the parts to split a busy week. */
+    async story_week(ctx, args = {}) {
+      const a = args && typeof args === "object" ? args : {};
+      if (a.weekStart !== undefined && (typeof a.weekStart !== "string" || !P.isDay(a.weekStart))) throw Object.assign(new Error("'weekStart' must be a real date written YYYY-MM-DD."), { expose: true });
+      const all = await src.loadEvents(ctx, { zone: zoneSetting(ctx) });
+      const plan = P.weekPlan(all.events, { nowMs: Date.now(), tz: zoneSetting(ctx) || "UTC", startDay: a.weekStart ?? "" });
+      if (plan.error) throw Object.assign(new Error(`'weekStart' must be today or a later day, at most ${P.WEEK.horizonDays} days ahead.`), { expose: true });
+      const state = plan.total ? "ok" : all.sources.length && all.sources.every((s) => s.state === "down") ? "slow" : "empty";
+      return {
+        state, from: plan.window.startDay, to: plan.window.endDay, timezone: plan.window.zone, total: plan.total, rowsPerVideo: P.WEEK.rowsMax, more: plan.more,
+        parts: plan.parts.map((x, i) => ({ part: i + 1, from: x.from, to: x.to, events: x.count })),
+        events: plan.shown.map((e) => ({ id: e.id, title: e.title, day: e.wday, start: e.start, allDay: e.allDay, source: e.source, games: e.games })),
+      };
+    },
     /** Lecture seule : les prochains événements de TOUTES les sources (agenda, vidéos et directs programmés…), triés par date et heure, par pages. */
     async story_events(ctx, args = {}) {
       const all = await src.loadEvents(ctx, { zone: zoneSetting(ctx) });
@@ -221,10 +246,10 @@ export default {
     },
     /** Écriture limitée à une « préparation » (gardée 7 jours) : rend le lien de la page préparée. Ne fabrique rien, ne publie rien. */
     async story_prepare(ctx, args) {
-      const wantsEvent = args && typeof args === "object" && args.event !== undefined;
+      const wantsEvent = args && typeof args === "object" && (args.event !== undefined || args.kind === "week");
       const all = wantsEvent ? await src.loadEvents(ctx, { zone: zoneSetting(ctx) }) : null;
       const knownVariants = await src.within(data.readVariants(ctx), 5000, []);
-      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false), styleDefault: await src.within(data.styleDefault(ctx), 3000, null), variantDefault: await src.within(data.readVariantPref(ctx), 3000, ""), variants: knownVariants });
+      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], nowMs: Date.now(), sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false), styleDefault: await src.within(data.styleDefault(ctx), 3000, null), variantDefault: await src.within(data.readVariantPref(ctx), 3000, ""), variants: knownVariants });
       const { manual } = prepared;
       const linked = await src.within(linkLogins(ctx, prepared.config), src.timing.bookMs * 2, { config: prepared.config, known: new Map() });
       const config = linked.config;
@@ -234,7 +259,7 @@ export default {
       const path = typeof mine?.adminPath === "string" && /^\/admin\//.test(mine.adminPath) ? mine.adminPath : `/admin/instances/${ctx.instance.id}`;
       return {
         ok: true, link: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}${path}?prep=${pid}`, expiresAt: new Date(expiresAt).toISOString(),
-        prepared: { style: config.style, ...(typeof config.showDay === "boolean" ? { showDay: config.showDay } : {}), ...(config.variant ? { variant: knownVariants.find((x) => x.id === config.variant)?.name } : {}), format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
+        prepared: { style: config.style, ...(typeof config.showDay === "boolean" ? { showDay: config.showDay } : {}), ...(config.variant ? { variant: knownVariants.find((x) => x.id === config.variant)?.name } : {}), format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), ...(prepared.plan ? { kind: "week", week: { from: prepared.plan.from, to: prepared.plan.to, events: prepared.plan.shown.length, more: prepared.plan.more, ...(config.weekPart ? { part: config.weekPart } : {}) } } : { stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next" }), ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
         note: "Nothing has been generated or published. The owner opens this link while signed in to the admin, checks the preview, then clicks 'Generate the video' and saves the file.",
       };
     },

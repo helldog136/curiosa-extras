@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.15.3");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.16.0");
   assert.equal(manifest.minCore, "0.6.7", "the \"My styles\" tab uses the rich administration blocks (core 0.6.0 and after) and the French text of the tools (0.6.7)"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -49,7 +49,7 @@ test("manifeste : un module à lui, une instance, aucune page publique, 4 permis
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);
   assert.ok(manifest.privacy.fr && manifest.privacy.en && !/visiteur/.test("") );
   assert.match(manifest.privacy.fr, /Rien n'est collecté sur votre public/); assert.match(manifest.privacy.fr, /Aucune vidéo n'est gardée/); assert.match(manifest.privacy.fr, /restent dans Contacts/);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes-extra.mjs", "lib/scenes.mjs", "members", "partners", "people", "prep", "streams", "studio", "variant-thumb", "wordmark"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes-extra.mjs", "lib/scenes.mjs", "lib/week.mjs", "members", "partners", "people", "prep", "streams", "studio", "variant-thumb", "week", "wordmark"]);
 });
 
 test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ de la mention, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
@@ -61,8 +61,8 @@ test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ d
 
 test("outils pour l'IA : trois lectures accordées d'office, la préparation JAMAIS d'office ; noms ≤ 31 ; la préparation n'est ni lecture seule ni destructrice ; décrits", () => {
   const byName = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
-  assert.deepEqual(Object.keys(byName), ["story_models", "story_next_streams", "story_events", "style_variants_list", "story_prepare", "style_variant_create", "style_variant_update"]);
-  for (const n of ["story_models", "story_next_streams", "story_events", "style_variants_list"]) { assert.equal(byName[n].readOnly, true); assert.ok(byName[n].default !== false, "lecture : accordée par défaut"); }
+  assert.deepEqual(Object.keys(byName), ["story_models", "story_next_streams", "story_events", "story_week", "style_variants_list", "story_prepare", "style_variant_create", "style_variant_update"]);
+  for (const n of ["story_models", "story_next_streams", "story_events", "story_week", "style_variants_list"]) { assert.equal(byName[n].readOnly, true); assert.ok(byName[n].default !== false, "lecture : accordée par défaut"); }
   for (const n of ["story_prepare", "style_variant_create", "style_variant_update"]) { assert.equal(byName[n].default, false, `${n} is never granted by default`); assert.ok(!byName[n].readOnly && !byName[n].destructive, `${n} writes, never deletes`); }
   assert.ok(manifest.mcp.every((t) => t.name.length <= 31 && t.description.length > 40));
   assert.deepEqual(Object.keys(def.mcp).sort(), Object.keys(byName).sort());
@@ -108,7 +108,7 @@ test("accès : le jeton est signé et dure 12 h ; falsifié, périmé, d'une aut
   // pages ouvertes
   assert.equal((await call(ctx, "studio")).status, 200);
   for (const f of page.LIB) { const r = await call(ctx, `lib/${f}`); assert.equal(r.status, 200); assert.match(r.headers.get("content-type"), /javascript/); assert.equal(await r.text(), read(f)); }
-  assert.equal(page.LIB.length, 6); assert.equal(await page.libSource("../index.mjs"), null); assert.equal(await page.libSource("module.json"), null, "liste fermée");
+  assert.equal(page.LIB.length, 7); assert.equal(await page.libSource("../index.mjs"), null); assert.equal(await page.libSource("module.json"), null, "liste fermée");
 });
 
 test("accès : la clé de signature est créée une seule fois (même en simultané) et n'apparaît dans aucune réponse ; les routes de lecture refusent POST, celle d'écriture refuse GET", async () => {

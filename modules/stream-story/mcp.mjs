@@ -25,9 +25,9 @@ export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.co
  * `watermarkDefault`: the value of the person's "Made with Curiosa" box, used when the AI says nothing.
  * `styleDefault`: the style the person remembered as their default (null if none): the style when the AI and the model say nothing.
  * `variants`: the saved style variants ("My styles"): `variant` (a name or an identifier) picks one; its base style is the style of the video.
- * `events`: the upcoming events of all sources (for `event`); `sourcesDown`: all sources went silent (the message says so).
+ * `events`: the upcoming events of all sources (for `event` and for the week); `nowMs`: the instant of the request (the week starts today by default); `sourcesDown`: all sources went silent (the message says so).
  */
-export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false, styleDefault = null, variantDefault = "", variants = [] }) {
+export function strictPrepare(args, { models, tz, events = [], nowMs = Date.now(), sourcesDown = false, watermarkDefault = false, styleDefault = null, variantDefault = "", variants = [] }) {
   const a = args && typeof args === "object" ? args : {};
   let base = P.DEFAULT_CONFIG;
   if (a.model !== undefined) {
@@ -74,6 +74,25 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
       if (!logins.includes(n.login)) logins.push(n.login);
     }
     next.costreamers = logins;
+  }
+  // The week's schedule (2.16.0): `kind: "week"` makes one video of the events of 7 days, from the same sources. It lists the events itself, so no single event goes with it.
+  if (a.kind !== undefined && !P.KINDS.includes(a.kind)) throw expose(`'kind' must be one of: ${P.KINDS.join(", ")}.`);
+  const week = a.kind === "week";
+  if (!week && (a.weekStart !== undefined || a.weekPart !== undefined || a.weekTitle !== undefined)) throw expose("'weekStart', 'weekPart' and 'weekTitle' only go with kind 'week'.");
+  if (week) {
+    if (a.event !== undefined || a.stream !== undefined || a.streamTitle !== undefined || a.streamDate !== undefined || a.streamTime !== undefined) throw expose("A week story lists the events itself: leave out 'event', 'stream' and the hand-written stream.");
+    if (a.weekStart !== undefined && (typeof a.weekStart !== "string" || !P.isDay(a.weekStart))) throw expose("'weekStart' must be a real date written YYYY-MM-DD.");
+    if (a.weekPart !== undefined && (!Number.isInteger(a.weekPart) || a.weekPart < 1 || a.weekPart > P.WEEK.days)) throw expose(`'weekPart' must be a whole number from 1 to ${P.WEEK.days}.`);
+    if (a.weekTitle !== undefined && (typeof a.weekTitle !== "string" || [...a.weekTitle].length > P.LIMITS.title)) throw expose(`'weekTitle' must be a text of at most ${P.LIMITS.title} characters.`);
+    const plan = P.weekPlan(events, { nowMs, tz, startDay: a.weekStart ?? "", part: a.weekPart ?? 0 });
+    if (plan.error === "range") throw expose(`'weekStart' must be today or a later day, at most ${P.WEEK.horizonDays} days ahead.`);
+    if (plan.error) throw expose("The week could not be computed.");
+    if (sourcesDown && plan.empty) throw expose("No event could be checked: the sources did not answer. Try again in a minute.");
+    if (plan.empty) throw expose(`No event is planned from ${plan.window.startDay} to ${plan.window.endDay}: nothing to announce. Choose another 'weekStart' (story_week shows what a week holds).`);
+    if (a.weekPart !== undefined && plan.part !== a.weekPart) throw expose(plan.parts.length ? `'weekPart' must be from 1 to ${plan.parts.length} for this week (or left out for the whole week).` : "This week fits one video: leave 'weekPart' out.");
+    next.kind = "week"; next.weekStart = a.weekStart ?? ""; next.weekPart = a.weekPart ?? 0; next.weekTitle = a.weekTitle === undefined ? "" : P.oneLine(a.weekTitle, P.LIMITS.title);
+    next.streamKey = ""; next.eventId = ""; next.eventSource = ""; next.elements = next.elements.filter((e) => P.WEEK_ELEMENTS.includes(e));
+    return { config: P.cleanConfig(next), manual: null, event: null, plan };
   }
   let manual = null, chosen = null;
   const hasManual = a.streamTitle !== undefined || a.streamDate !== undefined || a.streamTime !== undefined;

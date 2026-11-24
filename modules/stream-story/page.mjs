@@ -26,11 +26,12 @@ export const KEYS = [
   "cover_down", "schedule_people_label", "schedule_people_help", "next_info", "next_style", "event_none_btn", "event_none_set", "event_pick", "h_info", "info_intro", "g_event", "g_own", "in_video", "f_title",
   "ph_title", "f_when", "f_date", "f_time", "f_game", "ph_game", "game_help", "f_countdown", "countdown_off", "countdown_need", "ph_text", "members_pick", "f_brand", "more_options",
   "info_need_date", "h_style", "style_intro", "pv_plain",
+  "kind_label", "kind_event", "kind_week", "h_week", "week_one", "week_many", "week_empty", "week_shown", "week_part_label", "week_part_all", "week_part", "week_start", "week_start_hint", "week_f_title", "week_ph_title", "week_f_when", "week_f_game", "week_g_event", "week_fail",
 ];
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`ui_${k}`)]));
 
 /** The files the page loads: the list is closed (never a name given by the request). */
-export const LIB = ["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
+export const LIB = ["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "week.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
 const sourceCache = new Map();
 /** The font of the name "Curiosa" (exact copy of the core's file, SIL OFL licence next to it): served by the module itself, no outside call. */
 let fontBytes = null;
@@ -124,6 +125,14 @@ details.sub-d{border:1px solid var(--line);border-radius:10px;background:var(--f
 .field{margin-top:12px}.advtoggle{margin-top:12px;border-top:1px solid var(--line);padding-top:6px}.advanced{margin-top:8px;padding:12px;border:1px dashed var(--line);border-radius:10px}
 #result p,#progress-box p{margin:.25rem 0;font-size:.9rem}#result a.button{width:100%;text-align:center;margin-top:4px}#models-box .bar{flex-wrap:wrap}#models-box .bar input{flex:1 1 200px;width:auto;min-width:0}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 12px}
+.seg label{display:flex;align-items:center;justify-content:center;min-height:48px;padding:6px 12px;background:var(--field);cursor:pointer;font-weight:600;position:relative}
+.seg label+label{border-left:1px solid var(--line)}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-fg)}
+.seg label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:-3px}
+fieldset.kind{margin:0}
+body.week [data-only=event]{display:none!important}
 button.busy{position:relative}button[aria-busy=true]{cursor:progress}
 `;
 
@@ -155,6 +164,8 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <p id="step-live" class="sr" role="status" aria-live="polite"></p>
 <div class="panels">
 <section id="step-1" class="step pick" aria-labelledby="h-event"><h2 id="h-event" tabindex="-1">${T("h_event")}</h2>
+<fieldset class="kind"><legend class="sr">${T("kind_label")}</legend><div class="seg"><label for="kind-event"><input type="radio" name="kind" id="kind-event"><span>${T("kind_event")}</span></label><label for="kind-week"><input type="radio" name="kind" id="kind-week"><span>${T("kind_week")}</span></label></div></fieldset>
+<div id="event-mode">
 <div id="event-chosen" class="chosen" role="status" aria-live="polite"></div>
 <p id="event-same" class="muted" hidden></p>
 <p id="event-note" class="muted" role="status" aria-live="polite"></p>
@@ -167,17 +178,21 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <ul id="event-list" class="events"></ul>
 <p id="event-count" class="muted" role="status" aria-live="polite"></p>
 <div class="bar"><button type="button" id="event-more" class="wide" hidden>${T("event_more")}</button></div></div>
-<div id="event-sources" class="srcnotes" role="status" aria-live="polite"></div></section>
+<div id="event-sources" class="srcnotes" role="status" aria-live="polite"></div></div>
+<div id="week-mode" hidden><p id="week-sum" class="chosen" role="status" aria-live="polite"></p><p id="week-note" class="muted" role="status" aria-live="polite"></p>
+<div id="week-parts-box" hidden><p class="sub" id="week-parts-label">${T("week_part_label")}</p><div id="week-parts" class="chips" role="group" aria-labelledby="week-parts-label"></div></div>
+<div class="bar"><button type="button" id="week-retry" class="wide" hidden>${T("event_retry")}</button></div>
+<details id="week-more" class="sub-d"><summary>${T("more_options")}</summary><div class="inner"><div class="field"><label for="week-start">${T("week_start")}</label><input type="date" id="week-start" aria-describedby="week-start-hint"><p id="week-start-hint" class="muted">${T("week_start_hint")}</p></div></div></details></div></section>
 <section id="step-2" class="step" aria-labelledby="h-info" hidden><h2 id="h-info" tabindex="-1">${T("h_info")}</h2><p class="muted">${T("info_intro")}</p>
-<fieldset class="group"><legend>${T("g_event")}</legend>
+<fieldset class="group"><legend id="g-event">${T("g_event")}</legend>
 <div class="item" id="item-title">${head("title", "info-title", "f_title")}<input type="text" id="info-title" maxlength="${P.LIMITS.title}" autocomplete="off" placeholder="${T("ph_title")}"></div>
-<div class="item" id="item-when">${plain("when", "f_when")}<div class="pair"><div><label for="info-date">${T("f_date")}</label><input type="date" id="info-date" aria-describedby="info-time-hint info-error"></div><div><label for="info-time">${T("f_time")}</label><input type="time" id="info-time" aria-describedby="info-time-hint info-error"></div></div>
-<p id="info-time-hint" class="muted">${T("m_time_hint")}</p><label class="check tap" for="show-day"><input type="checkbox" id="show-day"><span>${T("show_day_label")}</span></label><p id="info-error" class="warn" role="alert"></p></div>
-<div class="item" id="item-game">${head("game", "info-game", "f_game")}<input type="text" id="info-game" maxlength="80" autocomplete="off" placeholder="${T("ph_game")}" aria-describedby="game-help"><p id="game-help" class="muted">${T("game_help")}</p><p id="cover-warn" class="warn" hidden></p></div>
-<div class="item" id="item-countdown">${plain("countdown", "f_countdown")}<p id="countdown-note" class="muted"></p></div></fieldset>
+<div class="item" id="item-when">${plain("when", "f_when")}<div class="pair" data-only="event"><div><label for="info-date">${T("f_date")}</label><input type="date" id="info-date" aria-describedby="info-time-hint info-error"></div><div><label for="info-time">${T("f_time")}</label><input type="time" id="info-time" aria-describedby="info-time-hint info-error"></div></div>
+<p id="info-time-hint" class="muted" data-only="event">${T("m_time_hint")}</p><label class="check tap" for="show-day" data-only="event"><input type="checkbox" id="show-day"><span>${T("show_day_label")}</span></label><p id="info-error" class="warn" role="alert" data-only="event"></p></div>
+<div class="item" id="item-game">${head("game", "info-game", "f_game")}<input type="text" id="info-game" data-only="event" maxlength="80" autocomplete="off" placeholder="${T("ph_game")}" aria-describedby="game-help"><p id="game-help" class="muted">${T("game_help")}</p><p id="cover-warn" class="warn" data-only="event" hidden></p></div>
+<div class="item" id="item-countdown" data-only="event">${plain("countdown", "f_countdown")}<p id="countdown-note" class="muted"></p></div></fieldset>
 <fieldset class="group"><legend>${T("g_own")}</legend>
 <div class="item" id="item-text">${head("text", "text", "text_label")}<textarea id="text" maxlength="400" placeholder="${T("ph_text")}" aria-describedby="text-help"></textarea><p id="text-help" class="muted"><span id="text-count"></span> · ${T("text_help")}</p></div>
-<div class="item" id="item-costreamers">${plain("costreamers", "h_members")}<p id="members-sum" class="muted"></p>
+<div class="item" id="item-costreamers" data-only="event">${plain("costreamers", "h_members")}<p id="members-sum" class="muted"></p>
 <details id="members-box" class="sub-d"><summary>${T("members_pick")} <span id="members-count" class="muted"></span></summary><div class="inner" aria-labelledby="h-members"><p id="h-members" class="muted">${T("members_help")}</p>
 <label class="check tap" for="schedule-people"><input type="checkbox" id="schedule-people" aria-describedby="schedule-people-help"><span>${T("schedule_people_label")}</span></label><p id="schedule-people-help" class="muted" style="margin-top:0">${T("schedule_people_help")}</p>
 <p class="sub">${T("members_chosen")}</p><ul class="list" id="chosen"></ul><p id="members-note" class="muted" role="status"></p>

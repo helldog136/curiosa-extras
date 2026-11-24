@@ -134,6 +134,8 @@ const cleanModel = (x) => {
 };
 export async function readModels(ctx) { return (await readList(ctx, MODELS)).items.map(cleanModel).filter(Boolean).slice(0, LIMITS.models); }
 /** Enregistre un modèle sous un nom. Un nom déjà pris n'est remplacé que si `replaceId` le dit (la confirmation est demandée par la page). Rend { ok, items } ou { error: "name" | "exists" | "full" | "missing" }. */
+/** A model is a look, not a week: the week and its days are chosen for each video (a saved model never carries them). */
+const oneEventConfig = ({ kind, weekStart, weekPart, weekTitle, ...rest }) => rest;
 export async function saveModel(ctx, { name, config, replaceId }) {
   const nm = oneLine(name, LIMITS.modelName);
   if (!nm) return { error: "name" };
@@ -141,7 +143,7 @@ export async function saveModel(ctx, { name, config, replaceId }) {
   const at = replaceId ? items.findIndex((x) => x.id === String(replaceId)) : -1;
   if (replaceId && at < 0) return { error: "missing" };
   if (clash >= 0 && clash !== at) return { error: "exists", id: items[clash].id };
-  const entry = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), name: nm, config: { ...tidyConfig(config), streamKey: "", eventId: "", eventSource: "", watermark: false } };
+  const entry = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), name: nm, config: oneEventConfig({ ...tidyConfig(config), streamKey: "", eventId: "", eventSource: "", watermark: false }) };
   if (at >= 0) items[at] = entry; else { if (items.length >= LIMITS.models) return { error: "full" }; items.push(entry); }
   await writeList(ctx, MODELS, items);
   return { ok: true, items, id: entry.id };
