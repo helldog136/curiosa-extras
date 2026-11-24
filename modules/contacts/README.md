@@ -19,6 +19,7 @@ Your **private** address book: the **people** and **organisations** you work wit
 - **Add a card to a category**: on the card, **Categories** section, the list with **Remove**, then a choice and the **Add to the category** button (no checkbox among hundreds).
 - Dated **notes** on each card.
 - **Messages of the contact form**: they arrive as **"To check"** cards (the message is the first note). Check the person then click **It is checked**.
+- **Login accounts** (2.8, needs core 0.47.0): the people who can log in to your admin (you and your team) automatically have a card, with their name, e-mail and a quiet **Account · role** badge. The card follows the account (name, e-mail, role); your notes, networks and categories stay yours. A card that already has the same e-mail is linked, and only the link is added. If the e-mail is on several cards, a new card is created and marked **To check** so you can merge. A linked card cannot be deleted while the account exists; when the account is deleted, the card stays, unlinked, with a note. Nothing is shown publicly.
 - **Delete a card**: final, with a confirmation. The modules that referred to it are warned; if one of them does not answer, the message says so.
 
 ## Import, export, merge duplicates, erase a person
@@ -55,7 +56,7 @@ Cards from before version 2.0 keep their "Other channels" text as it is, read on
 `contacts_list` (without e-mail or phone, in pages of 100), `contact_get`, `contact_categories`: reading. `contact_get_private` (with e-mail and phone), `contact_create`, `contact_update`, `contact_note`, `contact_add_account`, `contact_delete`: **never granted by default**, you grant them to an AI access.
 
 ## Backup
-Each backup contains `contacts.csv` and `notes.csv`, readable in a spreadsheet.
+Each backup contains `contacts.csv` and `notes.csv`, readable in a spreadsheet. `contacts.csv` ends with a "site account" column (the role of the linked login account, empty for other cards); an import ignores it.
 
 ---
 
@@ -75,3 +76,4 @@ Each backup contains `contacts.csv` and `notes.csv`, readable in a spreadsheet.
 - **Photos**: `refreshOnOpen` (once per card and per 10 minutes, profiles older than 24 h) and `refreshNow` (button) are called by `admin.mjs` and nowhere else; a test checks it (no call from the services, the list, the import, the export, the merge; no timer, no `tasks`, no `hooks`).
 - **Index**: each entry also keeps the e-mail (`m`) for the duplicate detector.
 - **Measures** (in-memory storage faithful to contract 5): see `tests/contacts-volume.test.mjs` (2,000, 10,000 and 100,000 cards: import by steps, export as a stream of pages of 500, duplicate detector).
+- **Login accounts (2.8)**: `accounts.mjs` reads the optional core topic `core.user` (`consumes`, permission `topics`; fields `id`, `name`, `email`, `level`, `roles`, dates, never a secret; `minCore` stays 0.38.0: an older core answers with an empty list and nothing happens). The sync is a pull, idempotent, keyed on the account id (`data.account.id`, index key `l`, flag 4): run when the administration opens (at most every 15 s) and by `tasks.accounts` every 5 minutes. Nothing is written when nothing changed. A list that is empty or as long as the limit (200) never unlinks anybody. `book.erase`/`deleteContact` return `account_linked`; `merge` hands the link over and refuses two linked cards (`both_linked`). The link never appears in `contact.book` results, MCP tools or the person export.

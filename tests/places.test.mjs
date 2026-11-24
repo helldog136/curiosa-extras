@@ -44,7 +44,7 @@ const ROLLOUT = {
   "commissions": ["1.1.2", { main: "community.commissions", packages: "community.commissions.packages" }],
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
-  "contacts": ["2.7.1", { main: "community.contacts" }],
+  "contacts": ["2.8.0", { main: "community.contacts" }],
   "content-planner": ["1.2.0", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
@@ -270,6 +270,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
     if (id === "content-planner") rest.mcp = rest.mcp.filter((t) => !t.name.startsWith("idea_doc_")).map((t) => (t.name === "idea_get" ? { ...t, description: oldRest.mcp.find((o) => o.name === "idea_get").description } : t)); // 1.2.0: the documents of an idea (four tools; idea_get says how many an idea holds)
     if (id === "content-planner") delete rest.i18n; // 1.2.0: the French texts of the four new tool descriptions
+    if (id === "contacts") { delete rest.consumes; rest.permissions = rest.permissions.filter((x) => x !== "topics"); } // 2.8.0: the optional topic core.user (linked cards for the login accounts) and the permission to read it
     if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);

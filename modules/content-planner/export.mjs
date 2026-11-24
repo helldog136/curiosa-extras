@@ -89,7 +89,7 @@ export function readableDocs(ctx, docs, titles) {
     for (const doc of [...list].sort(X.compareDocs)) {
       const head = `### ${doc.title || ctx.t("untitled")}${doc.version ? ` (${doc.version})` : ""}`;
       const block = [head, "", `${ctx.t("csvDocEdited")} : ${doc.updatedAt.slice(0, 10)}`, "", doc.text, ""].join("\n");
-      size += block.length;
+      size += Buffer.byteLength(block);
       if (size > MAX_TEXT) { out.push(`*${ctx.t("mdDocsCut")}*`, ""); return out.join("\n"); }
       out.push(block);
     }
@@ -142,17 +142,18 @@ export const backup = {
     const docs = [];
     let chars = 0;
     for await (const page of X.docPages(ctx)) {
-      for (const doc of page) { docs.push(doc); chars += doc.text.length; }
+      for (const doc of page) { docs.push(doc); chars += Buffer.byteLength(doc.text); }
       if (chars > MAX_TEXT) break;
     }
     if (docs.length) {
       const titles = new Map(ideas.map((i) => [i.id, i.title || ctx.t("untitled")]));
       const docRowsAll = [D.csvLine(docHeaderCells(ctx))];
-      let size = docRowsAll[0].length;
+      let size = Buffer.byteLength(docRowsAll[0]);
       for (const doc of docs) {
         const lines = docRows(ctx, doc, titles.get(doc.ideaId) ?? ctx.t("untitled")).map((r) => D.csvLine(r));
-        size += lines.reduce((n, l) => n + l.length, 0);
-        if (size > MAX_TEXT) break;
+        size += lines.reduce((n, l) => n + Buffer.byteLength(l), 0);
+        // The cap counts bytes (a text in another script takes up to 4 bytes a character) and the cut is said in the file itself, as a last row.
+        if (size > MAX_TEXT) { docRowsAll.push(D.csvLine(["", "", "", "", "", "", ctx.t("mdDocsCut")])); break; }
         docRowsAll.push(...lines);
       }
       files.push({ path: "documents.csv", content: BOM + docRowsAll.join("") }, { path: "documents.md", content: readableDocs(ctx, docs, titles) });

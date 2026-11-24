@@ -12,12 +12,15 @@ const Imp = await import(`./import-admin.mjs${v}`);
 const Ded = await import(`./dedupe-admin.mjs${v}`);
 const Priv = await import(`./privacy-admin.mjs${v}`);
 const Q = await import(`./quick.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const A = await import(`./accounts.mjs${v}`);
 
 const PAGE = 30;
 const COLORS = [["amber", "#e8a23b"], ["blue", "#4f9dde"], ["green", "#58b368"], ["rose", "#d1556b"], ["purple", "#9b6bd1"], ["teal", "#3bb3a8"], ["brown", "#c9853a"], ["grey", "#7a8794"]];
 const fmt = (ctx, n) => new Intl.NumberFormat(ctx.locale || "en").format(n);
 const plural = (ctx, n, base, vars = {}) => ctx.t(`${base}${(String(ctx.locale).startsWith("fr") ? n <= 1 : n === 1) ? "One" : "Many"}`, { count: fmt(ctx, n), ...vars });
 const netName = (ctx) => (n) => ctx.t(`net_${n}`);
+const accBadge = (ctx, link) => ctx.t("accBadge", { role: A.levelLabel(ctx, link) });
 const sourceLabel = (ctx, s) => { const k = `source_${s}`; const t = ctx.t(k); return t === k ? ctx.t("sourceOther", { source: s }) : t; };
 const html = (inner) => ({ type: "html", html: `<div class="ct">${inner}</div>` });
 const first = (inner) => ({ type: "html", html: `${U.STYLE}<div class="ct">${inner}</div>` });
@@ -45,10 +48,11 @@ async function listPage(ctx, q) {
   const cat = catParam ? B.liveCategory(idx, catParam) : null;
   const network = N.NETWORKS.includes(q.net) ? q.net : undefined;
   const review = q.review === "1";
+  const onlyAccounts = q.acc === "1";
   const orgId = q.org && idx.byId.get(q.org)?.k & 1 ? q.org : undefined;
   const text = ctx.search.query(q.q);
-  const base = { kind, cat: cat ?? undefined, net: network, review: review ? "1" : undefined, org: orgId, q: text || undefined };
-  const filter = { kind, cat, network, review, orgId };
+  const base = { kind, cat: cat ?? undefined, net: network, review: review ? "1" : undefined, acc: onlyAccounts ? "1" : undefined, org: orgId, q: text || undefined };
+  const filter = { kind, cat, network, review, account: onlyAccounts, orgId };
   const page = Math.max(1, Math.min(100_000, Math.trunc(Number(q.page)) || 1));
   const offset = (page - 1) * PAGE;
   let ids, total;
@@ -65,16 +69,17 @@ async function listPage(ctx, q) {
   const recs = await B.readMany(ctx, ids);
   const cards = ids.filter((id) => recs.has(id)).map((id) => B.card(ctx, idx, recs.get(id)));
   // Filtres : « à vérifier », catégories, réseaux présents dans le carnet.
-  let toReview = 0;
+  let toReview = 0, withAccount = 0;
   const nets = new Set();
-  for (const e of idx.list) { if (e.k & 2) toReview++; if (e.a) for (const k of e.a.split("\u0001")) nets.add(k.slice(0, k.indexOf(":"))); }
+  for (const e of idx.list) { if (e.k & 2) toReview++; if (e.k & 4) withAccount++; if (e.a) for (const k of e.a.split("\u0001")) nets.add(k.slice(0, k.indexOf(":"))); }
   const toggle = (k, val, current) => U.href({ ...base, [k]: current ? undefined : val, page: undefined });
   const chipItems = [];
   if (toReview || review) chipItems.push({ label: t("filterReview", { count: fmt(ctx, toReview) }), href: toggle("review", "1", review), current: review });
+  if (withAccount || onlyAccounts) chipItems.push({ label: t("filterAccounts", { count: fmt(ctx, withAccount) }), href: toggle("acc", "1", onlyAccounts), current: onlyAccounts });
   const cats = B.liveCategories(idx).sort((a, b) => N.fold(a.name).localeCompare(N.fold(b.name))).slice(0, 40);
   for (const k of cats) chipItems.push({ label: k.name, color: B.categoryView(k).color, href: toggle("cat", k.id, cat === k.id), current: cat === k.id });
   for (const n of N.NETWORKS.filter((x) => nets.has(x))) chipItems.push({ label: t(`net_${n}`), network: n, href: toggle("net", n, network === n), current: network === n });
-  const filtered = !!(cat || network || review || orgId || text);
+  const filtered = !!(cat || network || review || onlyAccounts || orgId || text);
   const head = [
     nav(ctx, kind === "org" ? "orgs" : "contacts"),
     U.chips(chipItems, t("filtersLabel")),
@@ -85,14 +90,17 @@ async function listPage(ctx, q) {
   const roleOf = (c) => (c.kind === "org" ? t("kindOrg") : [c.role, c.orgName].filter(Boolean).join(" · "));
   const accountsOf = (c) => [...new Set(c.accounts.map((a) => t(`net_${a.network}`)))].join(" · ");
   const showRole = cards.some((c) => roleOf(c)), showAccounts = cards.some((c) => accountsOf(c)), showState = cards.some((c) => c.status === "to_review");
-  const columns = [t("colName"), ...(showRole ? [t("colRole")] : []), ...(showAccounts ? [t("colAccounts")] : []), ...(showState ? [t("colState")] : [])];
+  const links = new Map(cards.map((c) => [c.id, idx.byId.get(c.id)?.l ? D.accountLinkOf(recs.get(c.id)?.data) : null]));
+  const showLogin = [...links.values()].some(Boolean);
+  const columns = [t("colName"), ...(showRole ? [t("colRole")] : []), ...(showAccounts ? [t("colAccounts")] : []), ...(showLogin ? [t("colLogin")] : []), ...(showState ? [t("colState")] : [])];
   const rows = cards.map((c) => [
     c.photo?.url ? { text: c.name, image: { src: c.photo.url, alt: t("photoAlt", { name: c.name }) } } : c.name,
     ...(showRole ? [roleOf(c)] : []),
     ...(showAccounts ? [accountsOf(c)] : []),
+    ...(showLogin ? [links.get(c.id) ? { text: accBadge(ctx, links.get(c.id)), badge: "info", title: t("accTip") } : ""] : []),
     ...(showState ? [c.status === "to_review" ? { text: t("statusBadge"), badge: "warn" } : ""] : []),
   ]);
-  const truncate = columns.map((_, i) => i).filter((i) => i > 0 && i < columns.length - (showState ? 1 : 0));
+  const truncate = columns.map((_, i) => i).filter((i) => i > 0 && i < columns.length - (showState ? 1 : 0) - (showLogin ? 1 : 0));
   const table = { type: "table", columns, rows, rowIds: cards.map((c) => c.id), rowActions: [{ label: t("openCard"), href: "?contact={id}" }], searchable: "server", searchPlaceholder: t("searchPlaceholder"), pageSize: 0, truncate, empty: t(idx.list.length ? "emptySearch" : "emptyBook") };
   const foot = more || page > 1 ? `<p class="ct-more">${more ? `<a class="ct-btn" href="${U.esc(more)}">${U.esc(t("seeMore"))}</a>` : ""}${page > 1 ? `<a class="ct-btn ct-ghost" href="${U.esc(U.href({ ...base }))}">${U.esc(t("backToStart"))}</a>` : ""}</p>` : "";
   return [first(head.join("")), table, ...(foot ? [html(foot)] : [])];
@@ -109,6 +117,7 @@ async function contactPage(ctx, id, { fresh = false } = {}) {
       ...(r.movedTo ? [html(`<p><a class="ct-btn" href="?contact=${encodeURIComponent(r.movedTo)}">${U.esc(t("openMoved"))}</a></p>`)] : [])];
   }
   const c = r.contact, idx = r.index, d = r.record.data;
+  const link = D.accountLinkOf(d);
   const org = c.kind === "org";
   const canMail = B.can(ctx, B.RIGHT_EMAIL_VIEW);
   const nn = netName(ctx);
@@ -119,13 +128,17 @@ async function contactPage(ctx, id, { fresh = false } = {}) {
   const head = `<a class="ct-back" href="${org ? "?kind=org" : "?"}">${U.esc(t(org ? "backOrgs" : "back"))}</a>
 <section class="ct-head" aria-labelledby="ct-name">${U.photo(c, true)}<div class="ct-main"><h2 id="ct-name">${U.esc(c.name)}</h2>${sub ? `<span class="ct-sub">${subHtml}</span>` : ""}
 ${c.status === "to_review" ? `<span><span class="ct-badge">${U.esc(t("statusBadge"))}</span></span>` : ""}
+${link ? `<span><span class="ct-badge ct-account" title="${U.esc(t("accTip"))}">${U.esc(accBadge(ctx, link))}</span></span>` : ""}
 ${c.accounts.length ? `<span class="ct-nets">${[...new Map(c.accounts.map((a) => [a.network, a])).values()].map((a) => U.netPill(a.network, `${nn(a.network)} : ${a.handle}`, a.url)).join("")}</span>` : ""}
 ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoOrigin(ctx, c))}</span><span class="ct-sub">${U.esc(t("sourceLine", { date, source: sourceLabel(ctx, c.source) }))}</span></div></section>
 <div class="ct-actions"><a class="ct-btn" href="?contact=${encodeURIComponent(c.id)}&amp;edit=1">${U.esc(t("edit"))}</a></div>`;
   const blocks = [first(nav(ctx, org ? "orgs" : "contacts") + head)];
   if (fresh) blocks.push({ type: "markdown", text: t("freshBanner") });
+  if (link) blocks.push(html(`<p class="ct-help"><a href="/admin/users">${U.esc(t("accTeamLink"))}</a></p>`));
+  if (!link && d.accountGone) blocks.push({ type: "banner", tone: "warning", text: t("accGone", { date: new Date(d.accountGone).toLocaleDateString(ctx.locale || "en", { day: "numeric", month: "long", year: "numeric" }) }) });
   if (c.status === "to_review") {
-    blocks.push({ type: "banner", tone: "warning", text: t("reviewBanner") });
+    if (link?.flag === "email_shared") blocks.push({ type: "banner", tone: "warning", text: t("accSharedBanner") }, html(`<p><a class="ct-btn ct-ghost" href="?view=dupes">${U.esc(t("accSharedOpen"))}</a></p>`));
+    else blocks.push({ type: "banner", tone: "warning", text: t("reviewBanner") });
     blocks.push({ type: "adminForm", action: "verify", submitLabel: t("verify"), fields: [{ name: "id", kind: "hidden", value: c.id }] });
   }
   // Coordonnées (droit « voir les e-mails et téléphones »), relation.
@@ -190,7 +203,7 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
   // Données personnelles : tout ce que le site sait de la personne, et son effacement (page à part, avec confirmation en clair).
   blocks.push({ type: "heading", text: t("privacyTitle") }, { type: "markdown", text: t("privacyHelp") });
   blocks.push({ type: "download", name: "person", label: t("privDownload"), params: { id: c.id } });
-  blocks.push(html(`<p><a class="ct-btn ct-ghost" href="${U.esc(`?contact=${encodeURIComponent(c.id)}&erase=1`)}">${U.esc(t("privEraseLink"))}</a></p>`));
+  blocks.push(link ? { type: "banner", tone: "warning", text: t("accLinked") } : html(`<p><a class="ct-btn ct-ghost" href="${U.esc(`?contact=${encodeURIComponent(c.id)}&erase=1`)}">${U.esc(t("privEraseLink"))}</a></p>`));
   return blocks;
 }
 
@@ -405,6 +418,8 @@ export default {
   },
 
   async adminPanel(ctx, { query } = {}) {
+    // The people who log in have a card: look at the accounts when the address book opens (a pull; at most every few seconds; never blocks the page on a failure).
+    try { await A.syncAccounts(ctx); } catch { /* the panel works with what it knows */ }
     try { const key = ctx.instance?.key; return U.scopeHtmlLinks(await panel(ctx, U.unscopeQuery(query, key)), key); } catch (e) { if (e?.code === "busy") return [{ type: "banner", tone: "warning", text: ctx.t("busy") }]; throw e; }
   },
 
@@ -505,7 +520,7 @@ export default {
     }),
     remove: guard(async (ctx, v) => {
       const r = await B.erase(ctx, { id: v.id, confirm: true });
-      if (!r.ok) return { error: ctx.t("notFound") };
+      if (!r.ok) return { error: ctx.t(r.error === "account_linked" ? "accLinked" : "notFound") };
       const silent = r.modules.filter((m) => !m.ok).map((m) => m.name);
       return { ok: silent.length ? ctx.t("deletedSilent", { modules: silent.join(", ") }) : ctx.t("deleted"), redirect: "?" };
     }),

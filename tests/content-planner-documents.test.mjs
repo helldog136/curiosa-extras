@@ -527,6 +527,9 @@ test("the readable backup stays under 5 MB whatever the notebook holds, and says
   const files = await def.backup.readable(ctx);
   for (const f of files) assert.ok(f.content.length <= 5 * 1024 * 1024, `${f.path}: ${f.content.length}`);
   assert.match(files.find((f) => f.path === "documents.md").content, /The rest was cut.*documents CSV download/);
+  const cutCsv = files.find((f) => f.path === "documents.csv").content;
+  assert.match(cutCsv, /The rest was cut.*documents CSV download/, "documents.csv says it was cut, in a last row");
+  assert.ok(Buffer.byteLength(cutCsv) <= 5 * 1024 * 1024, "documents.csv stays under 5 MB counted in bytes");
   let total = 0;
   for await (const chunk of E.exportDocsCsv(ctx)) total += chunk.length;
   assert.ok(total > 7_000_000, "the download, which is streamed, holds every document");
@@ -577,4 +580,12 @@ test("a row of another shape in the documents collection is never taken for a do
   assert.deepEqual((await D.loadAll(ctx)).map((i) => i.id), [id]);
   const damaged = await ctx.api.store.add("ideaDocs", { ideaId: id, title: 42, text: "kept", version: { a: 1 }, createdAt: "nope" }, { key: id });
   assert.ok(!(await docsOf(ctx, id)).some((d) => d.id === damaged), "a row with a damaged title is ignored, never an error");
+});
+
+test("the readable backup counts bytes, not characters: a text of 4-byte characters still stays under 5 MB, and the cut is said", async () => {
+  const docs = Array.from({ length: 40 }, (_, i) => ({ ideaId: `i${i}`, title: `Doc ${i}`, version: "v1", text: "😀".repeat(30000), by: "owner", updatedBy: "owner", createdAt: NOW, updatedAt: NOW }));
+  const ctx = ctxFor({ rows: { ideaDocs: docs, ideas: docs.map((_, i) => ({ ...legacyIdea, title: `Idea ${i}` })) } });
+  const files = await def.backup.readable(ctx);
+  for (const f of files) assert.ok(Buffer.byteLength(f.content) <= 5 * 1024 * 1024, `${f.path}: ${Buffer.byteLength(f.content)} bytes`);
+  assert.match(files.find((f) => f.path === "documents.csv").content, /The rest was cut/);
 });
