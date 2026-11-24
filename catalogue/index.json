@@ -2512,21 +2512,21 @@
     {
       "id": "stream-story",
       "name": "Announcement story",
-      "description": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post.",
+      "description": "A short animated video that announces an event or your week's schedule, ready for an Instagram story.",
       "i18n": {
         "en": {
           "name": "Announcement story",
-          "description": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post."
+          "description": "A short animated video that announces an event or your week's schedule, ready for an Instagram story."
         },
         "fr": {
           "name": "Story d'annonce",
-          "description": "Une petite vidéo animée qui annonce un de vos prochains événements, prête pour une story Instagram ou une publication portrait."
+          "description": "Une petite vidéo animée qui annonce un événement ou le programme de votre semaine, prête pour une story."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-story",
       "ref": "v1.110.0",
-      "version": "2.15.3",
+      "version": "2.16.0",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",

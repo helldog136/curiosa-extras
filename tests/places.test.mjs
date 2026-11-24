@@ -83,7 +83,7 @@ const ROLLOUT = {
   "sponsors": ["1.2.0", { sponsors: "community.partners.sponsors" }],
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
-  "stream-story": ["2.15.3", { main: "calendar.story", styles: "calendar.story.styles" }],
+  "stream-story": ["2.16.0", { main: "calendar.story", styles: "calendar.story.styles" }],
   "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
@@ -270,6 +270,8 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
     if (id === "content-planner") rest.mcp = rest.mcp.filter((t) => !t.name.startsWith("idea_doc_")).map((t) => (t.name === "idea_get" ? { ...t, description: oldRest.mcp.find((o) => o.name === "idea_get").description } : t)); // 1.2.0: the documents of an idea (four tools; idea_get says how many an idea holds)
     if (id === "content-planner") delete rest.i18n; // 1.2.0: the French texts of the four new tool descriptions
+    if (id === "stream-story") rest.mcp = rest.mcp.filter((t) => t.name !== "story_week").map((t) => (t.name === "story_prepare" ? oldRest.mcp.find((o) => o.name === "story_prepare") : t)); // 2.16.0: the week's schedule (a new read tool; story_prepare gains kind, weekStart, weekPart, weekTitle)
+    if (id === "stream-story") rest.i18n = { fr: Object.fromEntries(Object.entries(rest.i18n.fr).filter(([k]) => k !== "mcp.story_week")) }; // 2.16.0: the French text of the new tool description
     if (id === "contacts") { delete rest.consumes; rest.permissions = rest.permissions.filter((x) => x !== "topics"); } // 2.8.0: the optional topic core.user (linked cards for the login accounts) and the permission to read it
     if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
