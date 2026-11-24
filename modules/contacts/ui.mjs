@@ -67,6 +67,7 @@ export const STYLE = `<style>
 .ct-net{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:999px;background:var(--c);flex:none}
 .ct-net svg{width:.9rem;height:.9rem;fill:#fff}
 a.ct-net{text-decoration:none}
+.ct-badge.ct-account{background:var(--v-accent);color:var(--v-accent-fg)}
 .ct-badge{display:inline-block;padding:.1rem .5rem;border-radius:999px;font-size:.75rem;font-weight:700;background:var(--v-warning);color:var(--v-warning-fg);white-space:nowrap}
 .ct-cat{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .55rem;border-radius:999px;border:1px solid var(--v-line);font-size:.8rem}
 .ct-more{margin:1rem 0;display:flex;gap:.5rem;flex-wrap:wrap}

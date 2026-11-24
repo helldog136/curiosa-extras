@@ -4,8 +4,8 @@ Un **sujet** est le nom d'un échange d'informations entre modules (`domaine.obj
 **registre** des sujets utilisés par les modules de ce dépôt. Le test `tests/repo-rules.test.mjs` le lit : un sujet utilisé par un
 module (dans `module.json` ou dans le code) et absent d'ici fait échouer les tests ; une ligne mal formée aussi.
 
-Le cœur de Curiosa ne tient **aucun** registre : il ne documente (dans son `docs/MODULES.md`) que les trois sujets qu'il lit lui-même,
-`core.entry`, `social.link` et `feed.item`. Tout autre sujet est une affaire entre modules, donc se déclare ici. Publier un nouveau
+Le cœur de Curiosa ne tient **aucun** registre : il ne documente (dans son `docs/MODULES.md`) que les sujets qu'il lit ou fournit lui-même,
+`core.entry`, `core.user`, `social.link` et `feed.item`. Tout autre sujet est une affaire entre modules, donc se déclare ici. Publier un nouveau
 sujet ne demande donc jamais une nouvelle version du cœur.
 
 ## Comment ajouter un sujet
@@ -23,11 +23,12 @@ souhaite ».
 
 ## Sujets lus par le cœur
 
-Le cœur possède le schéma de ces trois sujets (voir `docs/MODULES.md` du cœur) ; ils sont répétés ici pour que la liste soit complète.
+Le cœur possède le schéma de ces sujets (voir `docs/MODULES.md` du cœur) ; ils sont répétés ici pour que la liste soit complète.
 
 | Sujet | Fournisseurs | Consommateurs | Champs | Depuis |
 |---|---|---|---|---|
 | `core.entry` | le cœur | `discord-announcer`, `maze-overlay`, `sponsor-ticker`, `ticker-overlay` | entrées publiées de toute instance à contenu | cœur 0.2.0 |
+| `core.user` | le cœur (aucun module ne peut le fournir) | `contacts` | les comptes qui se connectent : `id`, `name`, `email`, `level`, `roles`, `createdAt`, `updatedAt` (jamais un secret) | cœur 0.47.0 |
 | `feed.item` | `youtube-channel`, `*` | le cœur (flux RSS), `discord-announcer`, `mascot` | éléments proposés au flux RSS | cœur 0.1.23 |
 | `social.link` | tout module « réseau social » (`bluesky`, `discord`, `github`, `youtube-channel`, `twitch-channel`, `platform-links`…) | le cœur (en-tête et pied de page), `planning`, `twitch-bot` | `label`, `url`, `icon`, et les champs facultatifs de liens définis par le cœur | cœur 0.2.13 |
 

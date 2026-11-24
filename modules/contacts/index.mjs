@@ -15,6 +15,7 @@ const { default: admin } = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
 const { getIndex, readMany, card } = await import(`./book.mjs${v}`);
 const { default: downloads } = await import(`./downloads.mjs${v}`);
+const A = await import(`./accounts.mjs${v}`);
 
 const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
 
@@ -22,6 +23,8 @@ export default {
   ...service, // services
   ...admin, // dashboard, adminPanel, adminActions
   ...tools, // mcp
+  // The people who log in have a card: read the accounts every few minutes (the administration also looks when it opens). Never fails the task: an older core answers nothing.
+  tasks: { accounts: { everyMinutes: 5, run: async (ctx) => { try { await A.syncAccounts(ctx, { force: true }); } catch (e) { console.error("[contacts] account sync:", e?.code ?? e?.message ?? e); } } } },
   adminDownloads: downloads, // « contacts » (tout le carnet), « template », « importReport », « person » : servis par le cœur, droit « exporter le carnet »
   migrations: {
     // Empty marker. The 1.x → 2.0 conversion (organisations as cards, notes keyed by card) was removed in 2.5.0: `dataFloor` is 2, so data still in
@@ -33,7 +36,7 @@ export default {
     // Sauvegarde lisible : contacts.csv (fiches) et notes.csv (notes, avec l'id de leur fiche). Lu par pages ; 100 000 fiches au plus.
     async readable(ctx) {
       const idx = await getIndex(ctx, { waitMs: 60_000 });
-      const lines = [["id", "added", "kind", "status", "source", "name", "role", "organisation", "email", "phone", "accounts", "categories", "others", "relation"].map(cell).join(",")];
+      const lines = [["id", "added", "kind", "status", "source", "name", "role", "organisation", "email", "phone", "accounts", "categories", "others", "relation", "site_account"].map(cell).join(",")];
       const catName = (id) => idx.cats.get(id)?.name ?? "";
       for (let i = 0; i < idx.list.length; i += 500) {
         const ids = idx.list.slice(i, i + 500).map((e) => e.id);
@@ -42,7 +45,7 @@ export default {
           const r = recs.get(id);
           if (!r) continue;
           const c = card(ctx, idx, r);
-          lines.push([c.id, c.createdAt, c.kind, c.status, c.source, c.name, c.role, c.orgName, c.email, c.phone, c.accounts.map((a) => `${a.network}:${a.handle}`).join(" "), c.categoryIds.map(catName).join(" | "), r.data.others, r.data.relation].map(cell).join(","));
+          lines.push([c.id, c.createdAt, c.kind, c.status, c.source, c.name, c.role, c.orgName, c.email, c.phone, c.accounts.map((a) => `${a.network}:${a.handle}`).join(" "), c.categoryIds.map(catName).join(" | "), r.data.others, r.data.relation, r.data.account?.id ? A.levelLabel(ctx, r.data.account) : ""].map(cell).join(","));
         }
       }
       const notes = [["contact", "date", "author", "text"].map(cell).join(",")];
