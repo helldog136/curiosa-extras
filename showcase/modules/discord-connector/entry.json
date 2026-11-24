@@ -1,0 +1,48 @@
+{
+  "id": "discord-connector",
+  "category": "streaming",
+  "tags": [
+    "discord",
+    "setup",
+    "connection"
+  ],
+  "order": 79,
+  "title": {
+    "en": "Discord connector",
+    "fr": "Connecteur Discord"
+  },
+  "summary": {
+    "en": "Links your site to your Discord server with a bot, once, for everything that talks to Discord.",
+    "fr": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord."
+  },
+  "pitch": {
+    "en": "Links your site to your Discord server with a bot, once, for everything that talks to Discord. A guided setup takes about five minutes.",
+    "fr": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord. Un assistant guidé prend environ cinq minutes."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "discord",
+    "discord-announcer"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Discord connector admin page, with demo data",
+        "fr": "Page d'administration de Connecteur Discord, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Discord connector admin page, filled with demo data.",
+        "fr": "La page d'administration de Connecteur Discord, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/discord-connector/module.json",
+    "modules/discord-connector/README.md"
+  ]
+}

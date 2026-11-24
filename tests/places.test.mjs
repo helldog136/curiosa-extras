@@ -49,8 +49,9 @@ const ROLLOUT = {
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
+  "discord-connector": ["1.0.0", { main: "networks.discord" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
-  "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
+  "discord": ["1.5.0", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
   "faq": ["1.2.0", { main: "content.faq", inbox: "content.faq.inbox" }],
@@ -71,7 +72,7 @@ const ROLLOUT = {
   "partnerships": ["2.5.1", { main: "community.partners" }],
   "patreon": ["1.2.1", { main: "networks.accounts" }],
   "pinterest": ["1.2.1", { main: "networks.accounts" }],
-  "planning": ["2.9.2", { main: "calendar.schedule", look: "calendar.schedule.look" }],
+  "planning": ["2.10.0", { main: "calendar.schedule", look: "calendar.schedule.look" }],
   "platform-links": ["1.2.2", { main: "networks.accounts.other" }],
   "polls": ["1.9.3", { polls: "live.participation.polls", screen: "live.participation.polls" }],
   "press-kit": ["1.2.0", { main: "content.press-kit" }],
@@ -102,6 +103,8 @@ const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
 const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
+/** Modules created after the migration: nothing to compare with in the older releases. */
+const NEW_MODULES = new Set(["discord-connector"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
@@ -252,10 +255,12 @@ const needHistory = missingTag && process.env.HOT_UPDATE_REQUIRE_HISTORY !== "1"
 test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core sees the same module (only « places » and the version change; adminMenu, settings, tabs, tools, elements, data kept)`, { skip: needHistory }, () => {
   const beforeBy = Object.fromEntries(tagsUsed.map((tag) => [tag, manifestsAt(root, tag)]));
   for (const id of Object.keys(MIGRATED)) {
+    if (NEW_MODULES.has(id)) continue; // no earlier release to upgrade from
     const before = beforeBy[BEFORE(id)];
     const old = before[id], now = manifests[id];
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
     const { places, version, minCore: nowCore, ...rest } = now;
+    if (id === "planning") { rest.requires = rest.requires.filter((r) => r.service !== "discord.api"); rest.settings = rest.settings.filter((s) => !s.key.startsWith("discord")); }   // 2.10.0: the optional Discord connector
     const { version: oldVersion, minCore: oldCore, ...oldRest } = old;
     assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0") || LIVE_SEARCH_CORE[id] === nowCore, `${id}: minCore only moves for the connection block (0.36.0) or the live search (0.6.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
@@ -264,9 +269,10 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (id === "home-assistant") rest.consumes = rest.consumes.filter((c) => c.topic !== "home.info"); // 1.5.0: the optional topic of the information provided by other modules
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
     if (id === "contacts") { delete rest.consumes; rest.permissions = rest.permissions.filter((x) => x !== "topics"); } // 2.8.0: the optional topic core.user (linked cards for the login accounts) and the permission to read it
+    if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
-    assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);
+    assert.ok(version.localeCompare(oldVersion, "en", { numeric: true }) > 0, `${id}: ${oldVersion} → ${version}`);
     // What an older core needs to keep showing the module in the same place.
     assert.equal(now.adminMenu, old.adminMenu, `${id}: adminMenu kept for cores older than 0.31.0`);
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);
