@@ -55,6 +55,7 @@ export function docsSection(ctx, idea, docs, q) {
 const hidden = (name, value) => ({ name, kind: "hidden", label: name, value });
 
 /** The form the address asks for (`newDoc`, `editDoc` or `versionDoc`), shown in a window; null when none is asked or the document does not exist. */
+// No field is marked `required`: the browser would block the send with its own English bubble and the readable error under the field (R22) would never show. The server checks and answers.
 export function docDialog(ctx, idea, docs, q, cancelHref) {
   const t = ctx.t;
   if (q.newDoc) {
@@ -62,7 +63,7 @@ export function docDialog(ctx, idea, docs, q, cancelHref) {
       type: "adminForm", presentation: "dialog", action: "saveDoc", cancelHref, title: t("docNewTitle"), submitLabel: t("docNewSubmit"),
       fields: [
         hidden("idea", idea.id), hidden("id", ""),
-        { name: "title", label: t("docFieldTitle"), required: true, value: "", example: t("docTitleExample") },
+        { name: "title", label: t("docFieldTitle"), value: "", example: t("docTitleExample") },
         { name: "text", kind: "textarea", label: t("docFieldText"), placeholder: t("docTextPlaceholder", { max: num(ctx, DOC_LIMITS.text) }), value: "" },
         // Empty and folded: "More options" opens by itself when a folded field has a value, which would put the rare field back in the short path. An empty version is stored as v1.
         { name: "version", label: t("docFieldVersion"), folded: true, value: "", placeholder: X.DEFAULT_VERSION, example: t("docVersionExample") },
@@ -77,7 +78,7 @@ export function docDialog(ctx, idea, docs, q, cancelHref) {
       secondaryAction: { label: t("docDeleteButton"), action: "deleteDoc", confirm: t("docDeleteConfirm", { title: docName(ctx, doc), n: num(ctx, doc.text.length) }) },
       fields: [
         hidden("idea", idea.id), hidden("id", doc.id),
-        { name: "title", label: t("docFieldTitle"), required: true, value: doc.title, example: t("docTitleExample") },
+        { name: "title", label: t("docFieldTitle"), value: doc.title, example: t("docTitleExample") },
         { name: "version", label: t("docFieldVersion"), value: doc.version, example: t("docVersionExample") },
         { name: "text", kind: "textarea", label: t("docFieldText"), placeholder: t("docTextPlaceholder", { max: num(ctx, DOC_LIMITS.text) }), value: doc.text },
       ],
@@ -87,7 +88,7 @@ export function docDialog(ctx, idea, docs, q, cancelHref) {
     type: "adminForm", presentation: "dialog", action: "newVersion", cancelHref, title: t("docVersionTitle"), submitLabel: t("docVersionSubmit"),
     fields: [
       hidden("idea", idea.id), hidden("id", doc.id),
-      { name: "version", label: t("docVersionField"), required: true, value: X.nextVersion(doc.version), example: t("docVersionExample"), help: t("docVersionHelp", { title: docName(ctx, doc), version: doc.version || "—" }) },
+      { name: "version", label: t("docVersionField"), value: X.nextVersion(doc.version), example: t("docVersionExample"), help: t("docVersionHelp", { title: docName(ctx, doc), version: doc.version || "—" }) },
     ],
   };
 }

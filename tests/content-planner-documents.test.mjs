@@ -168,6 +168,7 @@ test("adding: the window has a title and the text (the version is folded and emp
   assert.equal(version.folded, true);
   assert.equal(version.value, "", "an empty folded field: a value would open the fold by itself");
   assert.equal(version.placeholder, "v1");
+  assert.ok(f.fields.every((x) => !x.required), "no field is `required`: the browser would show its own bubble and hide the readable error under the field (R22)");
   assert.ok(f.fields.find((x) => x.name === "title").example);
   assert.equal(f.secondaryAction, undefined, "nothing to delete in a new document");
 });
@@ -269,6 +270,7 @@ test("new version: a copy under a new label, the old one stays, the copy comes f
   assert.equal(f.presentation, "dialog");
   assert.equal(f.submitLabel, "Create the new version");
   assert.deepEqual(f.fields.filter((x) => x.kind !== "hidden").map((x) => [x.name, x.value]), [["version", "v2"]], "one visible field, prefilled with the next label");
+  assert.ok(f.fields.every((x) => !x.required), "no field is `required` (the readable error shows under the field)");
   ctx.__plannerNow = "2026-10-24T10:00:00Z";
   const r = await def.adminActions.newVersion(ctx, { idea: id, id: v1.id, version: "v2" });
   assert.match(r.ok, /Version v2 created from v1/);
