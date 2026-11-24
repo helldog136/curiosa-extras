@@ -50,7 +50,8 @@ async function card(ctx, creds, p, can) {
 }
 
 async function keptTable(ctx, can) {
-  const docs = await store.managedList(ctx);
+  let docs = [];
+  try { docs = await store.managedList(ctx); } catch { return []; }
   if (!docs.length) return [];
   const names = new Map();
   const chans = await service.methods.listChannels(ctx, {});

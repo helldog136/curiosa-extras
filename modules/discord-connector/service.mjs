@@ -11,7 +11,7 @@ const { CODE } = dc;
 export const FLAG_SILENT = 4096;   // SUPPRESS_NOTIFICATIONS (1 << 12)
 export const LIMITS = { content: 2000, intro: 1500, name: 100, embeds: 10, embedTotal: 6000, list: 500 };
 const ZWSP = "​";
-const CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;   // controls and the bidirectional overrides (they reorder what people read)
+const CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;   // controls and the bidirectional overrides (they reorder what people read)
 
 /** Plain text for Discord: control characters out, every way of pinging defused (@everyone, @here, <@…>, <@&…>). The text can never mention anybody. */
 export function plain(value, max) {
@@ -21,7 +21,7 @@ export function plain(value, max) {
 }
 /** A thread name: no control character, one line, 100 characters at most, never empty. */
 export function threadName(value) {
-  const t = String(typeof value === "string" ? value : "").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim();
+  const t = String(typeof value === "string" ? value : "").replace(/[\u0000-\u001f\u007f-\u009f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim();
   const cut = [...t].slice(0, LIMITS.name).join("").trim();
   return cut || "thread";
 }
@@ -58,19 +58,22 @@ export function cleanEmbeds(raw) {
 
 const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
 /** What a failed call becomes for the other module: the reason (closed list), the pause end when there is one. */
-const failed = (r) => fail(r.reason, r.retryAt ? { retryAt: new Date(r.retryAt).toISOString() } : {});
+const failed = (r) => fail(r.reason, { ...(r.retryAt ? { retryAt: new Date(r.retryAt).toISOString() } : {}), ...(r.reason === "forbidden" && r.code !== "token" ? { scope: "channel" } : {}) });   // scope: the refusal is about the channel (not about the bot code)
 const snow = store.snowflake;
 const hashOf = (v) => createHash("sha256").update(JSON.stringify(v)).digest("hex").slice(0, 32);
 
-/** Notes what a call taught about the connection (token refused, bot not on the server, permission missing), and forgets it when the same thing works again. Never throws. */
+/**
+ * Notes what a call taught about the connection (token refused, bot not on the server), and forgets it when the same thing works again. Never throws.
+ * A refusal on a channel a module chose ("missing permissions" there) is NOT noted: it says nothing about the bot on the server, so it never turns the owner's card red
+ * (the card shows the permissions missing on the whole server, read by health.mjs).
+ */
 export async function track(ctx, feature, r, { guild = false } = {}) {
   try {
     const cur = await store.healthOf(ctx);
-    if (r.ok) { if (cur && (cur.state === "token" || cur.feature === feature || (guild && cur.state === "guild"))) await store.setHealth(ctx, null); return; }
+    if (r.ok) { if (cur && (cur.state === "token" || (guild && cur.state === "guild"))) await store.setHealth(ctx, null); return; }
     let next = null;
     if (r.reason === "forbidden" && r.code === "token") next = { state: "token" };
     else if (r.reason === "not_member" && guild) next = { state: "guild" };
-    else if (r.reason === "forbidden" && r.code === CODE.missingPermissions) next = { state: "perms", feature };
     if (!next || (cur && cur.state === next.state && cur.feature === next.feature)) return;
     await store.setHealth(ctx, { ...next, since: new Date().toISOString() });
     await ctx.api.log?.write?.({ action: "connection.problem", level: "warn", data: { state: next.state, ...(next.feature ? { feature: next.feature } : {}) } });
@@ -82,17 +85,18 @@ async function run(ctx, feature, req, opts) {
   await track(ctx, feature, r, opts);
   return r;
 }
-const safe = (fn) => async (ctx, args) => { try { return await fn(ctx, args && typeof args === "object" ? args : {}); } catch { return fail("failed"); } };
+const safe = (fn) => async (ctx, args) => { try { return await fn(ctx, args && typeof args === "object" ? args : {}); } catch (e) { return fail(e?.message === "store_unavailable" ? "unavailable" : "failed"); } };   // a store that cannot be read stops the call (caps and logs cannot be checked)
 const messageIdOf = (r) => (r.ok && r.json && typeof r.json === "object" ? snow(r.json.id) : "");
 
 /* ───────────── Where the bot may write ───────────── */
 // A module hands over a channel number: the bot only writes in a text channel, an announcement channel or a thread OF THE CONFIGURED SERVER, never in another
 // server it may also be on. The answer of Discord is kept 10 minutes. (There is no owner list of channels yet: see the README.)
 const TEXT_TYPES = new Set([0, 5]);
+const THREAD_TYPES = new Set([10, 11, 12]);
 const WRITE_TYPES = new Set([0, 5, 10, 11, 12]);
 const seen = new Map();   // "<guild>:<channel>" → { until, type }
 const CHANNEL_MS = 10 * 60_000;
-async function channelCheck(ctx, channelId, { parentOnly = false } = {}) {
+async function channelCheck(ctx, channelId, { parentOnly = false, threadOnly = false } = {}) {
   const creds = await store.credsOf(ctx);
   if (!store.hasBot(creds)) return fail("not_configured");
   const k = `${creds.guildId}:${channelId}`;
@@ -100,11 +104,11 @@ async function channelCheck(ctx, channelId, { parentOnly = false } = {}) {
   if (type === undefined) {
     const r = await run(ctx, "channel", { method: "GET", path: `/channels/${channelId}`, priority: "background" });
     if (!r.ok) return failed(r);
-    if (snow(r.json?.guild_id) !== creds.guildId || !Number.isInteger(r.json?.type)) return fail("forbidden");   // another server, or not a channel of one
+    if (snow(r.json?.guild_id) !== creds.guildId || !Number.isInteger(r.json?.type)) return fail("forbidden", { scope: "channel" });   // another server, or not a channel of one
     type = r.json.type;
     seen.set(k, { until: Date.now() + CHANNEL_MS, type }); if (seen.size > 200) seen.delete(seen.keys().next().value);
   }
-  return (parentOnly ? TEXT_TYPES : WRITE_TYPES).has(type) ? { ok: true } : fail("forbidden");
+  return (threadOnly ? THREAD_TYPES : parentOnly ? TEXT_TYPES : WRITE_TYPES).has(type) ? { ok: true } : fail("forbidden", { scope: "channel" });
 }
 
 /* ───────────── Messages ───────────── */
@@ -161,15 +165,21 @@ async function upsertManagedMessage(ctx, a) {
   const silent = a.silent !== false;
   const id = `${owner}:${key}`;
   const digest = hashOf({ channelId, c: body.content ?? "", e: body.embeds ?? [] });
-  return store.serial(ctx, async () => {
-    const list = await store.managedList(ctx);
+  return store.serial(ctx, async (ctl) => {
+    const list = await store.managedList(ctx);   // throws `store_unavailable` when the store cannot be read: nothing is written on a guess
     const doc = list.find((d) => d.data.id === id) ?? null;
     const label = typeof a.label === "string" ? plain(a.label, 60).trim() : "";
-    const save = (messageId) => store.put(ctx, store.COL.managed, doc, { id, owner, key, ...(label ? { label } : {}), channelId, messageId, hash: digest, at: new Date().toISOString() });
+    // Old messages of a move whose deletion failed stay in the document (`old`) and are deleted on a later pass: never orphaned.
+    let pending = Array.isArray(doc?.data.old) ? doc.data.old.slice(0, 5) : [];
+    const save = async (messageId) => {
+      if (ctl.expired) throw new Error("timeout");   // the section ran out of time: a late write must not overwrite what the next one did
+      return store.put(ctx, store.COL.managed, doc, { id, owner, key, ...(label ? { label } : {}), channelId, messageId, hash: digest, at: new Date().toISOString(), ...(pending.length ? { old: pending } : {}) });
+    };
     // The cap is checked BEFORE anything is written on Discord: a full list never leaves a message nobody keeps up to date.
     if (!doc && (list.length >= store.LIMITS.managed || list.filter((d) => d.data.owner === owner).length >= store.LIMITS.perOwner)) return fail("failed");
     const where = await channelCheck(ctx, channelId);
     if (!where.ok) return where;
+    const dropOld = async (o) => { const r = await dc.call(ctx, await store.credsOf(ctx), { method: "DELETE", path: `/channels/${o.channelId}/messages/${o.messageId}`, priority: "background" }); return r.ok || r.reason === "not_found"; };
     // `nonce` + `enforce_nonce`: if the answer of a POST is lost (timeout), the same request sent again returns the message Discord already made instead of a second one.
     // The nonce comes from what the message is (owner, key, content, and the number of the message it replaces), so a retry reuses it with nothing to remember.
     const create = async (action, replaces = "") => {
@@ -182,9 +192,13 @@ async function upsertManagedMessage(ctx, a) {
     };
     if (!doc) return create("created");
     const { channelId: was, messageId } = doc.data;
-    if (was !== channelId) {   // another channel: the new message first, then the old one goes (best effort)
+    if (pending.length) {   // a deletion that failed earlier: try again now
+      const left = []; for (const o of pending) if (!(await dropOld(o))) left.push(o);
+      if (left.length !== pending.length) { pending = left; if (doc.data.hash === digest && was === channelId) await save(messageId); }
+    }
+    if (was !== channelId) {   // another channel: the new message first, then the old one goes (and is remembered when it cannot go yet)
       const made = await create("created", messageId);
-      if (made.ok) await dc.call(ctx, await store.credsOf(ctx), { method: "DELETE", path: `/channels/${was}/messages/${messageId}`, priority: "background" });
+      if (made.ok && !(await dropOld({ channelId: was, messageId }))) { pending = [...pending, { channelId: was, messageId }].slice(-5); await save(made.messageId); }
       return made;
     }
     // `verify: true` asks for a real look: the same content is sent as an edit, which Discord answers "not found" when a person deleted the message (reading it back would need a permission the bot does not have).
@@ -207,6 +221,7 @@ async function forgetManagedMessage(ctx, a) {
     if (!doc) return { ok: true };
     const r = await run(ctx, "post", { method: "DELETE", path: `/channels/${doc.data.channelId}/messages/${doc.data.messageId}` });
     if (!r.ok && r.reason !== "not_found") return failed(r);
+    for (const o of Array.isArray(doc.data.old) ? doc.data.old : []) await dc.call(ctx, await store.credsOf(ctx), { method: "DELETE", path: `/channels/${o.channelId}/messages/${o.messageId}`, priority: "background" });   // best effort
     await ctx.api.store.remove(doc.id);
     return { ok: true };
   });
@@ -250,6 +265,8 @@ async function createThread(ctx, a) {
 async function setThreadArchived(ctx, a) {
   const threadId = snow(a.threadId);
   if (!threadId || typeof a.archived !== "boolean") return fail("invalid_input");
+  const where = await channelCheck(ctx, threadId, { threadOnly: true });   // a thread of THIS server, never another channel or another server
+  if (!where.ok) return where;
   const r = await run(ctx, "archive", { method: "PATCH", path: `/channels/${threadId}`, body: a.archived ? { archived: true, locked: true } : { archived: false, locked: false } });
   if (!r.ok && a.archived && r.code === CODE.archivedThread) return { ok: true };   // already archived
   return r.ok ? { ok: true } : failed(r);

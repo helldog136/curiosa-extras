@@ -4,7 +4,7 @@ import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { readFileSync } from "node:fs";
-import { fakeDiscord, discordError, discordJson, BOT_CODE, IDS, OTHER_CHANNEL } from "./helpers/fakeDiscord.mjs";
+import { fakeDiscord, discordError, discordJson, BOT_CODE, IDS, OTHER_CHANNEL, OTHER_THREAD } from "./helpers/fakeDiscord.mjs";
 import { connector, connectorModule, connectorDef } from "./helpers/discordConnector.mjs";
 import { assertConnectionStates } from "./helpers/connectionKit.mjs";
 import { parseManifest } from "@/core/modules/manifest";
@@ -240,7 +240,7 @@ test("upsertManagedMessage: one key per module, a refused write keeps the old me
   assert.deepEqual(d.postedIn(IDS.general).map((m) => m.content), ["B"], "the old message is gone");
   d.force("PATCH", /messages/, discordError(403, 50013, "Missing Permissions"), 1);
   const refused = await C.methods.upsertManagedMessage({ owner: "planning", key: "week", channelId: IDS.news, content: "A2" });
-  assert.deepEqual(refused, { ok: false, reason: "forbidden" });
+  assert.deepEqual(refused, { ok: false, reason: "forbidden", scope: "channel" });
   assert.equal(d.postedIn(IDS.news).length, 1);
   assert.deepEqual(await C.methods.forgetManagedMessage({ owner: "planning", key: "week" }), { ok: true });
   assert.equal(d.postedIn(IDS.news).length, 0);
@@ -324,7 +324,7 @@ test("failures: 401/403 forbidden, 404 not_found, 5xx and outage unavailable, tr
   d.force("POST", /messages$/, discordError(401, 0, "SECRET-LOOKING-DETAIL"), 1);
   assert.deepEqual(await post(), { ok: false, reason: "forbidden" });
   d.force("POST", /messages$/, discordError(403, 50013, "SECRET-LOOKING-DETAIL"), 1);
-  assert.deepEqual(await post(), { ok: false, reason: "forbidden" });
+  assert.deepEqual(await post(), { ok: false, reason: "forbidden", scope: "channel" }, "a refusal about the channel says so (the bot code is fine)");
   d.force("POST", /messages$/, discordError(404, 10003, "SECRET-LOOKING-DETAIL"), 1);
   assert.deepEqual(await post(), { ok: false, reason: "not_found" });
   d.force("POST", /messages$/, discordError(500, 0, "boom"), 1);
@@ -368,7 +368,7 @@ test("card: three states (not configured, configured, degraded) obey the core's 
   for (const x of [notConfigured, configured, degraded]) noSecret(x, "card");
 });
 
-test("card: not configured shows the guide; bot not on the server offers the invitation; a permission refused earlier is named; rate pause says until when", async () => {
+test("card: not configured shows the guide; bot not on the server offers the invitation; a channel refusal keeps it green, a server permission is named; rate pause says until when", async () => {
   const guide = (await blocks(mk({ app: null })))[0];
   assert.equal(guide.setup[0].type, "markdown"); assert.equal(guide.primary.href, "?edit=app");
   d = fakeDiscord({ inGuild: false }); globalThis.fetch = (u, i) => d.fetch(u, i);
@@ -376,19 +376,20 @@ test("card: not configured shows the guide; bot not on the server offers the inv
   assert.equal(out.state, "degraded"); assert.match(out.reason, /not on your server/);
   assert.equal(new URL(out.primary.href).searchParams.get("permissions"), dc.permissionsNumber());
   assert.ok(!out.primary.href.includes(BOT_CODE));
-  // a refused permission is remembered (and named) until the same thing works again
+  // a refusal on a channel a module chose does NOT turn the card red (it says nothing about the bot on the server)
   d = fakeDiscord(); globalThis.fetch = (u, i) => d.fetch(u, i);
   const C = mk();
-  d.force("POST", /\/threads$/, discordError(403, 50013, "Missing Permissions"), 1);
-  await C.methods.createPrivateThread({ channelId: IDS.general, name: "t", userId: IDS.person });
-  connectorModule.resetCache();
-  const perms = (await blocks(C))[0];
-  assert.equal(perms.state, "degraded"); assert.match(perms.reason, /private threads/); assert.ok(perms.since);
-  assert.equal(await connectorDef.adminBadge(C.ctx), 1);
-  await C.methods.createPrivateThread({ channelId: IDS.general, name: "t", userId: IDS.person });
+  d.force("POST", /messages$/, discordError(403, 50013, "Missing Permissions"), 1);
+  assert.equal((await C.methods.postMessage({ channelId: IDS.general, content: "x" })).reason, "forbidden");
   connectorModule.resetCache();
   assert.equal((await blocks(C))[0].state, "configured");
   assert.equal(await connectorDef.adminBadge(C.ctx), 0);
+  // a permission the bot lacks on the WHOLE server is named, and goes away when it is given
+  d = fakeDiscord({ permissions: String(1n << 11n) }); globalThis.fetch = (u, i) => d.fetch(u, i); connectorModule.resetCache();
+  const perms = (await blocks(mk()))[0];
+  assert.equal(perms.state, "degraded"); assert.match(perms.reason, /posting messages|private threads|public threads|closing threads/);
+  d = fakeDiscord(); globalThis.fetch = (u, i) => d.fetch(u, i); connectorModule.resetCache();
+  assert.equal((await blocks(mk()))[0].state, "configured");
   // pause
   d.rateLimit(300); connectorModule.resetCache();
   await C.methods.postMessage({ channelId: IDS.general, content: "x" });
@@ -574,25 +575,100 @@ test("forgetManagedMessage waits for a running upsert of the same key", async ()
   assert.equal(d.postedIn(IDS.general).length, 1 + 0, "the forgotten message is not deleted by forget, a new one is not duplicated into a loop");
 });
 
-test("a refused permission is forgotten after an hour without a new refusal", async () => {
+test("setThreadArchived: only a thread of THIS server; another server's thread, a plain channel and a bad number are refused with no PATCH", async () => {
   const C = mk();
-  d.force("POST", /\/threads$/, discordError(403, 50013, "Missing Permissions"), 1);
-  await C.methods.createPrivateThread({ channelId: IDS.general, name: "t", userId: IDS.person });
-  connectorModule.resetCache();
-  assert.equal((await blocks(C))[0].state, "degraded");
-  const real = Date.now; Date.now = () => real() + 2 * 3_600_000;
-  try { connectorModule.resetCache(); assert.equal((await blocks(C))[0].state, "configured"); } finally { Date.now = real; }
+  const t = await C.methods.createThread({ channelId: IDS.general, name: "t" });
+  assert.deepEqual(await C.methods.setThreadArchived({ threadId: t.threadId, archived: true }), { ok: true });
+  const patches = () => d.calls("PATCH").length;
+  const n = patches();
+  assert.equal((await C.methods.setThreadArchived({ threadId: OTHER_THREAD, archived: true })).reason, "forbidden");
+  assert.equal((await C.methods.setThreadArchived({ threadId: IDS.general, archived: true })).reason, "forbidden", "a text channel is not a thread");
+  assert.equal((await C.methods.setThreadArchived({ threadId: OTHER_CHANNEL, archived: true })).reason, "forbidden");
+  assert.equal((await C.methods.setThreadArchived({ threadId: 4.6e17, archived: true })).reason, "invalid_input", "a number past 2^53 has lost digits");
+  assert.equal(patches(), n, "no PATCH left for them");
 });
 
-test("upsertManagedMessage verify: the same content is checked on Discord, a message a person deleted is written again, otherwise nothing changes", async () => {
+test("a refusal about a channel says scope channel and never turns the card red; the guarded keys exist in English and French", async () => {
   const C = mk();
-  const first = await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" });
-  assert.equal((await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" })).action, "unchanged");
-  const calls = W().length;
-  assert.equal((await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x", verify: true })).action, "unchanged");
-  assert.equal(W().length, calls + 1, "one edit call, no new message");
-  d.messages.set(IDS.general, []);   // a person deletes it
-  const again = await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x", verify: true });
-  assert.equal(again.action, "recreated");
+  d.force("POST", /messages$/, discordError(403, 50013, "Missing Permissions"), 1);
+  const r = await C.methods.postMessage({ channelId: IDS.general, content: "x" });
+  assert.deepEqual(r, { ok: false, reason: "forbidden", scope: "channel" });
+  connectorModule.resetCache();
+  assert.equal((await blocks(C))[0].state, "configured");
+  assert.equal((await C.methods.postMessage({ channelId: OTHER_CHANNEL, content: "x" })).scope, "channel");
+  const fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8"));
+  for (const f of ["post", "privateThread", "publicThread", "archive", "channel", "list", "stats", "verify"]) { assert.ok(en[`feature_${f}`], `en ${f}`); assert.ok(fr[`feature_${f}`], `fr ${f}`); }
+});
+
+test("a store that cannot be read stops the write (fail closed): nothing is posted, no duplicate, no cap bypass", async () => {
+  const C = mk();
+  const real = C.ctx.api.store.list;
+  C.ctx.api.store.list = async (col, o) => { if (col === "discordManaged" || col === "discordSent") throw new Error("db down"); return real(col, o); };
+  const before = W().length;
+  const r = await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" });
+  assert.deepEqual(r, { ok: false, reason: "unavailable" });
+  assert.equal(W().length, before, "no POST");
+  assert.equal((await C.methods.editMessage({ channelId: IDS.general, messageId: "400000000000000555", content: "x" })).reason, "unavailable");
+  C.ctx.api.store.list = real;
+  assert.equal((await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" })).ok, true);
+});
+
+test("a section that ran out of time is told so: a late step must not write over the next one", async () => {
+  const store = await import("../modules/discord-connector/store.mjs");
+  const C = mk();
+  let late;
+  const slow = store.serial(C.ctx, async (ctl) => { await new Promise((r) => setTimeout(r, 40)); late = ctl.expired; return "late"; }, 10);
+  await assert.rejects(slow, /timeout/);
+  const next = await store.serial(C.ctx, async (ctl) => ctl.expired, 1000);
+  assert.equal(next, false);
+  await new Promise((r) => setTimeout(r, 60));
+  assert.equal(late, true, "the late step saw that its time was up");
+  assert.ok(store.SECTION_MS >= 60_000, "the section covers the longest chain of network calls");
+});
+
+test("moving a managed message: when the old message cannot be deleted it is remembered and deleted on a later pass", async () => {
+  const C = mk();
+  const base = { owner: "planning", key: "week", channelId: IDS.general, content: "x" };
+  const first = await C.methods.upsertManagedMessage(base);
+  d.force("DELETE", /messages/, discordError(500, 0, "boom"), 1);
+  const moved = await C.methods.upsertManagedMessage({ ...base, channelId: IDS.news });
+  assert.equal(moved.ok, true);
+  assert.ok(d.postedIn(IDS.general).some((m) => m.id === first.messageId), "the old message is still there");
+  const doc = (await C.ctx.api.store.list("discordManaged"))[0];
+  assert.deepEqual(doc.data.old, [{ channelId: IDS.general, messageId: first.messageId }]);
+  await C.methods.upsertManagedMessage({ ...base, channelId: IDS.news });
+  assert.ok(!d.postedIn(IDS.general).some((m) => m.id === first.messageId), "deleted on the next pass");
+  assert.equal((await C.ctx.api.store.list("discordManaged"))[0].data.old, undefined);
+});
+
+test("direction marks (LRM, RLM, ALM) and overrides are stripped from content and thread names", async () => {
+  const dc2 = await import("../modules/discord-connector/service.mjs");
+  assert.equal(dc2.plain("a\u200eb\u200fc\u061cd\u202ee\u2066f", 50), "abcdef");
+  assert.equal(dc2.threadName("a\u200eb\u061cc\u202ed"), "a b c d");
+});
+
+test("the MCP status does not tell to ask the owner for a rate pause", async () => {
+  const C = mk();
+  d.rateLimit(300); connectorModule.resetCache();
+  await C.methods.postMessage({ channelId: IDS.general, content: "x" });
+  const out = await connectorDef.mcp.connector_discord_status(C.ctx);
+  assert.equal(out.state, "degraded");
+  assert.ok(!/Only the owner/.test(out.whatToDo), out.whatToDo);
+});
+
+test("a late step of an upsert whose section timed out does not write its document, and the retry finds the same message (same nonce)", async () => {
+  const store = await import("../modules/discord-connector/store.mjs");
+  const C = mk();
+  const real = globalThis.fetch;
+  store.SECTION.ms = 30;
+  try {
+    globalThis.fetch = async (u, i) => { const r = await real(u, i); if ((i?.method ?? "GET") === "POST" && /messages$/.test(String(u))) await new Promise((x) => setTimeout(x, 90)); return r; };
+    const r = await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" });
+    assert.equal(r.ok, false);
+    await new Promise((x) => setTimeout(x, 150));
+    assert.equal((await C.ctx.api.store.list("discordManaged")).length, 0, "the late save was refused");
+  } finally { store.SECTION.ms = store.SECTION_MS; globalThis.fetch = real; }
   assert.equal(d.postedIn(IDS.general).length, 1);
+  assert.equal((await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" })).ok, true);
+  assert.equal(d.postedIn(IDS.general).length, 1, "the same nonce: Discord returns the first message, no duplicate");
 });
