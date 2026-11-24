@@ -10,7 +10,7 @@ const json = (status, body, headers = {}) => ({ status, headers: { "content-type
 const empty = (status = 204) => ({ status, headers: {}, body: "" });
 const err = (status, code, message = "error") => json(status, { code, message });
 
-export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, permissions = "395137010688" } = {}) {
+export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, permissions = "395137010688", overwrites = {}, moreChannels = [] } = {}) {
   const log = [];
   const messages = new Map();   // channel/thread id → [{ id, content, embeds, flags, allowed_mentions }]
   const threads = new Map();    // id → { parent, name, type, archived, locked, members:Set }
@@ -26,7 +26,8 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
     { id: IDS.news, type: 5, name: "news", position: 1, parent_id: "450000000000000001" },
     { id: IDS.general, type: 0, name: "general", position: 0, parent_id: "450000000000000001" },
     { id: "400000000000000003", type: 2, name: "voice", position: 2 },
-  ];
+    ...moreChannels,
+  ].map((c) => (overwrites[c.id] ? { ...c, permission_overwrites: overwrites[c.id] } : c));   // `overwrites`: channel number → permission overwrites ({ id, type: 0 role | 1 member, allow, deny })
   const known = new Set([...channels.map((c) => c.id), OTHER_CHANNEL]);
   const route = (method, path, body, auth, search = "") => {
     if (state.down) throw new TypeError("fetch failed");
@@ -44,10 +45,10 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
     }
     if (method === "GET" && (m = /^\/channels\/(\d+)$/.exec(path))) {
       const c = channels.find((x) => x.id === m[1]);
-      if (c) return json(200, { id: c.id, type: c.type, name: c.name, guild_id: IDS.guild });
+      if (c) return json(200, { id: c.id, type: c.type, name: c.name, guild_id: IDS.guild, ...(c.parent_id ? { parent_id: c.parent_id } : {}) });
       if (m[1] === OTHER_CHANNEL) return json(200, { id: OTHER_CHANNEL, type: 0, name: "elsewhere", guild_id: OTHER_GUILD });
       if (m[1] === OTHER_THREAD) return json(200, { id: OTHER_THREAD, type: 11, name: "elsewhere thread", guild_id: OTHER_GUILD });
-      const t = threads.get(m[1]); if (t) return json(200, { id: m[1], type: t.type ?? 11, name: t.name, guild_id: IDS.guild });
+      const t = threads.get(m[1]); if (t) return json(200, { id: m[1], type: t.type ?? 11, name: t.name, guild_id: IDS.guild, parent_id: t.parent });
       return err(404, 10003, "Unknown Channel");
     }
     if (method === "POST" && (m = /^\/channels\/(\d+)\/threads$/.exec(path))) {

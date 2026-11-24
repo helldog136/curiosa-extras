@@ -5,6 +5,7 @@ Links your site to your Discord server with a bot, once, for everything that tal
 - Follow the guided setup and register your bot.
 - Add the bot to your server with one link.
 - Let other modules post and open private threads through the same bot.
+- Choose the channels the bot may write in, or leave it free in all of them.
 
 ## Why you will like it
 
@@ -27,4 +28,4 @@ Links your site to your Discord server with a bot, once, for everything that tal
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.0.
+Available since version 1.0.0. Current version: 1.1.0.

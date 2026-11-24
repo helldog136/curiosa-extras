@@ -12,8 +12,9 @@ const memo = new Map();
 export const resetHealth = () => memo.clear();
 
 /**
- * { state: "none" | "ok" | "token" | "guild" | "rate" | "net", until?, missing?: [{ feature, permission }], checkedAt }.
+ * { state: "none" | "ok" | "token" | "guild" | "rate" | "net", until?, missing?: [{ feature, permission }], blocked?: [{ id, name?, permissions?, gone? }], checkedAt }.
  * `missing` is what the bot lacks on the whole server (absent when Discord would not say); a permission given on one channel only is not seen here.
+ * `blocked` (only when the owner chose channels): the chosen channels where the bot cannot post (a channel overwrite takes a permission away) or that no longer exist.
  */
 export async function verify(ctx, { force = false } = {}) {
   const creds = await store.credsOf(ctx);
@@ -49,6 +50,16 @@ async function check(ctx, creds) {
       let bits = 0n;
       for (const r of roles.json) if (r && mine.has(r.id)) { try { bits |= BigInt(r.permissions ?? "0"); } catch { /* unreadable role */ } }
       out.missing = dc.missingFrom(bits);
+      // The channels the owner chose: which of them the bot cannot write in (an overwrite of the channel takes a permission away, or the channel is gone).
+      const chosen = await store.allowedIds(ctx).catch(() => []);
+      if (chosen.length && Array.isArray(guild.json)) {
+        const rolesOfBot = new Set([creds.guildId, ...member.json.roles]);
+        const by = new Map(guild.json.filter((c) => c && typeof c === "object").map((c) => [store.snowflake(c.id), c]));
+        out.blocked = chosen.map((id) => {
+          const c = by.get(id);
+          return c ? { id, name: typeof c.name === "string" ? c.name.slice(0, 100) : "", permissions: dc.lostInChannel(bits, c, creds.guildId, botId, rolesOfBot) } : { id, gone: true };
+        }).filter((b) => b.gone || b.permissions.length);
+      }
     }
   }
   return out;
