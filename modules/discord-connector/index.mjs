@@ -15,7 +15,8 @@ export const resetCache = () => { dc.resetDiscord(); hl.resetHealth(); service.r
 export default {
   services: { "discord.api": service.methods },
   adminPanel: (ctx, o) => panel.render(ctx, o),
-  adminActions: panel.actions,
+  // Changing, testing or removing the bot, or deleting a kept message, needs the right `bot.manage` (the owner only by default): checked by the core, then again by the code.
+  adminActions: Object.fromEntries(Object.entries(panel.actions).map(([name, run]) => [name, { right: panel.RIGHT, run }])),
   // Every 10 minutes: ask Discord whether the bot still works (and note the change of state in the central log).
   tasks: { check: { everyMinutes: 10, run: async (ctx) => { await hl.sweep(ctx); } } },
   // The red dot of the menu: the bot needs the owner (code refused, bot not on the server, permission missing). No network: what was last noted.
@@ -24,7 +25,7 @@ export default {
     async connector_discord_status(ctx) {
       const p = await hl.problem(ctx);
       const v = await hl.verify(ctx);
-      const state = p.state === "none" ? "notConfigured" : ["ok", "net"].includes(p.state) ? "configured" : "degraded";
+      const state = p.state === "none" ? "notConfigured" : p.state === "ok" ? "configured" : "degraded";
       return {
         state, ...(p.state !== "none" && p.state !== "ok" ? { problem: p.state } : {}), ...(p.since ? { since: p.since } : {}),
         permissionsMissingOnServer: (v.missing ?? []).map((m) => ({ feature: m.feature, permission: m.permission })),

@@ -12,8 +12,9 @@ export const connectorModule = mod;
 export const connectorDef = mod.default;
 export const CONNECTOR_KEY = "discord-connector";
 
-export function connector({ app = { applicationId: IDS.app, guildId: IDS.guild, botToken: BOT_CODE }, messages = {}, rows = {}, ...rest } = {}) {
+export function connector({ owner = true, app = { applicationId: IDS.app, guildId: IDS.guild, botToken: BOT_CODE }, messages = {}, rows = {}, ...rest } = {}) {
   const ctx = fakeCtx({ moduleId: "discord-connector", key: CONNECTOR_KEY, messages, logEvents: manifest.logEvents, permissions: manifest.permissions, rows: { ...(app ? { discordApp: [app] } : {}), ...rows }, ...rest });
+  ctx.can = (right) => owner && right === "bot.manage";   // the owner holds the right; `owner: false` is somebody who may open the page and nothing more
   const svc = connectorDef.services["discord.api"];
   const methods = Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](ctx, args)]));
   return { ctx, methods, instance: { instance: CONNECTOR_KEY, name: "Discord connector", module: "discord-connector", version: 1, methods } };
