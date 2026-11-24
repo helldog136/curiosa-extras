@@ -106,17 +106,18 @@ function channelsSection(ctx, { can, chosen, query, channels, channelsOk, kept }
   const cell = (r) => {
     const on = chosen.includes(r.id);
     const label = ctx.t("switch_label", { name: r.name ?? tail(r.id) });
-    return can ? { text: on ? ctx.t("chosen_on") : "", switch: { on, action: "setChannel", label } } : { text: ctx.t("chosen_on"), badge: "ok" };
+    return { text: "", switch: { on, action: "setChannel", label } };
   };
   return [
     ...(editing ? [{ type: "links", items: [{ label: ctx.t("limit_done"), href: "?" }] }] : []),
     {
       type: "table", title: ctx.t(editing ? "pick_title" : "chosen_title"), searchable: true, pageSize: 50, truncate: [0, 1, 2],
-      columns: [ctx.t("col_channel"), ctx.t("col_category"), ctx.t("col_used"), ctx.t("col_chosen")],
+      // Somebody who cannot change the list sees the chosen channels only: no column that would say "Chosen" on every row (R14).
+      columns: [ctx.t("col_channel"), ctx.t("col_category"), ctx.t("col_used"), ...(can ? [ctx.t("col_chosen")] : [])],
       rowIds: rows.map((r) => r.id),
       rows: rows.map((r) => [
         r.name ? `#${r.name}` : r.gone ? { text: `${ctx.t("gone_name")} ${tail(r.id)}`, title: ctx.t("gone_help") } : tail(r.id),
-        r.category, (used.get(r.id) ?? []).join(", "), cell(r),
+        r.category, (used.get(r.id) ?? []).join(", "), ...(can ? [cell(r)] : []),
       ]),
       empty: ctx.t("pick_empty"),
     },
@@ -221,6 +222,7 @@ const raw = {
   /** The suggestion: the channels where modules already keep a message (a limit that leaves them out would stop them). */
   async chooseUsed(ctx) {
     return store.serialAllow(ctx, async () => {
+      if ((await store.allowedIds(ctx)).length) return { error: ctx.t("err_already_limited") };   // a suggestion never widens or replaces a list
       const list = await service.detailedChannels(ctx);
       if (!list.ok) return { error: ctx.t(`why_${list.reason}`) };
       const there = new Set(list.channels.map((c) => c.id));

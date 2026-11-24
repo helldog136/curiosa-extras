@@ -49,11 +49,15 @@ export async function setHealth(ctx, next) {
 
 /**
  * The channels the owner chose (numbers, in the order chosen). Empty = no limit. A store that cannot be read THROWS `store_unavailable`: a write is never allowed on a guess (fail closed).
- * Anything that is not a Discord number is ignored, so a damaged document can only shrink the list, never widen what the bot may do.
+ * Entries that are not Discord numbers are ignored (the list can only shrink); a document with no valid entry is damaged and throws, never "no limit".
  */
 export async function allowedIds(ctx) {
   const doc = (await all(ctx, COL.allow, 5))[0];
-  const ids = Array.isArray(doc?.data?.channelIds) ? doc.data.channelIds.map(snowflake).filter(Boolean) : [];
+  if (!doc) return [];
+  const ids = Array.isArray(doc.data?.channelIds) ? doc.data.channelIds.map(snowflake).filter(Boolean) : [];
+  // A document that exists always holds at least one channel (`setAllowed` removes it instead of saving an empty list). One that yields none is damaged
+  // (wrong shape, numbers lost, an older format): reading it as "no limit" would open every channel, so the writes stop instead.
+  if (!ids.length) throw new Error("store_unavailable");
   return [...new Set(ids)].slice(0, LIMITS.allow);
 }
 /** Saves the list ([] removes the document: no limit). Always inside `serialAllow`. */

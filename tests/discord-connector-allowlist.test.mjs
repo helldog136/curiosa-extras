@@ -249,6 +249,36 @@ test("two quick switches never lose one (the changes go one after the other)", a
   assert.deepEqual((await chosenOf(C)).sort(), [IDS.general, IDS.news].sort());
 });
 
+test("a damaged list never means \"no limit\": a document with no valid channel stops the writes; \"allow all\" removes the document and never saves an empty list", async () => {
+  for (const damaged of [{ channelIds: "x" }, { channelIds: [5] }, { channelIds: [] }, { channelIds: [4.6e17] }, {}, { channelIds: null }]) {
+    const C = mk({ rows: { discordAllow: [damaged] } });
+    const before = writes().length;
+    assert.deepEqual(await C.methods.postMessage({ channelId: IDS.general, content: "x" }), { ok: false, reason: "unavailable" }, JSON.stringify(damaged));
+    assert.deepEqual(await C.methods.upsertManagedMessage({ owner: "planning", key: "k", channelId: IDS.news, content: "x" }), { ok: false, reason: "unavailable" });
+    await assert.rejects(() => C.methods.channelChoices({}), /store_unavailable/);
+    assert.equal(writes().length, before, "no write");
+    assert.equal((await C.methods.status({})).channelLimit, undefined);
+  }
+  const C = await choose(mk(), [IDS.news]);
+  await act(C, "allowAll");
+  assert.equal((await C.ctx.api.store.list("discordAllow")).length, 0, "no document, not an empty one");
+  await act(C, "setChannel", { id: IDS.news, enabled: "1" });
+  await act(C, "setChannel", { id: IDS.news, enabled: "0" });
+  assert.equal((await C.ctx.api.store.list("discordAllow")).length, 0);
+  await store.setAllowed(C.ctx, []);
+  assert.equal((await C.ctx.api.store.list("discordAllow")).length, 0);
+  assert.equal((await C.methods.postMessage({ channelId: IDS.general, content: "x" })).ok, true, "unrestricted again");
+});
+
+test("the suggestion never widens or replaces a list that exists; lifting the limit says so", async () => {
+  const C = await choose(mk(), [IDS.general]);
+  await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" });
+  assert.equal((await act(C, "chooseUsed")).error, en.err_already_limited);
+  assert.deepEqual(await chosenOf(C), [IDS.general]);
+  assert.match(en.limit_off, /^Limit lifted/);
+  assert.deepEqual(await act(C, "setChannel", { id: IDS.general, enabled: "0" }), { ok: en.limit_off });
+});
+
 test("the suggestion: the channels where modules already keep a message, in one click; nothing to suggest says so", async () => {
   const C = mk();
   assert.match((await act(C, "chooseUsed")).error, /No module keeps a message/);
@@ -331,13 +361,14 @@ test("page, a chosen channel that no longer exists stays visible so that it can 
   assert.equal((await act(C, "setChannel", { id: "400000000000000555", enabled: "0" })).ok, "Writes limited to 1 channel.");
 });
 
-test("page, somebody who may open the page but not change the bot: the chosen channels read-only (a written pill, no switch, no link, no form), nothing when nothing is chosen", async () => {
+test("page, somebody who may open the page but not change the bot: the chosen channels read-only (no switch, no link, no form), nothing when nothing is chosen", async () => {
   const none = await render(mk({ owner: false }), { edit: "channels" });
   assert.deepEqual(none.map((b) => b.type), ["connection"]);
   const C = await choose(mk({ owner: false }), [IDS.news]);
   const blocks = await render(C, { edit: "channels" });
   assert.deepEqual(blocks.map((b) => b.type), ["connection", "table"]);
-  assert.deepEqual(blocks[1].rows[0][3], { text: en.chosen_on, badge: "ok" }, "colored AND written");
+  assert.deepEqual(blocks[1].columns, [en.col_channel, en.col_category, en.col_used], "no column that repeats \"Chosen\" on every row");
+  assert.deepEqual(blocks[1].rows[0].length, 3);
   assert.equal(JSON.stringify(blocks).includes("switch"), false);
   assert.equal(blocks[1].rowActions, undefined);
 });
@@ -417,7 +448,7 @@ test("texts: every key the page uses exists in English and French with the same 
   for (const k of Object.keys(en)) assert.equal(vars(fr[k]), vars(en[k]), k);
   const source = fs.readFileSync(`${DIR}/panel.mjs`, "utf8");
   const used = new Set([...source.matchAll(/"([a-z_0-9]+)"/g)].map((m) => m[1]));   // a key written as a string in the code of the page (also the ones chosen by a condition)
-  for (const k of ["limited_one", "limited_many", "limit_off", "allow_all", "allow_all_confirm", "limit_open", "limit_more", "limit_done", "chosen_title", "pick_title", "pick_empty", "col_category", "col_used", "col_chosen", "chosen_on", "switch_label", "choose_used", "gone_name", "gone_help", "gone_short", "err_channel", "err_channel_gone", "err_too_many", "err_no_used", "test_channels"]) {
+  for (const k of ["limited_one", "limited_many", "limit_off", "allow_all", "allow_all_confirm", "limit_open", "limit_more", "limit_done", "chosen_title", "pick_title", "pick_empty", "col_category", "col_used", "col_chosen", "err_already_limited", "switch_label", "choose_used", "gone_name", "gone_help", "gone_short", "err_channel", "err_channel_gone", "err_too_many", "err_no_used", "test_channels"]) {
     assert.ok(en[k] && fr[k], k);
     assert.ok(used.has(k), `${k} is used`);
   }
