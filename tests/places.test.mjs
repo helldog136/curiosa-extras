@@ -45,7 +45,7 @@ const ROLLOUT = {
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
   "contacts": ["2.8.0", { main: "community.contacts" }],
-  "content-planner": ["1.1.3", { main: "calendar.notebook" }],
+  "content-planner": ["1.2.0", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
@@ -101,7 +101,7 @@ const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
 /** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
-const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
+const LIVE_SEARCH_CORE = { faq: "0.6.0", "content-planner": "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
 /** Modules created after the migration: nothing to compare with in the older releases. */
 const NEW_MODULES = new Set(["discord-connector"]);
@@ -268,6 +268,8 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
     if (id === "home-assistant") rest.consumes = rest.consumes.filter((c) => c.topic !== "home.info"); // 1.5.0: the optional topic of the information provided by other modules
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
+    if (id === "content-planner") rest.mcp = rest.mcp.filter((t) => !t.name.startsWith("idea_doc_")).map((t) => (t.name === "idea_get" ? { ...t, description: oldRest.mcp.find((o) => o.name === "idea_get").description } : t)); // 1.2.0: the documents of an idea (four tools; idea_get says how many an idea holds)
+    if (id === "content-planner") delete rest.i18n; // 1.2.0: the French texts of the four new tool descriptions
     if (id === "contacts") { delete rest.consumes; rest.permissions = rest.permissions.filter((x) => x !== "topics"); } // 2.8.0: the optional topic core.user (linked cards for the login accounts) and the permission to read it
     if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)

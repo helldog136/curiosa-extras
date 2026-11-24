@@ -1,8 +1,8 @@
-// Cahier de contenu — les données et les règles : une idée = un document de la collection « ideas » du stockage privé de l'instance.
-// Rien ici ne touche à l'écran (admin.mjs), aux outils pour l'assistant (tools.mjs) ni aux fichiers (export.mjs).
+// Content notebook: the data and the rules: an idea = one row of the collection "ideas" of the private storage of the instance.
+// Nothing here touches the screen (admin.mjs), the assistant tools (tools.mjs) or the files (export.mjs). The documents of an idea live in documents.mjs.
 //
-// Bornes (« dézoom permanent ») : 1 000 idées au plus (archivées comprises), 12 étapes et 12 réseaux par idée, textes courts, notes de 4 000 caractères.
-// Tout est calculé à la lecture : aucune tâche de fond, aucun minuteur. Les dates sont des jours « AAAA-MM-JJ » lus en UTC.
+// Limits ("permanent zoom-out"): 1,000 ideas at most (archived included), 12 steps and 12 networks per idea, short texts, notes of 4,000 characters.
+// Everything is computed when read: no background task, no timer. Dates are days "YYYY-MM-DD" read in UTC.
 
 export const PLACES = ["idea", "doing", "published", "archived"];
 export const COLUMNS = ["idea", "doing", "published"];
@@ -15,17 +15,17 @@ export const DEFAULT_NETWORKS = "YouTube, Twitch, Instagram, TikTok, Blog, Newsl
 const DAY = 86_400_000;
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
-// ── Petits nettoyages ─────────────────────────────────────────────────────────────────────────────────────
+// ── Small cleanings ─────────────────────────────────────────────────────────────────────────────────────
 const CONTROL = /[\u0000-\u001f\u007f\u2028\u2029\u200b-\u200f\u202a-\u202e\ufeff]/g;
 const cut = (s, max) => { const t = s.slice(0, max); return /[\ud800-\udbff]$/.test(t) ? t.slice(0, -1) : t; };
-/** Une ligne de texte : espaces réduits, caractères de contrôle retirés, longueur bornée. */
+/** One line of text: spaces squeezed, control characters removed, length bounded. */
 export const line = (v, max) => cut(String(v ?? "").replace(CONTROL, " ").replace(/\s+/g, " ").trim(), max);
-/** Un texte sur plusieurs lignes (les notes). */
+/** A text on several lines (the notes, the documents). */
 export const para = (v, max) => cut(String(v ?? "").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u2028\u2029\u200b-\u200f\u202a-\u202e\ufeff]/g, "").trim(), max);
 export const idOk = (v) => typeof v === "string" && ID_RE.test(v);
 export const fold = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-/** « AAAA-MM-JJ » si le jour existe (entre 2000 et 2100), sinon "". */
+/** "YYYY-MM-DD" if the day exists (between 2000 and 2100), otherwise "". */
 export function validDate(v) {
   const s = String(v ?? "").trim();
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -35,16 +35,16 @@ export function validDate(v) {
   const dt = new Date(Date.UTC(y, mo - 1, d));
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d ? s : "";
 }
-const isoOrEmpty = (v) => { const t = typeof v === "string" ? Date.parse(v) : NaN; return Number.isNaN(t) ? "" : new Date(t).toISOString(); };
+export const isoOrEmpty = (v) => { const t = typeof v === "string" ? Date.parse(v) : NaN; return Number.isNaN(t) ? "" : new Date(t).toISOString(); };
 
-/** L'instant « maintenant » (les tests peuvent le fixer avec `ctx.__plannerNow`). */
+/** The instant "now" (tests can fix it with `ctx.__plannerNow`). */
 export const nowOf = (ctx) => { const t = ctx?.__plannerNow; const d = t ? new Date(t) : new Date(); return Number.isNaN(d.getTime()) ? new Date() : d; };
 export const todayOf = (ctx) => nowOf(ctx).toISOString().slice(0, 10);
 export const dayNumber = (isoDate) => Math.floor(Date.parse(`${isoDate}T00:00:00Z`) / DAY);
 export const addDays = (isoDate, n) => new Date(Date.parse(`${isoDate}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
 
-// ── Réseaux et étapes ─────────────────────────────────────────────────────────────────────────────────────
-/** Une liste de réseaux, écrite à la main (virgules, points-virgules, retours à la ligne) ou déjà en tableau : nettoyée, sans doublon, 12 au plus. */
+// ── Networks and steps ─────────────────────────────────────────────────────────────────────────────────────
+/** A list of networks, written by hand (commas, semicolons, line breaks) or already an array: cleaned, without duplicates, 12 at most. */
 export function parseList(input, itemMax, maxItems, splitter = /[,;\n]/) {
   const raw = Array.isArray(input) ? input : String(input ?? "").split(splitter);
   const seen = new Set(), out = [];
@@ -61,25 +61,25 @@ export function parseList(input, itemMax, maxItems, splitter = /[,;\n]/) {
 export const parseNetworks = (input) => parseList(input, LIMITS.network, MAX_NETWORKS);
 export const parseStepLines = (input) => parseList(input, LIMITS.step, MAX_STEPS, /\n/);
 
-/** Les réseaux proposés (réglage), jamais vide. */
+/** The proposed networks (setting), never empty. */
 export function suggestions(ctx) {
   const list = parseNetworks(ctx.setting("networkList"));
   return list.length ? list : parseNetworks(DEFAULT_NETWORKS);
 }
-/** Les étapes d'une nouvelle idée : le modèle du réglage, sinon les quatre étapes de base dans la langue de la personne. */
+/** The steps of a new idea: the model of the setting, otherwise the four basic steps in the person's language. */
 export function modelSteps(ctx) {
   const own = parseStepLines(ctx.setting("stepModel"));
   return own.length ? own : [ctx.t("stepScript"), ctx.t("stepThumbnail"), ctx.t("stepDescription"), ctx.t("stepPublish")];
 }
 export const stepsFromLabels = (labels) => labels.map((label) => ({ label, done: false }));
-/** Nouvelles étapes à partir d'une liste de noms : une étape qui garde son nom garde son état « fait ». */
+/** New steps from a list of names: a step that keeps its name keeps its "done" state. */
 export function mergeSteps(old, labels) {
   const done = new Map(old.map((s) => [fold(s.label), s.done]));
   return labels.map((label) => ({ label, done: done.get(fold(label)) === true }));
 }
 
-// ── Une idée telle que le reste du module la lit ─────────────────────────────────────────────────────────
-/** Lit un document du stockage sans jamais lever : tout champ abîmé redevient une valeur sûre. */
+// ── An idea as the rest of the module reads it ─────────────────────────────────────────────────────────
+/** Reads a stored row without ever throwing: every damaged field becomes a safe value. */
 export function normalize(row) {
   const d = row?.data && typeof row.data === "object" ? row.data : {};
   const created = isoOrEmpty(d.createdAt) || isoOrEmpty(row?.createdAt instanceof Date ? row.createdAt.toISOString() : row?.createdAt);
@@ -101,15 +101,15 @@ export function normalize(row) {
     updatedAt: isoOrEmpty(d.updatedAt) || created,
   };
 }
-/** Ce qui est rangé dans le stockage (sans l'identifiant). */
+/** What is stored (without the id). */
 export const toDoc = (i) => ({ title: i.title, summary: i.summary, column: i.column, archived: i.archived, steps: i.steps.map((s) => ({ label: s.label, done: s.done })), targetDate: i.targetDate, publishedAt: i.publishedAt, networks: i.networks, notes: i.notes, by: i.by, createdAt: i.createdAt, updatedAt: i.updatedAt });
 export const placeOf = (i) => (i.archived ? "archived" : i.column);
 export const stepsDone = (i) => i.steps.filter((s) => s.done).length;
-/** Date visée dépassée pour une idée encore en cours (ni publiée ni archivée). */
+/** Target date passed for an idea still going on (neither published nor archived). */
 export const isLate = (i, today) => !i.archived && i.column !== "published" && !!i.targetDate && i.targetDate < today;
 
-// ── Lecture et écriture ───────────────────────────────────────────────────────────────────────────────────
-/** Toutes les idées (1 000 au plus), lues par pages. */
+// ── Reading and writing ───────────────────────────────────────────────────────────────────────────────────
+/** All the ideas (1,000 at most), read page by page. */
 export async function loadAll(ctx) {
   const out = [];
   let cursor = null;
@@ -130,7 +130,7 @@ export async function saveIdea(ctx, idea, now = nowOf(ctx)) {
   const next = { ...idea, updatedAt: now.toISOString() };
   return (await ctx.api.store.update(idea.id, toDoc(next))) ? next : null;
 }
-/** Crée une idée : `fields` déjà nettoyés. `{ full: true }` quand le cahier est plein. */
+/** Creates an idea: `fields` already cleaned. `{ full: true }` when the notebook is full. */
 export async function addIdea(ctx, fields, { by = "owner" } = {}) {
   if ((await ctx.api.store.count("ideas")) >= MAX_IDEAS) return { full: true };
   const now = nowOf(ctx).toISOString();
@@ -139,16 +139,16 @@ export async function addIdea(ctx, fields, { by = "owner" } = {}) {
   idea.id = await ctx.api.store.add("ideas", toDoc(idea));
   return { idea };
 }
-/** Range une idée à un endroit : une colonne (désarchive) ou les archives (la colonne d'origine est gardée). */
+/** Puts an idea in a place: a column (unarchives) or the archive (the original column is kept). */
 export function placeIdea(idea, to, today) {
   if (to === "archived") return { ...idea, archived: true };
   const publishedAt = to === "published" ? (idea.column === "published" && idea.publishedAt ? idea.publishedAt : today) : "";
   return { ...idea, column: to, archived: false, publishedAt };
 }
 
-// ── Tri, recherche, pages ─────────────────────────────────────────────────────────────────────────────────
+// ── Sorting, search, pages ─────────────────────────────────────────────────────────────────────────────────
 const RANK = { idea: 0, doing: 1, published: 2, archived: 3 };
-/** Dans une colonne : les idées datées d'abord (la plus proche en tête), puis les autres, les plus récentes d'abord ; publié : le plus récent d'abord. */
+/** In a column: dated ideas first (the closest first), then the others, newest first; published: newest first. */
 export function compare(a, b) {
   const pa = placeOf(a), pb = placeOf(b);
   if (pa !== pb) return RANK[pa] - RANK[pb];
@@ -167,7 +167,7 @@ export function matches(idea, words) {
 }
 export const inPlace = (list, place) => list.filter((i) => placeOf(i) === place);
 export const counts = (list) => { const c = { idea: 0, doing: 0, published: 0, archived: 0 }; for (const i of list) c[placeOf(i)]++; return c; };
-/** Une page de `size` éléments ; `page` hors limites est ramenée dans les limites. */
+/** A page of `size` items; a `page` out of range is brought back into range. */
 export function pageOf(list, page, size = PAGE_SIZE) {
   const pages = Math.max(1, Math.ceil(list.length / size));
   const p = Math.min(pages, Math.max(1, Number.isInteger(page) ? page : 1));
@@ -175,9 +175,9 @@ export function pageOf(list, page, size = PAGE_SIZE) {
 }
 export const pageNumber = (v) => { const n = Number(v); return Number.isInteger(n) && n >= 1 && n <= 100000 ? n : 1; };
 
-// ── Le rythme ─────────────────────────────────────────────────────────────────────────────────────────────
+// ── The rhythm ─────────────────────────────────────────────────────────────────────────────────────────────
 const PERIOD_DAYS = { week: 7, fortnight: 14, month: 30 };
-/** Le rythme réglé (« 1 par semaine »), ou null : il est facultatif. */
+/** The rhythm set ("1 per week"), or null: it is optional. */
 export function rhythmOf(ctx) {
   const count = Number(ctx.setting("rhythmCount"));
   const period = String(ctx.setting("rhythmPeriod") ?? "");
@@ -185,12 +185,12 @@ export function rhythmOf(ctx) {
   return { count, period, days: PERIOD_DAYS[period] };
 }
 /**
- * Où en est le rythme, calculé à la lecture (jamais de minuteur).
- *   start  : rien n'a encore été publié, donc rien à comparer ;
- *   ok     : la dernière publication est assez récente ;
- *   behind : plus d'un intervalle sans publier (une par semaine : au 8e jour) ;
- *   pause  : un mois et plus sans publier.
- * `done` : combien de publications dans la période qui vient de s'écouler.
+ * Where the rhythm stands, computed when read (never a timer).
+ *   start  : nothing has been published yet, so nothing to compare;
+ *   ok     : the last publication is recent enough;
+ *   behind : more than one interval without publishing (one per week: on the 8th day);
+ *   pause  : a month or more without publishing.
+ * `done`: how many publications in the period that has just elapsed.
  */
 export function rhythmStatus(ideas, rhythm, today) {
   const dates = ideas.filter((i) => i.column === "published" && i.publishedAt).map((i) => i.publishedAt).sort();
@@ -204,7 +204,7 @@ export function rhythmStatus(ideas, rhythm, today) {
   return { state, done, since, last };
 }
 
-// ── Fichiers (CSV) ────────────────────────────────────────────────────────────────────────────────────────
-/** Une cellule de tableur : entre guillemets, et jamais lue comme une formule. */
+// ── Files (CSV) ────────────────────────────────────────────────────────────────────────────────────────
+/** A spreadsheet cell: between quotes, and never read as a formula. */
 export const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
 export const csvLine = (cells, delimiter = ",") => `${cells.map(cell).join(delimiter)}\r\n`;
