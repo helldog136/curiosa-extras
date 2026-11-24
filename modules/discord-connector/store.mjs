@@ -3,11 +3,12 @@
 //   discordManaged  one document per message kept up to date for a module: { id: "<owner>:<key>", channelId, messageId, hash, at } (bounded).
 //   discordSent     one document per message the bot itself wrote (channelId, messageId, at), the last 500: the only messages editMessage / deleteMessage accept.
 //   discordHealth   ONE document: { state, since, feature?, permission?, at } — what went wrong last, and since when.
+//   discordAllow    ONE document: { channelIds: [...], at } — the channels the owner chose for the bot to write in (no document or an empty list = no limit).
 // There is deliberately NO `backup.readable` export: the secret never goes into the human-readable files of a backup.
 // HONESTLY: the core has no way for a module to seal a secret (its `seal` is internal). The bot code is kept as text in this module's storage, hence in the
 // database as the other module data are, and in the backup file, which the core encrypts with the password chosen when the backup is made.
-export const COL = { app: "discordApp", managed: "discordManaged", sent: "discordSent", health: "discordHealth" };
-export const LIMITS = { managed: 200, perOwner: 50, sent: 500 };
+export const COL = { app: "discordApp", managed: "discordManaged", sent: "discordSent", health: "discordHealth", allow: "discordAllow" };
+export const LIMITS = { managed: 200, perOwner: 50, sent: 500, allow: 100 };
 
 export const text = (v) => (typeof v === "string" ? v.trim() : typeof v === "number" && Number.isFinite(v) ? String(v) : "");
 /** A Discord number (snowflake): digits only, 15 to 25 of them. */
@@ -44,6 +45,33 @@ export async function setHealth(ctx, next) {
   const doc = await first(ctx, COL.health);
   if (!next) { if (doc) await ctx.api.store.remove(doc.id); return; }
   await put(ctx, COL.health, doc, next);
+}
+
+/**
+ * The channels the owner chose (numbers, in the order chosen). Empty = no limit. A store that cannot be read THROWS `store_unavailable`: a write is never allowed on a guess (fail closed).
+ * Anything that is not a Discord number is ignored, so a damaged document can only shrink the list, never widen what the bot may do.
+ */
+export async function allowedIds(ctx) {
+  const doc = (await all(ctx, COL.allow, 5))[0];
+  const ids = Array.isArray(doc?.data?.channelIds) ? doc.data.channelIds.map(snowflake).filter(Boolean) : [];
+  return [...new Set(ids)].slice(0, LIMITS.allow);
+}
+/** Saves the list ([] removes the document: no limit). Always inside `serialAllow`. */
+export async function setAllowed(ctx, ids) {
+  const doc = (await all(ctx, COL.allow, 5))[0] ?? null;
+  const channelIds = [...new Set(ids.map(snowflake).filter(Boolean))].slice(0, LIMITS.allow);
+  if (!channelIds.length) { if (doc) await ctx.api.store.remove(doc.id); return; }
+  await put(ctx, COL.allow, doc, { channelIds, at: new Date().toISOString() });
+}
+/** Changes of the list go one after the other (two quick clicks on two switches never lose one); it has its own queue so that it never waits behind a message being written. */
+const allowQueues = new Map();
+export function serialAllow(ctx, fn) {
+  const key = ctx.instance?.id ?? "x";
+  const run = (allowQueues.get(key) ?? Promise.resolve()).then(fn);
+  const tail = run.catch(() => {});
+  allowQueues.set(key, tail);
+  tail.then(() => { if (allowQueues.get(key) === tail) allowQueues.delete(key); });
+  return run;
 }
 
 export const managedList = (ctx) => all(ctx, COL.managed, LIMITS.managed);
@@ -85,4 +113,4 @@ export function serial(ctx, fn, ms = SECTION.ms) {
   tail.then(() => { if (queues.get(key) === tail) queues.delete(key); });
   return run;
 }
-export const resetQueues = () => queues.clear();
+export const resetQueues = () => { queues.clear(); allowQueues.clear(); };

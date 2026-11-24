@@ -103,3 +103,27 @@ export function missingFrom(permissions, features = Object.keys(FEATURES)) {
   for (const f of features) for (const k of FEATURES[f]) if (!(have & BITS[k])) out.push({ feature: f, permission: k });
   return out;
 }
+
+/**
+ * What the bot lacks IN ONE CHANNEL for posting, after the permission overwrites of that channel (Discord documentation, "Permission overwrites": the server-wide
+ * permissions, then the overwrite of @everyone, then those of the roles of the bot (all denials, then all grants), then the one of the bot itself).
+ * `base` is the server-wide number (roles added together), `roleIds` the roles of the bot. Only what the overwrites TAKE AWAY is reported: a permission the bot
+ * lacks on the whole server is already told by `missingFrom`. Returns the permission names (`view`, `send`, `embed`); [] when all is fine or when the bot is administrator.
+ */
+export function lostInChannel(base, channel, guildId, botId, roleIds, features = ["post"]) {
+  const have = BigInt(base);
+  if (have & ADMINISTRATOR) return [];
+  const overwrites = Array.isArray(channel?.permission_overwrites) ? channel.permission_overwrites : [];
+  const bits = (v) => { try { return BigInt(v ?? "0"); } catch { return 0n; } };
+  let perms = have;
+  const apply = (allow, deny) => { perms = (perms & ~deny) | allow; };
+  const everyone = overwrites.find((o) => o?.id === guildId);
+  if (everyone) apply(bits(everyone.allow), bits(everyone.deny));
+  let allow = 0n, deny = 0n;
+  for (const o of overwrites) if (o && o.id !== guildId && roleIds.has(o.id) && Number(o.type) === 0) { allow |= bits(o.allow); deny |= bits(o.deny); }
+  apply(allow, deny);
+  const me = overwrites.find((o) => o?.id === botId && Number(o.type) === 1);
+  if (me) apply(bits(me.allow), bits(me.deny));
+  const wanted = [...new Set(features.flatMap((f) => FEATURES[f]))];
+  return wanted.filter((k) => (have & BITS[k]) && !(perms & BITS[k]));
+}

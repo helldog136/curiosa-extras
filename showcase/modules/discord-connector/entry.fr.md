@@ -5,6 +5,7 @@ Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout
 - Suivez l'installation guidée et enregistrez votre bot.
 - Ajoutez le bot à votre serveur avec un seul lien.
 - Laissez les autres modules publier et ouvrir des fils privés avec le même bot.
+- Choisissez les salons où le bot peut écrire, ou laissez-le libre partout.
 
 ## Pourquoi vous allez l'aimer
 
@@ -27,4 +28,4 @@ Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.0.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.

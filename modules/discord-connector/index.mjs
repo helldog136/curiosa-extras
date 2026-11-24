@@ -25,10 +25,12 @@ export default {
     async connector_discord_status(ctx) {
       const p = await hl.problem(ctx);
       const v = await hl.verify(ctx);
+      const chosen = await store.allowedIds(ctx).catch(() => []);
       const state = p.state === "none" ? "notConfigured" : p.state === "ok" ? "configured" : "degraded";
       return {
         state, ...(p.state !== "none" && p.state !== "ok" ? { problem: p.state } : {}), ...(p.since ? { since: p.since } : {}),
         permissionsMissingOnServer: (v.missing ?? []).map((m) => ({ feature: m.feature, permission: m.permission })),
+        ...(chosen.length ? { writesLimitedToChannels: chosen.length } : {}),
         ...(state === "configured" ? {} : { whatToDo: p.state === "rate" ? "Discord asked to wait: posting resumes by itself. Nothing to do." : p.state === "net" ? "Discord does not answer: it is tried again by itself. Open the Discord connector page and use Test the connection to check." : "Only the owner can fix this: open the Discord connector page in the admin. Until then no module can post to Discord." }),
       };
     },

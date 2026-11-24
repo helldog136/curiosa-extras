@@ -20,7 +20,7 @@
     "fr": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord. Un assistant guidé prend environ cinq minutes."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
   "requires": [],
   "worksWith": [
     "discord",

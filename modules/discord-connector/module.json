@@ -6,7 +6,7 @@
     "en": "Discord connector",
     "fr": "Connecteur Discord"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "adminMenu": "Réseaux.Discord",
   "adminMenuOrder": 5,
   "platform": "discord",
@@ -102,7 +102,7 @@
       "readOnly": true,
       "default": false,
       "right": "open",
-      "description": "Tell whether the Discord bot of the site really works: configured, degraded (code refused, bot not on the server, a permission missing for a feature, Discord asks for a pause) or not configured, since when, and which permissions the bot lacks on the whole server. Use it first when something that should appear on Discord does not. Only the owner can fix it. It never shows a secret.",
+      "description": "Tell whether the Discord bot of the site really works: configured, degraded (code refused, bot not on the server, a permission missing for a feature, Discord asks for a pause) or not configured, since when, and which permissions the bot lacks on the whole server, plus how many channels the owner limited its writing to when they did. Use it first when something that should appear on Discord does not. Only the owner can fix it. It never shows a secret.",
       "input": {
         "type": "object",
         "properties": {}
@@ -111,7 +111,7 @@
   ],
   "i18n": {
     "fr": {
-      "mcp.connector_discord_status": "Dit si le bot Discord du site fonctionne vraiment, depuis quand, et quelles permissions lui manquent."
+      "mcp.connector_discord_status": "Dit si le bot Discord du site fonctionne vraiment, depuis quand, et quelles permissions lui manquent, et à combien de salons son écriture est limitée le cas échéant."
     }
   },
   "rights": [
@@ -122,8 +122,8 @@
         "fr": "modifier ou retirer le bot Discord"
       },
       "help": {
-        "en": "Enter, test or remove the bot's secret code, and delete the messages it keeps up to date.",
-        "fr": "Saisir, tester ou retirer le code secret du bot, et supprimer les messages qu'il tient à jour."
+        "en": "Enter, test or remove the bot's secret code, choose its channels, and delete its kept messages.",
+        "fr": "Saisir, tester ou retirer le code secret du bot, choisir ses salons, et supprimer ses messages tenus à jour."
       },
       "sensitive": true,
       "default": {

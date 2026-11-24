@@ -90,25 +90,35 @@ const messageIdOf = (r) => (r.ok && r.json && typeof r.json === "object" ? snow(
 
 /* ───────────── Where the bot may write ───────────── */
 // A module hands over a channel number: the bot only writes in a text channel, an announcement channel or a thread OF THE CONFIGURED SERVER, never in another
-// server it may also be on. The answer of Discord is kept 10 minutes. (There is no owner list of channels yet: see the README.)
+// server it may also be on. The answer of Discord is kept 10 minutes. On top of that, the owner may choose the channels (store `discordAllow`, changed on the
+// connector page with the right `bot.manage`): with no choice nothing changes; with a choice every WRITE is refused (`forbidden`, `scope: "channel"`, no write
+// call) unless the channel is in the list, or is a thread whose parent channel is in the list. Reads (lists, pickers' lookups) are not limited.
 const TEXT_TYPES = new Set([0, 5]);
 const THREAD_TYPES = new Set([10, 11, 12]);
 const WRITE_TYPES = new Set([0, 5, 10, 11, 12]);
-const seen = new Map();   // "<guild>:<channel>" → { until, type }
+const seen = new Map();   // "<guild>:<channel>" → { until, type, parent }
 const CHANNEL_MS = 10 * 60_000;
+const limited = (list, channelId, parent) => list.length > 0 && !list.includes(channelId) && !(parent && list.includes(parent));
 async function channelCheck(ctx, channelId, { parentOnly = false, threadOnly = false } = {}) {
   const creds = await store.credsOf(ctx);
   if (!store.hasBot(creds)) return fail("not_configured");
+  const list = await store.allowedIds(ctx);   // throws `store_unavailable` when it cannot be read: nothing is written on a guess
   const k = `${creds.guildId}:${channelId}`;
-  let type = seen.get(k)?.until > Date.now() ? seen.get(k).type : undefined;
-  if (type === undefined) {
+  let info = seen.get(k)?.until > Date.now() ? seen.get(k) : undefined;
+  if (info === undefined) {
     const r = await run(ctx, "channel", { method: "GET", path: `/channels/${channelId}`, priority: "background" });
     if (!r.ok) return failed(r);
     if (snow(r.json?.guild_id) !== creds.guildId || !Number.isInteger(r.json?.type)) return fail("forbidden", { scope: "channel" });   // another server, or not a channel of one
-    type = r.json.type;
-    seen.set(k, { until: Date.now() + CHANNEL_MS, type }); if (seen.size > 200) seen.delete(seen.keys().next().value);
+    info = { until: Date.now() + CHANNEL_MS, type: r.json.type, parent: THREAD_TYPES.has(r.json.type) ? snow(r.json.parent_id) : "" };
+    seen.set(k, info); if (seen.size > 200) seen.delete(seen.keys().next().value);
   }
-  return (threadOnly ? THREAD_TYPES : parentOnly ? TEXT_TYPES : WRITE_TYPES).has(type) ? { ok: true } : fail("forbidden", { scope: "channel" });
+  if (!(threadOnly ? THREAD_TYPES : parentOnly ? TEXT_TYPES : WRITE_TYPES).has(info.type)) return fail("forbidden", { scope: "channel" });
+  return limited(list, channelId, info.parent) ? fail("forbidden", { scope: "channel" }) : { ok: true };   // a thread follows its parent channel
+}
+/** For the calls that do not look the channel up otherwise (edit, delete): nothing at all when the owner chose nothing or chose this very channel. */
+async function allowedWrite(ctx, channelId) {
+  const list = await store.allowedIds(ctx);
+  return !list.length || list.includes(channelId) ? { ok: true } : channelCheck(ctx, channelId);
 }
 
 /* ───────────── Messages ───────────── */
@@ -139,6 +149,8 @@ async function editMessage(ctx, a) {
   const body = channelId && messageId ? messagePayload(a, { edit: true }) : null;
   if (!body) return fail("invalid_input");
   if (!(await store.isOurs(ctx, channelId, messageId))) return fail("forbidden");   // only a message this bot wrote
+  const where = await allowedWrite(ctx, channelId);
+  if (!where.ok) return where;
   const r = await run(ctx, "post", { method: "PATCH", path: `/channels/${channelId}/messages/${messageId}`, body });
   return r.ok ? { ok: true, messageId } : failed(r);
 }
@@ -146,6 +158,8 @@ async function deleteMessage(ctx, a) {
   const channelId = snow(a.channelId), messageId = snow(a.messageId);
   if (!channelId || !messageId) return fail("invalid_input");
   if (!(await store.isOurs(ctx, channelId, messageId))) return fail("forbidden");   // only a message this bot wrote
+  const where = await allowedWrite(ctx, channelId);
+  if (!where.ok) return where;
   const r = await run(ctx, "post", { method: "DELETE", path: `/channels/${channelId}/messages/${messageId}` });
   if (!r.ok && r.reason !== "not_found") return failed(r);   // already gone: the goal is reached
   await store.serial(ctx, async () => { for (const d of await store.managedList(ctx)) if (d.data.messageId === messageId) await ctx.api.store.remove(d.id); }).catch(() => {});
@@ -288,14 +302,19 @@ async function listOf(ctx, kind, build) {
   lists.set(k, { until: Date.now() + 60_000, value }); if (lists.size > 20) lists.delete(lists.keys().next().value);
   return { ok: true, [kind]: structuredClone(value) };
 }
-const named = (x) => (typeof x?.name === "string" && x.name && snow(x.id) ? { id: x.id, name: x.name.replace(CONTROL, "").slice(0, 100) } : null);
+const clean100 = (t) => t.replace(CONTROL, "").slice(0, 100);
+const named = (x) => (typeof x?.name === "string" && x.name && snow(x.id) ? { id: x.id, name: clean100(x.name) } : null);
 /** Text and announcement channels, in the order of the server (categories first by position). */
 const textChannels = (rows) => {
-  const cats = new Map(rows.filter((c) => c?.type === 4).map((c) => [c.id, c.position ?? 0]));
-  return rows.filter((c) => c && (c.type === 0 || c.type === 5)).sort((a, b) => (cats.get(a.parent_id) ?? -1) - (cats.get(b.parent_id) ?? -1) || (a.position ?? 0) - (b.position ?? 0)).map(named).filter(Boolean);
+  const cats = new Map(rows.filter((c) => c?.type === 4).map((c) => [c.id, c]));
+  const at = (c) => cats.get(c.parent_id)?.position ?? -1;
+  // `category` is for the connector page only (the service answers { id, name }, see `listChannels`)
+  return rows.filter((c) => c && (c.type === 0 || c.type === 5)).sort((a, b) => at(a) - at(b) || (a.position ?? 0) - (b.position ?? 0)).map((c) => { const n = named(c); return n && { ...n, category: typeof cats.get(c.parent_id)?.name === "string" ? clean100(cats.get(c.parent_id).name) : "" }; }).filter(Boolean);
 };
 const roleList = (rows, creds) => rows.filter((r) => r && r.id !== creds.guildId && !r.managed).sort((a, b) => (b.position ?? 0) - (a.position ?? 0)).map(named).filter(Boolean);
-const listChannels = (ctx) => listOf(ctx, "channels", textChannels);
+/** The channels with their category (the connector page); `listChannels` is the same list without it. */
+export const detailedChannels = (ctx) => listOf(ctx, "channels", textChannels);
+const listChannels = async (ctx) => { const r = await detailedChannels(ctx); return r.ok ? { ok: true, channels: r.channels.map(({ id, name }) => ({ id, name })) } : r; };
 const listRoles = (ctx) => listOf(ctx, "roles", roleList);
 const fold = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 /**
@@ -305,9 +324,10 @@ const fold = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g,
 async function channelChoices(ctx, a = {}) {
   const r = await listChannels(ctx);
   if (!r.ok) throw new Error("discord_unavailable");
+  const allowed = await store.allowedIds(ctx);   // the owner's choice: only those channels are offered (nothing chosen = all of them); throws when it cannot be read
   const q = fold(typeof a.q === "string" ? a.q.slice(0, 100) : "");
   const limit = Math.min(50, Math.max(1, Number(a.limit) || 20));
-  const rows = r.channels.filter((c) => !q || fold(c.name).includes(q));
+  const rows = r.channels.filter((c) => (!allowed.length || allowed.includes(c.id)) && (!q || fold(c.name).includes(q)));
   return { items: rows.slice(0, limit).map((c) => ({ id: c.id, label: `#${c.name}` })), next: null };
 }
 async function channelsByIds(ctx, a = {}) {
@@ -337,7 +357,8 @@ async function guildStats(ctx) {
 }
 async function status(ctx) {
   const c = await store.credsOf(ctx);
-  return { ok: true, bot: store.hasBot(c), oauth: false, ...(c.guildId ? { guildId: c.guildId } : {}) };
+  const allowed = await store.allowedIds(ctx).catch(() => []);
+  return { ok: true, bot: store.hasBot(c), oauth: false, ...(c.guildId ? { guildId: c.guildId } : {}), ...(allowed.length ? { channelLimit: allowed.length } : {}) };
 }
 
 /** The methods of the service, as the core calls them: (ctx, args). */
