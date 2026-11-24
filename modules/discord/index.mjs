@@ -74,6 +74,9 @@ const TTL = 30 * 60_000, BOT_TTL = 5 * 60_000, FAIL_TTL = 2 * 60_000, RATE_TTL =
 const memo = new Map(), pending = new Map(), known = new Map(), lastGood = new Map();
 let botMemo = null;
 export const timing = { sharedMs: 15000, botMs: 3000 };   // milliseconds; an object so that the tests can shorten it
+const KNOWN_MS = 30 * 60_000;   // an invitation code can be given to another server (a vanity code that was released): what it said is trusted for 30 minutes
+// After that time the invitation is read again; if it cannot be read (expired, Discord down) what was known stays: only an answer naming ANOTHER server changes it.
+const fresh = (k) => !!k && Date.now() - k.at < KNOWN_MS;
 export const resetCache = () => { memo.clear(); pending.clear(); known.clear(); lastGood.clear(); botMemo = null; };
 const MAX_BYTES = 200_000;
 const SERVICE = "discord.api";
@@ -166,7 +169,7 @@ const measureInvite = (ctx, t) => t.code ? lookup(t.code, async () => {
   const j = await readJson(res);
   const name = typeof j.guild?.name === "string" ? j.guild.name.trim() : "";
   const guildId = typeof j.guild?.id === "string" && SNOWFLAKE.test(j.guild.id) ? j.guild.id : null;
-  if (guildId) remember(known, t.code, { guildId, name: name && name.length <= 100 ? name : null });
+  if (guildId) remember(known, t.code, { guildId, name: name && name.length <= 100 ? name : null, at: Date.now() });
   return { account: name && name.length <= 100 ? name : t.account, stats: { followers: count(j.approximate_member_count) } };
 }) : Promise.resolve({ error: "config", reason: "invite", at: Date.now() });
 
@@ -214,7 +217,7 @@ async function measure(ctx, t) {
   let invite;
   if (bot.ready) {
     let k = t.code ? known.get(t.code) : undefined;
-    if (!k && t.code) { invite = await measureInvite(ctx, t); k = known.get(t.code); }   // the invitation tells which server this account is
+    if (t.code && !fresh(k)) { invite = await measureInvite(ctx, t); k = known.get(t.code); }   // the invitation tells which server this account is
     if (k && k.guildId === bot.guildId) {
       const b = await measureBot(ctx, bot.guildId);
       if (b.stats) { const v = { ...b, account: k.name ?? t.account, source: "bot" }; remember(lastGood, id, v); return v; }
@@ -224,7 +227,7 @@ async function measure(ctx, t) {
   invite ??= await measureInvite(ctx, t);
   if (invite.stats) { remember(lastGood, id, { ...invite, source: "invite" }); return { ...invite, source: "invite", ...(gap ? { gap } : {}) }; }
   const { gap: _was, ...old } = lastGood.get(id) ?? {};
-  if (old.stats && Date.now() - old.at < TTL) return { ...old, ...(gap ? { gap } : {}) };
+  if (old.stats && Date.now() - old.at < TTL) return { ...old, stale: true, ...(gap ? { gap } : {}) };   // the last known figure: not said to be counted by the bot or by the invite any more
   return invite;
 }
 const key = (ctx, t) => t.code ?? `i:${ctx.instance.key}`;
@@ -242,7 +245,7 @@ function statLines(ctx, items, why) {
 /** One plain line: where the figure comes from, and the ONE way to the connector when the bot could count but does not (not installed: the core's own suggestion, which installs nothing by itself). */
 function sourceBlocks(ctx, r) {
   const link = r.gap === "setup" ? "link_setup" : r.gap === "degraded" ? "link_check" : null;
-  const line = ctx.t(r.source === "bot" ? "source_bot" : "source_invite") + (link ? ` [${ctx.t(link)}](${CONNECTOR_PAGE})` : "");
+  const line = ctx.t(r.stale ? "source_last" : r.source === "bot" ? "source_bot" : "source_invite") + (link ? ` [${ctx.t(link)}](${CONNECTOR_PAGE})` : "");
   return [{ type: "markdown", text: line }, ...(r.gap === "absent" ? [{ type: "suggestInstall", service: SERVICE, min: 1, reason: ctx.t("suggest_reason") }] : [])];
 }
 

@@ -183,6 +183,18 @@ test("the invitation expired after it was seen once: the same server is still co
   assert.equal((await stat(ctx))[0].value, 1234);
 });
 
+test("a code released to another server: after 30 minutes the invitation is read again and the bot's figure is no longer used for it", async () => {
+  const ctx = ctxOf(withBot());
+  let now = realNow(); Date.now = () => now;
+  assert.equal((await stat(ctx))[0].value, 1234);
+  now += 10 * 60_000; connectorModule.resetCache();
+  inviteGuild = OTHER_GUILD;   // the code now belongs to somebody else's server
+  assert.equal((await stat(ctx))[0].value, 1234, "inside 30 minutes what was learnt is trusted (no new request)");
+  now += 31 * 60_000; connectorModule.resetCache();
+  assert.equal((await stat(ctx))[0].value, INVITE_MEMBERS, "after 30 minutes: the other server's own invitation figure");
+  assert.equal(text(await panel(ctx)), `**Discord members**: ${INVITE_MEMBERS}\n\n${en.source_invite}`);
+});
+
 // ── Every way the connector can fail: silent fallback ────────────────────────
 
 const REASONS = ["not_configured", "invalid_input", "forbidden", "not_found", "not_member", "rate_limited", "unavailable", "failed"];
@@ -282,6 +294,10 @@ test("bot and invitation both fail: the last figure is kept with its real date f
   const again = (await stat(ctx))[0];
   assert.deepEqual([again.value, again.asOf, again.error], [2000, first.asOf, undefined], "same figure, honest date");
   assert.deepEqual(problemsOf(again, { module: "discord", platform: "discord" }), []);
+  const old = text(await panel(ctx));
+  assert.match(old, new RegExp(en.source_last), "a figure kept from before is said to be the last known one");
+  assert.ok(!old.includes(en.source_bot) && !old.includes(en.source_invite), "not claimed to be counted by the bot or the invite any more");
+  assert.ok(fr.source_last && fr.source_last !== en.source_last);
   now += 40 * 60_000;
   const gone = (await stat(ctx))[0];
   assert.deepEqual([gone.error, "value" in gone], ["network", false]);
