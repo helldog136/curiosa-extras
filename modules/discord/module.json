@@ -5,7 +5,7 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.4.1",
+  "version": "1.5.0",
   "adminMenu": "Réseaux.Discord",
   "adminMenuOrder": 10,
   "platform": "discord",
@@ -38,6 +38,17 @@
   ],
   "permissions": [
     "admin"
+  ],
+  "requires": [
+    {
+      "service": "discord.api",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "Counts your members with your Discord bot",
+        "fr": "Compte vos membres avec votre bot Discord"
+      }
+    }
   ],
   "tabs": [
     {
