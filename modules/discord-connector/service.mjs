@@ -187,9 +187,10 @@ async function upsertManagedMessage(ctx, a) {
       if (made.ok) await dc.call(ctx, await store.credsOf(ctx), { method: "DELETE", path: `/channels/${was}/messages/${messageId}`, priority: "background" });
       return made;
     }
-    if (doc.data.hash === digest) return { ok: true, messageId, action: "unchanged" };
+    // `verify: true` asks for a real look: the same content is sent as an edit, which Discord answers "not found" when a person deleted the message (reading it back would need a permission the bot does not have).
+    if (doc.data.hash === digest && a.verify !== true) return { ok: true, messageId, action: "unchanged" };
     const r = await run(ctx, "post", { method: "PATCH", path: `/channels/${channelId}/messages/${messageId}`, body: { content: body.content ?? "", embeds: body.embeds ?? [], allowed_mentions: body.allowed_mentions } });
-    if (r.ok) { await save(messageId); return { ok: true, messageId, action: "edited" }; }
+    if (r.ok) { await save(messageId); return { ok: true, messageId, action: doc.data.hash === digest ? "unchanged" : "edited" }; }
     if (r.reason === "not_found") {   // a person deleted it: once, we write it again
       await ctx.api.log?.write?.({ action: "message.recreated", target: id });
       return create("recreated", messageId);

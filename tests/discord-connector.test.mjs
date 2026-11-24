@@ -583,3 +583,16 @@ test("a refused permission is forgotten after an hour without a new refusal", as
   const real = Date.now; Date.now = () => real() + 2 * 3_600_000;
   try { connectorModule.resetCache(); assert.equal((await blocks(C))[0].state, "configured"); } finally { Date.now = real; }
 });
+
+test("upsertManagedMessage verify: the same content is checked on Discord, a message a person deleted is written again, otherwise nothing changes", async () => {
+  const C = mk();
+  const first = await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" });
+  assert.equal((await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x" })).action, "unchanged");
+  const calls = W().length;
+  assert.equal((await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x", verify: true })).action, "unchanged");
+  assert.equal(W().length, calls + 1, "one edit call, no new message");
+  d.messages.set(IDS.general, []);   // a person deletes it
+  const again = await C.methods.upsertManagedMessage({ owner: "planning", key: "w", channelId: IDS.general, content: "x", verify: true });
+  assert.equal(again.action, "recreated");
+  assert.equal(d.postedIn(IDS.general).length, 1);
+});
