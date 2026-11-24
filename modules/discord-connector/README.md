@@ -48,6 +48,7 @@ Declare `"requires": [{ "service": "discord.api" }]` (add `"optional": true` for
 |---|---|
 | `status` | `{}` → `{ ok, bot, oauth, guildId? }` (no network; `oauth` is always `false` in 1.0) |
 | `listChannels`, `listRoles` | `{}` → `{ ok, channels: [{ id, name }] }` / `{ ok, roles: [{ id, name }] }` (text channels; no @everyone, no bot role; kept 1 minute) |
+| `guildStats` | `{}` → `{ ok, memberCount, onlineCount? }`: the approximate counts Discord shows publicly (`GET /guilds/{id}?with_counts=true`), kept 5 minutes so a public page may call it freely; honours the site-wide pause |
 | `channelChoices`, `channelsByIds` | For the core's `choice` setting (source `service`): `{ q?, limit? }` → `{ items: [{ id, label }], next }`; `{ ids }` → `{ items, missing }`. No `ok` field (the core's own shape); a Discord failure gives an empty answer, never "gone". |
 | `createPrivateThread` | `{ channelId, name, userId, staffRoleId?, intro? }` → `{ ok, threadId }` or `{ ok: false, reason, threadId? }`. Private thread (type 12, not invitable, closes itself after 7 days), name cleaned (no control characters, 100 characters, never empty), the person added, then the opening message mentioning only the person and the role. `intro` is plain text, 1500 characters, pings defused. `threadId` is present when the thread exists but a later step failed. |
 | `setThreadArchived` | `{ threadId, archived }` → `{ ok }` (`true` archives and locks, `false` reopens) |

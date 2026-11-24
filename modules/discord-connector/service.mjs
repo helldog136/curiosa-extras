@@ -214,7 +214,7 @@ async function setThreadArchived(ctx, a) {
 
 /* ───────────── Lists, status ───────────── */
 const lists = new Map();   // "<instance>:channels" → { until, value }
-export const resetLists = () => lists.clear();
+export const resetLists = () => { lists.clear(); stats.clear(); };
 async function listOf(ctx, kind, build) {
   const creds = await store.credsOf(ctx);
   if (!store.hasBot(creds)) return fail("not_configured");
@@ -254,6 +254,24 @@ async function channelsByIds(ctx, a = {}) {
   const by = new Map(r.channels.map((c) => [c.id, c]));
   return { items: ids.filter((i) => by.has(i)).map((i) => ({ id: i, label: `#${by.get(i).name}` })), missing: ids.filter((i) => !by.has(i)) };
 }
+/** Approximate member counts of the server (what Discord shows publicly), kept 5 minutes so that a public page may ask as often as it likes. */
+const stats = new Map();   // "<instance>:<guild>" → { until, value }
+const STATS_MS = 5 * 60_000;
+const count = (n) => (Number.isInteger(n) && n >= 0 && n <= 1e9 ? n : undefined);
+async function guildStats(ctx) {
+  const creds = await store.credsOf(ctx);
+  if (!store.hasBot(creds)) return fail("not_configured");
+  const k = `${ctx.instance?.id ?? "x"}:${creds.guildId}`;
+  const hit = stats.get(k);
+  if (hit && hit.until > Date.now()) return { ok: true, ...hit.value };
+  const r = await run(ctx, "stats", { method: "GET", path: `/guilds/${creds.guildId}?with_counts=true`, guild: true, priority: "background" }, { guild: true });
+  if (!r.ok) return failed(r);
+  const memberCount = count(r.json?.approximate_member_count), onlineCount = count(r.json?.approximate_presence_count);
+  if (memberCount === undefined) return fail("failed");
+  const value = { memberCount, ...(onlineCount === undefined ? {} : { onlineCount }) };
+  stats.set(k, { until: Date.now() + STATS_MS, value }); if (stats.size > 20) stats.delete(stats.keys().next().value);
+  return { ok: true, ...value };
+}
 async function status(ctx) {
   const c = await store.credsOf(ctx);
   return { ok: true, bot: store.hasBot(c), oauth: false, ...(c.guildId ? { guildId: c.guildId } : {}) };
@@ -267,6 +285,7 @@ export const methods = {
   postMessage: safe(postMessage),
   listChannels: safe(listChannels),
   listRoles: safe(listRoles),
+  guildStats: safe(guildStats),
   editMessage: safe(editMessage),
   deleteMessage: safe(deleteMessage),
   upsertManagedMessage: safe(upsertManagedMessage),
@@ -275,4 +294,4 @@ export const methods = {
   channelChoices: safe(channelChoices),
   channelsByIds: safe(channelsByIds),
 };
-export const READ_ONLY = ["status", "listChannels", "listRoles", "channelChoices", "channelsByIds"];
+export const READ_ONLY = ["status", "listChannels", "listRoles", "guildStats", "channelChoices", "channelsByIds"];

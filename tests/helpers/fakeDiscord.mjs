@@ -13,7 +13,7 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
   const log = [];
   const messages = new Map();   // channel/thread id → [{ id, content, embeds, flags, allowed_mentions }]
   const threads = new Map();    // id → { parent, name, type, archived, locked, members:Set }
-  const state = { code, inGuild, rateUntil: 0, down: false, forced: [], deleted: new Set() };
+  const state = { code, inGuild, rateUntil: 0, down: false, counts: { members: 1234, online: 56 }, forced: [], deleted: new Set() };
   const guildRoles = roles ?? [
     { id: IDS.guild, name: "@everyone", permissions, position: 0, managed: false },
     { id: IDS.staff, name: "Helpers", permissions: "0", position: 3, managed: false },
@@ -27,7 +27,7 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
     { id: "400000000000000003", type: 2, name: "voice", position: 2 },
   ];
   const known = new Set(channels.map((c) => c.id));
-  const route = (method, path, body, auth) => {
+  const route = (method, path, body, auth, search = "") => {
     if (state.down) throw new TypeError("fetch failed");
     if (state.rateUntil > Date.now()) return json(429, { message: "You are being rate limited.", retry_after: Math.ceil((state.rateUntil - Date.now()) / 1000), global: false, code: 0 }, { "retry-after": String(Math.ceil((state.rateUntil - Date.now()) / 1000)) });
     for (const f of state.forced) if (f.method === method && f.re.test(path) && f.times !== 0) { if (f.times > 0) f.times--; return typeof f.reply === "function" ? f.reply(body) : f.reply; }
@@ -36,6 +36,7 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
     if (method === "GET" && path === "/users/@me") return json(200, { id: IDS.bot, username: "Test bot", bot: true });
     if ((m = /^\/guilds\/(\d+)(\/.*)?$/.exec(path))) {
       if (!state.inGuild || m[1] !== IDS.guild) return err(m[1] === IDS.guild ? 403 : 404, m[1] === IDS.guild ? 50001 : 10004, "Missing Access");
+      if (method === "GET" && m[2] === undefined) return json(200, { id: IDS.guild, name: "Demo server", ...(search.includes("with_counts=true") ? { approximate_member_count: state.counts.members, approximate_presence_count: state.counts.online } : {}) });
       if (method === "GET" && m[2] === "/channels") return json(200, channels);
       if (method === "GET" && m[2] === "/roles") return json(200, guildRoles);
       if ((m = /^\/members\/(\d+)$/.exec(m[2] ?? "")) && method === "GET") return guildMembers[m[1]] ? json(200, { user: { id: m[1] }, ...guildMembers[m[1]] }) : err(404, 10007, "Unknown Member");
@@ -74,9 +75,9 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
     const path = u.pathname.replace(/^\/api\/v10/, "");
     const body = init.body ? JSON.parse(init.body) : undefined;
     const headers = Object.fromEntries(Object.entries(init.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]));
-    const entry = { method: init.method ?? "GET", host: u.host, path, body, userAgent: headers["user-agent"], authOk: headers.authorization === `Bot ${state.code}` };
+    const entry = { method: init.method ?? "GET", host: u.host, path, query: u.search, body, userAgent: headers["user-agent"], authOk: headers.authorization === `Bot ${state.code}` };
     log.push(entry);
-    const r = route(entry.method, path, body, headers.authorization);
+    const r = route(entry.method, path, body, headers.authorization, u.search);
     return new Response(r.body || null, { status: r.status, headers: r.headers });
   };
   return {
