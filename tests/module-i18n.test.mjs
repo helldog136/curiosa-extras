@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { readAtBase, settle } from "./helpers/baseRef.mjs";
 import { makeTempDir } from "./helpers/tmp.mjs";
 import * as A from "../scripts/i18n-audit.mjs";
 import { readModules } from "../scripts/ergonomics-baseline.mjs";
@@ -19,9 +20,9 @@ const index = JSON.parse(fs.readFileSync(path.join(root, "catalogue/index.json")
 const core = path.resolve(process.env.CURIOSA_DIR ?? process.cwd());
 const EF = (en, fr) => ({ en, fr });
 
-test("the helper is a verbatim copy of the core's: one set of rules", () => {
+test("the helper is a verbatim copy of the core's: one set of rules", (t) => {
   const original = path.join(core, "src/core/i18n/audit.mjs");
-  if (!fs.existsSync(original)) return; // an older core: nothing to compare with
+  if (!fs.existsSync(original)) { t.skip("an older core without src/core/i18n/audit.mjs: nothing to compare with"); return; }
   const strip = (s) => s.replace(/^\/\/ VERBATIM COPY[^\n]*\n\/\/ Change it[^\n]*\n/, "");
   assert.equal(strip(fs.readFileSync(path.join(root, "scripts/i18n-audit.mjs"), "utf8")), fs.readFileSync(original, "utf8"), "copy src/core/i18n/audit.mjs of the core here, unchanged");
 });
@@ -45,15 +46,14 @@ for (const m of modules) {
   });
 }
 
-test("counters: the totals of the baseline are the sums, and they can only go down (compared to the base branch when available)", () => {
+test("counters: the totals of the baseline are the sums, and they can only go down (compared to the base branch)", (t) => {
   assert.deepEqual(baseline.totals, toBaseline(status).totals, "node scripts/i18n-baseline.mjs --write");
   assert.equal(baseline.totals.manifest, 0, "phase 1: every manifest text is declared in English and French");
   assert.equal(baseline.totals.localeFiles, 0, "phase 1: every locale file is complete in English and French");
-  const git = (...args) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
-  const ref = ["origin/dev", "origin/main"].find((r) => git("rev-parse", "--verify", "-q", r).status === 0);
-  const old = ref ? git("show", `${ref}:tests/i18n-baseline.json`) : null;
-  if (!old || old.status !== 0) return; // first baseline of the repository, or no base branch here
-  assert.deepEqual(baselineGrowth(JSON.parse(old.stdout), baseline), [], "the baseline grew compared to the base branch");
+  // An unreachable base branch fails in CI (it fetches the whole history) and is a visible skip elsewhere; "no baseline on the base branch yet" is a visible skip too.
+  const old = readAtBase(root, "tests/i18n-baseline.json", ["origin/dev", "origin/main"]);
+  if (!settle(t, old, assert.fail, "i18n baseline")) return;
+  assert.deepEqual(baselineGrowth(JSON.parse(old.text), baseline), [], `the baseline grew compared to ${old.ref}`);
 });
 
 test("ratchet: a new gap fails, a fixed gap must leave the baseline, a counter that goes up fails, a growing baseline is refused", () => {
