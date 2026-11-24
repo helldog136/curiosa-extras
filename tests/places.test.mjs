@@ -72,7 +72,7 @@ const ROLLOUT = {
   "partnerships": ["2.5.1", { main: "community.partners" }],
   "patreon": ["1.2.1", { main: "networks.accounts" }],
   "pinterest": ["1.2.1", { main: "networks.accounts" }],
-  "planning": ["2.9.2", { main: "calendar.schedule", look: "calendar.schedule.look" }],
+  "planning": ["2.10.0", { main: "calendar.schedule", look: "calendar.schedule.look" }],
   "platform-links": ["1.2.2", { main: "networks.accounts.other" }],
   "polls": ["1.9.3", { polls: "live.participation.polls", screen: "live.participation.polls" }],
   "press-kit": ["1.2.0", { main: "content.press-kit" }],
@@ -260,6 +260,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     const old = before[id], now = manifests[id];
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
     const { places, version, minCore: nowCore, ...rest } = now;
+    if (id === "planning") { rest.requires = rest.requires.filter((r) => r.service !== "discord.api"); rest.settings = rest.settings.filter((s) => !s.key.startsWith("discord")); }   // 2.10.0: the optional Discord connector
     const { version: oldVersion, minCore: oldCore, ...oldRest } = old;
     assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0") || LIVE_SEARCH_CORE[id] === nowCore, `${id}: minCore only moves for the connection block (0.36.0) or the live search (0.6.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
@@ -269,7 +270,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
-    assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);
+    assert.ok(version.localeCompare(oldVersion, "en", { numeric: true }) > 0, `${id}: ${oldVersion} → ${version}`);
     // What an older core needs to keep showing the module in the same place.
     assert.equal(now.adminMenu, old.adminMenu, `${id}: adminMenu kept for cores older than 0.31.0`);
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);

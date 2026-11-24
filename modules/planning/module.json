@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.9.2",
+  "version": "2.10.0",
   "menuGroup": "tools",
   "minCore": "0.11.0",
   "description": {
@@ -245,6 +245,14 @@
         "en": "The address book (Contacts module), optional: the names of the people you stream with are shown when they are in it",
         "fr": "Le carnet d'adresses (module Contacts), facultatif : le nom des personnes avec qui vous streamez s'affiche quand elles y sont"
       }
+    },
+    {
+      "service": "discord.api",
+      "optional": true,
+      "label": {
+        "en": "The Discord connector (optional): the week's schedule can be posted to your Discord server",
+        "fr": "Le connecteur Discord (facultatif) : le planning de la semaine peut être publié sur votre serveur Discord"
+      }
     }
   ],
   "tabs": [
@@ -305,6 +313,74 @@
       "help": {
         "en": "Started streams only, no duplicates.",
         "fr": "Streams commencés seulement, sans doublon."
+      }
+    },
+    {
+      "key": "discordPost",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Post the week's planning to Discord",
+        "fr": "Publier le planning de la semaine sur Discord"
+      },
+      "help": {
+        "en": "One message, edited as the schedule changes.",
+        "fr": "Un seul message, mis à jour quand le planning change."
+      }
+    },
+    {
+      "key": "discordChannel",
+      "type": "choice",
+      "optional": true,
+      "source": {
+        "kind": "service",
+        "service": "discord.api",
+        "list": "channelChoices",
+        "get": "channelsByIds"
+      },
+      "label": {
+        "en": "Discord channel",
+        "fr": "Salon Discord"
+      }
+    },
+    {
+      "key": "discordNotify",
+      "type": "select",
+      "display": "segmented",
+      "default": "silent",
+      "label": {
+        "en": "Notifications",
+        "fr": "Notifications"
+      },
+      "options": [
+        {
+          "value": "silent",
+          "label": {
+            "en": "Silent",
+            "fr": "Sans notification"
+          }
+        },
+        {
+          "value": "notify",
+          "label": {
+            "en": "Notify members",
+            "fr": "Prévenir les membres"
+          }
+        }
+      ]
+    },
+    {
+      "key": "discordEvents",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "Also post a short message when a stream changes",
+        "fr": "Publier aussi un court message quand un stream change"
+      },
+      "help": {
+        "en": "Streams added, moved or cancelled.",
+        "fr": "Streams ajoutés, déplacés ou annulés."
       }
     },
     {

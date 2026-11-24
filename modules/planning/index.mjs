@@ -20,6 +20,7 @@ export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone, nextSlot };
 const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS, stateOf, resetPartners } = await import(`./partners.mjs${V}`);
 const Photos = await import(`./photos.mjs${V}`);
 const Played = await import(`./played.mjs${V}`);
+const Discord = await import(`./discord.mjs${V}`);
 const { personHtml, avatarHtml, safePhoto } = await import(`./avatar.mjs${V}`);
 export { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS };
 
@@ -533,7 +534,26 @@ async function photoResponse(request, ctx) {
   } catch { return NO_PHOTO(); }
 }
 
+/** Discord (optional): the state of "Post the week's planning", only when the option is on. One line, plus the way to fix it when it is stuck. */
+async function discordAdminBlocks(ctx) {
+  if (!Discord.discordOn(ctx)) return [];
+  const t = ctx.t, blocks = [{ type: "heading", text: t("adminDiscord") }];
+  const providers = await Promise.resolve(ctx.api.services.providers?.(Discord.SERVICE)).catch(() => []);
+  if (!Array.isArray(providers) || !providers.length) return [...blocks, { type: "markdown", text: t("adminDiscordNone") }, { type: "suggestInstall", service: Discord.SERVICE, reason: t("adminDiscordSuggest") }];
+  if (!Discord.channelOf(ctx)) return [...blocks, { type: "markdown", text: t("adminDiscordNoChannel") }];
+  const last = await Discord.lastResult(ctx);
+  if (!last) return [...blocks, { type: "markdown", text: t("adminDiscordWaiting") }];
+  const when = new Intl.DateTimeFormat(ctx.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(last.at));
+  const reason = ["forbidden", "not_found", "not_member", "rate_limited", "unavailable", "not_configured", "no_connector"].includes(last.reason) ? last.reason : "failed";
+  return [...blocks, { type: "markdown", text: last.ok ? t("adminDiscordOk", { when }) : t("adminDiscordFail", { when, reason: t(`discordReason_${reason}`) }) }];
+}
+
 export default {
+  // Background pass, every minute: the schedule of the week in the chosen Discord channel (see discord.mjs). Does nothing while the option is off.
+  tasks: {
+    discord: { everyMinutes: 1, run: (ctx) => Discord.syncDiscord(ctx, { read: (from, to) => collectSlots(ctx, from, to), toSlots, displayZone }) },
+  },
+
   overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),
 
   // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
@@ -660,7 +680,7 @@ export default {
   async adminPanel(ctx) {
     const blocks = await adminStatusBlocks(ctx);
     const tz = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-    return [...blocks, ...(await previewBlocks(ctx, tz))];
+    return [...blocks, ...(await discordAdminBlocks(ctx)), ...(await previewBlocks(ctx, tz))];
   },
 
   mcp: {
