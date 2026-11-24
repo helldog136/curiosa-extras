@@ -118,6 +118,7 @@
   "adminDiscordNoChannel": "Choisissez un salon pour publier la semaine.",
   "adminDiscordWaiting": "La semaine sera publiée dans la minute.",
   "adminDiscordOk": "Semaine publiée, dernière mise à jour {when}.",
+  "adminDiscordRetry": "Nouvel essai à {when}.",
   "adminDiscordFail": "La publication a échoué le {when} : {reason}",
   "discordReason_forbidden": "Discord refuse le bot. Ouvrez le connecteur Discord pour ressaisir le code secret.",
   "discordReason_not_found": "le salon n'existe plus. Choisissez-en un autre.",

@@ -248,7 +248,7 @@ const CARD_CSS = `
 `.replace(/\n/g, "");
 
 const { relativeLabel } = await import(`./relative.mjs${V}`);
-const { appearanceBlocks, wantsCancelled, previewBlocks, densify } = await import(`./appearances/entry.mjs${V}`);   // apparences au choix : voir appearances/
+const { appearanceBlocks, wantsCancelled, weekStartOf, previewBlocks, densify } = await import(`./appearances/entry.mjs${V}`);   // apparences au choix : voir appearances/
 export { relativeLabel };
 
 const isoOf = (slot, tz) => { if (!slot.allDay) return slot.start.toISOString(); const w = wallDateNow(tz, slot.start); return `${w.y}-${String(w.m).padStart(2, "0")}-${String(w.d).padStart(2, "0")}`; };
@@ -545,13 +545,14 @@ async function discordAdminBlocks(ctx) {
   if (!last) return [...blocks, { type: "markdown", text: t("adminDiscordWaiting") }];
   const when = new Intl.DateTimeFormat(ctx.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(last.at));
   const reason = ["forbidden", "not_found", "not_member", "rate_limited", "unavailable", "not_configured", "no_connector"].includes(last.reason) ? last.reason : "failed";
-  return [...blocks, { type: "markdown", text: last.ok ? t("adminDiscordOk", { when }) : t("adminDiscordFail", { when, reason: t(`discordReason_${reason}`) }) }];
+  const retry = !last.ok && last.retryAt && last.retryAt > Date.now() ? ` ${t("adminDiscordRetry", { when: new Intl.DateTimeFormat(ctx.locale, { timeStyle: "short" }).format(new Date(last.retryAt)) })}` : "";
+  return [...blocks, { type: "markdown", text: last.ok ? t("adminDiscordOk", { when }) : `${t("adminDiscordFail", { when, reason: t(`discordReason_${reason}`) })}${retry}` }];
 }
 
 export default {
   // Background pass, every minute: the schedule of the week in the chosen Discord channel (see discord.mjs). Does nothing while the option is off.
   tasks: {
-    discord: { everyMinutes: 1, run: (ctx) => Discord.syncDiscord(ctx, { read: (from, to) => collectSlots(ctx, from, to), toSlots, displayZone }) },
+    discord: { everyMinutes: 1, run: (ctx) => Discord.syncDiscord(ctx, { read: (from, to) => collectSlots(ctx, from, to), toSlots, displayZone, weekStart: weekStartOf, showCancelled: wantsCancelled }) },
   },
 
   overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),

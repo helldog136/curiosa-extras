@@ -118,6 +118,7 @@
   "adminDiscordNoChannel": "Choose a channel to post the week.",
   "adminDiscordWaiting": "The week will be posted within a minute.",
   "adminDiscordOk": "Week posted, last update {when}.",
+  "adminDiscordRetry": "Next try at {when}.",
   "adminDiscordFail": "Posting failed on {when}: {reason}",
   "discordReason_forbidden": "Discord refuses the bot. Open the Discord connector to enter the secret code again.",
   "discordReason_not_found": "the channel no longer exists. Choose another one.",

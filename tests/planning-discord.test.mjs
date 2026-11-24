@@ -9,6 +9,7 @@ import { fakeCtx } from "./helpers/fakeCtx.mjs";
 
 const rd = (m, l) => JSON.parse(fs.readFileSync(new URL(`../modules/${m}/${l}`, import.meta.url), "utf8"));
 const planning = await import("../modules/planning/index.mjs");
+const entry = await import("../modules/planning/appearances/entry.mjs");
 const D = await import("../modules/planning/discord.mjs");
 const def = planning.default;
 const CHANNEL = "400000000000000001";
@@ -18,10 +19,13 @@ const at = (day, hour) => new Date(Date.UTC(2026, 5, day, hour)).toISOString();
 const slot = (id, day, hour, extra = {}) => ({ id, title: `Soirée ${id}`, start: at(day, hour), end: at(day, hour + 2), allDay: false, status: "confirmed", timezone: "UTC", games: [], ...extra });
 
 let calls, items, discordAnswer;
-beforeEach(() => { calls = []; items = []; discordAnswer = () => ({ ok: true, messageId: "700000000000000001", action: "created" }); D.timing.settleMs = 0; });
+beforeEach(() => { calls = []; items = []; readLog = []; showCancelled = false; discordAnswer = () => ({ ok: true, messageId: "700000000000000001", action: "created" }); D.timing.settleMs = 0; });
 const connector = () => ({ "discord.api": new Proxy({}, { get: (_, method) => async (args) => { calls.push({ method, args }); return discordAnswer(method, args); } }) });
+const live = (over = {}) => { const S = { days: 7, timezone: "UTC", discordPost: true, discordChannel: CHANNEL, ...over }; return { S, ctx: fakeCtx({ key: "pl", settings: S, topics: { "planning.slot": () => items }, messages: rd("planning", "locales/en.json"), locale: "en", services: connector() }) }; };
 const mk = (settings = {}, over = {}) => fakeCtx({ key: "pl", settings: { days: 7, timezone: "UTC", discordPost: true, discordChannel: CHANNEL, ...settings }, topics: { "planning.slot": () => items }, messages: rd("planning", "locales/en.json"), locale: "en", services: connector(), ...over });
-const deps = (ctx) => ({ read: async () => ({ items, failed: false }), toSlots: planning.toSlots, displayZone: planning.displayZone, sleep: async () => {} });
+let readLog;
+const deps = (ctx) => ({ read: async (from, to) => { readLog.push([from, to]); return { items, failed: false }; }, toSlots: planning.toSlots, displayZone: planning.displayZone, sleep: async () => {}, weekStart: entry.weekStartOf, showCancelled: () => showCancelled });
+let showCancelled;
 const pass = (ctx, now = NOW) => D.syncDiscord(ctx, deps(ctx), now);
 const upserts = () => calls.filter((c) => c.method === "upsertManagedMessage");
 const posts = () => calls.filter((c) => c.method === "postMessage");
@@ -80,7 +84,7 @@ test("the week rollover rewrites the message with no other trigger", async () =>
   items = [slot("a", 16, 19), slot("n", 23, 19)];
   const ctx = mk();
   await pass(ctx);
-  assert.equal(await pass(ctx, NOW + 3600_000), "same");
+  assert.equal(await pass(ctx, NOW + 1800_000), "same");
   assert.equal(await pass(ctx, Date.parse("2026-06-22T00:30:00Z")), "posted");
   assert.match(JSON.stringify(upserts().at(-1).args.embeds), /Soirée n/);
   assert.ok(!/Soirée a/.test(JSON.stringify(upserts().at(-1).args.embeds)));
@@ -91,6 +95,7 @@ test("an empty week and a cancelled stream are said in plain words", async () =>
   await pass(ctx);
   assert.match(upserts()[0].args.embeds[0].description, /No stream planned/);
   items = [slot("a", 16, 19, { status: "cancelled" })];
+  showCancelled = true;
   await pass(ctx);
   assert.match(upserts()[1].args.embeds[0].description, /~~.*Soirée a.*~~ \(cancelled\)/);
 });
@@ -165,4 +170,135 @@ test("manifest: optional need, 3 simple settings plus 1 advanced, a channel pick
   const en = rd("planning", "locales/en.json"), fr = rd("planning", "locales/fr.json");
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
   for (const k of Object.keys(en)) assert.deepEqual((en[k].match(/\{\w+\}/g) ?? []).sort(), (fr[k].match(/\{\w+\}/g) ?? []).sort(), k);
+});
+
+// ───────────── Review follow-up: the week, the false cancellations, the repost, the limits, the back-off ─────────────
+const THU = Date.parse("2026-06-18T10:00:00Z");
+
+test("on a Thursday the message still holds Monday to Wednesday: the calendars are read from the first day of the week, not from 24 hours ago", async () => {
+  items = [slot("mon", 15, 19), slot("wed", 17, 19), slot("fri", 19, 19), slot("next", 22, 19)];
+  assert.equal(await pass(mk(), THU), "posted");
+  const text = JSON.stringify(upserts()[0].args.embeds);
+  for (const id of ["mon", "wed", "fri"]) assert.match(text, new RegExp(`Soirée ${id}`));
+  assert.ok(!/Soirée next/.test(text));
+  assert.ok(readLog[0][0].getTime() <= Date.parse("2026-06-15T00:00:00Z"), "the read starts before Monday");
+});
+
+test("the week follows the page's first-day setting (Sunday)", async () => {
+  items = [slot("sun", 14, 19), slot("sat", 20, 19), slot("mon", 15, 19)];
+  await pass(mk({ weekStart: "0" }), NOW);
+  const text = JSON.stringify(upserts()[0].args.embeds);
+  assert.match(text, /Soirée sun/); assert.match(text, /Soirée sat/);
+  calls.length = 0;
+  await pass(mk({ weekStart: "1" }), NOW);
+  assert.ok(!/Soirée sun/.test(JSON.stringify(upserts()[0].args.embeds)), "Monday start: Sunday the 14th is last week");
+});
+
+test("a cancelled stream is in the message only when the page option shows cancelled streams", async () => {
+  items = [slot("a", 16, 19), slot("b", 17, 19, { status: "cancelled" })];
+  await pass(mk());
+  assert.ok(!/Soirée b/.test(JSON.stringify(upserts()[0].args.embeds)));
+  showCancelled = true; calls.length = 0;
+  await pass(mk());
+  assert.match(JSON.stringify(upserts()[0].args.embeds), /Soirée b/);
+});
+
+test("no false cancellation: not at the week rollover, not for a stream that already started, and a real removal is still said", async () => {
+  items = [slot("a", 16, 19), slot("b", 18, 19)];
+  const ctx = mk({ discordEvents: true });
+  await pass(ctx, NOW);
+  items = [slot("n", 23, 19)];
+  assert.equal(await pass(ctx, Date.parse("2026-06-22T00:30:00Z")), "posted");
+  assert.equal(posts().length, 0, "rollover says nothing");
+  items = [slot("n", 23, 19), slot("x", 24, 8), slot("y", 25, 19)];
+  await pass(ctx, Date.parse("2026-06-22T01:00:00Z")); const before = posts().length;
+  items = [slot("n", 23, 19), slot("y", 25, 19)];
+  await pass(ctx, Date.parse("2026-06-24T12:00:00Z"));
+  assert.equal(posts().length, before, "a started stream that disappears is silent");
+  items = [slot("n", 23, 19)];
+  await pass(ctx, Date.parse("2026-06-24T12:05:00Z"));
+  assert.equal(posts().length, before + 1);
+  assert.match(posts().at(-1).args.content, /Stream cancelled — \*\*Soirée y\*\*/);
+});
+
+test("another channel or the option switched off and on writes the message again; a deleted message is found within the hour", async () => {
+  items = [slot("a", 16, 19)];
+  const { S, ctx } = live();
+  await pass(ctx);
+  assert.equal(await pass(ctx), "same");
+  S.discordChannel = "400000000000000002";
+  assert.equal(await pass(ctx), "posted");
+  assert.equal(upserts().at(-1).args.channelId, "400000000000000002");
+  const n = upserts().length;
+  S.discordPost = false;
+  assert.equal(await pass(ctx), "off");
+  S.discordPost = true;
+  assert.equal(await pass(ctx), "posted");
+  assert.equal(upserts().length, n + 1);
+  assert.equal(await pass(ctx, NOW + 30 * 60_000), "same");
+  const m = upserts().length;
+  assert.equal(await pass(ctx, NOW + 61 * 60_000), "posted");
+  assert.equal(upserts().length, m + 1); assert.equal(upserts().at(-1).args.verify, true);
+});
+
+test("the admin page does not say 'posted' about a channel that has not been written yet", async () => {
+  items = [slot("a", 16, 19)];
+  const { S, ctx } = live();
+  await pass(ctx);
+  assert.ok(await D.lastResult(ctx));
+  S.discordChannel = "400000000000000002";
+  assert.equal(await D.lastResult(ctx), null);
+});
+
+test("a long week and hostile titles stay inside Discord's limits and cannot become a timestamp, channel, command or emoji", async () => {
+  const evil = "<t:1:R> <#123456789012345678> </ban:1> <:x:1> <a:y:1> <@&123456789012345678> " + "é".repeat(300);
+  items = Array.from({ length: 70 }, (_, i) => slot("s" + i, 15 + (i % 7), 8 + (i % 12), { title: evil, games: [evil, evil, evil] }));
+  const ctxE = mk({ discordEvents: true });
+  await pass(ctxE);
+  const e = upserts()[0].args.embeds[0];
+  assert.ok(e.description.length <= 4096 && e.title.length <= 256, `${e.description.length}`);
+  assert.ok(!/<t:1:R>|<#|<\/|<:|<a:|<@/.test(e.description), "no raw Discord syntax");
+  items = items.map((s, i) => ({ ...s, start: at(15 + (i % 7), 9 + (i % 12)) }));
+  await pass(ctxE);
+  const c = posts().at(-1)?.args.content ?? "";
+  assert.ok(c.length > 0 && c.length <= 2000, `${c.length}`);
+  assert.ok(!/<t:1:R>|<#|<\/|<:|<a:|<@/.test(c));
+});
+
+test("after a failure the module waits (1, 5, 15, 60 minutes) instead of failing every minute; the admin page says when it tries again", async () => {
+  items = [slot("a", 16, 19)];
+  discordAnswer = () => ({ ok: false, reason: "unavailable" });
+  const ctx = mk();
+  assert.equal(await pass(ctx, NOW), "failed");
+  const n = calls.length;
+  assert.equal(await pass(ctx, NOW + 30_000), "backoff");
+  assert.equal(calls.length, n, "no call during the wait");
+  assert.equal(await pass(ctx, NOW + 61_000), "failed");
+  assert.equal(await pass(ctx, NOW + 61_000 + 200_000), "backoff", "the wait grew to 5 minutes");
+  discordAnswer = () => ({ ok: true, messageId: "700000000000000001", action: "created" });
+  assert.equal(await pass(ctx, NOW + 61_000 + 301_000), "posted");
+  discordAnswer = () => ({ ok: false, reason: "unavailable" });
+  items = [slot("a", 16, 19), slot("b", 17, 19)];
+  await pass(ctx, Date.now());
+  const admin = JSON.stringify(await def.adminPanel(ctx));
+  assert.match(admin, /Discord does not answer/); assert.match(admin, /Next try at/);
+});
+
+test("two passes at once never run together and never leave two state rows", async () => {
+  items = [slot("a", 16, 19)];
+  let release; const gate = new Promise((r) => { release = r; });
+  discordAnswer = async () => { await gate; return { ok: true, messageId: "700000000000000001", action: "created" }; };
+  const ctx = mk();
+  const first = pass(ctx);
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(await pass(ctx), "busy");
+  release();
+  assert.equal(await first, "posted");
+  assert.equal((await ctx.api.store.listByKey("discordSync", "state")).items.length, 1);
+});
+
+test("dates are written in the site's default language, not the language of whoever triggered the pass", async () => {
+  items = [slot("a", 16, 19)];
+  await pass(mk({}, { locale: "en", defaultLocale: "fr" }));
+  assert.match(upserts()[0].args.embeds[0].description, /mardi/i);
 });

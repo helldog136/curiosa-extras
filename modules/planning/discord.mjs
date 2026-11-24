@@ -13,20 +13,21 @@
 const V = new URL(import.meta.url).search;
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`./dates.mjs${V}`);
 
-/** Monday to Sunday of the week that holds `now`, in the zone `tz` (same rule as the week grid of the schedule). */
-export function getWeekRangeOf(tz, now = new Date()) {
+/** The seven days that hold `now`, in the zone `tz`, from the first day of the week (`weekStart`: 1 Monday, 0 Sunday, 6 Saturday; the same setting as the week grid). */
+export function getWeekRangeOf(tz, now = new Date(), weekStart = 1) {
+  const first = [0, 1, 6].includes(Number(weekStart)) ? Number(weekStart) : 1;
   const today = wallDateNow(tz, now);
   const wd = weekdayOf(today.y, today.m, today.d);
-  const monday = addDaysToWall(today.y, today.m, today.d, wd === 0 ? -6 : 1 - wd);
-  const sunday = addDaysToWall(monday.y, monday.m, monday.d, 6);
-  return { start: zonedTimeToUtc(monday.y, monday.m, monday.d, 0, 0, 0, tz), end: zonedTimeToUtc(sunday.y, sunday.m, sunday.d, 23, 59, 59, tz) };
+  const first0 = addDaysToWall(today.y, today.m, today.d, -((wd - first + 7) % 7));
+  const last = addDaysToWall(first0.y, first0.m, first0.d, 6);
+  return { start: zonedTimeToUtc(first0.y, first0.m, first0.d, 0, 0, 0, tz), end: zonedTimeToUtc(last.y, last.m, last.d, 23, 59, 59, tz) };
 }
 
 export const SERVICE = "discord.api";
 export const OWNER = "planning";
 export const COLLECTION = "discordSync";
 export const timing = { settleMs: 6000, callMs: 15_000 };
-export const LIMITS = { slots: 60, lines: 5, description: 3800, title: 80 };
+export const LIMITS = { slots: 60, lines: 5, description: 3800, title: 80, game: 40, content: 1900, verifyMs: 3_600_000, backoffMs: [60_000, 300_000, 900_000, 3_600_000] };
 
 const SNOWFLAKE = /^\d{15,25}$/;
 const truthy = (v) => v === true || v === "true" || v === 1 || v === "1" || v === "on";
@@ -39,8 +40,22 @@ export const notifies = (ctx) => setting(ctx, "discordNotify") === "notify";
 export const channelOf = (ctx) => { const v = String(setting(ctx, "discordChannel") ?? "").trim(); return SNOWFLAKE.test(v) ? v : ""; };
 
 /** Markdown from a calendar is data: neither bold, links nor a mention can come out of a title. */
-const esc = (s) => String(s ?? "").replace(/\s+/g, " ").trim().replace(/([\\`*_~|>[\]()#])/g, "\\$1");
+// `<` is followed by an invisible space so that nothing can become a timestamp (<t:), a channel (<#), a command (</), an emoji (<:, <a:) or a mention (<@).
+const esc = (s) => String(s ?? "").replace(/[\u0000-\u001f\u007f\u202A-\u202E\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim().replace(/([\\`*_~|>[\]()#])/g, "\\$1").replace(/</g, "<\u200b").replace(/@/g, "@\u200b");
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+/** Whole lines only, so a limit never cuts a timestamp or a bold mark in two; the last line says how many were left out. */
+const fit = (lines, max, more) => {
+  const size = (l) => l.reduce((n, x) => n + x.length + 1, 0);
+  if (size(lines) <= max) return lines;
+  if (!more) { const out = []; for (const l of lines) { if (size([...out, l]) > max) break; out.push(l); } return out; }
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const tail = more(lines.length - i);
+    if (size([...out, lines[i], tail]) > max) { out.push(tail); return out; }
+    out.push(lines[i]);
+  }
+  return out;
+};
 const epoch = (d) => Math.floor(d.getTime() / 1000);
 
 /**
@@ -56,7 +71,7 @@ export function weekRows(slots, week) {
     .map((s) => {
       const base = s.uid || `t:${s.title}`;
       const n = (seen.get(base) ?? 0) + 1; seen.set(base, n);
-      return { key: n > 1 ? `${base}#${n}` : base, title: String(s.title ?? ""), games: Array.isArray(s.games) ? s.games.slice(0, 3) : [], start: s.start, allDay: s.allDay === true, cancelled: s.cancelled === true };
+      return { key: n > 1 ? `${base}#${n}` : base, title: clip(String(s.title ?? ""), LIMITS.title), games: Array.isArray(s.games) ? s.games.slice(0, 3).map((g) => clip(String(g ?? ""), LIMITS.game)) : [], start: s.start, allDay: s.allDay === true, cancelled: s.cancelled === true };
     });
 }
 
@@ -77,28 +92,36 @@ export function weekEmbed(rows, week, { t, locale, tz }) {
     const when = r.allDay ? "" : `<t:${epoch(r.start)}:t> `;
     lines.push(r.cancelled ? `• ${when}~~${name}~~ (${t("discordCancelled")})` : `• ${when}${name}${games}`);
   }
-  return { title, description: clip(lines.join("\n"), LIMITS.description) };
+  return { title, description: fit(lines, LIMITS.description, (n) => t("discordMore", { n })).join("\n") };
 }
 
 /** A short text that changes whenever what members would read changes (and only then). */
-export function digestOf(rows, week, tz) {
-  const s = JSON.stringify([dayKey(week.start, tz), rows.map((r) => [r.key, r.title, r.games, r.start.getTime(), r.allDay, r.cancelled])]);
+export function digestOf(rows, week, tz, where = {}) {
+  const s = JSON.stringify([where.channelId ?? "", where.key ?? "", dayKey(week.start, tz), rows.map((r) => [r.key, r.title, r.games, r.start.getTime(), r.allDay, r.cancelled])]);
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
   return `${h.toString(36)}.${s.length}`;
 }
 
-/** What changed between the snapshot of the last pass and now: new, moved (same stream, other start) and cancelled streams. Cancelled before = not repeated. */
-export function changesOf(prev, rows) {
-  const before = new Map((Array.isArray(prev) ? prev : []).map((p) => [p.k, p]));
+/**
+ * What changed between the snapshot of the last pass and now: new, moved (same stream, other start) and cancelled streams.
+ * Only streams of THIS week and of the part of it the calendars were read for: a stream that leaves the window, a week that rolls over or a stream that has
+ * already started is never announced as cancelled. `scope` = { week, from, to, now }; a snapshot of another week gives nothing (the new week starts silently).
+ */
+export function changesOf(prev, rows, scope) {
+  const list = Array.isArray(prev) ? prev : [];
+  const inScope = (ms) => !scope || (ms >= scope.week.start.getTime() && ms <= scope.week.end.getTime() && ms >= scope.from && ms <= scope.to);
+  const before = new Map(list.filter((p) => inScope(p.s)).map((p) => [p.k, p]));
   const out = [];
   for (const r of rows) {
     const p = before.get(r.key);
-    if (r.cancelled) { if (!p || !p.c) out.push({ kind: "cancelled", row: r }); continue; }
-    if (!p || p.c) out.push({ kind: "added", row: r });
+    if (scope && r.start.getTime() <= scope.now) continue;   // already started: not news
+    if (r.cancelled) { if (p && !p.c) out.push({ kind: "cancelled", row: r }); continue; }
+    if (!p) { out.push({ kind: "added", row: r }); continue; }
+    if (p.c) out.push({ kind: "added", row: r });
     else if (p.s !== r.start.getTime()) out.push({ kind: "moved", row: r });
   }
   const now = new Set(rows.map((r) => r.key));
-  for (const p of before.values()) if (!now.has(p.k) && !p.c) out.push({ kind: "cancelled", row: { key: p.k, title: p.t, games: [], start: new Date(p.s), allDay: p.a === true, cancelled: true } });
+  for (const p of before.values()) if (!now.has(p.k) && !p.c && (!scope || p.s > scope.now)) out.push({ kind: "cancelled", row: { key: p.k, title: p.t, games: [], start: new Date(p.s), allDay: p.a === true, cancelled: true } });
   return out;
 }
 const snapshotOf = (rows) => rows.map((r) => ({ k: r.key, t: clip(r.title, 100), s: r.start.getTime(), c: r.cancelled, a: r.allDay }));
@@ -111,16 +134,33 @@ export function eventsText(changes, { t }) {
   };
   const shown = changes.slice(0, LIMITS.lines).map(line);
   if (changes.length > LIMITS.lines) shown.push(t("discordMore", { n: changes.length - LIMITS.lines }));
-  return shown.join("\n");
+  return fit(shown, LIMITS.content).join("\n");
 }
 
 /* ───────────── The document the module keeps ───────────── */
-const doc = async (ctx) => { try { return (await ctx.api.store.getByKey(COLLECTION, "state")) ?? null; } catch { return null; } };
+/** The one document `state`. A second one (two passes that raced before this guard existed) is removed, the newest kept. */
+const doc = async (ctx) => {
+  try {
+    if (typeof ctx.api.store.listByKey === "function") {
+      const rows = (await ctx.api.store.listByKey(COLLECTION, "state", { limit: 20 }))?.items ?? [];   // newest first
+      for (const extra of rows.slice(1)) { try { await ctx.api.store.remove(extra.id); } catch { /* next pass */ } }
+      if (rows.length) return rows[0];
+    }
+    return (await ctx.api.store.getByKey(COLLECTION, "state")) ?? null;
+  } catch { return null; }
+};
 async function save(ctx, d, data) {
-  try { if (d) await ctx.api.store.update(d.id, data, { key: "state" }); else await ctx.api.store.add(COLLECTION, data, { key: "state" }); } catch { /* the next pass writes it again */ }
+  try { const again = d ?? (await ctx.api.store.getByKey(COLLECTION, "state").catch(() => null)); if (again) await ctx.api.store.update(again.id, data, { key: "state" }); else await ctx.api.store.add(COLLECTION, data, { key: "state" }); } catch { /* the next pass writes it again */ }
 }
-/** The last result, for the admin page: { at, ok, reason? } or null. */
-export async function lastResult(ctx) { return (await doc(ctx))?.data?.last ?? null; }
+/**
+ * The last result for the admin page: { at, ok, reason?, retryAt? }, or null when it is about another channel than the one chosen now (so the page never says
+ * "posted" about a channel that has not been written yet).
+ */
+export async function lastResult(ctx) {
+  const last = (await doc(ctx))?.data?.last ?? null;
+  if (!last) return null;
+  return last.channelId && last.channelId !== channelOf(ctx) ? null : last;
+}
 
 /* ───────────── The pass ───────────── */
 const within = (p, ms) => { let t; return Promise.race([Promise.resolve(p), new Promise((r) => { t = setTimeout(() => r({ ok: false, reason: "timeout" }), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
@@ -133,47 +173,83 @@ async function call(ctx, method, args) {
   } catch { return { ok: false, reason: "failed" }; }
 }
 
+const running = new Set();   // one pass at a time per instance, whatever calls it (the core already guards its own scheduler)
+const keyOf = (ctx) => `week-${ctx.instance?.key ?? "main"}`;
+
 /**
- * One pass of the task. `read(from, to)` gives { items, failed } (the calendars), `toSlots(items, tz)` and `displayZone(setting, items)` are those of the schedule.
- * Returns what happened ("off", "no_channel", "no_read", "same", "settling", "posted", "failed") for the tests and the task history. Never throws.
+ * One pass of the task. `deps`: `read(from, to)` gives { items, failed } (the calendars), `toSlots(items, tz)` and `displayZone(setting, items)` are those of
+ * the schedule, `weekStart(ctx)` (1, 0 or 6) and `showCancelled(ctx)` are the page's own settings.
+ * Returns what happened ("off", "no_channel", "no_read", "same", "settling", "posted", "failed", "backoff", "busy") for the tests and the task history. Never throws.
  */
 export async function syncDiscord(ctx, deps, now = Date.now()) {
-  try {
-    if (!discordOn(ctx)) return "off";
-    const channelId = channelOf(ctx);
-    if (!channelId) return "no_channel";
-    const world = async () => {
-      const probe = await deps.read(new Date(now - 86_400_000), new Date(now + 16 * 86_400_000));
-      if (probe.failed) return null;
-      const tz = deps.displayZone(setting(ctx, "timezone"), probe.items);
-      const week = getWeekRangeOf(tz, new Date(now));
-      const rows = weekRows(deps.toSlots(probe.items, tz), week);
-      return { tz, week, rows, digest: digestOf(rows, week, tz) };
-    };
-    const first = await world();
-    if (!first) return "no_read";   // the calendars do not answer: the message stays as it is
-    const d = await doc(ctx);
-    const state = d?.data ?? {};
-    if (state.digest === first.digest) return "same";
+  const guard = `${ctx.moduleId ?? "planning"}:${ctx.instance?.id ?? ctx.instance?.key ?? "main"}`;
+  if (running.has(guard)) return "busy";
+  running.add(guard);
+  try { return await pass(ctx, deps, now); } catch { return "failed"; } finally { running.delete(guard); }
+}
+
+async function pass(ctx, deps, now) {
+  const d0 = await doc(ctx);
+  if (!discordOn(ctx)) {
+    // Switched off: forget what was posted, so that switching it on again writes (and checks) the message instead of trusting an old digest.
+    if (d0?.data?.digest || d0?.data?.snapshot) await save(ctx, d0, { last: d0.data.last, off: true });
+    return "off";
+  }
+  const channelId = channelOf(ctx);
+  if (!channelId) return "no_channel";
+  const key = keyOf(ctx);
+  const day = 86_400_000;
+  const weekStart = typeof deps.weekStart === "function" ? deps.weekStart(ctx) : 1;
+  const showCancelled = typeof deps.showCancelled === "function" ? deps.showCancelled(ctx) === true : false;
+  const world = async () => {
+    // The whole week is read, from its first day (never "since 24 hours": on a Thursday Monday to Wednesday still belong to the message), with a day on each side for the zone.
+    const from = new Date(now - 8 * day), to = new Date(now + 16 * day);
+    const probe = await deps.read(from, to);
+    if (probe.failed) return null;
+    const tz = deps.displayZone(setting(ctx, "timezone"), probe.items);
+    const week = getWeekRangeOf(tz, new Date(now), weekStart);
+    const all = weekRows(deps.toSlots(probe.items, tz), week);
+    const rows = showCancelled ? all : all.filter((r) => !r.cancelled);
+    return { tz, week, all, rows, from: from.getTime(), to: to.getTime(), digest: digestOf(rows, week, tz, { channelId, key }), weekKey: dayKey(week.start, tz) };
+  };
+  const first = await world();
+  if (!first) return "no_read";   // the calendars do not answer: the message stays as it is
+  const state = d0?.data ?? {};
+  // After a failure: wait (1, 5, 15, then 60 minutes) instead of writing and failing again every minute. Another channel or a changed week cancels the wait.
+  if (state.retryAt && now < state.retryAt && state.retryDigest === first.digest) return "backoff";
+  const verifyDue = !state.verifiedAt || now - state.verifiedAt >= LIMITS.verifyMs || state.verifiedAt > now;
+  if (state.digest === first.digest && !verifyDue) return "same";
+  if (state.digest !== first.digest) {
     await (deps.sleep ?? ((ms) => new Promise((r) => { const t = setTimeout(r, ms); t.unref?.(); })))(timing.settleMs);   // a burst of edits: wait, then read again
-    const w = await world();
-    if (!w) return "no_read";
-    if (w.digest !== first.digest) return "settling";   // still moving: the next pass reads it again
-    const text = { t: ctx.t, locale: ctx.defaultLocale ?? ctx.locale ?? "en", tz: w.tz };
-    const silent = !notifies(ctx);
-    const r = await call(ctx, "upsertManagedMessage", { owner: OWNER, key: `week-${ctx.instance?.key ?? "main"}`, label: "Weekly planning", channelId, embeds: [weekEmbed(w.rows, w.week, text)], silent });
-    const next = { ...state, last: { at: new Date(now).toISOString(), ok: r.ok === true, ...(r.ok === true ? {} : { reason: String(r.reason ?? "failed") }) } };
-    if (r.ok !== true) { await save(ctx, d, next); return "failed"; }
-    next.digest = w.digest;
-    if (eventsOn(ctx) && Array.isArray(state.snapshot)) {
-      const changes = changesOf(state.snapshot, w.rows);
-      if (changes.length) {
-        const e = await call(ctx, "postMessage", { channelId, content: eventsText(changes, text), silent });
-        if (e.ok !== true) { next.snapshot = state.snapshot; await save(ctx, d, { ...next, digest: state.digest ?? "" }); return "failed"; }   // the edit is done; the line is retried next pass
-      }
+    const again = await world();
+    if (!again) return "no_read";
+    if (again.digest !== first.digest) return "settling";   // still moving: the next pass reads it again
+  }
+  const w = first;
+  const text = { t: ctx.t, locale: ctx.defaultLocale ?? ctx.locale ?? "en", tz: w.tz };
+  const silent = !notifies(ctx);
+  const verify = state.digest === w.digest;   // nothing new to say: only check the message is still there (a person may have deleted it)
+  const r = await call(ctx, "upsertManagedMessage", { owner: OWNER, key, label: "Weekly planning", channelId, embeds: [weekEmbed(w.rows, w.week, text)], silent, verify });
+  const ok = r.ok === true;
+  const prevFails = Number(state.fails) || 0;
+  const fails = ok ? 0 : prevFails + 1;
+  const retryAt = ok ? 0 : now + (r.retryAt ? Math.max(60_000, Number(r.retryAt) - now) : LIMITS.backoffMs[Math.min(fails - 1, LIMITS.backoffMs.length - 1)]);
+  const next = {
+    ...state, off: undefined,
+    last: { at: new Date(now).toISOString(), ok, channelId, ...(ok ? {} : { reason: String(r.reason ?? "failed"), retryAt }) },
+    fails, retryAt, retryDigest: ok ? "" : w.digest,
+  };
+  if (!ok) { await save(ctx, d0, next); return "failed"; }
+  next.digest = w.digest; next.verifiedAt = now; next.channelId = channelId;
+  const sameWeek = state.week === w.weekKey;
+  if (eventsOn(ctx) && Array.isArray(state.snapshot) && sameWeek && !verify) {
+    const changes = changesOf(state.snapshot, w.all, { week: w.week, from: w.from, to: w.to, now });
+    if (changes.length) {
+      const e = await call(ctx, "postMessage", { channelId, content: eventsText(changes, text), silent });
+      if (e.ok !== true) { next.snapshot = state.snapshot; next.week = state.week; await save(ctx, d0, { ...next, digest: state.digest ?? "" }); return "failed"; }   // the edit is done; the line is retried next pass
     }
-    next.snapshot = snapshotOf(w.rows);
-    await save(ctx, d, next);
-    return "posted";
-  } catch { return "failed"; }
+  }
+  if (!verify || !Array.isArray(state.snapshot)) { next.snapshot = snapshotOf(w.all); next.week = w.weekKey; }
+  await save(ctx, d0, next);
+  return "posted";
 }
