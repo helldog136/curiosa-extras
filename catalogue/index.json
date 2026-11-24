@@ -1913,7 +1913,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.110.0",
-      "version": "2.9.2",
+      "version": "2.10.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -1932,6 +1932,10 @@
         {
           "service": "contact.book",
           "min": 2,
+          "optional": true
+        },
+        {
+          "service": "discord.api",
           "optional": true
         }
       ],
