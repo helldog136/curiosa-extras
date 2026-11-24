@@ -38,12 +38,12 @@ test("manifest: valid, one instance, discord.api v1 NOT each, no setting, platfo
   assert.equal(manifest.instances, "single");
   assert.equal(manifest.platform, "discord");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version, o.each ?? false]), [["discord.api", 1, false]]);
-  assert.deepEqual(manifest.offers[0].readOnly, ["status", "listChannels", "listRoles", "channelChoices", "channelsByIds"]);
+  assert.deepEqual(manifest.offers[0].readOnly, ["status", "listChannels", "listRoles", "guildStats", "channelChoices", "channelsByIds"]);
   assert.ok(!manifest.requires);
   assert.deepEqual(manifest.settings, []);
   assert.deepEqual(manifest.mcp.map((t) => [t.name, t.readOnly, t.right]), [["connector_discord_status", true, "open"]]);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.deepEqual(Object.keys(connectorDef.services["discord.api"]).sort(), ["channelChoices", "channelsByIds", "createPrivateThread", "createThread", "deleteMessage", "editMessage", "forgetManagedMessage", "listChannels", "listRoles", "postMessage", "setThreadArchived", "status", "upsertManagedMessage"]);
+  assert.deepEqual(Object.keys(connectorDef.services["discord.api"]).sort(), ["channelChoices", "channelsByIds", "createPrivateThread", "createThread", "deleteMessage", "editMessage", "forgetManagedMessage", "guildStats", "listChannels", "listRoles", "postMessage", "setThreadArchived", "status", "upsertManagedMessage"]);
 });
 
 test("the module never uses fetch directly and never logs", () => {
@@ -257,6 +257,28 @@ test("channel picker of the core: search without case or accents, a stable numbe
   const down = await C.methods.channelsByIds({ ids: [IDS.news] });
   assert.deepEqual(down.missing, [], "unknown is not gone");
   d.state.down = false;
+});
+
+test("guildStats: approximate counts only, one call per 5 minutes, closed reasons, no secret", async () => {
+  const C = mk();
+  assert.deepEqual(await C.methods.guildStats({}), { ok: true, memberCount: 1234, onlineCount: 56 });
+  const hit = d.log.filter((c) => c.method === "GET" && c.path === `/guilds/${IDS.guild}`);
+  assert.equal(hit.length, 1); assert.equal(hit[0].query, "?with_counts=true"); assert.equal(hit[0].authOk, true);
+  for (let i = 0; i < 20; i++) await C.methods.guildStats({});
+  assert.equal(d.log.filter((c) => c.path === `/guilds/${IDS.guild}`).length, 1, "cached: a public page may ask freely");
+  svc.resetLists();
+  d.state.counts = { members: 7, online: undefined };
+  assert.deepEqual(await C.methods.guildStats({}), { ok: true, memberCount: 7 }, "an absent online count is left out");
+  svc.resetLists(); d.state.counts = { members: "many", online: 1 };
+  assert.deepEqual(await C.methods.guildStats({}), { ok: false, reason: "failed" });
+  svc.resetLists(); d.state.inGuild = false;
+  assert.equal(closed(await C.methods.guildStats({})).ok, false);
+  svc.resetLists(); d.state.inGuild = true; d.state.counts = { members: 5, online: 1 }; d.state.down = true;
+  assert.deepEqual(await C.methods.guildStats({}), { ok: false, reason: "unavailable" });
+  d.state.down = false;
+  noSecret([await C.methods.guildStats({})], "stats");
+  svc.resetLists(); d.state.rateUntil = Date.now() + 30_000;
+  assert.equal((await C.methods.guildStats({})).reason, "rate_limited", "a site-wide pause is respected");
 });
 
 test("lists: text channels and roles as { id, name }, no @everyone, no bot role, no secret; one call per minute", async () => {

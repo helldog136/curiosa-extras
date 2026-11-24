@@ -33,6 +33,7 @@
         "status",
         "listChannels",
         "listRoles",
+        "guildStats",
         "channelChoices",
         "channelsByIds"
       ]
