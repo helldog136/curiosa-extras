@@ -29,7 +29,7 @@ export default {
       return {
         state, ...(p.state !== "none" && p.state !== "ok" ? { problem: p.state } : {}), ...(p.since ? { since: p.since } : {}),
         permissionsMissingOnServer: (v.missing ?? []).map((m) => ({ feature: m.feature, permission: m.permission })),
-        ...(state === "configured" ? {} : { whatToDo: "Only the owner can fix this: open the Discord connector page in the admin. Until then no module can post to Discord." }),
+        ...(state === "configured" ? {} : { whatToDo: p.state === "rate" ? "Discord asked to wait: posting resumes by itself. Nothing to do." : p.state === "net" ? "Discord does not answer: it is tried again by itself. Open the Discord connector page and use Test the connection to check." : "Only the owner can fix this: open the Discord connector page in the admin. Until then no module can post to Discord." }),
       };
     },
   },

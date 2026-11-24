@@ -12,15 +12,17 @@ export const LIMITS = { managed: 200, perOwner: 50, sent: 500 };
 export const text = (v) => (typeof v === "string" ? v.trim() : typeof v === "number" && Number.isFinite(v) ? String(v) : "");
 /** A Discord number (snowflake): digits only, 15 to 25 of them. */
 export const SNOWFLAKE = /^[0-9]{15,25}$/;
-export const snowflake = (v) => { const s = text(v); return SNOWFLAKE.test(s) ? s : ""; };
+export const snowflake = (v) => { if (typeof v === "number" && !Number.isSafeInteger(v)) return ""; const s = text(v); return SNOWFLAKE.test(s) ? s : ""; };   // a number past 2^53 has already lost digits: refused
 /** The bot code as Discord shows it: letters, digits, dot, dash, underscore, no space. */
 export const BOT_CODE = /^[A-Za-z0-9._-]{20,200}$/;
 export const botCode = (v) => { const s = text(v); return BOT_CODE.test(s) ? s : ""; };
 
+/** The documents of a collection, oldest first. A store that cannot be read THROWS `store_unavailable`: caps and the sent log cannot be checked on an empty guess (fail closed). */
 export async function all(ctx, col, limit = 50) {
-  try { return (await ctx.api.store.list(col, { limit })).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); } catch { return []; }
+  try { return (await ctx.api.store.list(col, { limit })).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); } catch { throw new Error("store_unavailable"); }
 }
-export const first = async (ctx, col) => (await all(ctx, col, 5))[0] ?? null;
+/** The first document, or null (also null when the store cannot be read: used for the bot's own settings and the card, which must still render). */
+export const first = async (ctx, col) => { try { return (await all(ctx, col, 5))[0] ?? null; } catch { return null; } };
 export async function put(ctx, col, doc, data) {
   if (doc) { if (JSON.stringify(doc.data) !== JSON.stringify(data)) await ctx.api.store.update(doc.id, data); return doc.id; }
   return ctx.api.store.add(col, data);
@@ -69,11 +71,15 @@ export async function isOurs(ctx, channelId, messageId) {
  * Each step is bounded: a step that never returns frees the queue when it expires.
  */
 const queues = new Map();
-export function serial(ctx, fn, ms = 25_000) {
+/** The section timeout (90 s) covers the longest chain of network calls of one section (a channel check, a write, a delete: 8 s each, plus the core's own waits). */
+export const SECTION_MS = 90_000;
+export const SECTION = { ms: SECTION_MS };   // (the tests shorten it)
+export function serial(ctx, fn, ms = SECTION.ms) {
   const key = ctx.instance?.id ?? "x";
   const prev = queues.get(key) ?? Promise.resolve();
   let timer;
-  const run = prev.then(() => Promise.race([Promise.resolve().then(fn), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("timeout")), ms); timer.unref?.(); })]).finally(() => clearTimeout(timer)));
+  const ctl = { expired: false };   // set when the time is up: a step that wakes up late must not write (it would overwrite what the next section did)
+  const run = prev.then(() => Promise.race([Promise.resolve().then(() => fn(ctl)), new Promise((_, reject) => { timer = setTimeout(() => { ctl.expired = true; reject(new Error("timeout")); }, ms); timer.unref?.(); })]).finally(() => clearTimeout(timer)));
   const tail = run.catch(() => {});
   queues.set(key, tail);
   tail.then(() => { if (queues.get(key) === tail) queues.delete(key); });

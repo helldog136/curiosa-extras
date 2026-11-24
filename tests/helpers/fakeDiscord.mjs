@@ -1,6 +1,6 @@
 // A fake Discord (REST v10) for the tests: it answers the few routes the connector uses, keeps what was posted, and records every call (method, path, body,
 // whether the Authorization header carried the right bot code). Behind the REAL network client of the core (ctx.api.net), through globalThis.fetch. No network.
-export const OTHER_GUILD = "299999999999999999", OTHER_CHANNEL = "460000000000000009";   // a channel of ANOTHER server the bot is also on
+export const OTHER_GUILD = "299999999999999999", OTHER_CHANNEL = "460000000000000009", OTHER_THREAD = "460000000000000010";   // a channel of ANOTHER server the bot is also on
 export const BOT_CODE = "TESTBOTCODE.abcdefghij.0123456789_ABCDEFGH";
 export const IDS = { app: "100000000000000001", guild: "200000000000000001", bot: "300000000000000001", general: "400000000000000001", news: "400000000000000002", staff: "500000000000000001", person: "600000000000000001", stranger: "600000000000000999" };
 let seq = 700000000000000000n;
@@ -46,6 +46,7 @@ export function fakeDiscord({ code = BOT_CODE, inGuild = true, roles, members, p
       const c = channels.find((x) => x.id === m[1]);
       if (c) return json(200, { id: c.id, type: c.type, name: c.name, guild_id: IDS.guild });
       if (m[1] === OTHER_CHANNEL) return json(200, { id: OTHER_CHANNEL, type: 0, name: "elsewhere", guild_id: OTHER_GUILD });
+      if (m[1] === OTHER_THREAD) return json(200, { id: OTHER_THREAD, type: 11, name: "elsewhere thread", guild_id: OTHER_GUILD });
       const t = threads.get(m[1]); if (t) return json(200, { id: m[1], type: t.type ?? 11, name: t.name, guild_id: IDS.guild });
       return err(404, 10003, "Unknown Channel");
     }
