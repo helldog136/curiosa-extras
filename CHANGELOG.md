@@ -4,6 +4,18 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.112.0 — 2026-11-25
+
+*In short: the French title of the ready-made overlays page is now "Overlays prédéfinis". Nothing else changes and there is nothing to set up.*
+
+### Improvements
+
+- **The ready-made overlays page is titled "Overlays prédéfinis" in French.** The English title stays "Ready-made overlays". No module changes and no new permission.
+
+### For developers
+
+- `catalogue/places.json`: only the `fr` title of `obs.overlays` changed; the fixture `tests/fixtures/places-menus.json` follows. Every catalogue entry is pinned on the new tag `v1.112.0`; no module version changes.
+
 ## 1.111.0 — 2026-11-24
 
 *In short: a new Discord connector lets one bot serve your site, and the stream schedule can now be posted to your Discord server. Contacts gets cards for your login accounts, the content notebook keeps video scripts, and Announcement story makes a video of the whole week.*
