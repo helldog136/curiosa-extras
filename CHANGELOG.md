@@ -4,6 +4,29 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.111.0 — 2026-11-24
+
+*In short: a new Discord connector lets one bot serve your site, and the stream schedule can now be posted to your Discord server. Contacts gets cards for your login accounts, the content notebook keeps video scripts, and Announcement story makes a video of the whole week.*
+
+### New
+
+- **Discord connector 1.1.0 (new): one Discord bot for your site.** Register your bot once and every module that talks to Discord can use it. The card says Configured, Degraded or Not configured, "Test the connection" says what works, and the secret code is never shown again. Messages are silent by default and nobody is ever pinged.
+- **Discord connector: choose where the bot may write.** Pick the channels with a live search; until you choose, the bot may write in every text channel, as before. Other modules that let you pick a channel only offer the ones you chose.
+- **Stream schedule 2.10.0: the week's planning on your Discord server.** Turn on the option and choose a channel: the whole week appears as one message that the site edits as your schedule changes. It is silent unless you choose "Notify members". It needs the Discord connector; without it the schedule works as before.
+- **Discord 1.5.0: your member count from your own bot.** When the connector is set up and the account is your own server, the count comes from your bot instead of the public invitation. Without a connector nothing changes, and visitors never see a difference.
+- **Contacts 2.8.0: your login accounts are in your address book.** You and your team each get a card with name, e-mail and an "Account · role" badge, kept up to date. A card with the same e-mail is linked, never duplicated, and a linked card cannot be deleted while its account exists. Needs Curiosa 0.47.0 or later; older versions keep working and the feature stays idle.
+- **Content notebook 1.2.0: documents in every idea.** Keep the script of a video, in versions ("v1", "v2", "final"), inside the idea. Documents stay private, with no page or link on your site. Your AI assistant can read, add and change them, never delete them.
+- **Announcement story 2.16.0: "The week".** A second kind of story lists the events of 7 days in one video, in the 14 styles. Choose the days: next 7 days, this week, next week or the week of a date. A busy week is split or says "and N more"; an empty week offers no video.
+
+### For developers
+
+- New service `discord.api` version 1 (`discord-connector` 1.0.0, then 1.1.0): REST only, answers `{ ok: true, … }` or `{ ok: false, reason }` with a closed `reason` list, no secret in any answer. The core does not tell a service who calls it: `upsertManagedMessage` takes the module id as `owner` (advisory). The bot code is stored as text in the database; the README says so. Details in `docs/changelog-parts/discord-connector.md`.
+- `discord-connector` 1.1.0: when the owner chose channels, every write answers `{ ok: false, reason: "forbidden", scope: "channel" }` unless the channel (or the parent of a thread) is chosen; nothing chosen keeps the 1.0.0 behaviour. New collection `discordAllow`, actions with the right `bot.manage`, `status` adds `channelLimit`.
+- `planning` 2.10.0 and `discord` 1.5.0 consume `discord.api` as an optional need (`minCore` unchanged, 0.11.0 and 0.6.0). `planning` calls `upsertManagedMessage` only when the digest of the week changed; `discord` calls only `status` and `guildStats`, with a short delay and a closed fallback.
+- `contacts` 2.8.0: optional `consumes` of the core topic `core.user` and the `topics` permission, new file `accounts.mjs`, task `accounts` (every 5 minutes), `minCore` unchanged (0.38.0). On older cores the topic is empty and the feature stays idle.
+- `content-planner` 1.2.0: new collection `ideaDocs` (no migration, `dataVersion` stays 1), `minCore` 0.2.5 to 0.6.0, new files `documents.mjs` and `docsAdmin.mjs`, MCP tools `idea_doc_list`, `idea_doc_get`, `idea_doc_add`, `idea_doc_update` and `documentCount` in `idea_get`.
+- `stream-story` 2.16.0: new read-only tool `story_week`; `story_prepare` accepts `kind: "week"`, `range`, `date`, `weekPart` and `weekTitle`. No new permission, `minCore` unchanged (0.6.7), no migration.
+
 ## 1.110.0 — 2026-11-23
 
 *In short: Home Assistant can now show small pieces of information from your other modules, starting with the sponsor currently on screen.*
