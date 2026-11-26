@@ -8,7 +8,7 @@ import { fakeCtx } from "./helpers/fakeCtx.mjs";
 
 const DIR = new URL("../modules/sponsor-ticker", import.meta.url).pathname;
 const mod = await import("../modules/sponsor-ticker/index.mjs");
-const { ENTER_CURVE, EXIT_CURVE, FLOAT, SHINE, STAGGER } = mod;
+const { ENTER_CURVE, EXIT_CURVE, FLOAT, SHINE, STAGGER, GLOW_BASE, GLOW_QR, GLOW_BLUR, glowOutside } = mod;
 const messages = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8"));
 const page = (settings = {}, query = "") => mod.default.overlay(fakeCtx({ key: "ticker", name: "T", locale: "en", messages, settings }), { query: new URLSearchParams(query) });
 const ELEMENT = "ov-w=720&ov-h=180&ov-fit=scale&ov-surface=soft&ov-text=light&ov-corners=round";
@@ -52,6 +52,42 @@ for (const [label, query] of [["standalone", ""], ["page element", ELEMENT]]) {
     assert.ok(on.includes("opacity var(--tr-fade,.45s) ease"), "entrance fade unchanged");
   });
 }
+
+test("neon halo: a static sibling of the card, blurred then clipped to the outside, never animated, kept with reduced motion", () => {
+  const std = page().css, qr = page({ showQr: true }).css, el = page({}, ELEMENT).css;
+  for (const css of [std, qr, el]) {
+    const g = rule(css, ".ticker-glow");
+    assert.match(g, /position:absolute;inset:0;z-index:-1;pointer-events:none;filter:blur\(12px\)/, "out of the layout, behind the card, one static blur");
+    assert.ok(!/animation|transition|will-change/.test(g + rule(css, ".ticker-glow::before")), "no animation, no extra compositor hint: it rides on the slider's layer");
+    assert.match(rule(css, ".ticker-glow::before"), /background:color-mix\(in srgb,var\(--ticker-accent\) 55%,transparent\)/);
+  }
+  assert.equal(GLOW_BLUR, 12);
+  // the halo has the shape of the card (same polygon as its clip-path), and is cut away inside it so a see-through surface never shows it
+  assert.ok(rule(std, ".ticker-card").includes(`clip-path:polygon(${GLOW_BASE})`));
+  assert.ok(rule(std, ".ticker-glow::before").includes(`clip-path:polygon(${GLOW_BASE})`));
+  assert.ok(rule(std, ".ticker-glow").includes(glowOutside(GLOW_BASE)));
+  assert.match(glowOutside(GLOW_BASE), /^polygon\(evenodd,-64px -64px,.*,-64px -64px,3\.5% 0,.*,3\.5% 0\)$/, "outer frame, then the shape, doubled seam");
+  assert.ok(qr.includes(`clip-path:polygon(${GLOW_QR})`) && qr.includes(glowOutside(GLOW_QR)), "with the QR code the cut is the fixed-size one");
+  assert.ok(qr.includes(".ticker-card{--tk-sk:calc(22px*var(--ov-tv,1));clip-path:polygon(var(--tk-sk) 0,100% 0,calc(100% - var(--tk-sk)) 100%,0 100%)"), "the card's own cut");
+  assert.match(qr, /\.ticker-glow\{--tk-sk:calc\(22px\*var\(--ov-tv,1\)\)/);
+  // reduced motion keeps it (static)
+  assert.ok(!/ticker-glow/.test(std.match(/@media \(prefers-reduced-motion:reduce\)\{(.*?\})\}/s)[1]));
+});
+
+test("neon halo: only the neon look gets the element; the page puts it next to the card, after the card (the card stays first child)", () => {
+  const put = (visual) => {
+    const { script } = page({ visual });
+    const src = script.match(/function put\(card\)\{.*?\}(?=\n|\s*function|\s*var|$)/s)?.[0] ?? script.match(/function put\(card\)\{[^\n]*?\)\}/)[0];
+    const calls = [], slider = { replaceChildren: (...n) => calls.push(n) }, el = (t, c) => ({ t, c });
+    new Function("c", "slider", "el", `${src}; put({card:true});`)({ visual }, slider, el);
+    return calls[0];
+  };
+  const neon = put("neon");
+  assert.equal(neon.length, 2); assert.deepEqual(neon[0], { card: true }); assert.deepEqual(neon[1], { t: "div", c: "ticker-glow" });
+  for (const v of ["cine", "broadcast"]) assert.deepEqual(put(v), [{ card: true }], `${v} has no halo`);
+  assert.equal(page({}).script.includes('put(cur)'), true);
+  assert.equal(page({}).script.includes("slider.replaceChildren(cur)"), false);
+});
 
 test("paint work: no shadow clipped away by the card's clip-path, blur only where the surface can be see-through", () => {
   const std = page().css, el = page({}, ELEMENT).css;

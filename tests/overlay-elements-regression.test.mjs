@@ -46,13 +46,13 @@ const GOLDEN = {
   "cd-event": "66ffd1ccfafb52c6.28d1cd0618a53bc1.5c9d8257713b6bce.556a6c45c0822291",
   "cd-look": "66ffd1ccfafb52c6.f32048cf0e049bfe.95ebd8288f8eb267.0d84f5685806ec58",
   "cd-unknown-event": "66ffd1ccfafb52c6.28d1cd0618a53bc1.5c9d8257713b6bce.0e3f6922532ffb88",
-  "tk-broadcast": "419bdd45bea2bdf8.bd08be8d0bc79547.bc566e25e99fe488.e8dabd8b2fcd9005",
+  "tk-broadcast": "419bdd45bea2bdf8.bd08be8d0bc79547.08860e5082e1f4fa.5d4a8522e0bfdc42",
   // Sponsor ticker 1.6.0: only the SCRIPT hash (last part) of the three tk-* entries changed, on purpose: the page now places its displays on the server clock (rotation.mjs, `serverTime` of the items route) instead of picking at random;
   // title, html and css are byte for byte the same. The cd-* entries (countdown) did not change.
   // Sponsor ticker 1.7.0: the css and script parts of the three tk-* entries changed on purpose (motion polish, docs/SPONSOR-MOTION-AUDIT.md); title and html are byte for byte the same.
   // tk-default and tk-dev have the QR code on: they changed on purpose with the full-height QR (1.4.0). tk-broadcast has it off: byte for byte what it was.
-  "tk-default": "419bdd45bea2bdf8.6b5925feeeff70ad.62a9c58550f42729.11c5e8186e367a9b",
-  "tk-dev": "419bdd45bea2bdf8.6b5925feeeff70ad.62a9c58550f42729.7f0623387310afa7",
+  "tk-default": "419bdd45bea2bdf8.6b5925feeeff70ad.7539192633d81e31.48f6fa180cedc053",
+  "tk-dev": "419bdd45bea2bdf8.6b5925feeeff70ad.7539192633d81e31.d6f336a8e7dd6235",
 };
 
 test("non-régression : l'overlay existant rend exactement la même chose qu'avant les éléments", async () => {

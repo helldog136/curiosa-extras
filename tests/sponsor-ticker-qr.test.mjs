@@ -89,10 +89,10 @@ test("QR code off: the page is exactly what it was before the full-height QR (ha
   // Re-pinned again for Sponsor ticker 1.7.0 on purpose: motion only (entrance and exit curves, content stagger, idle loops, reduced-motion path, no clipped shadow or useless blur); the html is untouched, the QR sizing code is untouched (docs/SPONSOR-MOTION-AUDIT.md).
   // Nothing of the QR sizing or of any visual changed (the html and css parts are untouched, see tests/overlay-elements-regression.test.mjs).
   const h = (settings, q) => crypto.createHash("sha256").update(JSON.stringify(tk.overlay(makeCtx([], settings), { query: new URLSearchParams(q) }))).digest("hex").slice(0, 16);
-  assert.equal(h({ showQr: false }, ""), "25ed766a42a57f00");
-  assert.equal(h({}, "ov-w=720&ov-h=180&ov-tv=1&opt-qr=0&ov-text=light"), "628842d15d127ba5");
-  assert.equal(h({ showQr: false }, "ov-w=720&ov-h=180&ov-tv=2&ov-text=dark&ov-surface=soft"), "ff101a3b9b765336");
-  assert.equal(h({ showQr: false, visual: "broadcast", accentColor: "#336699" }, ""), "98036e7aa7855fef");
+  assert.equal(h({ showQr: false }, ""), "f7935fab4541ea15");
+  assert.equal(h({}, "ov-w=720&ov-h=180&ov-tv=1&opt-qr=0&ov-text=light"), "49dd06c41ccf8b4d");
+  assert.equal(h({ showQr: false }, "ov-w=720&ov-h=180&ov-tv=2&ov-text=dark&ov-surface=soft"), "c874070279ab6c80");
+  assert.equal(h({ showQr: false, visual: "broadcast", accentColor: "#336699" }, ""), "bef178bfe11b5e06");
 });
 
 // ── In a real browser ───────────────────────────────────────────────────────────────────────────

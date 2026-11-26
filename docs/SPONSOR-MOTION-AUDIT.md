@@ -17,7 +17,7 @@ The overlay page (`dev=1` developer mode, one card, 4 s period) was run in headl
 | 4 | Everything moved rigidly together (plate, logo, text, QR) | 0 ms offset between the pieces | follow-through; 1-3 frame stagger between similar elements | the plate stays the hero; logo at +40 ms, text at +80 ms, QR at +120 ms (about 2 frames per step, 260 ms each, 14 px of trailing travel on the side the card comes from, QR by opacity only so it stays pixel-aligned). Skipped when the entrance is "none" |
 | 5 | The shine started sweeping while the card was still moving, then ran for 3 s every 5.5 s: two motions at once, and a moving highlight over the text for 55 % of the time | shine moved 0-3000 ms after the card was built | one hero motion; a moving hold that does not distract | the shine and the float start after the card has landed; one 3 s sweep per 11 s (one sweep per appearance with the default 10 s display time); periods 4.6 s (float) and 11 s (shine) are not multiples of each other |
 | 6 | Two infinite animations kept running while the banner was hidden (about 80 s of every 90 s) | 2 running animations while hidden | cost | after the exit the page pauses them (`tk-idle`), they restart on the next entrance: 0 running animations while hidden |
-| 7 | `box-shadow` on `.ticker-card` (drop shadow, and the neon glow) is always clipped away by the card's `clip-path` | pixel diff with and without it: 0 px | cost, no invisible work | removed. The neon glow therefore never showed; making it visible (a filter on an animated layer) is a look decision, not done here |
+| 7 | `box-shadow` on `.ticker-card` (drop shadow, and the neon glow) is always clipped away by the card's `clip-path`: the neon look never had its halo | pixel diff with and without it: 0 px | cost, and the look as designed | the clipped shadow is removed and the neon halo is now actually shown by a static sibling element (see "Neon halo" below) |
 | 8 | `backdrop-filter: blur(10px)` on a card whose background is an opaque theme colour | no visible effect in the standalone page | cost | removed from the standalone page; kept on the page element (its surface can be transparent) |
 | 9 | Default ("auto") entrance ignored `prefers-reduced-motion` and slid 814 px, against what the README promised | slide of 814 px with `reduce` | reduced motion | with `reduce`: no travel, no loops, timed opacity fade in and out of the configured length (see the note below) |
 | 10 | "jiggle" is piecewise linear: the wobble reverses direction with a velocity jump at every key | 4 sharp reversals | no angular value curves | every key eases in and out; the entrance's first step is an ease-out, the exit's last step an ease-in |
@@ -29,10 +29,22 @@ Deliberately left as it is:
 - The length of the exit equals the entrance length (`transitionSeconds` keeps its meaning); the 70-80 % rule of thumb is not applied.
 - No anticipation: a calm lower third is not a strong gesture. Overshoot stays at 4 %, inside the 5 % the UI notes allow.
 - Straight horizontal travel, no arc: the banner is a graphic plate on rails.
+- A pulse on the halo was not added (it would be a third loop); the halo is static.
 - The 4 px, 4.6 s float (3 px/s at most) is calm enough; with a QR code it is off, as before ("the banner stays still while a QR code is shown").
 - `will-change: transform` on the slider stays: one layer, and the QR plate is snapped to whole pixels at rest.
 - Layout work (title fit, QR plan) runs once per card while it is hidden and on a window resize, never while it moves. Longest frame gap measured during the sequence went from 50 ms (one frame lost) to 16.8 ms.
 - 25 % and 200 % playback (derived from the sampled timings, not played back): at 25 % the content is fully legible about 1.4 s after the plate starts (0.34 s x 4); at 200 % the peak speed doubles to about 12 000 px/s (200 px per frame), still one single motion. Not changed.
+
+## Neon halo (fixed, owner decision)
+
+The neon look now shows its accent halo. It is drawn by a static sibling `div.ticker-glow` next to the card (added by the page for the neon look only; cine and broadcast are unchanged):
+
+- Its `::before` is the card's own shape (same polygon as the card's `clip-path`, fixed-size cut when a QR code is shown) in the accent colour at 55 %.
+- The element is blurred once (`filter: blur(12px)`, about the 24 px of the old shadow), then clipped to the outside of the card with an even-odd `clip-path` (outer frame plus the card shape), so a see-through surface (page element, soft background) never shows the halo through the card.
+- It is absolutely positioned behind the card (`z-index: -1`, no layout change), a child of the slider, so it enters, leaves and scales exactly with the card and its fade. It has no animation, no transition and no `will-change`: it rides on the slider's compositor layer and is rasterised once per card (and on resize), not per frame. No pulse was added, so there is no new infinite animation and nothing to pause while hidden.
+- Reduced motion: unchanged, the halo is static and stays.
+
+Paint cost, Chromium trace (Tracing, 2.8 s from load, QR off so the float runs): Paint events 15 before and after the halo, RasterTask count 9 to 13 and raster time 4.1 ms to 10.3 ms in total (one-off, when the card is built), and 0 Paint / 0 RasterTask events between 1.9 s and 2.9 s, with the float and the halo on screen. The composited layer count could not be read in this headless setup; OBS CEF was not profiled.
 
 ## Measurements (1920x1080, 60 Hz sampling)
 

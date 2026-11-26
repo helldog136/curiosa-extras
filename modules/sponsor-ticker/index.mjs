@@ -29,6 +29,14 @@ export const SHINE = "tickerShine 11s ease-in-out calc(var(--tr-ms,.58s) + .5s) 
 /** Stagger of the card content after the plate: [selector, delay ms, travel]. The plate is the hero, the content follows it by about 2 frames each (QR: opacity only, it must stay pixel-aligned). */
 export const STAGGER = [[".ticker-logo", 40, 1], [".ticker-text-col", 80, 1], [".ticker-qr,.ticker-qr-wrap", 120, 0]];
 
+/** Neon halo: a STATIC sibling of the card (never animated, never repainted per frame: it is part of the slider's layer, which only moves and fades). Its `::before` is the card's shape in the accent colour,
+ *  the element is blurred, then clipped to the OUTSIDE of the card (even-odd hole) so a see-through surface never shows it through. The shape lists must match the card's clip-path. */
+export const GLOW_BASE = "3.5% 0,100% 0,96.5% 100%,0 100%";
+export const GLOW_QR = "var(--tk-sk) 0,100% 0,calc(100% - var(--tk-sk)) 100%,0 100%";
+export const GLOW_BLUR = 12;
+/** polygon() that keeps everything but the card's shape: a big outer frame, then the shape, with a doubled seam so no hairline is drawn. */
+export const glowOutside = (shape) => { const pts = shape.split(","), o = "-64px -64px,calc(100% + 64px) -64px,calc(100% + 64px) calc(100% + 64px),-64px calc(100% + 64px)"; return `polygon(evenodd,${o},-64px -64px,${pts.join(",")},${pts[0]})`; };
+
 // ── Aides pures (aussi recopiées dans le script de la page : voir `script` plus bas) ──────────────
 /** Taille du titre. `natural` = largeur du titre sur UNE ligne à 22 px, `maxW` = largeur de la colonne de texte.
  *  Il tient → 22 px ; sinon on le réduit jusqu'à 18 px sur une ligne ; sinon 2 lignes (réduites jusqu'à 16 px) ; au-delà, points de suspension. */
@@ -229,6 +237,8 @@ export default {
         .ticker-card--qr .ticker-qr{position:relative;z-index:1;align-self:stretch;flex:none;width:auto;height:auto;padding:0;border-radius:0;overflow:hidden;margin-left:calc(16px*var(--ov-tv,1))}
         .ticker-card--qr .ticker-qr svg{position:absolute;display:block;shape-rendering:crispEdges}
         .ticker-card--qr .ticker-text-col{min-width:0}
+        .ticker-glow{--tk-sk:calc(22px*var(--ov-tv,1));clip-path:${glowOutside(GLOW_QR)}}
+        .ticker-glow::before{clip-path:polygon(${GLOW_QR})}
         .tv-d .ticker-logo{display:none}` : "";
     const qrBuild = showQr
       ? `if(c.showQr&&s.qrUrl&&s.qrSvg){card.classList.add("ticker-card--qr");var q=el("div","ticker-qr"),mm=/viewBox="0 0 (\\d+) \\d+"/.exec(s.qrSvg),dm=shortDomain(s.qrUrl);q.innerHTML=s.qrSvg;if(mm)q.setAttribute("data-n",mm[1]);q.setAttribute("role","img");if(dm)q.setAttribute("aria-label",dm);card.append(q);col.querySelectorAll(".ticker-name,.ticker-blurb,.ticker-code").forEach(function(n){n.title=n.textContent})}`
@@ -258,6 +268,8 @@ export default {
         #tk-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2vh 2vw;box-sizing:border-box}
         .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform var(--tr-ms,.58s) ${EXIT_CURVE},opacity calc(var(--tr-ms,.58s)*.7) cubic-bezier(.4,0,1,1) calc(var(--tr-ms,.58s)*.3);will-change:transform}
         .ticker-slider.on{transform:translateX(0) scale(var(--tk-s,1));opacity:1;transition:transform var(--tr-ms,.58s) ${ENTER_CURVE},opacity var(--tr-fade,.45s) ease}
+        .ticker-glow{position:absolute;inset:0;z-index:-1;pointer-events:none;filter:blur(${GLOW_BLUR}px);clip-path:${glowOutside(GLOW_BASE)}}
+        .ticker-glow::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--ticker-accent) 55%,transparent);clip-path:polygon(${GLOW_BASE})}
         .ticker-slider.tk-idle .ticker-card,.ticker-slider.tk-idle .ticker-shine{animation-play-state:paused}
         .ticker-card{position:relative;display:flex;align-items:center;overflow:hidden;min-height:96px;padding-right:26px;clip-path:polygon(3.5% 0,100% 0,96.5% 100%,0 100%)}
         .ticker-card--cine{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));animation:${FLOAT}}
@@ -328,7 +340,7 @@ export default {
           ${qrBuild}
           card.append(el("div","ticker-shine"));return card}
         // La carte doit toujours tenir dans la source navigateur : on essaie 3 largeurs de texte et on garde celle qui laisse le titre le plus lisible une fois mise à l'échelle.
-        var cur=null;
+        var cur=null;function put(card){if(c.visual==="neon")slider.replaceChildren(card,el("div","ticker-glow"));else slider.replaceChildren(card)}
         ${qrSize}${element ? (showQr ? `function fitTv(card){var lim=window.innerHeight*.96,tvf=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ov-tv"))||1,col=card.querySelector(".ticker-text-col"),i=0,st=["tv-a","tv-b","tv-c","tv-d"];card.classList.remove.apply(card.classList,st);function chk(){return !sizeQr(card)||card.offsetHeight>lim||col.clientWidth<150*tvf}while(i<st.length&&chk())card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1");sizeQr(card)}
         ` : `function fitTv(card){var lim=window.innerHeight*.96,i=0,st=["tv-a","tv-b","tv-c"];card.classList.remove.apply(card.classList,st);while(i<st.length&&card.offsetHeight>lim)card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1")}
         `) : ""}function fit(card){${element ? "if(c.tv)return fitTv(card);" : ""}var col=card.querySelector(".ticker-text-col"),nm=card.querySelector(".ticker-name"),best=null,vw=window.innerWidth,vh=window.innerHeight;
@@ -336,12 +348,12 @@ export default {
           [430,330,250].forEach(function(w){if(best&&best.s>=1)return;var r=apply(w);r.score=r.t.size*r.s;if(!best||r.score>best.score*1.03)best=r});
           apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")${showQr ? ";sizeQr(card)" : ""}}
         window.addEventListener("resize",function(){if(cur)fit(cur)});
-        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
+        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);put(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}
         // The server clock decides (rotation.mjs): slot = floor(server time / slot length), the sponsor of a slot is on screen during its first c.hold seconds. Nothing is sent to the server.
         function at(k){var id=rotationPick(items.map(function(i){return i.id}),k);for(var i=0;i<items.length;i++)if(items[i].id===id)return items[i];return null}
         function plan(t,P){var k=Math.floor(t/P),rem=c.hold*1000-(t-k*P);if(rem>=2000)return{k:k,at:t,rem:rem};k++;return{k:k,at:k*P,rem:c.hold*1000}}
-        function sync(t){var P=slotMs(c.period,c.hold),p=plan(t,P),w=p.at-(Date.now()+off);setTimeout(function(){load().then(function(){setTimeout(function(){var s=at(p.k);if(s){cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},p.rem)}sync(p.k*P+P)},Math.max(0,p.at-(Date.now()+off)))})},Math.max(0,w-3000))}
+        function sync(t){var P=slotMs(c.period,c.hold),p=plan(t,P),w=p.at-(Date.now()+off);setTimeout(function(){load().then(function(){setTimeout(function(){var s=at(p.k);if(s){cur=build(s);put(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},p.rem)}sync(p.k*P+P)},Math.max(0,p.at-(Date.now()+off)))})},Math.max(0,w-3000))}
         if(c.free)load().then(function(){setTimeout(cycle,c.startDelay*1000)});else load().then(function(){sync(Date.now()+off+c.startDelay*1000)})})();${elementScript}`,
     };
   },
