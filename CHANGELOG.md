@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.113.0 — 2026-11-26
+
+*In short: the sponsor banner animation is calmer and cleaner. It lands without snapping, leaves softly, and its content follows the card. Your settings are kept and there is nothing to set up.*
+
+### Improvements
+
+- **Sponsor ticker 1.7.0: the banner lands cleanly and leaves softly.** It still slides in fast with a very slight bounce, but stops dead instead of snapping into place. On the way out it starts slowly, speeds up and fades.
+- **Sponsor ticker 1.7.0: the logo, the text and the QR code follow the card.** They appear one after the other, a split second after the plate. The shine and the floating wait for the card to land, and the shine is rarer.
+- **Sponsor ticker 1.7.0: with reduced motion on the device, the banner fades in and out without sliding or looping.** Before, the default entrance still slid.
+- **Sponsor ticker 1.7.0: the neon look now shows its glow around the card.** It was hidden by the diagonal cut of the card. The "jiggle" wobble turns smoothly and "fade" uses its whole length. The other looks are unchanged.
+
+### For developers
+
+- `sponsor-ticker` 1.7.0: new exports `ENTER_CURVE`, `EXIT_CURVE`, `FLOAT`, `SHINE`, `STAGGER` in `modules/sponsor-ticker/index.mjs`; the page script gets `tune(phase, mode)`, `follow(card)` and the `tk-idle` class; the card `box-shadow` is replaced for the neon look by a static `div.ticker-glow` sibling. `scripts/overlay-transition.mjs` and the other overlays are untouched. No change in the core, no new permission, no new setting, `minCore` unchanged. Details in `docs/changelog-parts/sponsor-animations-polish.md` and `docs/SPONSOR-MOTION-AUDIT.md`; test: `tests/sponsor-ticker-motion.test.mjs`. Every catalogue entry is pinned on the new tag `v1.113.0`.
+
 ## 1.112.1 — 2026-11-26
 
 *In short: on a video alert, the text now follows the video instead of the moment the card appears, and the video is no longer cut before its end. If you tuned the times of a text on a video, add about 0.5 s to each. Nothing else changes.*
