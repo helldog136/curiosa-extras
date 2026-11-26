@@ -79,7 +79,7 @@ const ROLLOUT = {
   "reddit": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "snapchat": ["1.2.1", { main: "networks.accounts" }],
   "soundcloud": ["1.2.1", { main: "networks.accounts" }],
-  "sponsor-ticker": ["1.6.0", { main: "obs.overlays.sponsors" }],
+  "sponsor-ticker": ["1.7.0", { main: "obs.overlays.sponsors" }],
   "sponsors": ["1.2.0", { sponsors: "community.partners.sponsors" }],
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
