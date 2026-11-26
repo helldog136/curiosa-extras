@@ -161,7 +161,7 @@ test("home.info: nothing depends on what a page did (no state, no route to repor
 test("manifest: provides home.info (EN and FR labels), 1.6.0, still valid, locales in parity, no `shown` anywhere", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.6.0");
+  assert.equal(manifest.version, "1.7.0");
   const p = manifest.provides.find((x) => x.topic === "home.info");
   assert.ok(p && p.label.en?.trim() && p.label.fr?.trim());
   assert.ok(manifest.permissions.includes("topics") && manifest.permissions.includes("routes"));

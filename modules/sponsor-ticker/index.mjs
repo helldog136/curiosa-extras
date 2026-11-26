@@ -18,6 +18,17 @@ function devOptions(query) {
   return { fast: query.get("dev") === "1", seed: seed !== null && Number.isFinite(Number(seed)) ? Math.trunc(Number(seed)) : null };
 }
 
+// ── Motion constants (audit: docs/SPONSOR-MOTION-AUDIT.md) ───────────────────────────────────────
+/** Entrance: fast start, ~4 % overshoot (as before), then velocity 0 on the last frame (the old curve ended at -0.22 x the mean speed, a visible snap). */
+export const ENTER_CURVE = "cubic-bezier(.3,1.35,.5,1)";
+/** Exit: soft start, crisp end (ease-in). The old exit replayed the entrance curve, so it left at full speed and bounced back while invisible. */
+export const EXIT_CURVE = "cubic-bezier(.5,0,.75,.4)";
+/** Idle loops start once the card has landed (one hero motion at a time) and are decoupled: 4.6 s float, 11 s shine (one 3 s sweep per period). `backwards` keeps the first keyframe during the delay. */
+export const FLOAT = "tickerFloat 4.6s ease-in-out var(--tr-ms,.58s) infinite backwards";
+export const SHINE = "tickerShine 11s ease-in-out calc(var(--tr-ms,.58s) + .5s) infinite backwards";
+/** Stagger of the card content after the plate: [selector, delay ms, travel]. The plate is the hero, the content follows it by about 2 frames each (QR: opacity only, it must stay pixel-aligned). */
+export const STAGGER = [[".ticker-logo", 40, 1], [".ticker-text-col", 80, 1], [".ticker-qr,.ticker-qr-wrap", 120, 0]];
+
 // ── Aides pures (aussi recopiées dans le script de la page : voir `script` plus bas) ──────────────
 /** Taille du titre. `natural` = largeur du titre sur UNE ligne à 22 px, `maxW` = largeur de la colonne de texte.
  *  Il tient → 22 px ; sinon on le réduit jusqu'à 18 px sur une ligne ; sinon 2 lignes (réduites jusqu'à 16 px) ; au-delà, points de suspension. */
@@ -204,6 +215,7 @@ export default {
         .ticker-domain{font-size:var(--ov-text-xs,24px);max-width:calc(150px*var(--ov-tv,1))}
         .tv-a .ticker-blurb,.tv-c .ticker-eyebrow{display:none}
         .tv-b .ticker-name{-webkit-line-clamp:1}
+        .ticker-card--cine,.ticker-card--neon{backdrop-filter:blur(10px)}
         [data-ov-part="logo"],[data-ov-part="qr"]{border-radius:min(var(--ov-radius,8px),8px)}
         [data-ov-part="panel"]{border:1px solid var(--ov-border,transparent)}
         [data-ov-part="title"],[data-ov-part="text"],[data-ov-part="code"],[data-ov-part="label"]{text-shadow:0 1px 3px rgba(0,0,0,.35)}` : "";
@@ -244,11 +256,12 @@ export default {
       css: `
         html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
         #tk-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2vh 2vw;box-sizing:border-box}
-        .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform var(--tr-ms,.58s) cubic-bezier(.2,.9,.32,1.15),opacity var(--tr-fade,.45s) ease;will-change:transform}
-        .ticker-slider.on{transform:translateX(0) scale(var(--tk-s,1));opacity:1}
-        .ticker-card{position:relative;display:flex;align-items:center;overflow:hidden;min-height:96px;padding-right:26px;clip-path:polygon(3.5% 0,100% 0,96.5% 100%,0 100%);box-shadow:0 14px 34px rgba(0,0,0,.55)}
-        .ticker-card--cine{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));backdrop-filter:blur(10px);animation:tickerFloat 4.6s ease-in-out infinite}
-        .ticker-card--neon{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));backdrop-filter:blur(10px);box-shadow:0 14px 34px rgba(0,0,0,.55),0 0 24px color-mix(in srgb,var(--ticker-accent) 35%,transparent);animation:tickerFloat 4.6s ease-in-out infinite}
+        .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform var(--tr-ms,.58s) ${EXIT_CURVE},opacity calc(var(--tr-ms,.58s)*.7) cubic-bezier(.4,0,1,1) calc(var(--tr-ms,.58s)*.3);will-change:transform}
+        .ticker-slider.on{transform:translateX(0) scale(var(--tk-s,1));opacity:1;transition:transform var(--tr-ms,.58s) ${ENTER_CURVE},opacity var(--tr-fade,.45s) ease}
+        .ticker-slider.tk-idle .ticker-card,.ticker-slider.tk-idle .ticker-shine{animation-play-state:paused}
+        .ticker-card{position:relative;display:flex;align-items:center;overflow:hidden;min-height:96px;padding-right:26px;clip-path:polygon(3.5% 0,100% 0,96.5% 100%,0 100%)}
+        .ticker-card--cine{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));animation:${FLOAT}}
+        .ticker-card--neon{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));animation:${FLOAT}}
         .ticker-card--broadcast{background:var(--ticker-accent)}
         .ticker-card--broadcast .ticker-badge,.ticker-card--broadcast .ticker-name,.ticker-card--broadcast .ticker-blurb{color:var(--tk-on-accent)}
         .ticker-card--broadcast .ticker-blurb{opacity:.75}
@@ -271,11 +284,11 @@ export default {
         .ticker-qr{width:62px;height:62px;background:#fff;border-radius:8px;padding:5px;box-sizing:border-box}
         .ticker-qr svg{width:100%;height:100%;display:block}
         .ticker-domain{font-size:9.5px;letter-spacing:.04em;color:var(--tk-muted);max-width:150px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .ticker-shine{position:absolute;top:0;left:0;width:26%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);animation:tickerShine 5.5s ease-in-out infinite;pointer-events:none}
+        .ticker-shine{position:absolute;top:0;left:0;width:26%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);animation:${SHINE};pointer-events:none}
         .ticker-card--broadcast .ticker-shine{display:none}
         @keyframes tickerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-        @keyframes tickerShine{0%{transform:translateX(-160%)}55%,100%{transform:translateX(430%)}}
-        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}}${elementCss}${qrCss}`,
+        @keyframes tickerShine{0%{transform:translateX(-160%)}27.3%,100%{transform:translateX(430%)}}
+        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}.ticker-slider,.ticker-slider.on{transform:scale(var(--tk-s,1))}.ticker-slider{transition:opacity calc(var(--tr-ms,.58s)*.7) cubic-bezier(.4,0,1,1)}.ticker-slider.on{transition:opacity var(--tr-fade,.45s) ease}}${elementCss}${qrCss}`,
       script: `(function(){var c=${json},slider=document.getElementById("tk-slider"),items=[],last=null,hold;
         // Hasard : Math.random, ou un petit générateur à graine en mode développeur (?seed=N).
         var rnd=Math.random;if(c.seed!==null){var a=c.seed>>>0;rnd=function(){a=(a+0x6d2b79f5)>>>0;var t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
@@ -287,7 +300,19 @@ export default {
         ${slotMs.toString()}
         ${showQr ? qrPlan.toString() + "\n        " : ""}${ovTransition.toString()}
         if(c.tr.ms!==600){slider.style.setProperty("--tr-ms",c.tr.ms+"ms");slider.style.setProperty("--tr-fade",Math.round(c.tr.ms*.78)+"ms")}
-        function go(phase){return ovTransition(slider,phase,phase==="in"?c.tr.in:c.tr.out,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"})}
+        var calm=typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches,idle=0,EN=${JSON.stringify(ENTER_CURVE)},ST=${JSON.stringify(STAGGER)};
+        // Entrance / exit curves of the explicit modes (the shared ovTransition keeps its own, used by the other overlays): an entrance ends with velocity 0, a fade uses its whole length, a wobble turns smoothly (ease-in-out on every key) and its last step of an exit is an ease-in.
+        function tune(phase,mode){var a=slider._ovTr;if(calm||!a||!a.effect||!a.effect.updateTiming)return;try{var inn=phase==="in";
+          if(mode==="fade")a.effect.updateTiming({easing:inn?"cubic-bezier(.2,0,0,1)":"cubic-bezier(.4,0,1,1)"});
+          else if(mode==="jiggle"){var kf=a.effect.getKeyframes();kf.forEach(function(k,i){k.easing=inn&&i===0?"cubic-bezier(.25,.8,.35,1)":!inn&&i===kf.length-2?"cubic-bezier(.4,0,1,1)":"ease-in-out"});a.effect.setKeyframes(kf);a.effect.updateTiming({easing:"linear"})}
+          else if(inn)a.effect.updateTiming({easing:EN})}catch(e){}}
+        // Follow-through: the content of the card comes in about 2 frames after the plate, one piece at a time, trailing on the side the card comes from. With reduced motion: opacity only.
+        function follow(card){var m=c.tr.in;if(m==="none"||!card||typeof card.querySelector!=="function")return;var d=m==="slideLeft"?[-1,0]:m==="slideTop"?[0,-1]:m==="slideBottom"?[0,1]:m==="auto"||m==="slide"||m==="slideRight"?[1,0]:[0,0];
+          ST.forEach(function(r){var n=card.querySelector(r[0]);if(!n||!n.animate)return;var k=calm||!r[2]?0:14;n.animate([{opacity:0,transform:"translate("+d[0]*k+"px,"+d[1]*k+"px)"},{opacity:1,transform:"none"}],{duration:calm?160:260,delay:calm?0:r[1],easing:"cubic-bezier(.2,0,0,1)",fill:"backwards"})})}
+        function go(phase){var m=phase==="in"?c.tr.in:c.tr.out;clearTimeout(idle);
+          if(phase==="in"){slider.classList.remove("tk-idle");follow(cur)}
+          else idle=setTimeout(function(){if(!slider.classList.contains("on"))slider.classList.add("tk-idle")},c.tr.ms*1.3+80);
+          var p=ovTransition(slider,phase,m,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"});tune(phase,m);return p}
         var off=0;
         function load(){var t0=Date.now();return fetch(c.itemsUrl,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(Array.isArray(d.items))items=d.items;if(typeof d.serverTime==="number")off=d.serverTime-(t0+Date.now())/2}).catch(function(){})}
         function pick(){if(!items.length)return null;if(items.length===1)return items[0];var s=items[Math.floor(rnd()*items.length)],g=0;while(s.id===last&&g++<8)s=items[Math.floor(rnd()*items.length)];return s}
