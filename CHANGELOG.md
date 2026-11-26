@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.112.1 — 2026-11-26
+
+*In short: on a video alert, the text now follows the video instead of the moment the card appears, and the video is no longer cut before its end. If you tuned the times of a text on a video, add about 0.5 s to each. Nothing else changes.*
+
+### Fixed
+
+- **Alerts overlay 1.22.3: on a video, the times of a placed text are seconds of the video.** "Enters at 1 s" now means one second after the video really starts, on every machine and in OBS. Before, the text started when the card appeared, 0.6 to 0.8 s before the picture could be seen, so it came and left too early.
+- **Alerts overlay 1.22.3: the end of the video is no longer cut.** The length of the alert counts from the start of the video, and a video played once always goes to its end, plus a short margin.
+- **Alerts overlay 1.22.3: a text is never lost.** If a video has not started after about a second (refused, stuck, broken), the text starts anyway. Pictures and GIFs do not change.
+- **If you adjusted the times of a text on a video, add about 0.5 s to each time.** The old values included about 0.5 s of compensation for the loading time. Your saved texts are not modified.
+
+### For developers
+
+- `alerts-overlay` 1.22.3: `VIDEO_CLOCK` (`cmpClock(card, secs, rearm)`) and `composeMount(fx)` replace the former `COMPOSE_MOUNT` in `modules/alerts-overlay/index.mjs`. After `CuriosaCompose.mount` the animations of the boxes are paused; on the video's `playing` event they are set to `video.currentTime` and resumed, `waiting` pauses and the next `playing` resynchronises. The length of the alert is re-armed from that moment (at least `duration + 0.3 s` for `play: "once"`, capped at 120 s). Fallback: 1.2 s (3 s while the video is loading), and `error` starts the text at once. No video: no code path changes. No change in the core, no new permission, `minCore` unchanged. Details in `docs/changelog-parts/alerts-overlay-video-clock.md`; test: `tests/alerts-overlay-video-clock.test.mjs`. Every catalogue entry is pinned on the new tag `v1.112.1`.
+
 ## 1.112.0 — 2026-11-25
 
 *In short: the French title of the ready-made overlays page is now "Overlays prédéfinis". Nothing else changes and there is nothing to set up.*
