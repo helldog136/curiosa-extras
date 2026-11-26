@@ -225,6 +225,17 @@ The Media tab shows "Added by the assistant" on those files; you can delete them
 - On a core older than 0.19.0: no "Place the text", nothing stored, media alone. On 0.19.0: pictures and GIFs only.
 
 
+## Video clock for placed texts (version 1.22.3)
+
+On a **video** backdrop, the times of a placed text (`in.at`, `out.at`, in seconds) are **video time**: 0 is the moment the video really starts playing (its `playing` event), not the moment the card is drawn. A video needs about 0.5 to 1 s to load and start; before 1.22.3 the text clock ran during that time, so the text came early and left early by the same amount, and the value to choose depended on the machine (OBS browser source, Chromium, CEF). Pictures and GIFs are unchanged: their clock starts when the card is drawn.
+
+- **Mechanism**: the core's engine builds the boxes with CSS animations; the page holds them paused right after the mount (so nothing of the text shows or moves), then on `playing` sets every animation to the video's `currentTime` and lets it run. A stall (`waiting`) pauses the text, the next `playing` puts it back at the video's time.
+- **Length of the alert**: counted from the same moment (the video start), not from the draw. A video that is played once (`play: "once"`) is never cut before its end plus 0.3 s, even when the length chosen is shorter, up to a safety cap of 120 s. A video that is held or loops follows the length chosen.
+- **Fallback**: a video that has not started after 1.2 s (3 s at most while it is still loading), that fails, or that the browser refuses to play, starts the text clock at 0 and counts the length from then, so a text is never lost.
+- **Loop**: when the video loops, the text clock is not restarted; the text enters and leaves once per alert, as before.
+- **Where**: the page script of this module (`VIDEO_CLOCK` in `index.mjs`), also used by the test of the reaction window (the same route and page). The core's own previews (reaction preview, composition kit) show a still frame at a chosen time and already use video time. Test: `tests/alerts-overlay-video-clock.test.mjs` (the real page with a fake video element, and the real engine in Chromium).
+- **Old values**: a value chosen before 1.22.3 included about 0.5 s of compensation for the load time (the text clock ran ahead of the picture). To keep the same result, **add roughly 0.5 s to `in.at` and `out.at`** (about the time between the draw and the real start on the machine where it was tuned), and a `durationSeconds` chosen to cover the video no longer needs margin.
+
 ## One reaction per channel point reward (version 1.17.0)
 
 A redemption whose reward has its own row (collection `rewardReactions`: `rid`, `title`, `cost`, `on`, `cfg`) shows ITS reaction (files, order, sentence, sound, placed texts at the place `event:redeem:<reward id>`) and follows ITS switch; any other redemption, or one without `rewardId` (an older Twitch activity), shows the reaction of the type `redeem`, exactly as before. The rows never touch the configuration (an older version ignores them). Service `alerts.reaction` version 3 (additive): `rewards`, `forget({ reward })`, and `reward` (+ `title`, `cost`) in `get`, `set`, `test`. A file used by a reward's reaction is never let go. MCP: `reaction_get`, `reaction_set`, `reaction_test` take `reward` (id or exact title) with type `redeem`; the `composition_*` tools take `reward` with the place `event:redeem`, and `composition_places` lists the rewards' places.

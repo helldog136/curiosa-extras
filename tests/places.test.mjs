@@ -27,7 +27,7 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 
 /** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
 const TWITCH = {
-  "alerts-overlay": ["1.22.2", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
+  "alerts-overlay": ["1.22.3", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.24.4", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.5.0", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
