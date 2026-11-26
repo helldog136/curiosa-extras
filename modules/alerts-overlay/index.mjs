@@ -89,10 +89,39 @@ const MEDIA_SCRIPT = (ov) => `var mc=null;
  * it no panel), whole inside the element, with transparent bands. Present only when the overlay holds a composition and the core has the engine.
  */
 const COMPOSE_DRAW = 'if(e.compose&&window.CuriosaCompose){card=document.createElement("div");card.className="al-cmp";card._cmp=e.compose;card._anim=e.anim||"";shownCard=card}else ';
-const COMPOSE_MOUNT = "if(card._cmp)window.CuriosaCompose.mount(card,card._cmp,{seconds:secs});";
+/**
+ * (1.22.3) The clock of a placed text on a VIDEO backdrop is the video's own: `in.at` / `out.at` of the boxes are seconds of video time, not of the time since the card
+ * was drawn (a video needs ~0.5-1 s to load and start, and the text used to run that long ahead of the picture). The engine (core) starts the boxes' CSS animations when
+ * it mounts them; the page holds them paused right after the mount, then, on the video's `playing` event, puts them at the video's time and lets them run (a stall pauses
+ * them, the next `playing` puts them back at the video's time). The length of the alert counts from the same moment (`rearm`), and a video that is played once is never cut
+ * before its end (+ `margin`), up to `cap` seconds. Fallback: a video that has not started after `wait` seconds (still loading is given up to `max`), that fails (`error`)
+ * or that is refused (autoplay) starts the clock at 0 anyway, so a text is never lost. A video that loops: the text clock is NOT restarted, it goes on (a text enters and
+ * leaves once per alert, as before). No video (picture, GIF): nothing here applies. `clk` is the token of the card on screen: a late event of a gone card does nothing.
+ */
+const VIDEO_CLOCK = `
+        var clk=0,CLK={wait:1200,max:3000,margin:.3,cap:120};
+        function cmpClock(card,secs,rearm){
+          var root=card.querySelector('[data-ov-region="composition"]'),v=root&&root.querySelector("video");
+          if(!v)return;
+          var id=++clk,boxes=[].slice.call(root.querySelectorAll(".cmp-box")),st="held",free=false,lap=0,last=0,el=0,cmp=card._cmp||{},once=!!(cmp.backdrop&&cmp.backdrop.play==="once");
+          function live(){return id===clk}
+          function setPlay(s){boxes.forEach(function(b){b.style.animationPlayState=s})}
+          function at(t){boxes.forEach(function(b){var l=b.getAnimations?b.getAnimations():[];l.forEach(function(a){try{a.currentTime=t*1000}catch(x){}})})}
+          function total(){var d=v.duration;return once&&isFinite(d)&&d>0?Math.max(secs,Math.min(d+CLK.margin,CLK.cap)):secs}
+          function begin(t,fallback){if(!live()||st!=="held")return;st="run";free=!!fallback;at(t);setPlay("running");rearm(total())}
+          setPlay("paused");
+          function sync(){if(live()&&st==="run"&&!free){at(lap+v.currentTime);setPlay("running")}}
+          v.addEventListener("playing",function(){if(!live())return;if(st==="held")begin(v.currentTime,false);else sync()});
+          v.addEventListener("waiting",function(){if(live()&&st==="run"&&!free)setPlay("paused")});
+          v.addEventListener("timeupdate",function(){if(!live())return;var t=v.currentTime;if(t+.25<last&&isFinite(v.duration))lap+=v.duration;last=t});
+          v.addEventListener("error",function(){begin(0,true)});
+          function check(){if(!live()||st!=="held")return;var loading=v.readyState<3&&v.networkState===2&&!v.error;if(el>=CLK.wait&&(!loading||el>=CLK.max))begin(0,true);else{el+=150;setTimeout(check,150)}}
+          setTimeout(function(){if(!live()||st!=="held")return;el=CLK.wait;if(!v.paused&&v.readyState>=3)begin(v.currentTime,false);else check()},CLK.wait)
+        }`;
+const composeMount = (fx) => `if(card._cmp){window.CuriosaCompose.mount(card,card._cmp,{seconds:secs});cmpClock(card,secs,function(s){${fx ? "hold(card,done,s)" : "clearTimeout(timer);timer=setTimeout(done,s*1000)"}})}`;
 /** (1.14.0) The backdrop of the alert that waits next is loaded while this one shows (one at a time), so a video starts without a black gap. */
 const NEXT_AHEAD = "function ahead(){var n=q[0];if(n&&n.compose&&window.CuriosaCompose&&window.CuriosaCompose.preload)window.CuriosaCompose.preload(n.compose)}function next(){if(!busy){var e=q.shift();if(e){busy=true;draw(e)}}ahead()}";
-const COMPOSE_DONE = 'var cr=stage.querySelector(\'[data-ov-region="composition"]\');if(cr&&window.CuriosaCompose)window.CuriosaCompose.unmount(cr);';
+const COMPOSE_DONE = 'clk++;var cr=stage.querySelector(\'[data-ov-region="composition"]\');if(cr&&window.CuriosaCompose)window.CuriosaCompose.unmount(cr);';
 /** A sound file of the site, played once per alert at the volume of the sounds; it stops with the card (skip, next alert). Same condition as the synthesised sounds. */
 const AUDIO_SCRIPT = `
         var fileSnd=null;
@@ -543,15 +572,15 @@ ${ctx.overlay.composeCss()}
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
       script: (cmp ? ctx.overlay.composeScript() + "\n" : "") + (queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
-        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds || media ? SOUND_SCRIPT : ""}${audioOn ? AUDIO_SCRIPT : ""}${tx ? VOICE_SCRIPT : ""}
+        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${cmp ? VIDEO_CLOCK : ""}${sounds || media ? SOUND_SCRIPT : ""}${audioOn ? AUDIO_SCRIPT : ""}${tx ? VOICE_SCRIPT : ""}
         function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? ANIM_SCRIPT(fx) : ""}${sounds || media ? "if(e.sound)beep(e.sound,e.own);" : ""}${audioOn ? "playFile(e);" : ""}${media ? SOUND_ONLY : ""}${tx ? "speak(e);" : ""}
           ${tx ? `${cmp ? COMPOSE_DRAW : ""}if(e.present==="media"&&(e.video||e.image)){${MEDIA_SCRIPT(ov)}}else{${PICTURE_SCRIPT(ov)}` : ""}${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}${tx ? "}" : ""}
-          ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${cmp ? COMPOSE_MOUNT : ""}${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
+          ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${cmp ? composeMount(fx) : ""}${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
         ${tx ? `function done(){if(typeof stopFile==='function')stopFile();shownCard=null;${cmp ? COMPOSE_DONE : ""}stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}` : "function done(){stage.replaceChildren();busy=false;next()}"}
         ${cmp ? NEXT_AHEAD : "function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}"}
-        ${tx ? `function show(e){if(e.control==="clear"){q=[];clearTimeout(timer);${audioOn ? "if(typeof stopFile==='function')stopFile();" : ""}stage.replaceChildren();busy=false;return}if(e.queued!==false){` : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
+        ${tx ? `function show(e){if(e.control==="clear"){q=[];clearTimeout(timer);${cmp ? "clk++;" : ""}${audioOn ? "if(typeof stopFile==='function')stopFile();" : ""}stage.replaceChildren();busy=false;return}if(e.queued!==false){` : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
 ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":"")${tx ? '+"&ctl=1"' : ""},{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;${tx ? "applyCtl(d.ctl);" : ""}d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
         poll()})();` : `        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}};
         var gap=c.pullMs;${tx ? `function pull(){fetch(c.pullUrl+"?ctl=1",{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000;return r.ok?r.json():null},function(){gap=30000;return null}).then(function(d){if(d)applyCtl(d.ctl)},function(){}).then(function(){setTimeout(pull,gap)})}` : `function pull(){fetch(c.pullUrl,{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000},function(){gap=30000}).then(function(){setTimeout(pull,gap)})}`}
