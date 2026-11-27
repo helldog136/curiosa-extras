@@ -57,7 +57,7 @@ test("manifeste : valide, une seule instance, une page publique, cœur 0.2.5", (
   assert.equal(manifest.id, "legal-pages");
   assert.equal(manifest.name.fr, "Mentions légales");
   assert.equal(manifest.name.en, "Legal pages");
-  assert.equal(manifest.version, "1.1.3");
+  assert.equal(manifest.version, "1.1.4");
   assert.equal(manifest.minCore, "0.2.5");
   assert.equal(manifest.instances, "single");
   assert.equal(manifest.page, true);
@@ -380,7 +380,7 @@ test("cookies : « aucun cookie de suivi » seulement quand rien d'inconnu n'est
   assert.match(cookies({}), /ne dépose aucun cookie publicitaire ni de suivi/);
   assert.match(cookies({}), /ne vous demande pas d'accepter des cookies/);
   const third = cookies({ thirdParty: true }, { thirdPartyNames: "Twitch" });
-  assert.match(third, /À part les contenus d'autres services/);
+  assert.match(third, /À part les contenus d'autres sites/);
   assert.doesNotMatch(third, /ne vous demande pas d'accepter/);
   assert.match(third, /Twitch/);
   const other = cookies({}, { unknownExt: "some", otherCollect: "Un compteur anonyme." });

@@ -87,7 +87,7 @@ test("sans aucun réglage : une seule catégorie dans Contacts est prise toute s
   const { ctx } = makeWorld({ book });
   const r = await page(ctx);
   const html = htmlOf(r);
-  assert.equal(r.title, "Merci !");
+  assert.equal(r.title, "Merci");
   assert.deepEqual(names(html), ["Anne Lambert", "Zoé Dupont"], "ordre alphabétique, et seulement la catégorie");
   assert.ok(html.includes("Modérateurs"), "le titre du groupe est le nom de la catégorie");
   assert.ok(html.includes(`src="${TW_PHOTO}"`) && html.includes('src="https://moi.example.test/anne.png"'));

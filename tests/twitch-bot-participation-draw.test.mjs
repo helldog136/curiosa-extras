@@ -112,7 +112,7 @@ test("intégration : le Bot Twitch SANS Participation ne change pas (besoin facu
     w.secret = await S.ensureSecret(w.ctx);
     for (let i = 0; i < 5; i++) await chatSays(w, "!cadeau", { login: `u${i}`, name: `U${i}`, id: `${50 + i}`, badges: ["subscriber"] }, NOW + i * 12_000);
     await chatSays(w, "!jeu", { login: "ada", name: "Ada", id: "99" }, NOW + 70_000);
-    assert.deepEqual(sent(w.tw), ["On joue à Zelda !"], "les commandes marchent comme avant");
+    assert.deepEqual(sent(w.tw), ["On joue à Zelda."], "les commandes marchent comme avant");
     assert.deepEqual(errors, [], "aucune erreur");
     assert.deepEqual(w.ctx.calls.services.filter((c) => JSON.stringify(c).includes("audience.draw")), [], "aucun appel au service absent");
   } finally { console.error = orig; }

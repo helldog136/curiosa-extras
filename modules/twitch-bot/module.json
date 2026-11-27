@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.24.4",
+  "version": "1.24.5",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",
@@ -246,7 +246,7 @@
       "id": "rewards.manage",
       "label": {
         "en": "create, change and delete the channel point rewards",
-        "fr": "créer, modifier et supprimer les récompenses en points de chaîne"
+        "fr": "gérer les récompenses en points de chaîne"
       },
       "help": {
         "en": "These rewards really exist on Twitch and can switch things on in your home.",
@@ -352,8 +352,8 @@
         "fr": "Prévenir le chat quand des points sont rendus"
       },
       "help": {
-        "en": "When a reward could not be played (home switched off, not live…), the bot writes a short message in the chat. Off by default.",
-        "fr": "Quand une récompense n'a pas pu être jouée (maison coupée, pas en direct…), le bot écrit un court message dans le chat. Désactivé par défaut."
+        "en": "If a reward is not played (home off, not live…), the bot writes a short message in the chat. Off by default.",
+        "fr": "Si une récompense n'est pas jouée (maison coupée, hors direct…), le bot écrit un court message. Désactivé par défaut."
       }
     },
     {
@@ -384,12 +384,12 @@
       "advanced": true,
       "tab": "rewards",
       "label": {
-        "en": "How long to wait for the home before giving points back (seconds)",
+        "en": "Wait for the home before giving points back (seconds)",
         "fr": "Attente de la maison avant de rendre les points (secondes)"
       },
       "help": {
-        "en": "Between 30 and 600. If the home has not answered after this delay, the points are given back the next time something happens on your channel or when you open this page.",
-        "fr": "Entre 30 et 600. Si la maison n'a pas répondu après ce délai, les points sont rendus la prochaine fois qu'il se passe quelque chose sur votre chaîne ou que vous ouvrez cette page."
+        "en": "Between 30 and 600. If the home has not answered by then, points are given back. This happens at the next event on your channel or when you open this page.",
+        "fr": "Entre 30 et 600. Si la maison n'a pas répondu après ce délai, les points sont rendus. Cela se fait au prochain événement sur votre chaîne ou à l'ouverture de cette page."
       }
     },
     {
@@ -404,7 +404,7 @@
       },
       "help": {
         "en": "Words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.",
-        "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Vos actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom."
+        "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Vos actions » (le mot est son nom). Pour une nouvelle action, choisissez plutôt « Autre chose chez moi » dans une récompense et donnez-lui un nom."
       }
     },
     {
@@ -414,12 +414,12 @@
       "advanced": true,
       "tab": "rewards",
       "label": {
-        "en": "Show the technical identifiers of the actions",
-        "fr": "Montrer les identifiants techniques des actions"
+        "en": "Show the technical codes of the actions",
+        "fr": "Montrer les codes techniques des actions"
       },
       "help": {
-        "en": "To link your home by hand: the identifier of each action (for example perso:start-the-vacuum) is shown next to its name, and can be written for a new action or changed. Unticked, it is never shown.",
-        "fr": "Pour relier la maison à la main : l'identifiant de chaque action (par exemple perso:lancer-l-aspirateur) est montré à côté de son nom, et peut être écrit pour une nouvelle action ou modifié. Décoché, il n'est jamais montré."
+        "en": "Used to link your home by hand. Each action shows its code (for example perso:start-the-vacuum) next to its name. You can write the code of a new action or change it. Unticked, codes are never shown.",
+        "fr": "Sert à relier la maison à la main. Chaque action montre son code (par exemple perso:lancer-l-aspirateur) à côté de son nom. Vous pouvez écrire le code d'une nouvelle action ou le modifier. Décoché, les codes ne sont jamais montrés."
       }
     },
     {
@@ -441,7 +441,7 @@
       "default": false,
       "label": {
         "en": "Let the moderation team manage commands from the chat",
-        "fr": "Laisser l'équipe de modération gérer les commandes depuis le chat"
+        "fr": "Laisser la modération gérer les commandes depuis le chat"
       },
       "help": {
         "en": "With it, you and your moderators can type !addcom, !editcom, !delcom and !commands in the chat. Off by default.",
@@ -453,8 +453,8 @@
       "type": "text",
       "default": "UTC",
       "label": {
-        "en": "Your time zone (for the time of your next stream)",
-        "fr": "Votre fuseau horaire (pour l'heure de votre prochain stream)"
+        "en": "Your time zone",
+        "fr": "Votre fuseau horaire"
       },
       "help": {
         "en": "For example Europe/Paris or America/Montreal. Without it, times are given in UTC and say so.",
@@ -521,8 +521,8 @@
         "fr": "Début d'une commande"
       },
       "help": {
-        "en": "The sign before the command name. “!” by default. 1 to 3 characters, no letter, no digit, never “/” or “.”.",
-        "fr": "Le signe qui précède le nom de la commande. « ! » par défaut. 1 à 3 caractères, ni lettre ni chiffre, jamais « / » ni « . »."
+        "en": "The sign before the command name, an exclamation mark by default. 1 to 3 characters, no letter, no digit, never “/” or “.”.",
+        "fr": "Le signe avant le nom de la commande, un point d'exclamation par défaut. 1 à 3 caractères, ni lettre ni chiffre, jamais « / » ni « . »."
       }
     },
     {
@@ -532,7 +532,7 @@
       "advanced": true,
       "label": {
         "en": "Default wait between two answers of a command (seconds)",
-        "fr": "Attente par défaut entre deux réponses d'une commande (secondes)"
+        "fr": "Attente par défaut entre deux réponses (secondes)"
       },
       "help": {
         "en": "Everyone together: a command answers at most once per this delay. Each command can have its own.",
@@ -560,7 +560,7 @@
       "advanced": true,
       "label": {
         "en": "Answers allowed per 30 seconds, all commands together",
-        "fr": "Réponses permises par tranche de 30 secondes, toutes commandes confondues"
+        "fr": "Réponses par 30 secondes, toutes commandes confondues"
       },
       "help": {
         "en": "From 1 to 18. Twitch limits what a chat account may send: stay well under it.",

@@ -28,7 +28,7 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 /** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
 const TWITCH = {
   "alerts-overlay": ["1.22.2", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
-  "twitch-bot": ["1.24.4", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
+  "twitch-bot": ["1.24.5", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
   "home-assistant": ["1.4.2", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.6.3", { main: "networks.twitch", stats: "networks.stats" }],
@@ -63,7 +63,7 @@ const ROLLOUT = {
   "instagram": ["1.2.1", { main: "networks.accounts" }],
   "kick": ["1.2.1", { main: "networks.accounts" }],
   "kofi": ["1.2.1", { main: "networks.accounts" }],
-  "legal-pages": ["1.1.3", { legal: "site.general.privacy" }],
+  "legal-pages": ["1.1.4", { legal: "site.general.privacy" }],
   "live-status": ["1.6.1", { main: "live.golive" }],
   "map": ["1.3.0", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
@@ -86,7 +86,7 @@ const ROLLOUT = {
   "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
-  "thanks-wall": ["1.5.0", { wall: "community.supporters.wall" }],
+  "thanks-wall": ["1.5.1", { wall: "community.supporters.wall" }],
   "threads": ["1.2.1", { main: "networks.accounts" }],
   "ticker-overlay": ["1.3.0", { main: "obs.overlays.ticker" }],
   "tiktok": ["1.2.1", { main: "networks.accounts" }],
