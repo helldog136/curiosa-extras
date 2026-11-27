@@ -7,7 +7,7 @@
   },
   "version": "1.1.2",
   "menuGroup": "community",
-  "minCore": "0.2.5",
+  "minCore": "0.6.0",
   "description": {
     "en": "A clear commission queue for anyone who creates on request: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment.",
     "fr": "Une file de commandes claire pour toute personne qui crée sur commande : ouvert, complet ou fermé avec les places libres, vos formules avec leurs prix indicatifs, un formulaire court, un lien de suivi privé pour chaque personne qui commande et une liste de demandes simple pour vous. Aucun paiement."
