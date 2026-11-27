@@ -38,16 +38,12 @@
       "R13 description[fr] #e06b36",
       "R13 locale:en:copied #4c8421",
       "R13 locale:en:explain_delivered #4f9fcb",
-      "R13 locale:en:modeHelp_open #4d0417",
       "R13 locale:fr:copied #f52dc9",
       "R13 locale:fr:csvHeader #17a721",
       "R13 locale:fr:explain_delivered #df3688",
       "R13 locale:fr:mailStatusBody #5383c2",
-      "R13 locale:fr:modeHelp_open #05c054",
       "R9 locale:en:csvHeader #f7260c",
-      "R9 locale:fr:csvHeader #17a721",
-      "R9 locale:fr:modeHelp_closed #9ff9b3",
-      "R9 locale:fr:modeHelp_full #e523ca"
+      "R9 locale:fr:csvHeader #17a721"
     ],
     "community-stats": [
       "R13 description[en] #cf5b6a",

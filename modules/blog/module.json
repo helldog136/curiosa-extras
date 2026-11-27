@@ -19,6 +19,23 @@
     "sections"
   ],
   "icon": "📰",
+  "rights": [
+    {
+      "id": "write",
+      "label": {
+        "fr": "écrire des articles",
+        "en": "write articles"
+      },
+      "help": {
+        "fr": "Montre le raccourci « Écrire un article » sur le tableau de bord.",
+        "en": "Shows the shortcut “Write an article” on the dashboard."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
   "dashboard": {
     "quickActions": [
       {
@@ -27,7 +44,8 @@
           "en": "Write an article",
           "fr": "Écrire un article"
         },
-        "href": "/admin/entries/new?c={key}"
+        "href": "/admin/entries/new?c={key}",
+        "right": "write"
       }
     ]
   },

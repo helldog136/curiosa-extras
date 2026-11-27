@@ -69,13 +69,14 @@ test("une tâche mène à l'écran qui règle la chose et demande le droit qui p
   assert.equal(loaded.events.manifest.dashboard.tasks[0].right, "events.edit");
 });
 
-test("Blog et Pages : un bouton « Créer » vers l'écran d'ajout du cœur, sans code ni droit particulier", () => {
+test("Blog et Pages : un bouton « Créer » vers l'écran d'ajout du cœur, sans code, avec le droit `write` du module (R35 : le droit est dit, pas sous-entendu)", () => {
   for (const [id, fr, en] of [["blog", "Écrire un article", "Write an article"], ["pages", "Ajouter une page", "Add a page"]]) {
     const { manifest, definition } = loaded[id];
     assert.equal(definition.dashboard, undefined, "une action rapide n'appelle aucun code");
     const [action, ...others] = manifest.dashboard.quickActions;
     assert.equal(others.length, 0); assert.equal(manifest.dashboard.tasks, undefined); assert.equal(manifest.dashboard.cards, undefined);
-    assert.deepEqual([action.label.fr, action.label.en, action.right], [fr, en, undefined]);
+    assert.deepEqual([action.label.fr, action.label.en, action.right], [fr, en, "write"]);
+    assert.deepEqual(manifest.rights.find((r) => r.id === "write").default, { admin: true, editor: false }, "qui voit le bouton ne change pas");
     assert.equal(resolveHref(action.href, { id: "i1", key: "mon-blog" }), "/admin/entries/new?c=mon-blog");
   }
 });
