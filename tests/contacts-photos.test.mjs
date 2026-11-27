@@ -103,7 +103,8 @@ test("JAMAIS hors interaction : lister, chercher, importer, exporter, fusionner,
   });
   assert.deepEqual(calls, [], "aucun appel hors de l'ouverture d'une fiche ou du bouton");
   // Aucun minuteur, aucune tâche : ni `tasks` ni `hooks` dans le module, ni setInterval nulle part.
-  assert.equal(def.tasks, undefined);
+  // 2.8.0: the ONE task is the account sync (it reads the core topic `core.user`, nothing else: no connector, no network).
+  assert.deepEqual(Object.keys(def.tasks ?? {}), ["accounts"]);
   assert.equal(def.hooks, undefined);
   const code = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).map((f) => [f, fs.readFileSync(`${DIR}/${f}`, "utf8")]);
   for (const [f, src] of code) {

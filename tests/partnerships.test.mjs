@@ -32,18 +32,18 @@ test("manifeste : les réglages lus par le code (ctx.setting) existent tous dans
   for (const key of used) assert.ok(declared.has(key), `réglage ${key} lu mais non déclaré`);
 });
 
-test("langues : les fichiers locales ont exactement les mêmes clés (parité en/fr)", () => {
+test("langues : les fichiers locales ont exactement les mêmes clés (parité en/fr)", (t) => {
   const files = localeFiles();
-  if (!files.length) return;
+  if (!files.length) { t.skip("ce module n'a pas de dossier locales/ : rien à comparer"); return; }
   const keys = (f) => Object.keys(readJson(`locales/${f}`)).sort();
   assert.ok(files.includes("en.json") && files.includes("fr.json"));
   assert.deepEqual(keys("fr.json"), keys("en.json"));
   for (const f of files) for (const [k, v] of Object.entries(readJson(`locales/${f}`))) assert.ok(typeof v === "string" && v.trim(), `${f}:${k} vide`);
 });
 
-test("langues : chaque clé ctx.t(\"…\") utilisée statiquement par le code existe dans les textes", () => {
+test("langues : chaque clé ctx.t(\"…\") utilisée statiquement par le code existe dans les textes", (t) => {
   const en = loadMessages("en");
-  if (!Object.keys(en).length) return;
+  if (!Object.keys(en).length) { t.skip("ce module n'a pas de textes anglais (locales/en.json) : aucune clé à retrouver"); return; }
   for (const m of source.matchAll(/\bt\("([A-Za-z0-9_]+)"/g)) assert.ok(m[1] in en, `clé ${m[1]} absente de en.json`);
 });
 

@@ -197,7 +197,15 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
     schedulePeople: r.schedulePeople === false ? false : r.schedulePeople === undefined ? d.schedulePeople !== false : true,
     // The saved style variant ("My styles") the video uses: its identifier, or nothing. A variant that has been deleted since is simply not found later: the video falls back to its base style.
     variant: VARIANT_ID.test(String(r.variant ?? "")) ? String(r.variant) : r.variant === undefined && VARIANT_ID.test(String(d.variant ?? "")) ? String(d.variant) : "",
+    // The kind of story: the week's schedule instead of one event. Only a week carries these keys: a config of one event stays exactly as it was before 2.16.0.
+    ...pickWeek(r, d),
   };
+}
+function pickWeek(r, d) {
+  if (!(r.kind === "week" || (r.kind === undefined && d.kind === "week"))) return {};
+  const own = r.kind === "week";   // an explicit week: its own range, part and title; otherwise those of the fallback
+  const src = own ? r : d, range = WEEK_RANGES.includes(src.weekRange) ? src.weekRange : WEEK_RANGES[0];
+  return { kind: "week", weekRange: range, weekDate: range === "week_of" && isDay(src.weekDate) ? src.weekDate : "", weekPart: Number.isInteger(src.weekPart) && src.weekPart >= 1 && src.weekPart <= WEEK.days ? src.weekPart : 0, weekTitle: oneLine(src.weekTitle, LIMITS.title) };
 }
 function pickEvent(r, d) {
   const read = (x) => (typeof x?.eventId === "string" && EVENT_ID.test(x.eventId) && typeof x?.eventSource === "string" && SOURCE_KIND.test(x.eventSource) ? { eventId: x.eventId, eventSource: x.eventSource } : null);
@@ -422,6 +430,133 @@ export function streamFromInfo(info, { base = null, tz = "UTC" } = {}) {
   };
 }
 
+/* ───────────── The week's schedule (2.16.0) ─────────────
+ * A second kind of story: ONE video that lists the events of a window of 7 days, from the same sources as the single-event story.
+ * The window is one of `WEEK_RANGES` (by default "the next 7 days", today included; or a Monday-to-Sunday week), on the clock of the site's time zone; the days are counted on the
+ * calendar, never as 7 × 24 hours, so a daylight-saving week is still 7 days. At most `rowsMax` rows fit a video: beyond that the first rows are shown with "and N more", or the
+ * week is cut by whole days into parts (one video each). Nothing here reads a clock: the caller gives `nowMs`. */
+export const KINDS = ["event", "week"];
+export const WEEK = Object.freeze({ days: 7, rowsMax: 8, horizonDays: 83 });
+/** Which 7 days: the next 7 days from today (default), the Monday-to-Sunday week of today, the one after, or the one that contains a chosen date. */
+export const WEEK_RANGES = Object.freeze(["next_7_days", "this_week", "next_week", "week_of"]);
+/** The elements a week video can show: the heading with its dates, the day and time of each row, the cover, the channel name and the free sentence. The others only make sense for one event. */
+export const WEEK_ELEMENTS = Object.freeze(["title", "when", "game", "brand", "text"]);
+/** The words the week video writes itself, with the other words of the video (the rest of the sentences comes from the editor). */
+export const WEEK_WORDS = Object.freeze({
+  fr: { title: "Cette semaine", allDay: "Journée", more: (n) => (n === 1 ? "et 1 autre" : `et ${n} autres`) },
+  en: { title: "This week", allDay: "All day", more: (n) => `and ${n} more` },
+});
+/** A real calendar day written YYYY-MM-DD (not the 31 February). */
+export function isDay(s) {
+  const m = typeof s === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) : null;
+  if (!m) return false;
+  const t = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return t.getUTCFullYear() === Number(m[1]) && t.getUTCMonth() === Number(m[2]) - 1 && t.getUTCDate() === Number(m[3]);
+}
+/** The day `n` days after (or before) `day`, counted on the calendar. */
+export function addDays(day, n) {
+  const [y, m, d] = String(day).split("-").map(Number), t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${String(t.getUTCFullYear()).padStart(4, "0")}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+}
+/** The Monday of the week that contains `day` (weeks run Monday to Sunday). */
+export function mondayOf(day) {
+  const [y, m, d] = String(day).split("-").map(Number);
+  return addDays(day, -((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7));
+}
+/**
+ * The window of the video: { range, startDay, endDay, startMs, endMs (the start of the day after, exclusive), today, zone, days } or { error }.
+ * `range`: "next_7_days" (today and the 6 days after), "this_week" (Monday to Sunday, today inside), "next_week" (the Monday to Sunday after), "week_of" (Monday to Sunday of `date`, any day of it).
+ * `date` goes only with "week_of". Errors: "range" (not one of the four, or a week already over, or starting more than 83 days ahead: the sources only look 90 days ahead),
+ * "date" (missing, not a real day, or given with another range), "now".
+ */
+export function weekWindow({ nowMs, tz, range = WEEK_RANGES[0], date = "" } = {}) {
+  const zone = validZone(tz) ? tz : "UTC";
+  if (!Number.isFinite(nowMs)) return { error: "now" };
+  if (!WEEK_RANGES.includes(range)) return { error: "range" };
+  const has = date !== "" && date !== undefined && date !== null;
+  if (range === "week_of" ? !isDay(date) : has) return { error: "date" };
+  const today = isoDay(nowMs, zone);
+  const start = range === "next_7_days" ? today : range === "this_week" ? mondayOf(today) : range === "next_week" ? addDays(mondayOf(today), 7) : mondayOf(date);
+  const end = addDays(start, WEEK.days - 1), after = addDays(end, 1), at = (day) => { const [y, m, d] = day.split("-").map(Number); return zonedToUtc(y, m, d, 0, 0, zone); };
+  if (end < today || start > addDays(today, WEEK.horizonDays)) return { error: "range" };
+  return { range, startDay: start, endDay: end, startMs: at(start), endMs: at(after), today, zone, days: Array.from({ length: WEEK.days }, (_, i) => addDays(start, i)) };
+}
+const byDayThenTime = (a, b) => (a.wday < b.wday ? -1 : a.wday > b.wday ? 1 : 0) || (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1) || a.startMs - b.startMs || oneLine(a.title, 80).localeCompare(oneLine(b.title, 80)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+/** Cuts a list already sorted by day into parts of at most `cap` events, keeping each day whole (one day with more than `cap` events is a part of its own). */
+export function splitDays(list, cap = WEEK.rowsMax) {
+  const parts = [];
+  let cur = null, last = "";
+  for (const e of list) {
+    if (!cur || (e.wday !== last && cur.events.length + list.filter((x) => x.wday === e.wday).length > cap)) { cur = { from: e.wday, to: e.wday, events: [] }; parts.push(cur); }
+    cur.events.push(e); cur.to = e.wday; last = e.wday;
+  }
+  return parts;
+}
+/**
+ * What the week video lists. `events`: the upcoming events of all sources ({ id, title, startMs, endMs, allDay, day, games, image… }, as `story_events` gives them).
+ * Returns { window, total, shown (at most `cap` events, each with `wday`, its day on the clock of the zone), more (what does not fit), part (0 = the whole window), parts [{ from, to, count }] (only
+ * when the window holds more than `cap` events), from, to (the days the video covers), empty } or { error }.
+ * An event that is already over is left out; a whole-day event stays on its own day whatever the zone of its source.
+ */
+export function weekPlan(events, { nowMs, tz, range = WEEK_RANGES[0], date = "", part = 0, cap = WEEK.rowsMax } = {}) {
+  const win = weekWindow({ nowMs, tz, range, date });
+  if (win.error) return { error: win.error };
+  const max = Math.min(WEEK.rowsMax, Math.max(1, Math.trunc(Number(cap)) || WEEK.rowsMax)), seen = new Set(), list = [];
+  for (const e of Array.isArray(events) ? events : []) {
+    if (!e || typeof e !== "object" || !Number.isFinite(e.startMs) || typeof e.id !== "string" || seen.has(e.id)) continue;
+    const allDay = e.allDay === true, day = allDay && isDay(e.day) ? e.day : isoDay(e.startMs, win.zone);
+    if (day < win.startDay || day > win.endDay) continue;
+    if (!allDay && (Number.isFinite(e.endMs) && e.endMs > e.startMs ? e.endMs : e.startMs + 3_600_000) < nowMs) continue;
+    seen.add(e.id); list.push({ ...e, allDay, wday: day });
+  }
+  list.sort(byDayThenTime);
+  const parts = list.length > max ? splitDays(list, max) : [];
+  const sel = Number.isInteger(part) && part >= 1 && part <= parts.length && parts.length > 1 ? parts[part - 1] : null;
+  const pool = sel ? sel.events : list, shown = pool.slice(0, max);
+  return {
+    window: win, total: list.length, all: list, shown, more: pool.length - shown.length, part: sel ? part : 0, parts: parts.length > 1 ? parts.map((p) => ({ from: p.from, to: p.to, count: p.events.length })) : [],
+    from: sel ? sel.from : win.startDay, to: sel ? sel.to : win.endDay, empty: list.length === 0,
+  };
+}
+/** "Thu 22" / "Jeu. 22": the weekday and the number of a calendar day (the same whatever the time zone of the reader). */
+const DATE_LOCALE = { en: "en-GB", fr: "fr-FR" };
+export function formatDayShort(day, lang) {
+  const [y, m, d] = String(day).split("-").map(Number);
+  return capital(new Intl.DateTimeFormat(DATE_LOCALE[lang] ?? DATE_LOCALE.fr, { timeZone: "UTC", weekday: "short", day: "numeric" }).format(new Date(Date.UTC(y, m - 1, d, 12))).replace(/\s+/g, " "));
+}
+/** "22 – 28 October" / "29 Oct – 4 Nov" / "22 – 28 octobre": the dates a video covers. */
+export function formatRange(from, to, lang) {
+  const loc = DATE_LOCALE[lang] ?? DATE_LOCALE.fr, at = (day) => { const [y, m, d] = day.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d, 12)); };
+  const f = (opts, day) => new Intl.DateTimeFormat(loc, { timeZone: "UTC", ...opts }).format(at(day));
+  const a = at(from), b = at(to), same = a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth();
+  if (from === to) return `${Number(from.slice(8))} ${f({ month: "long" }, from)}`;
+  if (same) return `${Number(from.slice(8))} – ${Number(to.slice(8))} ${f({ month: "long" }, to)}`;
+  return `${Number(from.slice(8))} ${f({ month: "short" }, from).replace(/\.$/, "")} – ${Number(to.slice(8))} ${f({ month: "short" }, to).replace(/\.$/, "")}`;
+}
+/**
+ * Everything the week video writes, ready to draw (same idea as `buildContent`): `plan` comes from `weekPlan`; the elements chosen decide what shows (the heading and its dates, the day and time of
+ * each row, the cover and game line, the channel name, the sentence). Row i: { id, dayLabel (only on the first row of a day), time, title, game, thumb (a key into the images, or "") }.
+ */
+export function buildWeekContent(config, { plan, site = {}, tz } = {}) {
+  const c = cleanConfig(config), has = (e) => c.elements.includes(e), words = WEEK_WORDS[c.lang], zone = plan?.window?.zone ?? (validZone(tz) ? tz : "UTC");
+  const out = { kind: "week", lang: c.lang, zone, heading: "", range: "", rows: [], more: 0, moreText: "", brand: "", text: "", showWhen: has("when"), showGame: has("game"), empty: !plan || plan.empty === true || !plan.shown?.length };
+  if (!plan || plan.error) return out;
+  if (has("title")) { out.heading = oneLine(c.weekTitle, LIMITS.title) || words.title; out.range = formatRange(plan.from, plan.to, c.lang); }
+  let lastDay = "";
+  for (const e of plan.shown) {
+    const game = oneLine(Array.isArray(e.games) ? e.games[0] : "", 80), first = e.wday !== lastDay;
+    lastDay = e.wday;
+    out.rows.push({
+      id: e.id, title: oneLine(e.title, LIMITS.title), game: has("game") ? game : "", dayLabel: has("when") && first ? formatDayShort(e.wday, c.lang) : "",
+      time: has("when") ? (e.allDay ? words.allDay : formatTime(e.startMs, zone, c.lang)) : "", thumb: has("game") ? (game ? `g:${game}` : typeof e.image === "string" && e.image ? `e:${e.id}` : "") : "",
+    });
+  }
+  out.more = plan.more; out.moreText = plan.more > 0 ? words.more(plan.more) : "";
+  if (has("brand")) out.brand = oneLine(c.channelName || site.name, LIMITS.channelName);
+  if (has("text")) out.text = freeText(c.text, LIMITS.text);
+  return out;
+}
+
 /* ───────────── What the video says ───────────── */
 
 /**
@@ -451,10 +586,10 @@ export function buildContent(config, { stream, coStreamers = [], site = {}, nowM
   return out;
 }
 
-/** The file name: annonce-2026-10-22-vertical.mp4 (announcement-… in English). */
-export function fileName({ startMs, tz, format, lang, ext, nowMs }) {
+/** The file name: annonce-2026-10-22-vertical.mp4 (announcement-… in English); semaine-… / week-… for the week's schedule (its first day). */
+export function fileName({ startMs, tz, format, lang, ext, nowMs, kind = "event" }) {
   const day = Number.isFinite(startMs) && validZone(tz) ? isoDay(startMs, tz) : isoDay(nowMs ?? 0, "UTC");
-  return `${lang === "en" ? "announcement" : "annonce"}-${day}-${FORMATS.some((f) => f.id === format) ? format : "vertical"}.${ext === "webm" ? "webm" : "mp4"}`;
+  return `${kind === "week" ? (lang === "en" ? "week" : "semaine") : lang === "en" ? "announcement" : "annonce"}-${day}-${FORMATS.some((f) => f.id === format) ? format : "vertical"}.${ext === "webm" ? "webm" : "mp4"}`;
 }
 
 /* ───────────── Breaking into lines ───────────── */

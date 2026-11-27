@@ -74,9 +74,9 @@ test("dataVersion de ce dépôt face à l'étiquette précédente : aucune baiss
   assert.deepEqual(dataVersionProblems(readManifests(root), before), []);
 });
 
-test("previousTag : la plus haute étiquette strictement inférieure, jamais celle de la version elle-même", () => {
+test("previousTag : la plus haute étiquette strictement inférieure, jamais celle de la version elle-même", (t) => {
   const tag = previousTag(root, "9.9.9");
-  if (!tag) return;   // clone sans étiquettes
+  if (!tag) { t.skip("ce clone n'a aucune étiquette de version (git fetch --tags) : rien à comparer"); return; }
   assert.match(tag, /^v\d+\.\d+\.\d+$/);
   assert.equal(previousTag(root, tag.slice(1)) === tag, false);
 });

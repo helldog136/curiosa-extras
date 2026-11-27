@@ -414,5 +414,22 @@
   "slotNeedNetwork": "Choisissez la plateforme de ce compte ou collez un lien de profil.",
   "freshBanner": "La fiche est créée.",
   "helpEmail": "Facultatif. Reste privé : seule l'équipe autorisée peut le voir.",
-  "helpCategories": "Une catégorie regroupe des personnes (par exemple « Cible de raid » : celles que vous pouvez raider). Cochez celles qui conviennent."
+  "helpCategories": "Une catégorie regroupe des personnes (par exemple « Cible de raid » : celles que vous pouvez raider). Cochez celles qui conviennent.",
+  "accBadge": "Compte · {role}",
+  "accTip": "Le nom et l'e-mail suivent le compte.",
+  "accTeamLink": "Accès et rôle dans Équipe →",
+  "colLogin": "Compte de connexion",
+  "filterAccounts": "Comptes de connexion ({count})",
+  "accGone": "Le compte de connexion de cette personne a été supprimé le {date}. La fiche reste, sans lien.",
+  "accSharedBanner": "L'e-mail de ce compte est déjà sur une autre fiche. Fusionnez les deux fiches.",
+  "accSharedOpen": "Voir les doublons",
+  "accLinked": "Cette fiche suit un compte de connexion : elle ne peut pas être supprimée. Retirez d'abord la personne dans Équipe : la fiche reste alors, sans lien.",
+  "accSharedNote": "L'e-mail de ce compte était déjà sur une autre fiche. Vérifiez les deux fiches et fusionnez-les.",
+  "accGoneNote": "Compte de connexion supprimé : cette fiche n'est plus liée.",
+  "accLevel_owner": "Propriétaire",
+  "accLevel_coordinator": "Coordination technique",
+  "accLevel_admin": "Administration",
+  "accLevel_editor": "Rédaction",
+  "accLevel_none": "Sans rôle",
+  "source_account": "compte de connexion"
 }

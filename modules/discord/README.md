@@ -1,28 +1,35 @@
-# Discord — module communautaire de Curiosa
+# Discord — community module of Curiosa
 
-Affiche le bouton de votre Discord (icône et lien) dans l'en-tête du site. Il fournit le sujet `social.link` au cœur, qui rassemble les boutons de tous vos réseaux, et ses propres chiffres (sujet `social.stat`) : il ne consomme rien et ne stocke rien.
+Shows the button of your Discord (icon and link) in the site header. It gives the core the topic `social.link`, which gathers the buttons of all your networks, and its own figures (topic `social.stat`). It stores nothing.
 
-- **Réglage** : votre lien d'invitation. Par exemple : https://discord.gg/abcDEF. Le nom seul, l'adresse sans https:// ou sans www. et les adresses courtes sont reconnus ; les paramètres de suivi sont retirés.
-- **Plusieurs comptes** : ajoutez une instance par compte (la vôtre, celle d'une personne amie…).
-- Seule une adresse https du bon site est acceptée ; rien n'est affiché tant que le profil n'est pas réglé.
+- **Setting**: your invitation link. For example: https://discord.gg/abcDEF. The name alone, the address without https:// or www. and short addresses are recognised; tracking parameters are removed.
+- **Several accounts**: add one instance per account (yours, a friend's…).
+- Only an https address of the right site is accepted; nothing is shown until the profile is set.
 
-## Statistiques : membres
+## Statistics: members
 
-**Suivre mes statistiques** est coché par défaut : ce sont des chiffres publics, aucune clé n'est nécessaire. Décochez pour ne rien suivre.
+**Follow my statistics** is ticked by default: these are public figures, no key is needed. Untick to follow nothing.
 
-- **Ce qui est lu** : `GET /invites/<code>?with_counts=true` : le nombre **approximatif** de membres du serveur, lu à partir d'une invitation publique (le code ou l'adresse `discord.gg/…`). L'invitation du réglage « Lien d'invitation » est utilisée en priorité ; sans elle, le profil est utilisé s'il est lui-même une invitation. Gardé 30 minutes.
-- **Limites de la plateforme** : Discord ne donne qu'un nombre approximatif de membres, et seulement avec une invitation qui existe : une invitation expirée ou supprimée ne donne rien. Créez-en une qui n'expire jamais (Discord : paramètres d'invitation, « Expire : jamais »).
-- **Si ça ne marche pas** : le panneau du module dit en mots simples ce qui se passe. *« Ajoutez le lien d'invitation de votre Discord »* : remplissez « Lien d'invitation » dans Réglages. *« Cette invitation n'existe plus »* : créez-en une sans date de fin.
-- Aucun chiffre n'est inventé ni périmé : quand la plateforme ne répond pas, le module publie l'erreur (`auth`, `rate`, `network`, `hidden` ou `config`) et pas de nombre. Plusieurs instances du même compte partagent une seule demande.
+Two sources, in this order:
 
-## Adresse courte : /discord
+1. **Your Discord bot** (optional). When the Discord connector is installed and set up, and the account is the bot's own server, the member count comes from its `guildStats` method (service `discord.api`, declared as an optional need: the module never installs it and works without it). The server of an account is read from its invitation, so a second instance for a friend's Discord is never given your server's number.
+2. **The public invitation**: `GET /invites/<code>?with_counts=true`, the **approximate** member count read from a public invitation (the code or the `discord.gg/…` address). The invitation of the setting "Invitation link" is used first; without it, the profile is used if it is itself an invitation. Kept 30 minutes.
 
-**Créer une adresse courte pour votre Discord** est éteint par défaut. Allumé, le cœur crée l'adresse `votresite.be/discord`, qui mène à l'invitation de votre bouton. Elle reste la même si votre invitation change : seule sa destination suit. Les redirections appartiennent au cœur : le module ne fait que la **demander** (clé `shortLink` de son `module.json`), il n'écrit rien lui-même.
+- **The panel says which one counted**: "Counted by your Discord bot" or "Counted from the public invite". When the bot could count but does not, one link leads to the connector ("Set up the Discord bot" or "Check the Discord bot"); when the connector is not installed, the core offers it (nothing is installed without a click from the site owner).
+- **Never in the way**: the connector is waited for a few seconds at most (less in a public page). If it is absent, not set up, slow, refused or answers anything unexpected, visitors see nothing different: the figure comes from the invitation. If both fail, the last figure is kept with its real date while it is younger than 30 minutes; after that, no number.
+- **Limits of the platform**: Discord only gives an approximate member count, and only with an invitation that exists: an expired or deleted invitation gives nothing. Create one that never expires (Discord: invitation settings, "Expire after: never").
+- **If it does not work**: the panel of the module says in plain words what happens. *"Add your Discord's invitation link"*: fill "Invitation link" in Settings. *"This invitation no longer exists"*: create one without an end date.
+- No figure is invented or outdated: when the platform does not answer, the module publishes the error (`auth`, `rate`, `network`, `hidden` or `config`) and no number. Several instances of the same account share one request.
+- The module has no secret and no new permission: the bot code stays in the connector, only a number comes back.
 
-- **Éteint par défaut**, parce que c'est une adresse publique de plus sur votre site, que personne n'a demandée : elle ne naît pas d'une mise à jour. Un clic suffit pour l'allumer.
-- **Le nom** se change sous « Plus d'options » (vide : `discord`). Lettres minuscules, chiffres et tirets. Changer le nom renomme l'adresse, avec ses chiffres.
-- **Si le nom est déjà pris** par l'un de vos liens, rien n'est créé ni modifié : le message sous le champ vous propose un autre nom (par exemple `discord-2`), et la page *Raccourcis de liens* le rappelle avec un bouton vers les réglages.
-- **Où la voir** : page *Raccourcis de liens*, avec la pastille « Module Discord ». Elle se règle ici, pas là-bas : on ne la modifie ni ne la supprime à la main.
-- **Si vous coupez l'option**, retirez ce compte ou désinstallez le module, l'adresse disparaît avec ses chiffres et le nom redevient libre.
-- **Le bouton de l'en-tête** garde l'adresse de votre invitation. Il passe par `/discord` (et ses clics sont comptés) seulement si vous avez activé « Compter les clics sur mes liens » dans *Raccourcis de liens*, comme pour tous les boutons de réseaux.
-- **Vie privée** : rien de nouveau n'est collecté. Les chiffres sont ceux de tout lien court (un nombre par jour, sans cookie, sans adresse IP). Sans effet avec un Curiosa plus ancien : le module marche, sans adresse courte.
+## Short address: /discord
+
+**Create a short address for your Discord** is off by default. Switched on, the core creates the address `yoursite.be/discord`, which leads to the invitation of your button. It stays the same if your invitation changes: only its destination follows. Redirects belong to the core: the module only **asks** for it (key `shortLink` of its `module.json`), it writes nothing itself.
+
+- **Off by default**, because it is one more public address on your site that nobody asked for: it is not born from an update. One click switches it on.
+- **The name** is changed under "More options" (empty: `discord`). Lowercase letters, digits and dashes. Changing the name renames the address, with its figures.
+- **If the name is already taken** by one of your links, nothing is created or changed: the message under the field suggests another name (for example `discord-2`), and the page *Link shortcuts* reminds it with a button to the settings.
+- **Where to see it**: page *Link shortcuts*, with the badge "Discord extension". It is set here, not there: it is neither edited nor deleted by hand.
+- **If you switch the option off**, remove this account or uninstall the extension, the address disappears with its figures and the name becomes free again.
+- **The header button** keeps the address of your invitation. It goes through `/discord` (and its clicks are counted) only if you switched on "Count the clicks on my links" in *Link shortcuts*, as for every network button.
+- **Privacy**: nothing new is collected. The figures are those of any short link (one number per day, no cookie, no IP address). No effect with an older Curiosa: the module works, without a short address.

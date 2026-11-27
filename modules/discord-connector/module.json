@@ -1,0 +1,135 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.46.0",
+  "id": "discord-connector",
+  "name": {
+    "en": "Discord connector",
+    "fr": "Connecteur Discord"
+  },
+  "version": "1.1.1",
+  "adminMenu": "Réseaux.Discord",
+  "adminMenuOrder": 5,
+  "platform": "discord",
+  "description": {
+    "en": "Links your site to your Discord server with a bot, once, for everything that talks to Discord.",
+    "fr": "Relie votre site à votre serveur Discord avec un bot, une seule fois, pour tout ce qui parle à Discord."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🤖",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "page": false,
+  "offers": [
+    {
+      "service": "discord.api",
+      "version": 1,
+      "label": {
+        "en": "Talk to Discord for your site (post and keep messages up to date, open threads, list channels and roles)",
+        "fr": "Parler à Discord pour votre site (publier des messages et les tenir à jour, ouvrir des fils, lister salons et rôles)"
+      },
+      "readOnly": [
+        "status",
+        "listChannels",
+        "listRoles",
+        "guildStats",
+        "channelChoices",
+        "channelsByIds"
+      ]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "hidden": true
+    }
+  ],
+  "places": [
+    {
+      "id": "main",
+      "place": "networks.discord",
+      "order": 100,
+      "fromTab": "settings"
+    }
+  ],
+  "settings": [],
+  "logEvents": [
+    {
+      "key": "connection.problem",
+      "label": {
+        "en": "The Discord bot needs attention ({state})",
+        "fr": "Le bot Discord demande de l'attention ({state})"
+      },
+      "level": "warn",
+      "fields": [
+        {
+          "key": "state"
+        },
+        {
+          "key": "feature"
+        }
+      ]
+    },
+    {
+      "key": "connection.back",
+      "label": {
+        "en": "The Discord bot works again (was {was})",
+        "fr": "Le bot Discord fonctionne de nouveau (était {was})"
+      },
+      "fields": [
+        {
+          "key": "was"
+        }
+      ]
+    },
+    {
+      "key": "message.recreated",
+      "label": {
+        "en": "A deleted Discord message was written again",
+        "fr": "Un message Discord supprimé a été réécrit"
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "connector_discord_status",
+      "readOnly": true,
+      "default": false,
+      "right": "open",
+      "description": "Tell whether the Discord bot of the site really works: configured, degraded (code refused, bot not on the server, a permission missing for a feature, Discord asks for a pause) or not configured, since when, and which permissions the bot lacks on the whole server, plus how many channels the owner limited its writing to when they did. Use it first when something that should appear on Discord does not. Only the owner can fix it. It never shows a secret.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.connector_discord_status": "Dit si le bot Discord du site fonctionne vraiment, depuis quand, et quelles permissions lui manquent, et à combien de salons son écriture est limitée le cas échéant."
+    }
+  },
+  "rights": [
+    {
+      "id": "bot.manage",
+      "label": {
+        "en": "change or remove the Discord bot",
+        "fr": "modifier ou retirer le bot Discord"
+      },
+      "help": {
+        "en": "Enter, test or remove the bot's secret code, choose its channels, and delete its kept messages.",
+        "fr": "Saisir, tester ou retirer le code secret du bot, choisir ses salons, et supprimer ses messages tenus à jour."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": false,
+        "editor": false
+      }
+    }
+  ]
+}

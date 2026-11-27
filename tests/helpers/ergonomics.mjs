@@ -78,6 +78,7 @@ export const RULES = {
   R33e: "Pas de consigne conditionnelle ni approximative",
   R33f: "Pas de consigne de mise en place une fois la mise en place faite",
   R33g: "Pas de phrase de remplissage ni de réassurance",
+  R34: "Un seul mot : « module » (jamais extension, plugin, add-on, fonctionnalité)",
 };
 
 /**
@@ -117,6 +118,16 @@ export const FILLER_PHRASES = [
 ];
 /** R33g — exceptions justifiées (même forme que CONDITIONAL_WHITELIST). */
 export const FILLER_WHITELIST = [];
+/**
+ * R34 — mots RETIRÉS pour une pièce installée depuis le catalogue (docs/ERGONOMIE-ADMIN.md, ADR 0011) : le seul mot est « module ».
+ * Mots entiers ; casse et accents ignorés ; « featured » (mis en avant) n'est pas « feature ». Un emploi légitime (extension de navigateur, fonction de l'IA) se justifie dans RETIRED_WHITELIST.
+ */
+export const RETIRED_TERMS = {
+  en: ["extension", "extensions", "plugin", "plugins", "add-on", "add-ons", "addon", "addons", "feature", "features"],
+  fr: ["extension", "extensions", "plugin", "plugins", "add-on", "add-ons", "addon", "addons", "fonctionnalite", "fonctionnalites"],
+};
+/** R34 — exceptions JUSTIFIÉES (même forme que CONDITIONAL_WHITELIST : `term` plié, `text` regex facultative, `why`). Vide : le mot retiré n'a plus de sens légitime dans un texte visible. */
+export const RETIRED_WHITELIST = [];
 /** R33f — ce qui, dans une page « configurée », est une consigne de mise en place. */
 export const SETUP_PATTERN = /redirect urls?|collez|coller (?:cette|ce|le|la)|copiez|copier (?:cette|ce|le|la)|[ée]tape \d|mise en place|mise en route|ouvrez la console|paste (?:this|the)|copy (?:this|the)|step \d|set ?up guide|open the console/i;
 /** R33d — un texte qui dit que tout va bien. */
@@ -172,6 +183,12 @@ const matches = (re, text, whitelist) => {
 export const conditionalWording = (text) => matches(CONDITIONAL_RE, text, CONDITIONAL_WHITELIST);
 /** R33g — phrases de remplissage ou de réassurance d'un texte visible, hors exceptions justifiées. */
 export const fillerPhrases = (text) => matches(FILLER_RE, text, FILLER_WHITELIST);
+const RETIRED_RE = { en: phraseRe(RETIRED_TERMS.en), fr: phraseRe(RETIRED_TERMS.fr) };
+/** R34 — mots retirés d'un texte visible (`lang` : « fr », « en », ou « * » pour les deux listes), hors exceptions justifiées. */
+export function retiredTerms(text, lang = "*") {
+  const langs = lang === "*" ? ["fr", "en"] : [lang === "fr" ? "fr" : "en"];
+  return [...new Set(langs.flatMap((l) => matches(RETIRED_RE[l], text, RETIRED_WHITELIST)))];
+}
 /** R33a — mots internes d'un texte COURT qui dit un état (une pastille : 4 mots au plus). */
 export function forbiddenStatus(text) {
   if (wordCount(plain(text)) > 4) return [];

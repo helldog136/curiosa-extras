@@ -5,7 +5,7 @@
     "en": "Sponsor ticker overlay (OBS)",
     "fr": "Overlay sponsors (OBS)"
   },
-  "version": "1.5.0",
+  "version": "1.7.0",
   "minCore": "0.11.0",
   "description": {
     "en": "A lower-third for OBS that periodically shows one of your sponsors with its promo code and a QR code.",
@@ -72,6 +72,15 @@
         "fr": "Entrées de n'importe quelle liste de codes ou d'articles"
       },
       "tags": true
+    }
+  ],
+  "provides": [
+    {
+      "topic": "home.info",
+      "label": {
+        "en": "The sponsor on screen",
+        "fr": "Le sponsor à l'écran"
+      }
     }
   ],
   "permissions": [

@@ -4,8 +4,8 @@ Un **sujet** est le nom d'un échange d'informations entre modules (`domaine.obj
 **registre** des sujets utilisés par les modules de ce dépôt. Le test `tests/repo-rules.test.mjs` le lit : un sujet utilisé par un
 module (dans `module.json` ou dans le code) et absent d'ici fait échouer les tests ; une ligne mal formée aussi.
 
-Le cœur de Curiosa ne tient **aucun** registre : il ne documente (dans son `docs/MODULES.md`) que les trois sujets qu'il lit lui-même,
-`core.entry`, `social.link` et `feed.item`. Tout autre sujet est une affaire entre modules, donc se déclare ici. Publier un nouveau
+Le cœur de Curiosa ne tient **aucun** registre : il ne documente (dans son `docs/MODULES.md`) que les sujets qu'il lit ou fournit lui-même,
+`core.entry`, `core.user`, `social.link` et `feed.item`. Tout autre sujet est une affaire entre modules, donc se déclare ici. Publier un nouveau
 sujet ne demande donc jamais une nouvelle version du cœur.
 
 ## Comment ajouter un sujet
@@ -23,11 +23,12 @@ souhaite ».
 
 ## Sujets lus par le cœur
 
-Le cœur possède le schéma de ces trois sujets (voir `docs/MODULES.md` du cœur) ; ils sont répétés ici pour que la liste soit complète.
+Le cœur possède le schéma de ces sujets (voir `docs/MODULES.md` du cœur) ; ils sont répétés ici pour que la liste soit complète.
 
 | Sujet | Fournisseurs | Consommateurs | Champs | Depuis |
 |---|---|---|---|---|
 | `core.entry` | le cœur | `discord-announcer`, `maze-overlay`, `sponsor-ticker`, `ticker-overlay` | entrées publiées de toute instance à contenu | cœur 0.2.0 |
+| `core.user` | le cœur (aucun module ne peut le fournir) | `contacts` | les comptes qui se connectent : `id`, `name`, `email`, `level`, `roles`, `createdAt`, `updatedAt` (jamais un secret) | cœur 0.47.0 |
 | `feed.item` | `youtube-channel`, `*` | le cœur (flux RSS), `discord-announcer`, `mascot` | éléments proposés au flux RSS | cœur 0.1.23 |
 | `social.link` | tout module « réseau social » (`bluesky`, `discord`, `github`, `youtube-channel`, `twitch-channel`, `platform-links`…) | le cœur (en-tête et pied de page), `planning`, `twitch-bot` | `label`, `url`, `icon`, et les champs facultatifs de liens définis par le cœur | cœur 0.2.13 |
 
@@ -47,6 +48,7 @@ Le cœur possède le schéma de ces trois sujets (voir `docs/MODULES.md` du cœu
 | `ha.result` | `home-assistant` | `twitch-bot`, `youtube-live-actions` | `ref`, `id`, `status` (`done`, `failed`, `ignored`, `expired`, `refused`), `code`, `at` : issue d'un ordre confié à Home Assistant, pour valider, rembourser ou afficher | cœur 0.2.8 |
 | `ha.state` | `home-assistant` | `twitch-bot` | `enabled`, `live`, `paired`, `lastSeenAt?` : un seul élément, l'état du pont (le bot met ses récompenses en pause ou les réactive) | cœur 0.2.8 |
 | `home.actions` | `twitch-bot` | `home-assistant` | `key` (`^[a-z0-9][a-z0-9:_-]{0,39}$`), `label` (texte nettoyé, 60 caractères au plus, dans la langue du site) : les NOMS des actions de la maison que les récompenses peuvent lancer, 50 au plus, sans secret ni récompense ni pseudo. Les actions de base (lumières, voix) n'y sont que si une récompense les utilise ; les actions nommées y sont toutes. Le connecteur les ajoute à `pull` (champ `catalog`) pour que l'intégration propose de les relier | 1.23.0 |
+| `home.info` | `sponsor-ticker`, `*` (any module with a small thing to show) | `home-assistant` | `key` (`^[a-z0-9][a-z0-9._:-]{0,59}$`, unique), `label` (cleaned text, 60 code points at most, in the site language), `value` (a string of 120 code points at most, or a finite number below 1e12 in absolute value, or a boolean, or `null` when the provider has nothing to say right now), `unit?` (12 code points at most, only with a number): small pieces of display information, 20 at most, no secret and no personal data. `sponsor-ticker` computes its value from the server clock (the scheduled sponsor during its display time, else `null`): nothing is reported by a page. The connector cleans them again and adds them to `pull` (field `info`) | 1.110.0 |
 | `live.event` | `youtube-live-actions` | `alerts-overlay` | `id`, `platform`, `kind` (`superchat`, `supersticker`, `member`, `gift`), `who`, `at`, et selon le cas `amount` (toujours avec `currency`), `count`, `text` ; en mémoire seulement (15 minutes, 50 au plus) | cœur 0.2.8 |
 | `map.place` | `events`, `directory`, tout module qui a des lieux | `map` | `id`, `title`, `lat` (-90 à 90), `lng` (-180 à 180, jamais le point 0,0, 5 décimales), `kind`, `url?`, `at?` (date ISO), `note?` ; 200 éléments au plus. **Jamais d'adresse personnelle sans consentement** : lieu public ou ville arrondie d'une personne qui a dit oui. La carte n'écrit jamais chez la source | cœur 0.2.11 |
 | `mascot.hint` | `daily-game`, tout module qui a une nouveauté à annoncer | `mascot` | `id` (change quand l'état change), `text` (140 caractères, sans balise), `url?` (page du site) ; 10 au plus. Un module qui n'a rien à dire ne publie rien | cœur 0.2.11 |

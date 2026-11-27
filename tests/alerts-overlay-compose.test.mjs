@@ -59,14 +59,14 @@ const GOLDEN = {
   "gifs,scale,neon": ["14ecc5a6f985b9e8", "b9aabf34dbcd2d2a", "0a2a27204d90074a"],
   "gifs,scale,plain": ["14ecc5a6f985b9e8", "b5b038416eb738e0", "1e110e6c16a36794"],
 };
-test("migration: without a composition, the page is byte for byte the page of 1.10.1 (Twitch activity, pictures, module page and element)", async () => {
+test("migration: without a composition, the page is byte for byte the page of 1.10.1 (Twitch activity, pictures, module page and element)", async (t) => {
   const got = {};
   for (const [name, config] of Object.entries(CONFIGS)) for (const where of ["page", "scale"]) for (const visual of ["neon", "plain"]) {
     const w = world({ key: "gold", settings: { visual, durationSeconds: 7, accentColor: "#12ab34" }, config });
     const out = await def.overlay(w.ctx, where === "page" ? undefined : { query: QUERY("scale") });
     got[`${name},${where},${visual}`] = [hash(out.html), hash(out.css), hash(out.script)];
   }
-  if (OLD) { console.log(JSON.stringify(got, null, 1)); return; }
+  if (OLD) { console.log(JSON.stringify(got, null, 1)); t.skip("COMPOSE_GOLDEN_DIR is set: the golden hashes were printed from the old version, nothing was compared"); return; }
   assert.deepEqual(got, GOLDEN);
   // an older core (no ctx.overlay) with compositions saved: still the page of before
   const w = world({ key: "gold", overlay: null, config: CONFIGS.gifs, settings: { visual: "neon", durationSeconds: 7, accentColor: "#12ab34" } });
