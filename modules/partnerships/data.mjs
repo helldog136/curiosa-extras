@@ -10,7 +10,7 @@ export const today = () => new Date().toISOString().slice(0, 10);
 export const validDate = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v ?? "")) ? v : today());
 export const safeUrl = (v) => (/^https?:\/\//i.test(String(v ?? "").trim()) ? String(v).trim().slice(0, 500) : "");
 
-export const PARTNER_FIELDS = { brand: 120, status: 30, url: 500, sector: 120, country: 80, contact: 500, brief: 10000, mail: 10000, source: 500, products: 3000, benefits: 3000, logo: 500 };
+export const PARTNER_FIELDS = { brand: 120, status: 30, url: 500, sector: 120, country: 80, contact: 500, brief: 10000, mail: 10000, source: 500, products: 3000, benefits: 3000, logo: 500, articleId: 80 };
 
 /** Keeps only the known fields, cleaned (never HTML or an unexpected field in the file). */
 export function cleanPartner(input, previous = {}) {
@@ -123,4 +123,44 @@ export async function deletionPreview(ctx, row) {
   const journal = (await readAll(ctx, "journal")).filter((j) => j.data.partnerId === row.id).length;
   const contacts = Array.isArray(row.data.contactIds) ? new Set(row.data.contactIds).size : 0;
   return { journal, contacts };
+}
+
+
+// ── Public articles ────────────────────────────────────────────────────────────────────────────
+// The public articles of the owner live in a content module of the site (by default the instance "sponsoring"), not here. This module only READS the published
+// ones (`ctx.api.entries.list`, 200 at most; drafts are never visible to a module) and keeps, on a file, the id of its article (`articleId`). Nothing is written
+// to the article, and a file is never created behind the owner's back: an article without a file is a row of the overview with "Add the file".
+export const ARTICLES_KEY = "sponsoring";
+const fold = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/** `{ key, items }` (published articles, newest first) when the articles module exists on this site, else `null` (no article column then). Never throws. */
+export async function loadArticles(ctx) {
+  const key = clip(ctx.setting?.("articlesKey"), 60) || ARTICLES_KEY;
+  try {
+    if (typeof ctx.api.entries?.list !== "function") return null;
+    const known = typeof ctx.api.instances?.list === "function" ? (await ctx.api.instances.list()).some((i) => i.key === key) : undefined;
+    if (known === false) return null;
+    const items = (await ctx.api.entries.list({ instance: key, limit: 200 })).filter((e) => e && typeof e.id === "string" && e.title);
+    if (known === undefined && !items.length) return null;
+    return { key, items };
+  } catch { return null; }
+}
+
+/**
+ * Pairs the files with the published articles. A file keeps its own article (`articleId`); a file without one is paired with the article that carries its brand as the whole
+ * title or as a whole word of the title (3 letters at least), each article once. `orphans` are the published articles no file stands for.
+ */
+export function pairArticles(partners, articles) {
+  const byFile = new Map();
+  if (!articles) return { byFile, orphans: [] };
+  const free = new Map(articles.items.map((a) => [a.id, a]));
+  for (const p of partners) { const a = free.get(p.data.articleId); if (a) { byFile.set(p.id, a); free.delete(a.id); } }
+  for (const p of partners) {
+    if (byFile.has(p.id) || p.data.articleId) continue;
+    const brand = fold(p.data.brand);
+    if (brand.length < 3) continue;
+    const hit = [...free.values()].find((a) => { const t = fold(a.title); return t === brand || ` ${t} `.includes(` ${brand} `); });
+    if (hit) { byFile.set(p.id, hit); free.delete(hit.id); }
+  }
+  return { byFile, orphans: [...free.values()] };
 }

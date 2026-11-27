@@ -69,7 +69,7 @@ const ROLLOUT = {
   "map": ["1.3.0", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "maze-overlay": ["1.3.1", { look: "obs.overlays.maze", motion: "obs.overlays.maze" }],
-  "partnerships": ["2.5.1", { main: "community.partners" }],
+  "partnerships": ["2.6.0", { main: "community.partners" }],
   "patreon": ["1.2.1", { main: "networks.accounts" }],
   "pinterest": ["1.2.1", { main: "networks.accounts" }],
   "planning": ["2.10.0", { main: "calendar.schedule", look: "calendar.schedule.look" }],
@@ -274,6 +274,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
     if (id === "stream-story") rest.mcp = rest.mcp.filter((t) => t.name !== "story_week").map((t) => (t.name === "story_prepare" ? oldRest.mcp.find((o) => o.name === "story_prepare") : t)); // 2.16.0: the week's schedule (a new read tool; story_prepare gains kind, weekStart, weekPart, weekTitle)
     if (id === "stream-story") rest.i18n = { fr: Object.fromEntries(Object.entries(rest.i18n.fr).filter(([k]) => k !== "mcp.story_week")) }; // 2.16.0: the French text of the new tool description
     if (id === "contacts") { delete rest.consumes; rest.permissions = rest.permissions.filter((x) => x !== "topics"); } // 2.8.0: the optional topic core.user (linked cards for the login accounts) and the permission to read it
+    if (id === "partnerships") rest.settings = rest.settings.filter((s) => s.key !== "articlesKey"); // 2.6.0: the module that holds the public articles (advanced setting, works with no setup)
     if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);

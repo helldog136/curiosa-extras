@@ -120,5 +120,15 @@
   "deleteKeepN": "The {n} linked contacts stay in your address book.",
   "deleteTick": "Tick the box to confirm the deletion.",
   "deletedPartner": "{brand} was deleted. Its contacts stay in your address book.",
-  "exSearch": "etoile_nord, etoile@example.org"
+  "exSearch": "etoile_nord, etoile@example.org",
+  "articleHead": "Article",
+  "articlePublished": "Published",
+  "articleMissing": "No published article",
+  "articleOnly": "Article without file",
+  "articleNone": "None",
+  "articleField": "Published article",
+  "articleAuto": "Found by name",
+  "articleGone": "This article is not published any more. Pick another or leave it empty.",
+  "addFromArticle": "Add the file",
+  "addFromArticleTitle": "Add the file — {brand}"
 }
