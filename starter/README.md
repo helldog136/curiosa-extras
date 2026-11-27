@@ -15,7 +15,7 @@ Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne
 
 ## Installer sur votre site Curiosa
 
-1. Dans l'administration, ouvrez le menu de gauche et cliquez sur **« Afficher les réglages avancés »** (l'installation depuis une adresse n'existe que là), puis ouvrez **Extensions → Catalogue**.
+1. Dans l'administration, ouvrez le menu de gauche et cliquez sur **« Afficher les réglages avancés »** (l'installation depuis une adresse n'existe que là), puis ouvrez **Modules → Catalogue**.
 2. Ouvrez **Installer un dépôt personnel (non vérifié)**, collez l'adresse ci-dessous et cliquez sur **Voir le README avant d'installer**.
 
    ```
@@ -24,7 +24,7 @@ Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne
 
 3. Lisez ce que le module demande, cochez la case « Je comprends… » puis **Installer sur mon site**. Le module est installé et actif : cliquez sur **Mettre en place** pour créer son premier bloc.
 
-Les mises à jour se font depuis **Extensions → votre module → Chercher une mise à jour**.
+Les mises à jour se font depuis **Modules → votre module → Chercher une mise à jour**.
 
 ## Licence
 

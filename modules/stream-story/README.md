@@ -6,7 +6,7 @@ Nothing to install on your computer, nothing to set up to begin: everything happ
 
 ## Getting started
 1. **Install the module.** If you have a schedule ("Online calendar" or "Hand-written streams", in the catalogue), your next streams show up on their own. If you also have the site's YouTube channel or Twitch channel, your scheduled videos and lives and your Twitch schedule join the same list. With none of this, the module tells you what to install, and you can choose **"No event"** and write the information yourself for the video.
-2. **Open the module's page** ("Announcement story" in the menu, or in Extensions).
+2. **Open the module's page** ("Announcement story" in the menu, or in Modules).
 3. **It is already ready**: when it opens, **the next event** (among all your sources, sorted by date and time) is already chosen and the preview shows it. To publish it as it is, click **"Generate now"**. To adjust it, go through three steps, in this order:
    1. **Event**: keep the next event, pick another one in the list ("Change event"), or click **"No event, I write it myself"** (the information then starts empty).
    2. **Information**: every thing the video can show is one item, filled in from the event or empty: title, day and time, game (its cover is found by itself), countdown, your sentence, guest streamers, logo and channel name. Correct any of them, and **remove one with its "In the video" switch** (the same tick as before, now next to the field: switch it off and the item leaves the preview; switch it on and it comes back). The language of the dates is under "More options".

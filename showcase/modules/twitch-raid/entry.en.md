@@ -4,7 +4,7 @@ A panel for OBS that shows which partners are live on Twitch, so you can choose 
 
 - Pick a Contacts category as your raid list.
 - See who is live right now.
-- Feature picks for a limited time.
+- Highlight picks for a limited time.
 - Favour small channels, and never draw some names.
 - Show a public page of partners who are live, if you wish.
 - Show featured partners, or all partners live now, in OBS.

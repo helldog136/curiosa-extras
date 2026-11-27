@@ -13,7 +13,7 @@ Pays pris en compte : **Belgique, France, Suisse, Canada (Québec, ou une autre 
 ## Comment l'utiliser
 
 1. Installez le module : une page « Mentions légales » apparaît dans votre administration.
-2. Cliquez sur **Commencer** et répondez, une question à la fois. Ce que le site sait déjà est prérempli : l'adresse de contact du site, et ce que récoltent les extensions que le site reconnaît (formulaire de contact, livre d'or, suggestions de jeux, bot Twitch, lecteur Twitch…). Relisez : c'est vous qui connaissez votre site.
+2. Cliquez sur **Commencer** et répondez, une question à la fois. Ce que le site sait déjà est prérempli : l'adresse de contact du site, et ce que récoltent les modules que le site reconnaît (formulaire de contact, livre d'or, suggestions de jeux, bot Twitch, lecteur Twitch…). Relisez : c'est vous qui connaissez votre site.
 3. Ouvrez **l'aperçu** de vos trois pages. Ce qui manque est écrit en gras avec un ⚠ : « À compléter : … ».
 4. Quand tout est prêt, cochez « J'ai relu les textes… » et **publiez**. Un petit lien « Mentions légales » apparaît en bas de chaque page (vous pouvez en afficher trois, ou aucun, dans l'onglet « Réglages »).
 
@@ -23,7 +23,7 @@ Vous pouvez recommencer, corriger une réponse ou **retirer** les pages à tout 
 
 - **Jamais de texte à trous.** Une réponse qui manque bloque la publication au lieu de laisser une phrase incomplète ou une information inventée. Aucune donnée n'est devinée : l'adresse, le numéro d'entreprise, l'hébergeur… viennent de vous, ou ne sont pas publiés (quand la loi ne les exige pas).
 - **Rien n'est publié sans votre geste.** Même un assistant IA branché au site ne peut que préparer un brouillon de réponses ; c'est vous qui confirmez chaque étape et qui publiez.
-- **Un rappel visible** quand quelque chose a changé : une extension qui récolte des informations a été ajoutée ou retirée, vous avez modifié une réponse depuis la dernière publication, ou vos textes ont plus d'un an (réglable). Une pastille s'affiche dans le menu de l'administration.
+- **Un rappel visible** quand quelque chose a changé : un module qui récolte des informations a été ajouté ou retirée, vous avez modifié une réponse depuis la dernière publication, ou vos textes ont plus d'un an (réglable). Une pastille s'affiche dans le menu de l'administration.
 - **Pages publiques normales** : adresses lisibles (`/legal`, `/legal/notice`, `/legal/privacy`, `/legal/cookies`), langues du site, pas de balise qui bloque les moteurs de recherche.
 
 ## Réglages
@@ -39,7 +39,7 @@ Vous pouvez recommencer, corriger une réponse ou **retirer** les pages à tout 
 - Il **ne fabrique pas de bandeau de consentement** et ne bloque pas les contenus d'autres services (lecteur vidéo…). Si vous en intégrez, il vous prévient : en Belgique et en France, il faut en principe l'accord de la personne qui visite avant de les afficher.
 - Il **n'efface pas vos messages** à votre place : la durée de conservation que vous choisissez est un engagement que vous prenez.
 - Il **n'empêche pas** le site d'ajouter par défaut un lien « Mentions légales » dans le menu du haut : décochez « Afficher dans le menu de mon site » (onglet « Général ») pour le garder seulement en bas de page.
-- Il ne connaît que les extensions du catalogue au moment de son écriture. Pour une extension qu'il ne connaît pas, il vous **pose la question** au lieu de deviner.
+- Il ne connaît que les modules du catalogue au moment de son écriture. Pour un module qu'il ne connaît pas, il vous **pose la question** au lieu de deviner.
 - Les textes sont en français et en anglais seulement.
 
 ## Vie privée de ce module

@@ -75,7 +75,7 @@
         "fr": "Laisser le site répondre dans le chat de votre direct"
       },
       "help": {
-        "en": "When on, the site writes short messages in your live chat when another feature asks. Example: “Everything is off.” Then reconnect your account so that Google asks for the permission to write.",
+        "en": "When on, the site writes short messages in your live chat when another module asks. Example: “Everything is off.” Then reconnect your account so that Google asks for the permission to write.",
         "fr": "Activé, le site écrit de courts messages dans le chat de votre direct, quand une autre fonction le demande. Exemple : « Tout est coupé. » Reconnectez ensuite votre compte pour que Google demande l'autorisation d'écrire."
       }
     }

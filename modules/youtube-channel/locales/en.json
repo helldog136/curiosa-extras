@@ -18,5 +18,5 @@
   "events_setup_connector": "To see your scheduled videos and live streams, the site needs a YouTube access code. Install what the YouTube channel page offers, then add your code there.",
   "events_setup_key": "To see your scheduled lives, add your YouTube access code in Settings, on the site's YouTube connector page. It is free.",
   "events_setup_refused": "The YouTube access code is refused: check it in Settings, on the site's YouTube connector page.",
-  "events_setup_update": "To see your scheduled videos, update the site's YouTube connector (Extensions, Check for updates)."
+  "events_setup_update": "To see your scheduled videos, update the site's YouTube connector (Modules, Check for updates)."
 }

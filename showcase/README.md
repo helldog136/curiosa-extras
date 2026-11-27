@@ -31,7 +31,7 @@ showcase/
 | `worksWith` | Modules that go well with it (linked in "Works well with"). |
 | `status` | `stable`, `beta` or `deprecated`. |
 | `screenshots` | `[{ file, kind, shared?, alt: {en, fr}, caption: {en, fr} }]`, possibly empty. `kind`: `admin`, `public`, `mobile` or `overlay`. `shared: true` points to `showcase/shared/<file>` (one picture several entries show, such as the header buttons). `alt` is at most 125 characters. |
-| `sources` | The files the text is based on (`modules/<id>/module.json` at least). **Every claim must be traceable to them.** Never invent a feature. |
+| `sources` | The files the text is based on (`modules/<id>/module.json` at least). **Every claim must be traceable to them.** Never invent a capability. |
 
 ## The texts
 

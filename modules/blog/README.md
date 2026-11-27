@@ -2,7 +2,7 @@
 
 Articles with an image, a summary and Markdown content. Add as many blogs as you want.
 
-Base module of Curiosa (Curiosa License 1.0). It is turned on from the admin, under **Features**; its settings are on its own page.
+Base module of Curiosa (Curiosa License 1.0). It is turned on from the admin, under **Modules**; its settings are on its own page.
 
 ## Display
 

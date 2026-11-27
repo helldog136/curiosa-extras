@@ -2,7 +2,7 @@
 
 Showcases your YouTube channel. Its most popular recent video, your videos in the site's feed, your counts.
 
-- Feature your most popular recent video.
+- Highlight your most popular recent video.
 - Choose how recent a video must be to be featured.
 - Allow or refuse Shorts.
 - Follow your channel's statistics.

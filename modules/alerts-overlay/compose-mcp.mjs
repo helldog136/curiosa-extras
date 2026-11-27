@@ -31,7 +31,7 @@ const previews = (globalThis.__curiosaAlertsPreviews ??= new Map());   // access
 
 const ready = (ctx, feature) => {
   if (!cp.available(ctx)) throw expose("This site's core cannot place text yet: it must be updated to 0.19.0 or later.");
-  if (feature && !(ctx.overlay.features ?? []).includes(feature)) throw expose(`This site's core cannot do this yet: it must be updated to 0.25.0 or later (feature "${feature}").`);
+  if (feature && !(ctx.overlay.features ?? []).includes(feature)) throw expose(`This site's core cannot do this yet: it must be updated to 0.25.0 or later (capability "${feature}").`);
 };
 /** A place: { place, kind: "event", type } (a Twitch event) or (1.16.0) { place, kind: "show", decl } (a command or a word of another module, declared to this overlay). */
 async function placeOf(ctx, place) {

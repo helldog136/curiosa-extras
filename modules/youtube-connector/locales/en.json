@@ -67,7 +67,7 @@
   "key_save": "Save the access code",
   "key_saved": "Access code saved.",
   "key_forget": "Forget the access code",
-  "key_forget_confirm": "Forget the access code? It is deleted here. The YouTube extensions stop until you type one.",
+  "key_forget_confirm": "Forget the access code? It is deleted here. The YouTube modules stop until you type one.",
   "key_forgotten": "Access code forgotten.",
   "f_key": "Access code",
   "f_key_help": "Free: create it on console.cloud.google.com (“YouTube Data v3”).",

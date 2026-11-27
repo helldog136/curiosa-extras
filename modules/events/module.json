@@ -35,7 +35,7 @@
   "basePath": "events",
   "privacy": {
     "fr": "Ce module ne demande ni nom ni e-mail et ne dépose aucun cookie. Pour limiter les abus, il retient en mémoire seulement, 24 heures au plus, une empreinte non réversible de votre connexion. Une vidéo YouTube ne se charge qu'après votre clic : YouTube reçoit alors votre adresse. Les liens d'inscription, de carte et de galerie mènent vers d'autres sites.",
-    "en": "This extension asks for no name or e-mail and sets no cookie. To limit abuse it only keeps in memory, for 24 hours at most, a one-way fingerprint of your connection. A YouTube video only loads after you click: YouTube then receives your address. Sign-up, map and gallery links lead to other sites."
+    "en": "This module asks for no name or e-mail and sets no cookie. To limit abuse it only keeps in memory, for 24 hours at most, a one-way fingerprint of your connection. A YouTube video only loads after you click: YouTube then receives your address. Sign-up, map and gallery links lead to other sites."
   },
   "permissions": [
     "sections",

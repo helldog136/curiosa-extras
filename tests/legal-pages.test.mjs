@@ -704,11 +704,11 @@ test("rappels : une extension qui récolte arrive, une extension inconnue arrive
   assert.equal(await def.adminBadge(collector), 1);
   const unknown = reopen(ctx, [...base, inst("mystery", "Mystère")]);
   const a2 = Admin.attention(unknown, await Admin.load(unknown));
-  assert.match(a2[0].text, /Mystère.*je ne la connais pas/);
+  assert.match(a2[0].text, /Mystère.*je ne le connais pas/);
   const s2 = await Admin.load(unknown);
   assert.ok(s2.missing.some((m) => m.step === "collect"), "il faut répondre pour l'extension inconnue avant de republier");
   const removed = reopen(ctx, [inst("blog")]);
-  assert.match(Admin.attention(removed, await Admin.load(removed))[0].text, /contact-form.*n'est plus installée/);
+  assert.match(Admin.attention(removed, await Admin.load(removed))[0].text, /contact-form.*n'est plus installé/);
   const overview = await def.adminPanel(collector, { query: {} });
   assert.ok(overview.some((b) => b.type === "markdown" && /Livre d'or/.test(b.text) && b.text.includes("?step=collect")));
 });

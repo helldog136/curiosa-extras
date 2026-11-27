@@ -80,7 +80,7 @@
   "events_setup_channel": "Renseignez le nom de votre chaîne dans les réglages de la chaîne Twitch pour voir votre planning Twitch.",
   "events_setup_connector": "Pour voir votre planning Twitch, réglez l'application Twitch du site dans le Connecteur Twitch.",
   "events_setup_refused": "Twitch refuse l'application du site : vérifiez ses codes sur la page du connecteur Twitch.",
-  "events_setup_update": "Pour voir votre planning Twitch, mettez à jour le Connecteur Twitch (Extensions, Chercher une mise à jour).",
+  "events_setup_update": "Pour voir votre planning Twitch, mettez à jour le Connecteur Twitch (Modules, Chercher une mise à jour).",
   "frozen": "Certains chiffres sont figés : Twitch refuse l'autorisation actuelle.",
   "authorizeAgain": "Autoriser de nouveau avec Twitch",
   "forget_confirm": "Oublier la chaîne ? Ce module ne connaît plus votre chaîne tant que vous ne la saisissez pas dans les réglages.",

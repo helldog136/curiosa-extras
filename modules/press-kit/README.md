@@ -2,7 +2,7 @@
 
 A public page that presents your identity to press and partners: presentation, main facts, logos, colors, fonts and contact. It works with no setting at all, because it takes everything from your site (Settings → Identity and Appearance). Add your own texts and values in **Settings** when the site's are not enough.
 
-Core module of Curiosa (Curiosa License 1.0). Turn it on from the admin, under **Features**; its settings are on its page.
+Core module of Curiosa (Curiosa License 1.0). Turn it on from the admin, under **Modules**; its settings are on its page.
 
 ## What you can set
 
