@@ -37,3 +37,13 @@ New partner, edit, delete and "add a journal entry" open in a **window above the
 `partners_list`, `partner_get` (also returns the linked contacts: id, name, role, e-mail), `partner_create` (status "to contact" or "in discussion" only), `partner_update`, `partner_log`, **`partner_link_contact`** and **`partner_unlink_contact`**. The tools that write (`partner_create`, `partner_update`, `partner_log`, `partner_link_contact`, `partner_unlink_contact`) are **granted only explicitly** by your AI access; only reading is granted by default. The tools that create, change or delete people are those of *Contacts*. `partner_delete` exists but is **off by default** (it only deletes the file and its journal, and returns the counts). The changes made by an assistant are attributed to its token (`agent:<token>`).
 
 The `partnership.partner` topic is still provided (the *Sponsors* module uses it). **Advanced setting**: days without news before a follow-up (14). One copy per site.
+
+## Published articles (2.6.0)
+
+The public articles about your partners live in a content module of the site (by default the one called `sponsoring`; advanced setting "Module that holds your public articles"). Partnerships only **reads** the published ones (200 at most; a draft is never visible to a module) and never writes to them.
+
+- **A file shows its article.** The overview has an "Article" column when that module exists: "Published" (a link to the article) or, for a file marked Published, "No published article". A file is paired with the article it points to (edit window, under "More options", "Published article"), else with the article whose title is the brand name or contains it as a whole word. Each article is paired once.
+- **An article without a file is a row.** It counts as Published, wears the badge "Article without file", and its "Open" or "Edit" button opens "Add the file", prefilled from the article. The file is born flagged `fromArticle`; replaying the action creates nothing twice. Nothing is created without a click, and no field of an existing file is overwritten.
+- **The two numbers agree.** The number in the title ("Overview (n)") is the number of rows of the table, closed files and articles without a file included, as the search count ("n of N") says.
+- Without the articles module (or an older core) the column and the field do not exist and nothing is read.
+

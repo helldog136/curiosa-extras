@@ -6,7 +6,7 @@
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "2.5.1",
+  "version": "2.6.0",
   "menuGroup": "community",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
@@ -85,6 +85,20 @@
       "label": {
         "en": "Days without news before a follow-up is due",
         "fr": "Jours sans nouvelle avant qu'une relance soit due"
+      }
+    },
+    {
+      "key": "articlesKey",
+      "type": "text",
+      "default": "sponsoring",
+      "advanced": true,
+      "label": {
+        "en": "Module that holds your public articles",
+        "fr": "Module qui porte vos articles publics"
+      },
+      "example": {
+        "en": "sponsoring",
+        "fr": "sponsoring"
       }
     }
   ],

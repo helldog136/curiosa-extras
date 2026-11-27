@@ -1,6 +1,6 @@
 // Partnerships: the admin interface: overview, partner page (journal, linked contacts), and the windows to add, edit and delete.
 const v = new URL(import.meta.url).search; // the module version propagates to the neighbouring files (otherwise the old code would stay cached after an update)
-const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt, deletePartnerRecord, deletionPreview } = await import(`./data.mjs${v}`);
+const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt, deletePartnerRecord, deletionPreview, loadArticles, pairArticles } = await import(`./data.mjs${v}`);
 const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, healLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
 
 export default {
@@ -24,11 +24,16 @@ export default {
   // `?partner=<id>&log=1`); the action answers `{ ok }` and the core closes the window.
   async adminPanel(ctx, { query }) {
     const t = ctx.t;
-    const [partners, journal, hasBook] = await Promise.all([all(ctx, "partners"), all(ctx, "journal"), bookAvailable(ctx)]);
+    const [partners, journal, hasBook, articles] = await Promise.all([all(ctx, "partners"), all(ctx, "journal"), bookAvailable(ctx), loadArticles(ctx)]);
+    // Published articles: each file shows the state of its article, and an article no file stands for is a row of its own ("Add the file"). A row id "article:<id>" is such an article.
+    const { byFile, orphans } = pairArticles(partners, articles);
+    const virtuals = orphans.map((a) => ({ id: `article:${a.id}`, virtual: a, createdAt: new Date(Date.parse(a.publishedAt) || Date.now()), data: { brand: a.title, status: "publie", articleId: a.id } }));
+    const articleHref = (a) => a.path || a.url || undefined;
     const statusOptions = STATUSES.map((s) => ({ value: s, label: t(`s_${s}`) }));
     const blocks = [{ type: "markdown", text: `*${t("private")}*` }];
-    const byId = (id) => (typeof id === "string" && id ? partners.find((p) => p.id === id) : undefined);
-    const open = byId(query.partner);
+    const byId = (id) => (typeof id === "string" && id ? partners.find((p) => p.id === id) ?? virtuals.find((p) => p.id === id) : undefined);
+    const picked = byId(query.partner);
+    const open = picked?.virtual ? undefined : picked; // an article without a file has no partner page: its row opens the "Add the file" window
     const back = open ? `?partner=${open.id}` : "?"; // where a window returns when it closes
 
     // The edit window: four fields in sight, the rare ones under "More options" (the core summarises what is already filled in there).
@@ -36,13 +41,14 @@ export default {
       type: "adminForm",
       presentation: "dialog",
       action: "savePartner",
-      title: p ? `${t("edit")} — ${p.data.brand}` : t("add"),
-      submitLabel: t(p ? "saveSubmit" : "addSubmit"),
+      title: p?.virtual ? t("addFromArticleTitle", { brand: p.data.brand }) : p ? `${t("edit")} — ${p.data.brand}` : t("add"),
+      submitLabel: t(p?.virtual ? "addFromArticle" : p ? "saveSubmit" : "addSubmit"),
       cancelHref: back,
       // Core 0.12.0: the destructive button sits at the start of the window footer and asks first, saying what is lost. Older cores ignore the key; the row menu keeps its own "Delete the partner".
-      ...(p ? await (async () => { const { journal: n, contacts: k } = await deletionPreview(ctx, p); return { secondaryAction: { label: t("deleteBtn"), action: "removePartner", confirm: `${t(`deleteAsk${count(n)}`, { n })} ${t(`deleteKeep${count(k)}`, { n: k })}` } }; })() : {}),
+      ...(p && !p.virtual ? await (async () => { const { journal: n, contacts: k } = await deletionPreview(ctx, p); return { secondaryAction: { label: t("deleteBtn"), action: "removePartner", confirm: `${t(`deleteAsk${count(n)}`, { n })} ${t(`deleteKeep${count(k)}`, { n: k })}` } }; })() : {}),
       fields: [
-        { name: "id", kind: "hidden", value: p?.id ?? "" },
+        { name: "id", kind: "hidden", value: p?.virtual ? "" : p?.id ?? "" },
+        ...(p?.virtual ? [{ name: "articleId", kind: "hidden", value: p.data.articleId }] : []),
         { name: "brand", label: t("brand"), required: true, example: t("exBrand"), value: p?.data.brand ?? "" },
         { name: "status", label: t("status"), kind: "select", options: statusOptions, value: p?.data.status ?? "a_contacter" },
         { name: "chances", label: t("chances"), kind: "number", min: 0, max: 100, step: 1, unit: "%", value: String(p?.data.chances ?? "") },
@@ -56,6 +62,8 @@ export default {
         { name: "brief", label: t("brief"), kind: "textarea", folded: true, example: t("exBrief"), value: p?.data.brief ?? "" },
         { name: "mail", label: t("mail"), kind: "textarea", folded: true, value: p?.data.mail ?? "" },
         { name: "source", label: t("source"), folded: true, example: t("exSource"), value: p?.data.source ?? "" },
+        // Which article stands for this file: empty = found by name. Only the articles no other file already has.
+        ...(articles && p && !p.virtual ? [{ name: "articleId", label: t("articleField"), kind: "select", folded: true, value: p.data.articleId ?? "", options: [{ value: "", label: t("articleAuto") }, ...articles.items.filter((a) => a.id === p.data.articleId || !partners.some((q) => q.data.articleId === a.id)).map((a) => ({ value: a.id, label: a.title }))] }] : []),
       ],
     });
 
@@ -90,7 +98,8 @@ export default {
     const dialogs = [];
     if (query.new) dialogs.push(await partnerForm(null));
     else if (byId(query.edit)) dialogs.push(await partnerForm(byId(query.edit)));
-    else if (byId(query.delete)) dialogs.push(await deleteForm(byId(query.delete)));
+    else if (picked?.virtual) dialogs.push(await partnerForm(picked));
+    else if (byId(query.delete) && !byId(query.delete).virtual) dialogs.push(await deleteForm(byId(query.delete)));
     else if (open && query.log) dialogs.push(journalForm(open));
     blocks.push(...dialogs);
 
@@ -102,7 +111,7 @@ export default {
     if (open) {
       const d = open.data;
       const mine = journal.filter((j) => j.data.partnerId === open.id).sort((a, b) => String(b.data.date).localeCompare(String(a.data.date)));
-      const lines = [d.status && `**${t("status")}** : ${t(`s_${d.status}`)}${followUpDue(ctx, open, journal) ? ` ⏰ ${t("followUp")}` : ""}`, d.chances != null && `**${t("chances")}** : ${d.chances} %`, d.url && `**${t("url")}** : ${d.url}`, d.sector && `**${t("sector")}** : ${d.sector}`, d.country && `**${t("country")}** : ${d.country}`, d.contact && `**${t("contact")}** : ${d.contact}`, d.products && `**${t("products")}** : ${d.products}`, d.benefits && `**${t("benefits")}** : ${d.benefits}`, d.brief && `**${t("brief")}** :\n\n${d.brief}`].filter(Boolean);
+      const lines = [d.status && `**${t("status")}** : ${t(`s_${d.status}`)}${followUpDue(ctx, open, journal) ? ` ⏰ ${t("followUp")}` : ""}`, d.chances != null && `**${t("chances")}** : ${d.chances} %`, articles && `**${t("articleHead")}** : ${byFile.get(open.id) ? (articleHref(byFile.get(open.id)) ? `[${t("articlePublished")}](${articleHref(byFile.get(open.id))})` : t("articlePublished")) : t(d.status === "publie" ? "articleMissing" : "articleNone")}`, d.url && `**${t("url")}** : ${d.url}`, d.sector && `**${t("sector")}** : ${d.sector}`, d.country && `**${t("country")}** : ${d.country}`, d.contact && `**${t("contact")}** : ${d.contact}`, d.products && `**${t("products")}** : ${d.products}`, d.benefits && `**${t("benefits")}** : ${d.benefits}`, d.brief && `**${t("brief")}** :\n\n${d.brief}`].filter(Boolean);
       return [
         ...blocks,
         ...notices,
@@ -123,16 +132,23 @@ export default {
 
     // Overview: sorted by urgency (discussion > accepted > sent > to contact > published > closed)
     const rank = (s) => ({ discussion: 0, accepte: 1, envoye: 2, a_contacter: 3, publie: 4 })[s] ?? 5;
-    const sorted = [...partners].sort((a, b) => rank(a.data.status) - rank(b.data.status) || String(a.data.brand).localeCompare(String(b.data.brand)));
+    const sorted = [...partners, ...virtuals].sort((a, b) => rank(a.data.status) - rank(b.data.status) || String(a.data.brand).localeCompare(String(b.data.brand)));
+    // The article column exists only when the articles module is there; the number in the title is the number of rows of the table (what the search says "n of N" about).
+    const articleCell = (p) => {
+      if (p.virtual) return { text: t("articleOnly"), badge: "info", href: articleHref(p.virtual), title: p.virtual.title };
+      const a = byFile.get(p.id);
+      if (a) return { text: t("articlePublished"), badge: "ok", href: articleHref(a), title: a.title };
+      return p.data.status === "publie" ? { text: t("articleMissing"), badge: "warn" } : "";
+    };
     blocks.push(
       ...notices,
-      { type: "heading", text: `${t("overview")} (${partners.filter((p) => !CLOSED.has(p.data.status)).length})` },
+      { type: "heading", text: `${t("overview")} (${sorted.length})` },
       { type: "links", items: [{ label: t("addBtn"), href: "?new=1", presentation: "dialog" }] },
       sorted.length
         ? {
             type: "table",
-            columns: [t("brand"), t("status"), t("chances"), t("lastActivity"), t("followUpHead")],
-            rows: sorted.map((p) => [p.data.brand, t(`s_${p.data.status}`), p.data.chances != null ? `${p.data.chances} %` : "", fmt(lastActivity(p, journal)), followUpDue(ctx, p, journal) ? `⏰ ${t("followUp")}` : ""]),
+            columns: [t("brand"), t("status"), ...(articles ? [t("articleHead")] : []), t("chances"), t("lastActivity"), t("followUpHead")],
+            rows: sorted.map((p) => [p.data.brand, t(`s_${p.data.status}`), ...(articles ? [articleCell(p)] : []), p.data.chances != null ? `${p.data.chances} %` : "", fmt(lastActivity(p, journal)), followUpDue(ctx, p, journal) ? `⏰ ${t("followUp")}` : ""]),
             rowIds: sorted.map((p) => p.id),
             searchable: true,
             filters: [{ column: 1 }],
@@ -149,13 +165,21 @@ export default {
   adminActions: {
     async savePartner(ctx, v) {
       if (!clip(v.brand, 120)) return { error: ctx.t("brandRequired") };
+      // An article id is only taken when it is a PUBLISHED article of the articles module (a draft or a removed article never makes a file "Published").
+      let articleId = clip(v.articleId, 80);
+      if (articleId) {
+        const articles = await loadArticles(ctx);
+        if (!articles?.items.some((a) => a.id === articleId)) return { error: ctx.t("articleGone") };
+      }
       if (v.id) {
         const row = await ctx.api.store.get(v.id);
         if (!row) return { error: ctx.t("notFound") };
-        await ctx.api.store.update(v.id, { ...cleanPartner(v, row.data), updatedBy: "admin" });
+        await ctx.api.store.update(v.id, { ...cleanPartner({ ...v, articleId: v.articleId === undefined ? undefined : articleId }, row.data), updatedBy: "admin" });
         return { ok: ctx.t("saved") };
       }
-      await ctx.api.store.add("partners", { ...cleanPartner({ ...v, status: v.status || "a_contacter" }), updatedBy: "admin" });
+      // New file from an article ("Add the file"): replayed, it creates nothing twice.
+      if (articleId && (await all(ctx, "partners")).some((p) => p.data.articleId === articleId)) return { ok: ctx.t("saved") };
+      await ctx.api.store.add("partners", { ...cleanPartner({ ...v, articleId, status: v.status || "a_contacter" }), ...(articleId ? { fromArticle: true } : {}), updatedBy: "admin" });
       return { ok: ctx.t("saved") };
     },
     async importPartners(ctx, v) {
