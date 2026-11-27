@@ -241,8 +241,8 @@ test("dual mode: places[].fromTab only (never tabs[].place without minCore 0.31.
   }
 });
 
-/** Texts (objects with fr and en) and help lines are left out of the comparison: a text-only patch (R33 wording) is not a change of structure. */
-const noTexts = (v) => (Array.isArray(v) ? v.map(noTexts) : v && typeof v === "object" ? (typeof v.fr === "string" && typeof v.en === "string" ? "<text>" : Object.fromEntries(Object.entries(v).filter(([k]) => k !== "help").map(([k, x]) => [k, noTexts(x)]))) : v);
+/** Texts (objects with fr and en), help lines and the English `description` of a tool or a field are left out of the comparison: a text-only patch (R33 wording) is not a change of structure. */
+const noTexts = (v) => (Array.isArray(v) ? v.map(noTexts) : v && typeof v === "object" ? (typeof v.fr === "string" && typeof v.en === "string" ? "<text>" : Object.fromEntries(Object.entries(v).filter(([k, x]) => k !== "help" && !(k === "description" && typeof x === "string")).map(([k, x]) => [k, noTexts(x)]))) : v);
 
 const tagsUsed = [...new Set(Object.keys(MIGRATED).map(BEFORE))];
 const histories = Object.fromEntries(tagsUsed.map((tag) => [tag, (() => { try { return Object.keys(manifestsAt(root, tag)).length > 0; } catch { return false; } })()]));

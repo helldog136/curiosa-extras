@@ -1,13 +1,13 @@
 # Chaîne YouTube — module communautaire de Curiosa
 
 - **Vidéo mise en avant** (section d'accueil) : la plus vue des vidéos de moins de N jours (30 par défaut), Shorts exclus sauf réglage. La vignette renvoie vers YouTube : on n'intègre **pas** le lecteur, car YouTube compte un lecteur affiché comme une vue.
-- **Flux RSS, annonces Discord, overlay labyrinthe** : les vidéos (hors Shorts) sont proposées aux autres fonctionnalités du site qui les affichent ou les annoncent.
+- **Flux RSS, annonces Discord, overlay labyrinthe** : les vidéos (hors Shorts) sont proposées aux autres modules du site qui les affichent ou les annoncent.
 - **Réglages** : l'identifiant de chaîne (`UC…`) suffit (flux public, ~15 vidéos ; un test à la première apparition détermine si une vidéo est un Short). Avec la **clé YouTube du site**, saisie une seule fois sur la page du connecteur YouTube, le module obtient en plus les durées exactes, la détection des Shorts et les chiffres de la chaîne.
 - Cache de 10 minutes.
 
 ## La clé YouTube : une seule fois pour tout le site
 
-La clé YouTube n'est plus réglée ici. Elle est gardée par le **connecteur YouTube** du site : une seule clé pour toutes vos chaînes et toutes les fonctionnalités qui lisent YouTube.
+La clé YouTube n'est plus réglée ici. Elle est gardée par le **connecteur YouTube** du site : une seule clé pour toutes vos chaînes et tous les modules qui lisent YouTube.
 
 - **Vous aviez déjà mis une clé ici ?** Rien à retaper : à la mise à jour, elle est remise au connecteur, puis effacée d'ici **seulement quand le connecteur confirme l'avoir**. Elle n'est jamais affichée ni écrite dans un journal.
 - **Pas encore de connecteur ?** Le panneau de ce module vous propose de l'installer (un bouton). Votre clé reste gardée, masquée, en attendant ; elle sera reprise dès l'installation. En attendant, la vidéo mise en avant et le flux continuent de marcher avec le flux public.

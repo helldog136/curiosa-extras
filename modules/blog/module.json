@@ -63,8 +63,8 @@
         "fr": "Ce premier article a été créé pour vous. Modifiez-le ou supprimez-le depuis l'admin."
       },
       "body": {
-        "en": "Everything on this site — texts, links, colors, languages — is editable from the admin.\n\n- Add articles, promo codes or any entries to your collections\n- Create redirects such as /twitch\n- Install modules to add features",
-        "fr": "Tout ce qui s'affiche ici — textes, liens, couleurs, langues — se modifie depuis l'admin.\n\n- Ajoutez des articles, des codes promo ou n'importe quelles entrées à vos collections\n- Créez des redirections comme /twitch\n- Installez des modules pour ajouter des fonctionnalités"
+        "en": "Everything on this site — texts, links, colors, languages — is editable from the admin.\n\n- Add articles, promo codes or any entries to your collections\n- Create redirects such as /twitch\n- Install modules to add more",
+        "fr": "Tout ce qui s'affiche ici — textes, liens, couleurs, langues — se modifie depuis l'admin.\n\n- Ajoutez des articles, des codes promo ou n'importe quelles entrées à vos collections\n- Créez des redirections comme /twitch\n- Installez des modules pour aller plus loin"
       }
     }
   }

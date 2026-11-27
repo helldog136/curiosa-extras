@@ -39,4 +39,4 @@ One My Twitch channel per channel: Live status queries **all of them** (`callAll
 - Optional setting **Channels to announce**: identifiers separated by commas; empty = all.
 - **Old core** (without `callAll`): falls back to the single call of before (first channel only). The module still requires Curiosa 0.1.14 at install.
 
-Base module of Curiosa (Curiosa License 1.0). It is enabled from the admin, under **Features**; its settings are on its page.
+Base module of Curiosa (Curiosa License 1.0). It is enabled from the admin, under **Modules**; its settings are on its page.

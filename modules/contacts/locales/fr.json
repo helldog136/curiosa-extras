@@ -203,7 +203,7 @@
   "photoRefresh": "Actualiser la photo",
   "photoRefreshed": "Photo et followers mis à jour.",
   "photoUnchanged": "Tout est déjà à jour.",
-  "photoMissing": "Pour {services}, installez l'extension qui parle à ce site (voir la proposition plus haut).",
+  "photoMissing": "Pour {services}, installez le module qui parle à ce site (voir la proposition plus haut).",
   "photoFail": "Impossible de joindre {services}. La fiche garde ses dernières données ; réessayez dans quelques minutes.",
   "photoNothing": "Cette fiche n'a pas de compte Twitch, YouTube ou Bluesky à actualiser.",
   "privacyTitle": "Données personnelles",

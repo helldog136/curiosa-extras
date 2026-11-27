@@ -2,7 +2,7 @@
 
 A transparent browser source for OBS that cycles through cards fed by other modules (promo codes, articles, announcements…).
 
-A core Curiosa module (Curiosa License 1.0). Turn it on from the admin, under **Features**; its settings are on its page.
+A core Curiosa module (Curiosa License 1.0). Turn it on from the admin, under **Modules**; its settings are on its page.
 
 **In an overlay page** (the "Overlays" section of Curiosa 0.5.0 or later): "Add an element" offers **Scrolling banner**, a banner of announcements and promo codes to place at the bottom of the stream. It fills its frame keeping its proportions (natural size 640 × 140) and follows the page's common style (light or dark text, background, corners); the cards come from your other modules, and the time per card stays the module's ("Seconds per card"). The position and colours set for the overlay are ignored in an overlay page. Options: **What to show** (everything, promo codes only, announcements and articles only: handy to have two banners) and **Show images**. Every overlay page that shows the banner displays the same card at the same moment; nothing is consumed when it is read. In test mode a sample card is shown when there is no card yet. Your current OBS address does not change.
 

@@ -556,7 +556,7 @@
     },
     {
       "name": "testimonials_decide",
-      "description": "Decide about one review: approve (publish it, only possible if its author gave permission), reject, pending (take it off the site and put it back to be checked), feature or unfeature (favourite shown first). Never approve a review just because it is positive, and never reject one just because it is critical.",
+      "description": "Decide about one review: approve (publish it, only possible if its author gave permission), reject, pending (take it off the site and put it back to be checked), `feature` or `unfeature` (add or remove the favourite mark; favourites are shown first). Never approve a review just because it is positive, and never reject one just because it is critical.",
       "input": {
         "type": "object",
         "required": [
@@ -578,7 +578,7 @@
               "feature",
               "unfeature"
             ],
-            "description": "What to do: approve (publish), reject, pending (take off the site), feature or unfeature (favourite)."
+            "description": "What to do: approve (publish), reject, pending (take off the site), `feature` or `unfeature` (favourite mark)."
           }
         }
       }

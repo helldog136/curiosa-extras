@@ -70,7 +70,7 @@
   "weekOf": "Week of {date}",
   "upNext": "Up next",
   "seedNickname": "Online calendar",
-  "adminNoSlots": "No upcoming stream. Streams come from your calendars: “Online calendar” (Google Calendar…) or “Hand-written streams”, in [Extensions](/admin/extensions).",
+  "adminNoSlots": "No upcoming stream. Streams come from your calendars: “Online calendar” (Google Calendar…) or “Hand-written streams”, in [Modules](/admin/extensions).",
   "coversNoKeyNoModule": "No Rawg access code: games are shown without a cover.",
   "coversSuggestReason": "finds the cover pictures of your games",
   "withLabel": "With",

@@ -79,7 +79,7 @@ export default {
       await creds.save(ctx, { ...(id ? { oauthClientId: id } : {}), ...(secret ? { oauthClientSecret: secret } : {}) });
       return { ok: ctx.t("account_saved"), redirect: "?" };
     },
-    /** Forgets the access code carried over from another extension: only what was typed here stays. */
+    /** Forgets the access code carried over from another module: only what was typed here stays. */
     async forgetKey(ctx) { await creds.forgetCarried(ctx); return { ok: ctx.t("key_forgotten"), redirect: "?" }; },
   },
 

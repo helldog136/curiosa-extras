@@ -118,7 +118,7 @@
     {
       "name": "legal_status",
       "readOnly": true,
-      "description": "Where the site's legal pages stand: published or not, what is still missing or needs the owner's confirmation, reminders (new extensions, old texts), and which installed extensions collect visitor information. Start here. These texts are help templates, not legal advice.",
+      "description": "Where the site's legal pages stand: published or not, what is still missing or needs the owner's confirmation, reminders (new modules, old texts), and which installed modules collect visitor information. Start here. These texts are help templates, not legal advice.",
       "input": {
         "type": "object",
         "properties": {}
@@ -296,7 +296,7 @@
               "none",
               "some"
             ],
-            "description": "Extensions unknown to this tool: none (they collect nothing) or some (they collect something, describe it in otherCollect)."
+            "description": "Modules unknown to this tool: none (they collect nothing) or some (they collect something, describe it in otherCollect)."
           },
           "otherCollect": {
             "type": "string",
