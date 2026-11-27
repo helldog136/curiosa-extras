@@ -68,7 +68,7 @@ Dans le module qui les fournit, pas ici :
 - **Agenda en ligne** : un guide « Comment remplir mon agenda Google ? » (où écrire le titre, les heures, le jeu, les répétitions) et un fichier à donner à votre assistant IA sont dans la page de ce module.
 - **Streams saisis à la main** : un petit formulaire dans la page de ce module.
 
-Sans aucun agenda installé, l'administration du planning le dit et vous indique quoi ajouter (*Extensions → Ajouter*).
+Sans aucun agenda installé, l'administration du planning le dit et vous indique quoi ajouter (*Modules → Ajouter*).
 
 ## Si vous aviez déjà le Planning (version 1.x)
 
@@ -123,7 +123,7 @@ Réglage **« Ajouter les jeux joués à la liste « Déjà joué » »** (coup�
 
 `https://votre-site/m/<clé>/image` : la semaine en cours (lundi → dimanche) en image PNG de 900 px de large aux couleurs du site, prête pour un panneau Twitch (« image + lien depuis une URL ») ou un réseau social. Une ligne par jour, deux streams au plus par jour, avec la jaquette des jeux (trois au plus par stream) à côté de l'heure et du titre. `?week=1` pour la semaine suivante (jusqu'à 8). Générée par le service du cœur `ctx.api.png` (aucune dépendance native dans le module), mise en cache 5 minutes ; pour la télécharger : ouvrez l'adresse dans le navigateur et enregistrez l'image.
 
-Différence avec l'ancien site : pas de page d'admin dédiée avec bouton « Enregistrer l'image » ni de choix de semaine en un clic — l'adresse `?week=N` en tient lieu, et la route est publique (comme l'ancienne adresse destinée à l'extension Twitch).
+Différence avec l'ancien site : pas de page d'admin dédiée avec bouton « Enregistrer l'image » ni de choix de semaine en un clic — l'adresse `?week=N` en tient lieu, et la route est publique (comme l'ancienne adresse destinée au panneau Twitch).
 
 ## Pour qui développe
 

@@ -80,7 +80,7 @@
   "events_setup_channel": "Enter your channel name in the Twitch channel settings to see your Twitch schedule.",
   "events_setup_connector": "To see your Twitch schedule, set up the site's Twitch application in the Twitch connector.",
   "events_setup_refused": "Twitch refuses the site's application: check its credentials on the Twitch connector page.",
-  "events_setup_update": "To see your Twitch schedule, update the Twitch connector (Extensions, Check for updates).",
+  "events_setup_update": "To see your Twitch schedule, update the Twitch connector (Modules, Check for updates).",
   "frozen": "Some figures are frozen: Twitch refuses the current authorization.",
   "authorizeAgain": "Authorize again with Twitch",
   "forget_confirm": "Forget the channel? This module no longer knows your channel until you type it in the settings.",

@@ -1,6 +1,6 @@
-# Data migrations of the extensions: the support floor of a module
+# Data migrations of the modules: the support floor of a module
 
-Each extension keeps its own data (`dataVersion` in `module.json`) and converts it when the data changes shape (`migrations`). The core has a support floor for itself
+Each module keeps its own data (`dataVersion` in `module.json`) and converts it when the data changes shape (`migrations`). The core has a support floor for itself
 (`upgrade.json`, [MIGRATIONS.md of the core](https://github.com/helldog136/Curiosa/blob/dev/docs/MIGRATIONS.md)); it does **not** cover module data, because modules are
 updated one by one, independently of the core. This page is the rule for the modules of this repository.
 

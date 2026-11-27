@@ -22,7 +22,7 @@ const botPanel = (panels) => panels.find((p) => p.id === "id-bot");
 
 test("manifest: the bot offers audience.remote (one panel per bot), declares its journal events, adds no permission, no route and no right", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.24.4"); assert.equal(manifest.minCore, "0.36.0");
+  assert.equal(manifest.version, "1.24.5"); assert.equal(manifest.minCore, "0.36.0");
   assert.deepEqual(manifest.offers[0], { service: "audience.remote", version: 1, each: true });
   assert.deepEqual(manifest.offers.slice(1).map((o) => o.service), ["twitch.rewards"], "(1.22.0) and the creation of a reward for Twitch activity");
   assert.deepEqual(manifest.permissions, ["routes", "storage", "admin", "topics", "mcp", "instances.setup"], "no new permission");

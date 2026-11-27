@@ -601,7 +601,19 @@
       "intro": {
         "en": "Your connection to Twitch and your channels.",
         "fr": "Votre connexion à Twitch et vos chaînes."
-      }
+      },
+      "tabs": [
+        {
+          "id": "main",
+          "en": "Channel",
+          "fr": "Chaîne"
+        },
+        {
+          "id": "events",
+          "en": "Activity",
+          "fr": "Activité"
+        }
+      ]
     },
     {
       "id": "networks.youtube",

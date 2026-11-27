@@ -57,7 +57,7 @@ test("manifeste : valide, une seule instance, une page publique, cœur 0.2.5", (
   assert.equal(manifest.id, "legal-pages");
   assert.equal(manifest.name.fr, "Mentions légales");
   assert.equal(manifest.name.en, "Legal pages");
-  assert.equal(manifest.version, "1.1.3");
+  assert.equal(manifest.version, "1.1.4");
   assert.equal(manifest.minCore, "0.2.5");
   assert.equal(manifest.instances, "single");
   assert.equal(manifest.page, true);
@@ -380,7 +380,7 @@ test("cookies : « aucun cookie de suivi » seulement quand rien d'inconnu n'est
   assert.match(cookies({}), /ne dépose aucun cookie publicitaire ni de suivi/);
   assert.match(cookies({}), /ne vous demande pas d'accepter des cookies/);
   const third = cookies({ thirdParty: true }, { thirdPartyNames: "Twitch" });
-  assert.match(third, /À part les contenus d'autres services/);
+  assert.match(third, /À part les contenus d'autres sites/);
   assert.doesNotMatch(third, /ne vous demande pas d'accepter/);
   assert.match(third, /Twitch/);
   const other = cookies({}, { unknownExt: "some", otherCollect: "Un compteur anonyme." });
@@ -704,11 +704,11 @@ test("rappels : une extension qui récolte arrive, une extension inconnue arrive
   assert.equal(await def.adminBadge(collector), 1);
   const unknown = reopen(ctx, [...base, inst("mystery", "Mystère")]);
   const a2 = Admin.attention(unknown, await Admin.load(unknown));
-  assert.match(a2[0].text, /Mystère.*je ne la connais pas/);
+  assert.match(a2[0].text, /Mystère.*je ne le connais pas/);
   const s2 = await Admin.load(unknown);
   assert.ok(s2.missing.some((m) => m.step === "collect"), "il faut répondre pour l'extension inconnue avant de republier");
   const removed = reopen(ctx, [inst("blog")]);
-  assert.match(Admin.attention(removed, await Admin.load(removed))[0].text, /contact-form.*n'est plus installée/);
+  assert.match(Admin.attention(removed, await Admin.load(removed))[0].text, /contact-form.*n'est plus installé/);
   const overview = await def.adminPanel(collector, { query: {} });
   assert.ok(overview.some((b) => b.type === "markdown" && /Livre d'or/.test(b.text) && b.text.includes("?step=collect")));
 });

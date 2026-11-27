@@ -12,7 +12,7 @@ Une page de vidéos pour votre site (masterclass, rétrospectives, tutoriels, pr
 
 ## Ce que vous faites
 
-1. Ouvrez l'extension, onglet **Mes vidéos**. Au premier passage, c'est une page d'accueil avec un seul champ.
+1. Ouvrez le module, onglet **Mes vidéos**. Au premier passage, c'est une page d'accueil avec un seul champ.
 2. **Collez l'adresse** d'une vidéo YouTube (n'importe quelle forme : `youtube.com/watch?v=…`, `youtu.be/…`, `shorts`, `embed`, avec ou sans les morceaux de suivi). Le **titre** et la **miniature** se remplissent tout seuls. Si YouTube ne répond pas, le formulaire vous demande d'écrire le titre.
 3. La vidéo arrive **en brouillon** : relisez, mettez une catégorie, une durée, une description, une transcription, puis passez son état à **Publiée**.
 4. Pour en ajouter beaucoup : **« Ajouter plusieurs adresses d'un coup »** (100 au plus). Vous voyez un **aperçu** (nouvelle, déjà présente, adresse non reconnue) avant que rien ne soit ajouté.

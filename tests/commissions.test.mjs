@@ -333,6 +333,27 @@ test("admin : changement d'état avec historique, file (queuedAt), message à la
   assert.ok((await def.adminActions.setMode.run(ctx, { id: "closed" })).ok);
   assert.ok((await def.adminActions.setMode.run(ctx, { id: "x" })).error);
 });
+
+test("admin (F-SET-001) : l'état est UN contrôle segmenté du formulaire « Places, réouverture et message » (plus de table de boutons « Choisir » ni de paragraphe), enregistré avec le reste", async () => {
+  const ctx = mk(); await open(ctx);
+  const panel = await def.adminPanel(ctx, {});
+  const form = panel.find((b) => b.type === "adminForm" && b.action === "saveQueue");
+  assert.deepEqual(form.fields.map((f) => f.name), ["mode", "slots", "reopenOn", "message"], "quatre champs visibles (R4)");
+  const mode = form.fields[0];
+  assert.deepEqual([mode.kind, mode.value, mode.options.map((o) => o.value)], ["segmented", "open", ["open", "full", "closed"]]);
+  assert.ok(mode.options.length >= 2 && mode.options.length <= 4);
+  assert.ok(!panel.some((b) => b.type === "table" && (b.rowActions ?? []).some((a) => a.action === "setMode")), "plus de ligne avec un bouton « Choisir »");
+  assert.ok(!JSON.stringify(panel).includes("(actuel)"), "l'état courant est la valeur choisie du contrôle, pas un suffixe");
+  const q = def.adminActions.saveQueue.run;
+  assert.ok((await q(ctx, { mode: "full", slots: "3", reopenOn: "", message: "" })).ok);
+  assert.equal((await data.readQueue(ctx)).mode, "full");
+  assert.equal((await q(ctx, { mode: "x", slots: "3", reopenOn: "" })).errors.mode.length > 0, true);
+  assert.equal((await data.readQueue(ctx)).mode, "full", "an invalid state changes nothing");
+  assert.ok((await q(ctx, { slots: "3", reopenOn: "" })).ok);
+  assert.equal((await data.readQueue(ctx)).mode, "full", "no state sent (an older caller): the state is kept");
+  const manifest = JSON.parse(fs.readFileSync(new URL("../modules/commissions/module.json", import.meta.url), "utf8"));
+  assert.ok(manifest.minCore.split(".").map(Number)[1] >= 6, "the segmented field needs core 0.6.0");
+});
 test("admin : nouveau lien (l'ancien meurt, envoyé par e-mail sinon montré une fois) ; suppression", async () => {
   const ctx = mk(); await open(ctx);
   const { token } = await submit(ctx);

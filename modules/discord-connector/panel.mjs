@@ -54,7 +54,7 @@ async function card(ctx, creds, p, can, chosen = 0) {
   const since = p.since ? { since: new Date(p.since).toISOString() } : {};
   if (p.state === "token") return { ...base, state: "degraded", reason: ctx.t("health_token"), ...since, primary: { label: ctx.t("fix_token"), href: EDIT } };
   if (p.state === "guild") return { ...base, state: "degraded", reason: ctx.t("health_guild"), ...since, ...(invite ? { primary: { label: ctx.t("fix_guild"), href: invite } } : {}) };
-  if (p.state === "perms") return { ...base, state: "degraded", reason: ctx.t("health_perms", { feature: ctx.t(`feature_${p.feature}`), list: words(ctx, p.missing?.length ? p.missing : []) || ctx.t("perm_unknown") }), ...since, ...(invite ? { primary: { label: ctx.t("fix_perms"), href: invite } } : {}) };
+  if (p.state === "perms") return { ...base, state: "degraded", reason: ctx.t("health_perms", { purpose: ctx.t(`feature_${p.feature}`), list: words(ctx, p.missing?.length ? p.missing : []) || ctx.t("perm_unknown") }), ...since, ...(invite ? { primary: { label: ctx.t("fix_perms"), href: invite } } : {}) };
   if (p.state === "rate") return { ...base, state: "degraded", reason: ctx.t("health_rate", { time: p.until ? time(ctx, p.until) : "…" }) };
   if (p.state === "net") return { ...base, state: "degraded", reason: ctx.t("health_net"), ...since, primary: { label: ctx.t("test"), action: "test" } };
   return { ...base, state: "configured" };

@@ -49,7 +49,7 @@
   "fEndMessage": "End message (optional)",
   "fEndMessageHelp": "Shown when the time has come. Empty: the message from your settings, otherwise “It’s on!”.",
   "fEndTime": "End time (optional)",
-  "fFeatured": "Feature this event",
+  "fFeatured": "Highlight this event",
   "fFeaturedHelp": "It comes first on the home page and in OBS. Only one at a time. With no choice, the next event is the featured one.",
   "fImage": "Image (optional)",
   "fImageHelp": "Shown at the top of the event page.",

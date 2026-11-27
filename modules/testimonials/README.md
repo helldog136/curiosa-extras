@@ -18,7 +18,7 @@ Si un champ est mal rempli, le message apparaît juste en dessous, avec un exemp
 
 ## Ce que vous faites
 
-1. Ouvrez l'extension : l'onglet **Avis** liste les avis (à valider, publiés, refusés), avec recherche, filtre par note et 50 avis par page.
+1. Ouvrez le module : l'onglet **Avis** liste les avis (à valider, publiés, refusés), avec recherche, filtre par note et 50 avis par page.
 2. **Publier**, **Refuser**, **Modifier** (corriger une faute, ajouter une photo si la personne vous l'a envoyée, donner une place), **Favori**, **Supprimer** (par exemple à la demande de la personne qui l'a écrit).
 3. **Ajouter un avis reçu ailleurs** (message, e-mail) : vous cochez que la personne est d'accord ; il entre aussi « à valider ».
 4. L'onglet **Partager** donne le lien, le QR code à télécharger, et la marche à suivre pour l'accueil.

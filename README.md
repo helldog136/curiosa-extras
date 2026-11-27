@@ -13,12 +13,12 @@ Les modules de [Curiosa](https://github.com/helldog136/Curiosa). Le cœur de Cur
 
 | Dossier | Contenu |
 |---|---|
-| `modules/` | Les fonctionnalités de base (blog, réseaux sociaux, codes promo, pages, bandeau, formulaire de contact, statut live…) et les modules pour la création de contenu (sponsors, planning, contacts, partenariats, overlays de stream…). |
+| `modules/` | Les modules de base (blog, réseaux sociaux, codes promo, pages, bandeau, formulaire de contact, statut live…) et les modules pour la création de contenu (sponsors, planning, contacts, partenariats, overlays de stream…). |
 | `examples/` | Deux petits modules à lire pour apprendre à en écrire un. |
 | `starter/` | **Le module de départ pour publier son propre module** : un dépôt de module complet (module à la racine, tests, workflow GitHub Actions, README avec le texte d'installation) à copier dans son propre dépôt. Il n'est **pas** au Catalogue. Guide : `docs/PUBLIER-SON-MODULE.md` du dépôt du cœur. |
 | `catalogue/index.json` | L'index que le Catalogue de l'admin relit (généré par `scripts/build-index.mjs`). |
 | `catalogue/suggested.json` | Les modules que l'assistant d'installation propose (une liste d'identifiants). |
-| `catalogue/profiles.json` | Les **profils de départ** de l'assistant (« Vous êtes… ? ») : streamer, association, activité indépendante, artiste. Un profil ne fait que **pré-cocher** des extensions parmi les suggérées et **proposer** des pages d'exemple (les modèles du module `pages`, en brouillon). Facultatif : sans ce fichier, la question n'est pas posée. Un cœur plus ancien l'ignore. Contrat : `docs/MODULES.md` du cœur, « Profils de départ ». |
+| `catalogue/profiles.json` | Les **profils de départ** de l'assistant (« Vous êtes… ? ») : streamer, association, activité indépendante, artiste. Un profil ne fait que **pré-cocher** des modules parmi les suggérées et **proposer** des pages d'exemple (les modèles du module `pages`, en brouillon). Facultatif : sans ce fichier, la question n'est pas posée. Un cœur plus ancien l'ignore. Contrat : `docs/MODULES.md` du cœur, « Profils de départ ». |
 | `tests/` | Les tests des modules. |
 
 Chaque module est un dossier autonome (`module.json`, `index.mjs`, `locales/`, `README.md`). Il s'installe depuis le Catalogue, ou à la main avec une adresse de la forme `https://github.com/helldog136/curiosa-extras#:modules/<id>`.
@@ -68,7 +68,7 @@ Le module *Jaquettes de jeux* (`game-covers`) trouve la jaquette d'un jeu (clé 
 
 ## Languages
 
-English and French are always supported by every extension (`tests/module-i18n.test.mjs`; known gaps are listed in `tests/i18n-baseline.json`, which can only shrink; `node scripts/i18n-baseline.mjs --report` lists them with the migration plan). Any other language is added with **files only**: see [CONTRIBUTING.md](CONTRIBUTING.md) and [TRANSLATING.md](https://github.com/helldog136/Curiosa/blob/dev/docs/TRANSLATING.md) in the core. `catalogue/index.json` publishes the name and description of every extension in every language (`i18n`), the plain text being English.
+English and French are always supported by every module (`tests/module-i18n.test.mjs`; known gaps are listed in `tests/i18n-baseline.json`, which can only shrink; `node scripts/i18n-baseline.mjs --report` lists them with the migration plan). Any other language is added with **files only**: see [CONTRIBUTING.md](CONTRIBUTING.md) and [TRANSLATING.md](https://github.com/helldog136/Curiosa/blob/dev/docs/TRANSLATING.md) in the core. `catalogue/index.json` publishes the name and description of every extension in every language (`i18n`), the plain text being English.
 
 ## Tests
 ```
@@ -85,7 +85,7 @@ Les tests passent par le chargeur du cœur : un module ne doit utiliser que l'AP
 **Ergonomie des pages d'administration.** Les règles automatiques de [docs/ERGONOMIE-ADMIN.md](docs/ERGONOMIE-ADMIN.md) (marquées **[auto]**) sont mesurées sur le manifeste et les textes de chaque module par `tests/ergonomics.test.mjs`, avec une **base d'écarts connus** (`tests/ergonomics-baseline.json`) : un écart de la base est un avertissement, un **nouvel** écart (nouveau réglage, nouveau texte) fait échouer le test, et un écart corrigé doit être retiré de la base, qui **ne peut que rétrécir**. `node scripts/ergonomics-baseline.mjs --write` met la base à jour (il refuse d'ajouter un écart), `--report` imprime le tableau « module → nombre d'écarts par règle ». Un **nouveau** module n'a droit à aucun écart. Pour une page produite par du code (`adminPanel`), appelez dans vos tests `assertAdminPageErgonomics(blocks)` (copie locale : `tests/helpers/ergonomics.mjs`) : champs visibles, recherche d'une liste de plus de 10 lignes, étiquette répétée, « Activer / désactiver », erreurs avec exemple. Le reste (une page une tâche, chemin court, un seul bouton principal, etc.) se juge en revue, sur des captures.
 
 ## Les visuels des fiches : la clé `previews`
-La fiche d'une extension (dans le Catalogue, avant et après l'installation) montre jusqu'à **6 captures** de ce que le module ajoute : une page de commandes, un écran d'administration, un élément d'overlay. Elles se déclarent dans le `module.json` du module (clé `previews`, **sans `minCore`** : un cœur plus ancien ignore la clé et montre la fiche comme avant) ; les images vivent dans `modules/<id>/previews/`. Détail du format côté cœur : CREATE-A-MODULE.md du cœur, section « 18 bis. Montrer le module : `previews` ».
+La fiche d'un module (dans le Catalogue, avant et après l'installation) montre jusqu'à **6 captures** de ce que le module ajoute : une page de commandes, un écran d'administration, un élément d'overlay. Elles se déclarent dans le `module.json` du module (clé `previews`, **sans `minCore`** : un cœur plus ancien ignore la clé et montre la fiche comme avant) ; les images vivent dans `modules/<id>/previews/`. Détail du format côté cœur : CREATE-A-MODULE.md du cœur, section « 18 bis. Montrer le module : `previews` ».
 
 ```json
 "previews": [

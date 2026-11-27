@@ -1,5 +1,5 @@
 {
-  "pageTitle": "Merci !",
+  "pageTitle": "Merci",
   "pubDescription": "Un grand merci à toutes les personnes qui font vivre cette communauté.",
   "pubSoonTitle": "Le mur des remerciements se prépare",
   "pubSoonText": "Revenez dans quelques instants : il sera bientôt rempli.",
@@ -87,7 +87,7 @@
   "msgPageOf": "Page {page} sur {pages}.",
   "msgScreenTitle": "Message pour {name}",
   "msgField": "Message",
-  "msgFieldHelp": "{max} caractères au plus. Laissez vide pour retirer le message. Exemple : Merci d'avoir toujours une blague pour le chat !",
+  "msgFieldHelp": "{max} caractères au plus. Laissez vide pour retirer le message. Exemple : Merci d'avoir toujours une blague pour le chat.",
   "msgSave": "Enregistrer le message",
   "msgSaved": "Message enregistré pour {name}.",
   "msgRemoved": "Message retiré pour {name}.",
@@ -97,7 +97,7 @@
   "tidyDone": "Terminé. Fiches fusionnées suivies : {followed}. Fiches supprimées nettoyées : {removed}.",
   "tidyNothing": "Rien à mettre à jour.",
   "ovTitle": "Remerciements",
-  "ovHeading": "Merci !",
+  "ovHeading": "Merci",
   "ovDemoName": "Personne d'exemple {n}",
-  "ovDemoMessage": "Un grand merci !"
+  "ovDemoMessage": "Un grand merci."
 }

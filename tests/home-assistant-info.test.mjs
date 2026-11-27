@@ -286,7 +286,7 @@ test("pull: an unauthenticated call gets no `info` and never wakes the provider"
 test("manifest: `home.info` is consumed (optional topic, no new need), FR and EN labels", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.5.0");
+  assert.equal(manifest.version, "1.5.1");
   const c = manifest.consumes.find((x) => x.topic === "home.info");
   assert.ok(c, "declared under consumes");
   assert.ok(c.label.fr?.trim() && c.label.en?.trim());

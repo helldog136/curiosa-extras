@@ -6,7 +6,7 @@
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
   "menuGroup": "community",
   "description": {
     "en": "A thank-you page for your community: cards with photos, one person in the spotlight each month. Names stay in Contacts.",
@@ -234,7 +234,7 @@
       },
       "label": {
         "en": "Who to thank (a Contacts category)",
-        "fr": "Qui remercier (une catégorie de Contacts)"
+        "fr": "Qui remercier (catégorie Contacts)"
       },
       "help": {
         "en": "Everyone in this Contacts category appears on the wall. No category yet? Type its name (for example “Moderators”), click “Create”, then put your cards in it from Contacts.",
@@ -269,7 +269,7 @@
       },
       "label": {
         "en": "Second group (a Contacts category)",
-        "fr": "Deuxième groupe (une catégorie de Contacts)"
+        "fr": "Deuxième groupe (catégorie Contacts)"
       },
       "rare": true
     },
@@ -281,6 +281,10 @@
       "label": {
         "en": "Title of the second group",
         "fr": "Titre du deuxième groupe"
+      },
+      "help": {
+        "en": "For example “Testers”. Empty: the category name.",
+        "fr": "Par exemple « Testeurs ». Vide : nom de la catégorie."
       },
       "rare": true
     },
@@ -298,7 +302,7 @@
       },
       "label": {
         "en": "Third group (a Contacts category)",
-        "fr": "Troisième groupe (une catégorie de Contacts)"
+        "fr": "Troisième groupe (catégorie Contacts)"
       },
       "rare": true
     },
@@ -310,6 +314,10 @@
       "label": {
         "en": "Title of the third group",
         "fr": "Titre du troisième groupe"
+      },
+      "help": {
+        "en": "For example “Testers”. Empty: the category name.",
+        "fr": "Par exemple « Testeurs ». Vide : nom de la catégorie."
       },
       "rare": true
     },
@@ -327,7 +335,7 @@
       },
       "label": {
         "en": "Fourth group (a Contacts category)",
-        "fr": "Quatrième groupe (une catégorie de Contacts)"
+        "fr": "Quatrième groupe (catégorie Contacts)"
       },
       "rare": true
     },
@@ -339,6 +347,10 @@
       "label": {
         "en": "Title of the fourth group",
         "fr": "Titre du quatrième groupe"
+      },
+      "help": {
+        "en": "For example “Testers”. Empty: the category name.",
+        "fr": "Par exemple « Testeurs ». Vide : nom de la catégorie."
       },
       "rare": true
     },
@@ -356,7 +368,7 @@
       },
       "label": {
         "en": "Fifth group (a Contacts category)",
-        "fr": "Cinquième groupe (une catégorie de Contacts)"
+        "fr": "Cinquième groupe (catégorie Contacts)"
       },
       "rare": true
     },
@@ -368,6 +380,10 @@
       "label": {
         "en": "Title of the fifth group",
         "fr": "Titre du cinquième groupe"
+      },
+      "help": {
+        "en": "For example “Testers”. Empty: the category name.",
+        "fr": "Par exemple « Testeurs ». Vide : nom de la catégorie."
       },
       "rare": true
     },
@@ -385,7 +401,7 @@
       },
       "label": {
         "en": "Sixth group (a Contacts category)",
-        "fr": "Sixième groupe (une catégorie de Contacts)"
+        "fr": "Sixième groupe (catégorie Contacts)"
       },
       "rare": true
     },
@@ -397,6 +413,10 @@
       "label": {
         "en": "Title of the sixth group",
         "fr": "Titre du sixième groupe"
+      },
+      "help": {
+        "en": "For example “Testers”. Empty: the category name.",
+        "fr": "Par exemple « Testeurs ». Vide : nom de la catégorie."
       },
       "rare": true
     },
@@ -418,8 +438,8 @@
         "fr": "Catégorie « Ne pas montrer »"
       },
       "help": {
-        "en": "A person who asks not to appear: put their card in this Contacts category and they disappear from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.",
-        "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît du mur en moins de deux minutes. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe."
+        "en": "Cards in this Contacts category leave the wall within two minutes. Left empty, a category named “Do not show” or “Ne pas montrer” is used.",
+        "fr": "Les fiches de cette catégorie de Contacts quittent le mur en moins de deux minutes. Laissé vide, la catégorie « Ne pas montrer » ou « Do not show » est utilisée."
       }
     },
     {
@@ -432,8 +452,8 @@
         "fr": "Titre de la page"
       },
       "help": {
-        "en": "Left empty, the page is titled “Thank you!”.",
-        "fr": "Laissé vide, la page s'appelle « Merci ! »."
+        "en": "Left empty, the page is titled “Thank you”.",
+        "fr": "Laissé vide, la page s'appelle « Merci »."
       }
     },
     {

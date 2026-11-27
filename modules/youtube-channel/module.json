@@ -181,7 +181,7 @@
       "type": "number",
       "default": 30,
       "label": {
-        "en": "Feature videos newer than (days)",
+        "en": "Highlight videos newer than (days)",
         "fr": "Mettre en avant les vidéos de moins de (jours)"
       }
     },

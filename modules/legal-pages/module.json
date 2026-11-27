@@ -5,12 +5,12 @@
     "en": "Legal pages",
     "fr": "Mentions légales"
   },
-  "version": "1.1.3",
+  "version": "1.1.4",
   "menuGroup": "content",
   "main": "index.mjs",
   "description": {
-    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English, for Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice.",
-    "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais, pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique."
+    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English. For Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice.",
+    "fr": "Répondez à quelques questions simples. Obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais. Pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -75,8 +75,8 @@
         {
           "value": "none",
           "label": {
-            "fr": "Aucun (je place les liens moi-même)",
-            "en": "None (I place the links myself)"
+            "fr": "Aucun, je place les liens moi-même",
+            "en": "None, I place the links myself"
           }
         }
       ]
@@ -118,7 +118,7 @@
     {
       "name": "legal_status",
       "readOnly": true,
-      "description": "Where the site's legal pages stand: published or not, what is still missing or needs the owner's confirmation, reminders (new extensions, old texts), and which installed extensions collect visitor information. Start here. These texts are help templates, not legal advice.",
+      "description": "Where the site's legal pages stand: published or not, what is still missing or needs the owner's confirmation, reminders (new modules, old texts), and which installed modules collect visitor information. Start here. These texts are help templates, not legal advice.",
       "input": {
         "type": "object",
         "properties": {}
@@ -296,7 +296,7 @@
               "none",
               "some"
             ],
-            "description": "Extensions unknown to this tool: none (they collect nothing) or some (they collect something, describe it in otherCollect)."
+            "description": "Modules unknown to this tool: none (they collect nothing) or some (they collect something, describe it in otherCollect)."
           },
           "otherCollect": {
             "type": "string",

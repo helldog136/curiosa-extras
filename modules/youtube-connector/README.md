@@ -1,6 +1,6 @@
 # Connecteur YouTube
 
-Garde **la clé YouTube de votre site à un seul endroit**. Vous la saisissez une fois ; elle n'est plus jamais affichée, ni écrite dans un journal. Les fonctionnalités qui lisent YouTube (par exemple votre chaîne, ses chiffres, la photo d'une chaîne amie) passent par ce connecteur au lieu de vous redemander la clé.
+Garde **la clé YouTube de votre site à un seul endroit**. Vous la saisissez une fois ; elle n'est plus jamais affichée, ni écrite dans un journal. Les modules qui lisent YouTube (par exemple votre chaîne, ses chiffres, la photo d'une chaîne amie) passent par ce connecteur au lieu de vous redemander la clé.
 
 ## Réglages
 

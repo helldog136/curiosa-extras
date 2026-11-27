@@ -6,7 +6,7 @@
     "fr": "Connecteur Home Assistant",
     "en": "Home Assistant connector"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": {
     "fr": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Avec un gros bouton « Tout couper ».",
     "en": "Links your channel points to your home: lights, a message read aloud, actions you name. With a big “Cut everything” button."
@@ -77,8 +77,8 @@
     {
       "topic": "home.info",
       "label": {
-        "fr": "Informations des autres extensions",
-        "en": "Information from other extensions"
+        "fr": "Informations des autres modules",
+        "en": "Information from other modules"
       },
       "schema": [
         {
@@ -166,8 +166,8 @@
     }
   ],
   "privacy": {
-    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible de la seule équipe d'administration (100 lignes, 7 jours). Un message refusé n'est pas gardé, seulement le motif. « Vider le journal » efface tout. Les incidents et changements d'état vont aussi à l'Historique de l'extension, sans pseudo (90 jours).",
-    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to the administration team (100 lines, 7 days). A refused message is not kept, only the reason. “Clear the log” erases everything. Incidents and state changes also go to the extension's History, without usernames (90 days)."
+    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible de la seule équipe d'administration (100 lignes, 7 jours). Un message refusé n'est pas gardé, seulement le motif. « Vider le journal » efface tout. Les incidents et changements d'état vont aussi à l'Historique du module, sans pseudo (90 jours).",
+    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to the administration team (100 lines, 7 days). A refused message is not kept, only the reason. “Clear the log” erases everything. Incidents and state changes also go to the module's History, without usernames (90 days)."
   },
   "settings": [
     {
@@ -401,16 +401,16 @@
     {
       "key": "circuit.cut",
       "label": {
-        "fr": "« Tout couper » demandé depuis une autre extension",
-        "en": "“Cut everything” asked from another extension"
+        "fr": "« Tout couper » demandé depuis un autre module",
+        "en": "“Cut everything” asked from another module"
       },
       "level": "warn"
     },
     {
       "key": "circuit.resumed",
       "label": {
-        "fr": "Reprise demandée depuis une autre extension",
-        "en": "Resume asked from another extension"
+        "fr": "Reprise demandée depuis un autre module",
+        "en": "Resume asked from another module"
       }
     },
     {

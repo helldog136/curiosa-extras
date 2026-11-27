@@ -53,7 +53,7 @@ const addMessage = (ctx, contactId, texts) => ctx.api.store.add("messages", { co
 
 test("manifeste : valide, 1.2.0, minCore 0.5.0, un élément « Remerciements » fluide, style suivi, demo, quatre options minimales, droit « routes » seul ajouté", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.5.0"); assert.equal(manifest.minCore, "0.38.0");
+  assert.equal(manifest.version, "1.5.1"); assert.equal(manifest.minCore, "0.38.0");
   assert.equal(manifest.overlayElements.length, 1);
   const [e] = manifest.overlayElements;
   assert.equal(e.id, "thanks"); assert.equal(e.fit, "fluid"); assert.equal(e.followsStyle, true); assert.equal(e.demo, true);
@@ -131,13 +131,13 @@ test("noms comme sur le mur (réglage « nom montré ») et petits mots dans la 
   const enCtx = makeWorld({ book: nick.book, settings: { category: nick.mods }, locale: "en", key: "merci" }).ctx;
   await addMessage(enCtx, nick.ids["Zoé Dupont"], { fr: "Merci", en: "Thanks" });
   assert.match(bodyOf((await page(query(600, 700, {}, { group: "1" }), enCtx)).html), /Thanks/);
-  assert.match((await page(query(600, 700), enCtx)).html, />Thank you!</);
+  assert.match((await page(query(600, 700), enCtx)).html, />Thank you</);
 });
 
-test("un titre de groupe choisi : l'en-tête reprend le titre du groupe ; tous les groupes : « Merci ! » ; cadre trop bas : pas d'en-tête", async () => {
+test("un titre de groupe choisi : l'en-tête reprend le titre du groupe ; tous les groupes : « Merci » ; cadre trop bas : pas d'en-tête", async () => {
   const { ctx } = world();
   assert.match((await page(query(600, 700, {}, { group: "2" }), ctx)).html, />Soutiens<\/p>/);
-  assert.match((await page(query(600, 700), ctx)).html, />Merci !<\/p>/);
+  assert.match((await page(query(600, 700), ctx)).html, />Merci<\/p>/);
   assert.ok(!/data-ov-part="title"/.test((await page(query(600, 120), ctx)).html));
   assert.ok(!/data-ov-part="title"/.test((await page(query(1600, 300), ctx)).html), "bandeau : pas d'en-tête");
 });
@@ -147,7 +147,7 @@ test("Contacts muet ou absent, mur pas prêt : en direct un cadre vide et silenc
   assert.equal(await frag(query(600, 700), none.ctx), "");
   const demo = await page(query(600, 700, {}, { count: 3 }, { "ov-demo": "1" }), none.ctx);
   assert.deepEqual(names(demo.html), ["Personne d'exemple 1", "Personne d'exemple 2", "Personne d'exemple 3"]);
-  assert.deepEqual(messages(demo.html), ["Un grand merci !", "Un grand merci !"]);
+  assert.deepEqual(messages(demo.html), ["Un grand merci.", "Un grand merci."]);
   const empty = fakeContactBook(); empty.seedCategory("A"); empty.seedCategory("B");
   assert.equal(await frag(query(600, 700), makeWorld({ book: empty }).ctx), "", "plusieurs catégories et rien de choisi : le mur public n'est pas prêt non plus");
   // Contacts devient muet APRÈS une première lecture : le dernier mur connu est gardé.

@@ -67,7 +67,7 @@
   "key_save": "Enregistrer le code d'accès",
   "key_saved": "Code d'accès enregistré.",
   "key_forget": "Oublier le code d'accès",
-  "key_forget_confirm": "Oublier le code d'accès ? Il est effacé ici. Les extensions YouTube s'arrêtent jusqu'à ce que vous en saisissiez un.",
+  "key_forget_confirm": "Oublier le code d'accès ? Il est effacé ici. Les modules YouTube s'arrêtent jusqu'à ce que vous en saisissiez un.",
   "key_forgotten": "Code d'accès oublié.",
   "f_key": "Code d'accès",
   "f_key_help": "Gratuit : créez-le sur console.cloud.google.com (« YouTube Data v3 »).",

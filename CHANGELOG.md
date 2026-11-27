@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.114.0 — 2026-11-27
+
+*In short: the Commissions state is one control, Twitch activity gets a tab on the Twitch page, the Blog and Pages shortcuts say their right, and every text says "module". Legal pages, Twitch bot and Thanks wall get plainer wording. Your settings are kept and there is nothing to set up.*
+
+### Improvements
+
+- **Commissions: the state is one control.** "Open", "Full" and "Closed" are three buttons side by side with the current one selected, in the same form as the places, the reopening date and the message. One "Save" saves it all. The explanation sits in the "?" bubble. Commissions now needs Curiosa 0.6.0.
+- **Twitch activity: a tab on the Twitch page.** On Curiosa 0.31.0 and later, the journal and the event types also show on "Twitch > Activity". The module keeps its own entry in the menu, and an older Curiosa shows it where it was.
+- **Blog and Pages: the dashboard shortcut says its right.** "Write an article" and "Add a page" now declare the module right "write". Administration only, so who sees them does not change.
+- **One word for what you install: "module".** Messages, help and tool descriptions of 18 modules no longer say "extension" or "feature" for something installed from the catalogue.
+- **Legal pages 1.1.4, Twitch bot 1.24.5, Thanks wall 1.5.1: plainer texts.** Long sentences are split, exclamation marks and trailing colons are gone. Legal facts in the Legal pages templates are unchanged.
+
+### For developers
+
+- Commissions: field `kind: "segmented"` in the `saveQueue` form, `minCore` 0.2.5 to 0.6.0. Twitch activity: `places` on `networks.twitch.events`, and `catalogue/places.json` gives `networks.twitch` the tabs `main` and `events`. Blog and Pages: `rights[write]` and `dashboard.quickActions[].right: "write"`.
+- `docs/ERGONOMIE-ADMIN.md` is again a copy of the core's (R34 to R37). New tests `tests/r34-retired-terms.test.mjs`, `tests/twitch-events-place.test.mjs`, `tests/dashboard-core-link-right.test.mjs`. The known gaps of `tests/ergonomics-baseline.json` go from 478 to 335.
+- Versions: legal-pages 1.1.4, twitch-bot 1.24.5, thanks-wall 1.5.1, home-assistant 1.5.1 and discord-connector 1.1.1 (the word "module" in two texts, R34); the other changes ship with the next release of each module. Details in `docs/changelog-parts/admin-redesign-modules.md`, `docs/changelog-parts/vocab-module.md` and `docs/changelog-parts/plain-wording-pass.md`. Every catalogue entry is pinned on the new tag `v1.114.0`.
+
 ## 1.113.0 — 2026-11-26
 
 *In short: the sponsor banner animation is calmer and cleaner. It lands without snapping, leaves softly, and its content follows the card. Your settings are kept and there is nothing to set up.*

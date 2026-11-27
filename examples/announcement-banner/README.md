@@ -5,7 +5,7 @@ C'est le plus petit module utile : `module.json` + `index.mjs`.
 
 ## Installer
 
-Dans l'admin : **Extensions → Catalogue** → « Bannière d'annonce » → **Installer sur mon site**. Le module est installé et actif ; cliquez sur **Mettre en place** pour créer la bannière, puis réglez-la.
+Dans l'admin : **Modules → Catalogue** → « Bannière d'annonce » → **Installer sur mon site**. Le module est installé et actif ; cliquez sur **Mettre en place** pour créer la bannière, puis réglez-la.
 
 (Un module d'un dépôt personnel, lui, s'installe par **Installer un dépôt personnel (non vérifié)**, en mode avancé : `https://github.com/<vous>/<depot>#v1.0.0`.)
 

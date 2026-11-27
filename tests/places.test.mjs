@@ -28,8 +28,8 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 /** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
 const TWITCH = {
   "alerts-overlay": ["1.22.3", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
-  "twitch-bot": ["1.24.4", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
-  "home-assistant": ["1.5.0", { main: "live.rewards.home" }],
+  "twitch-bot": ["1.24.5", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
+  "home-assistant": ["1.5.1", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.6.3", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.4", { list: "live.raid.list", featured: "live.raid.featured" }],
@@ -49,7 +49,7 @@ const ROLLOUT = {
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
-  "discord-connector": ["1.1.0", { main: "networks.discord" }],
+  "discord-connector": ["1.1.1", { main: "networks.discord" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.5.0", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
@@ -64,7 +64,7 @@ const ROLLOUT = {
   "instagram": ["1.2.1", { main: "networks.accounts" }],
   "kick": ["1.2.1", { main: "networks.accounts" }],
   "kofi": ["1.2.1", { main: "networks.accounts" }],
-  "legal-pages": ["1.1.3", { legal: "site.general.privacy" }],
+  "legal-pages": ["1.1.4", { legal: "site.general.privacy" }],
   "live-status": ["1.6.1", { main: "live.golive" }],
   "map": ["1.3.0", { main: "content.map", types: "content.map.types" }],
   "mastodon": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
@@ -87,7 +87,7 @@ const ROLLOUT = {
   "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
-  "thanks-wall": ["1.5.0", { wall: "community.supporters.wall" }],
+  "thanks-wall": ["1.5.1", { wall: "community.supporters.wall" }],
   "threads": ["1.2.1", { main: "networks.accounts" }],
   "ticker-overlay": ["1.3.0", { main: "obs.overlays.ticker" }],
   "tiktok": ["1.2.1", { main: "networks.accounts" }],
@@ -101,18 +101,19 @@ const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
 /** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
-const LIVE_SEARCH_CORE = { faq: "0.6.0", "content-planner": "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0" };
+const LIVE_SEARCH_CORE = { faq: "0.6.0", "content-planner": "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0", commissions: "0.6.0" /* not a search: its state is a `segmented` field (F-SET-001) */ };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
 /** Modules created after the migration: nothing to compare with in the older releases. */
 const NEW_MODULES = new Set(["discord-connector"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
+/** Modules that place only a part of what they show: they keep their own sidebar entry and their `adminMenu`; tests/twitch-events-place.test.mjs checks the details. */
+const PARTLY_PLACED = { "twitch-events": "journal and event types on Networks > Twitch > Activity; rewards and the OBS dock stay on its own page" };
 /** Modules with no place, and why. Every other module of modules/ declares places. */
 const NOT_PLACED = {
   blog: "content only: entries, no settings", codes: "content only: entries, no settings", collection: "content only: entries, no settings", links: "content only: entries, no settings", pages: "content only: entries, no settings",
   mascot: "five tabs with their own blocks: the core allows 3 sections of one module per page",
-  "twitch-events": "bridge version, removed once Alerts overlay has taken over its journal and settings",
 };
 
 const L = (t, lang) => t[lang];
@@ -244,8 +245,8 @@ test("dual mode: places[].fromTab only (never tabs[].place without minCore 0.31.
   }
 });
 
-/** Texts (objects with fr and en) and help lines are left out of the comparison: a text-only patch (R33 wording) is not a change of structure. */
-const noTexts = (v) => (Array.isArray(v) ? v.map(noTexts) : v && typeof v === "object" ? (typeof v.fr === "string" && typeof v.en === "string" ? "<text>" : Object.fromEntries(Object.entries(v).filter(([k]) => k !== "help").map(([k, x]) => [k, noTexts(x)]))) : v);
+/** Texts (objects with fr and en), help lines and the English `description` of a tool or a field are left out of the comparison: a text-only patch (R33 wording) is not a change of structure. */
+const noTexts = (v) => (Array.isArray(v) ? v.map(noTexts) : v && typeof v === "object" ? (typeof v.fr === "string" && typeof v.en === "string" ? "<text>" : Object.fromEntries(Object.entries(v).filter(([k, x]) => k !== "help" && !(k === "description" && typeof x === "string")).map(([k, x]) => [k, noTexts(x)]))) : v);
 
 const tagsUsed = [...new Set(Object.keys(MIGRATED).map(BEFORE))];
 const histories = Object.fromEntries(tagsUsed.map((tag) => [tag, (() => { try { return Object.keys(manifestsAt(root, tag)).length > 0; } catch { return false; } })()]));
@@ -288,7 +289,7 @@ test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core see
 
 test("rollout: every module of modules/ with settings or an admin panel declares its places; the few that do not are listed with their reason", () => {
   const dirs = fs.readdirSync(path.join(root, "modules")).filter((d) => fs.existsSync(path.join(root, "modules", d, "module.json")));
-  const placed = new Set([...Object.keys(MIGRATED), "stream-goals"]);
+  const placed = new Set([...Object.keys(MIGRATED), ...Object.keys(PARTLY_PLACED), "stream-goals"]);
   for (const id of dirs) {
     if (placed.has(id)) { assert.ok(manifests[id].places?.length, `${id}: places declared`); continue; }
     assert.ok(NOT_PLACED[id], `${id}: no places and no reason in NOT_PLACED`);

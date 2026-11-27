@@ -17,7 +17,7 @@
   "fix_perms": "Update the bot's permissions",
   "health_token": "Discord refuses the bot's secret code.",
   "health_guild": "The bot is not on your server.",
-  "health_perms": "The bot lacks a permission for {feature}: {list}.",
+  "health_perms": "The bot lacks a permission for {purpose}: {list}.",
   "health_rate": "Discord asks for a pause until {time}.",
   "test_none": "No bot is registered. Click “Register the bot”.",
   "test_token": "Discord refuses the bot's secret code. Open “Edit” and paste a new one.",

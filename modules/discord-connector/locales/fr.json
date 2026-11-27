@@ -17,7 +17,7 @@
   "fix_perms": "Mettre à jour les permissions du bot",
   "health_token": "Discord refuse le code secret du bot.",
   "health_guild": "Le bot n'est pas sur votre serveur.",
-  "health_perms": "Il manque une permission au bot pour {feature} : {list}.",
+  "health_perms": "Il manque une permission au bot pour {purpose} : {list}.",
   "health_rate": "Discord demande une pause jusqu'à {time}.",
   "test_none": "Aucun bot n'est enregistré. Cliquez sur « Enregistrer le bot ».",
   "test_token": "Discord refuse le code secret du bot. Ouvrez « Modifier » et collez-en un nouveau.",
