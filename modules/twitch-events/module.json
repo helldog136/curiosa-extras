@@ -9,6 +9,20 @@
   "version": "1.15.2",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
+  "places": [
+    {
+      "id": "events",
+      "place": "networks.twitch.events",
+      "order": 200,
+      "fromTab": "settings"
+    },
+    {
+      "id": "types",
+      "place": "networks.twitch.events",
+      "order": 300,
+      "fromTab": "types"
+    }
+  ],
   "platform": "twitch",
   "description": {
     "en": "Bridge version: hands its journal and settings over once, then stops listening.",

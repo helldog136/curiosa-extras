@@ -19,6 +19,23 @@
     "sections"
   ],
   "icon": "📄",
+  "rights": [
+    {
+      "id": "write",
+      "label": {
+        "fr": "ajouter des pages",
+        "en": "add pages"
+      },
+      "help": {
+        "fr": "Montre le raccourci « Ajouter une page » sur le tableau de bord.",
+        "en": "Shows the shortcut “Add a page” on the dashboard."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
   "dashboard": {
     "quickActions": [
       {
@@ -27,7 +44,8 @@
           "en": "Add a page",
           "fr": "Ajouter une page"
         },
-        "href": "/admin/entries/new?c={key}"
+        "href": "/admin/entries/new?c={key}",
+        "right": "write"
       }
     ]
   },

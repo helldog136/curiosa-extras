@@ -41,13 +41,9 @@ async function overview(ctx, q, manage) {
   if (queue.reopenOn && ps.state !== "open" && queue.reopenOn < day(new Date())) blocks.push({ type: "banner", tone: "warning", text: ctx.t("reopenPassed", { date: fmtDay(ctx.locale, queue.reopenOn) }) });
   if (manage) {
     blocks.push({
-      type: "table", columns: [ctx.t("colMode")], rows: MODES.map((m) => [`${ctx.t(`mode_${m}`)}${queue.mode === m ? ` ${ctx.t("modeCurrentMark")}` : ""}`]),
-      rowIds: [...MODES], rowActions: [{ label: ctx.t("modeChoose"), action: "setMode" }],
-    });
-    blocks.push({ type: "markdown", text: MODES.map((m) => `**${ctx.t(`mode_${m}`)}** : ${ctx.t(`modeHelp_${m}`)}`).join("  \n") });
-    blocks.push({
       type: "adminForm", action: "saveQueue", title: ctx.t("queueFormTitle"), submitLabel: ctx.t("save"),
       fields: [
+        { name: "mode", kind: "segmented", label: ctx.t("colMode"), help: ctx.t("fModeHelp"), value: queue.mode, options: MODES.map((m) => ({ value: m, label: ctx.t(`mode_${m}`) })) },
         { name: "slots", kind: "number", label: ctx.t("fSlots"), help: ctx.t("fSlotsHelp"), value: String(queue.slots) },
         { name: "reopenOn", kind: "date", label: ctx.t("fReopen"), help: ctx.t("fReopenHelp"), value: queue.reopenOn },
         { name: "message", kind: "text", label: ctx.t("fMessage"), help: ctx.t("fMessageHelp"), value: queue.message },
@@ -184,8 +180,11 @@ async function saveQueue(ctx, values) {
   if (!/^\d{1,2}$/.test(rawSlots) || !Number.isInteger(slots) || slots > LIMITS.slots) errors.slots = ctx.t("errSlots");
   const reopenOn = String(values.reopenOn ?? "").trim();
   if (reopenOn && !dayOk(reopenOn)) errors.reopenOn = ctx.t("errReopen");
+  // The state is one field of this form (segmented): no value (an older caller) keeps the current state.
+  const mode = values.mode === undefined || values.mode === "" ? null : String(values.mode);
+  if (mode !== null && !MODES.includes(mode)) errors.mode = ctx.t("errMode");
   if (Object.keys(errors).length) return { errors };
-  await D.writeQueue(ctx, { slots, reopenOn, message: clean(values.message, LIMITS.message) });
+  await D.writeQueue(ctx, { ...(mode ? { mode } : {}), slots, reopenOn, message: clean(values.message, LIMITS.message) });
   return { ok: ctx.t("okQueue") };
 }
 
