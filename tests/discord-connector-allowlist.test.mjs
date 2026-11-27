@@ -458,7 +458,7 @@ test("texts: every key the page uses exists in English and French with the same 
   const words = /\b(key|slug|instance|topic|token|jeton|webhook|route|identifiant|payload|api|json|cache|hash|oauth|clé)\b/i;
   for (const k of ["limit_open", "limit_more", "chosen_title", "pick_title", "pick_empty", "gone_help", "err_channel", "err_channel_gone", "err_too_many", "err_no_used", "test_channels", "allow_all_confirm"]) { assert.ok(!words.test(en[k]), `en ${k}`); assert.ok(!words.test(fr[k]), `fr ${k}`); assert.ok(!/!/.test(en[k] + fr[k]), `${k} exclamation`); }
   assert.ok(en.err_channel.includes("for example")); assert.ok(fr.err_channel.includes("par exemple"));
-  assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.version, "1.1.1");
 });
 
 test("blockedText: names in words, the end of the number for a channel that is gone", () => {

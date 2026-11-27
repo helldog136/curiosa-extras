@@ -29,7 +29,7 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 const TWITCH = {
   "alerts-overlay": ["1.22.3", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.24.5", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
-  "home-assistant": ["1.5.0", { main: "live.rewards.home" }],
+  "home-assistant": ["1.5.1", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.6.3", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.4", { list: "live.raid.list", featured: "live.raid.featured" }],
@@ -49,7 +49,7 @@ const ROLLOUT = {
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
-  "discord-connector": ["1.1.0", { main: "networks.discord" }],
+  "discord-connector": ["1.1.1", { main: "networks.discord" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
   "discord": ["1.5.0", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],

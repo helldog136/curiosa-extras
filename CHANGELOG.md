@@ -20,7 +20,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 - Commissions: field `kind: "segmented"` in the `saveQueue` form, `minCore` 0.2.5 to 0.6.0. Twitch activity: `places` on `networks.twitch.events`, and `catalogue/places.json` gives `networks.twitch` the tabs `main` and `events`. Blog and Pages: `rights[write]` and `dashboard.quickActions[].right: "write"`.
 - `docs/ERGONOMIE-ADMIN.md` is again a copy of the core's (R34 to R37). New tests `tests/r34-retired-terms.test.mjs`, `tests/twitch-events-place.test.mjs`, `tests/dashboard-core-link-right.test.mjs`. The known gaps of `tests/ergonomics-baseline.json` go from 478 to 335.
-- Versions: legal-pages 1.1.4, twitch-bot 1.24.5, thanks-wall 1.5.1; the other changes ship with the next release of each module. Details in `docs/changelog-parts/admin-redesign-modules.md`, `docs/changelog-parts/vocab-module.md` and `docs/changelog-parts/plain-wording-pass.md`. Every catalogue entry is pinned on the new tag `v1.114.0`.
+- Versions: legal-pages 1.1.4, twitch-bot 1.24.5, thanks-wall 1.5.1, home-assistant 1.5.1 and discord-connector 1.1.1 (the word "module" in two texts, R34); the other changes ship with the next release of each module. Details in `docs/changelog-parts/admin-redesign-modules.md`, `docs/changelog-parts/vocab-module.md` and `docs/changelog-parts/plain-wording-pass.md`. Every catalogue entry is pinned on the new tag `v1.114.0`.
 
 ## 1.113.0 — 2026-11-26
 
