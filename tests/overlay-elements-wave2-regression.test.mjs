@@ -38,12 +38,26 @@ test("Mur des remerciements : page publique (mur, groupes, pages, mise à l'honn
   // La description du catalogue a été raccourcie et simplifiée (mode simple, R9) : elle ne fait plus partie de ce qui doit rester identique.
   // 1.5.0: the minimum core moved (live search of the message list, 0.38.0) and rare settings are folded (`rare`): neither changes what the wall renders.
   const noDescription = (m) => { const { description, minCore, ...rest } = m; return { ...rest, settings: (rest.settings ?? []).map(({ rare, ...x }) => x) }; };
-  assert.deepEqual(noDescription(now.manifest), noDescription(before.manifest), "le manifeste n'a changé que par version, minCore, overlayElements, description et le droit « routes »");
+  // 1.5.1 (tone rules R10, R11, R13, text only): the exact texts that were rewritten are mapped here, so the golden stays pinned for everything else.
+  // The five titles of the extra groups gained a short help (an example); the rewritten texts of the page are listed below.
+  const REWRITTEN = [
+    ["(une catégorie de Contacts)", "(catégorie Contacts)"],
+    ["A person who asks not to appear: put their card in this Contacts category and they disappear from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.", "Cards in this Contacts category leave the wall within two minutes. Left empty, a category named “Do not show” or “Ne pas montrer” is used."],
+    ["Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît du mur en moins de deux minutes. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.", "Les fiches de cette catégorie de Contacts quittent le mur en moins de deux minutes. Laissé vide, la catégorie « Ne pas montrer » ou « Do not show » est utilisée."],
+    ["Left empty, the page is titled “Thank you!”.", "Left empty, the page is titled “Thank you”."],
+    ["Laissé vide, la page s'appelle « Merci ! ».", "Laissé vide, la page s'appelle « Merci »."],
+    ["— Merci !", "— Merci"], ["— Thank you!", "— Thank you"], [">Merci !<", ">Merci<"], [">Thank you!<", ">Thank you<"], ["Un grand merci !", "Un grand merci."], ["A big thank you!", "A big thank you."],
+    ["\"title\":\"Merci !\"", "\"title\":\"Merci\""], ["\"title\":\"Thank you!\"", "\"title\":\"Thank you\""],
+  ];
+  const rewritten = (v) => REWRITTEN.reduce((j, [a, b]) => j.replaceAll(a, b), JSON.stringify(v));
+  const withoutNewHelp = (m) => { const o = noDescription(m); return { ...o, settings: o.settings.map((x) => { if (/^groupTitle[2-6]$/.test(x.key)) { const { help, ...y } = x; return y; } return x; }) }; };
+  assert.deepEqual(JSON.parse(JSON.stringify(withoutNewHelp(now.manifest))), JSON.parse(rewritten(noDescription(before.manifest))), "le manifeste n'a changé que par version, minCore, overlayElements, description, le droit « routes » et les textes réécrits (REWRITTEN)");
+  assert.deepEqual(now.manifest.settings.filter((x) => /^groupTitle[2-6]$/.test(x.key)).every((x) => x.help?.en && x.help?.fr), true, "the five extra group titles carry an example");
   assert.deepEqual(now.top, before.top); assert.deepEqual(now.routes, before.routes, "aucune page publique ajoutée : seule la route de l'élément est nouvelle");
-  for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], before.pages[k], `page « ${k} »`);
-  for (const k of ["mcpStatus", "mcpPeople", "noBook"]) assert.deepEqual(now[k], before[k], k);
+  for (const k of Object.keys(before.pages)) assert.deepEqual(JSON.parse(JSON.stringify(now.pages[k])), JSON.parse(rewritten(before.pages[k])), `page « ${k} »`);
+  for (const k of ["mcpStatus", "mcpPeople", "noBook"]) assert.deepEqual(JSON.parse(JSON.stringify(now[k])), JSON.parse(rewritten(before[k])), k);
   assert.equal(now.admin.filter((b) => b.type === "table").length, before.admin.filter((b) => b.type === "table").length, "the administration shows the same tables (the list now carries its live search)");
-  assert.equal(fingerprint(now.pages), fingerprint(before.pages), "empreinte des pages publiques");
+  assert.equal(fingerprint(now.pages), fingerprint(JSON.parse(rewritten(before.pages))), "empreinte des pages publiques");
   const wall = JSON.stringify(before.pages.wall);
   assert.ok(wall.includes("Toujours là, merci") && /À l(?:'|&#39;)honneur/.test(wall), "les empreintes couvrent le petit mot et la mise à l'honneur");
 });

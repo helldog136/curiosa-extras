@@ -1446,21 +1446,21 @@
     {
       "id": "legal-pages",
       "name": "Legal pages",
-      "description": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English, for Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice.",
+      "description": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English. For Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice.",
       "i18n": {
         "en": {
           "name": "Legal pages",
-          "description": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English, for Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice."
+          "description": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English. For Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice."
         },
         "fr": {
           "name": "Mentions légales",
-          "description": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais, pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique."
+          "description": "Répondez à quelques questions simples. Obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais. Pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/legal-pages",
       "ref": "v1.109.2",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "⚖️",
@@ -2676,7 +2676,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/thanks-wall",
       "ref": "v1.109.2",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💛",
@@ -2859,7 +2859,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.109.2",
-      "version": "1.24.4",
+      "version": "1.24.5",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",

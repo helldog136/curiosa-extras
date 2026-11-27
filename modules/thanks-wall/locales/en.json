@@ -1,5 +1,5 @@
 {
-  "pageTitle": "Thank you!",
+  "pageTitle": "Thank you",
   "pubDescription": "A big thank you to everyone who makes this community come alive.",
   "pubSoonTitle": "The thank-you wall is getting ready",
   "pubSoonText": "Come back in a moment: it will be filled soon.",
@@ -87,7 +87,7 @@
   "msgPageOf": "Page {page} of {pages}.",
   "msgScreenTitle": "Message for {name}",
   "msgField": "Message",
-  "msgFieldHelp": "{max} characters at most. Leave empty to remove the message. Example: Thanks for always having a joke for the chat!",
+  "msgFieldHelp": "{max} characters at most. Leave empty to remove the message. Example: Thanks for always having a joke for the chat.",
   "msgSave": "Save the message",
   "msgSaved": "Message saved for {name}.",
   "msgRemoved": "Message removed for {name}.",
@@ -97,7 +97,7 @@
   "tidyDone": "Done. Merged cards followed: {followed}. Deleted cards cleaned up: {removed}.",
   "tidyNothing": "Nothing to update.",
   "ovTitle": "Thank-yous",
-  "ovHeading": "Thank you!",
+  "ovHeading": "Thank you",
   "ovDemoName": "Sample person {n}",
-  "ovDemoMessage": "A big thank you!"
+  "ovDemoMessage": "A big thank you."
 }

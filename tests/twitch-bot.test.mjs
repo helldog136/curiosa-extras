@@ -377,10 +377,10 @@ test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !follower
   let t = NOW;
   for (const cmd of ["!jeu", "!titre", "!uptime", "!followers", "!planning"]) await say(ctx, cmd, {}, (t += 120_000));
   assert.deepEqual(sent(tw), [
-    "On joue à Zelda !",
+    "On joue à Zelda.",
     "Titre du direct : Soirée détente",
     "En direct depuis 1 h 41 min.",
-    "Viewer, la communauté compte 1 234 followers, merci à tout le monde !",   // espace insécable normalisée en espace simple
+    "Viewer, la communauté compte 1 234 followers, merci à tout le monde.",   // espace insécable normalisée en espace simple
     "Prochain stream : samedi 17 octobre à 20:30 (Zelda en soirée)",
   ]);
   assert.deepEqual(tw.chat.map((m) => [m.broadcaster_id, m.sender_id]), Array(5).fill(["100", "100"]));
@@ -391,7 +391,7 @@ test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !follower
 test("alias, majuscules et préfixe : !GAME répond comme !jeu ; une commande inconnue ne répond pas et ne remplit pas le journal", async () => {
   const { ctx, tw } = world();
   await say(ctx, "!GAME arguments ignorés du chat");
-  assert.deepEqual(sent(tw), ["On joue à Zelda !"]);
+  assert.deepEqual(sent(tw), ["On joue à Zelda."]);
   const r = await say(ctx, "!pasunecommande");
   assert.deepEqual([r.handled, r.why], [false, "unknown_command"]);
   assert.equal((await logOf(ctx)).length, 1);
@@ -424,7 +424,7 @@ test("protections : ne répond que pendant le direct (réglable), jamais dans le
   const always = world({ settings: { onlyWhenLive: false }, tw: { live: { channel: "emma", configured: true, known: true, live: false } } });
   await say(always.ctx, "!jeu");
   assert.equal(always.tw.chat.length, 1, "« toujours répondre » : répond hors direct");
-  assert.equal(always.tw.chat[0].message, `On joue à ${fr.fb_jeu} !`);
+  assert.equal(always.tw.chat[0].message, `On joue à ${fr.fb_jeu}.`);
   assert.equal((await logOf(off.ctx))[0].reason, "offline");
 });
 
@@ -583,7 +583,7 @@ test("textes en anglais : le même bot répond en anglais quand la langue du sit
   const { ctx, tw } = world({ locale: "en" });
   ctx.locale = "en";
   await say(ctx, "!jeu"); await say(ctx, "!uptime", { chatterId: "3" });
-  assert.deepEqual(sent(tw), ["We are playing Zelda!", "Live for 1 h 35 min."]);
+  assert.deepEqual(sent(tw), ["We are playing Zelda.", "Live for 1 h 35 min."]);
 });
 
 /* ───────────── Twitch appelle le site : la porte d'entrée ───────────── */
@@ -618,7 +618,7 @@ test("webhook : une notification valide → 204 tout de suite, la réponse part 
   const first = await W.handle(post(secret, body, { id: "evt-1" }), ctx, { now: NOW });
   assert.equal(first.response.status, 204);
   await first.done;
-  assert.deepEqual(sent(tw), ["On joue à Zelda !"]);
+  assert.deepEqual(sent(tw), ["On joue à Zelda."]);
   const again = await W.handle(post(secret, body, { id: "evt-1" }), ctx, { now: NOW + 1000 });
   assert.equal(again.response.status, 204, "Twitch croit à un succès : il ne réessaie pas");
   await again.done;
@@ -1169,7 +1169,7 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.24.4", "0.36.0", "twitch", "multiple", 6]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.24.5", "0.36.0", "twitch", "multiple", 6]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }, { service: "alerts.show", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
