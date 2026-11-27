@@ -7,6 +7,7 @@
 // Neighbour file: dynamic, versioned import (docs/HOT-UPDATE.md).
 const v = new URL(import.meta.url).search;
 const { ovTransition, transitionConfig } = await import(new URL(`./transition.mjs${v}`, import.meta.url).href);
+const { rotationPick, slotMs, scheduledId } = await import(new URL(`./rotation.mjs${v}`, import.meta.url).href);
 const color = (v, def) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : def);
 const num = (v, def, min, max) => Math.min(max, Math.max(min, Number(v) || def));
 const safeImage = (v) => (typeof v === "string" && /^(https?:\/\/|\/uploads\/)/.test(v) ? v : null);
@@ -16,6 +17,25 @@ function devOptions(query) {
   const seed = query.get("seed");
   return { fast: query.get("dev") === "1", seed: seed !== null && Number.isFinite(Number(seed)) ? Math.trunc(Number(seed)) : null };
 }
+
+// ── Motion constants (audit: docs/SPONSOR-MOTION-AUDIT.md) ───────────────────────────────────────
+/** Entrance: fast start, ~4 % overshoot (as before), then velocity 0 on the last frame (the old curve ended at -0.22 x the mean speed, a visible snap). */
+export const ENTER_CURVE = "cubic-bezier(.3,1.35,.5,1)";
+/** Exit: soft start, crisp end (ease-in). The old exit replayed the entrance curve, so it left at full speed and bounced back while invisible. */
+export const EXIT_CURVE = "cubic-bezier(.5,0,.75,.4)";
+/** Idle loops start once the card has landed (one hero motion at a time) and are decoupled: 4.6 s float, 11 s shine (one 3 s sweep per period). `backwards` keeps the first keyframe during the delay. */
+export const FLOAT = "tickerFloat 4.6s ease-in-out var(--tr-ms,.58s) infinite backwards";
+export const SHINE = "tickerShine 11s ease-in-out calc(var(--tr-ms,.58s) + .5s) infinite backwards";
+/** Stagger of the card content after the plate: [selector, delay ms, travel]. The plate is the hero, the content follows it by about 2 frames each (QR: opacity only, it must stay pixel-aligned). */
+export const STAGGER = [[".ticker-logo", 40, 1], [".ticker-text-col", 80, 1], [".ticker-qr,.ticker-qr-wrap", 120, 0]];
+
+/** Neon halo: a STATIC sibling of the card (never animated, never repainted per frame: it is part of the slider's layer, which only moves and fades). Its `::before` is the card's shape in the accent colour,
+ *  the element is blurred, then clipped to the OUTSIDE of the card (even-odd hole) so a see-through surface never shows it through. The shape lists must match the card's clip-path. */
+export const GLOW_BASE = "3.5% 0,100% 0,96.5% 100%,0 100%";
+export const GLOW_QR = "var(--tk-sk) 0,100% 0,calc(100% - var(--tk-sk)) 100%,0 100%";
+export const GLOW_BLUR = 12;
+/** polygon() that keeps everything but the card's shape: a big outer frame, then the shape, with a doubled seam so no hairline is drawn. */
+export const glowOutside = (shape) => { const pts = shape.split(","), o = "-64px -64px,calc(100% + 64px) -64px,calc(100% + 64px) calc(100% + 64px),-64px calc(100% + 64px)"; return `polygon(evenodd,${o},-64px -64px,${pts.join(",")},${pts[0]})`; };
 
 // ── Aides pures (aussi recopiées dans le script de la page : voir `script` plus bas) ──────────────
 /** Taille du titre. `natural` = largeur du titre sur UNE ligne à 22 px, `maxW` = largeur de la colonne de texte.
@@ -112,22 +132,45 @@ function elementTokens(query) {
 
 const safeLink = (v) => (typeof v === "string" && /^(https?:\/\/|\/(?!\/))/i.test(v.trim()) ? v.trim() : null);
 
+/** The items the overlay can show right now (shared by the `items` route and the topic `home.info`): ids `s:<id>` (sponsor.card) and `e:<path>` (core.entry). */
+async function currentItems(ctx) {
+  const site = ctx.api.siteUrl;
+  const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
+  return [
+    ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
+    // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
+    ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
+  ];
+}
+
+/** The display period and the hold time in seconds, clamped like the overlay does. */
+const schedule = (ctx) => [num(ctx.setting("periodSeconds"), 90, 5, 3600), num(ctx.setting("holdSeconds"), 10, 3, 120)];
+
 export default {
   routes: {
     // JSON rafraîchi par la page de l'overlay : l'état courant, rien n'est mis en cache côté serveur.
     async items(request, ctx) {
       const site = ctx.api.siteUrl;
-      const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
-      const raw = [
-        ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
-        // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
-        ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
-      ];
+      const raw = await currentItems(ctx);
       // Mode test d'une page d'overlay (?demo=1) : sans aucun sponsor, une carte d'exemple pour voir le bandeau.
       if (!raw.length && new URL(request.url).searchParams.get("demo") === "1") raw.push({ id: "demo", name: ctx.t("demoName"), text: ctx.t("demoText"), url: "https://example.com/promo", page: `${site}/`, code: "CODE10", logo: null, publishedAt: null });
       // The QR leads to the page of this site that presents the sponsor, never straight to the referral link (`url`): the visitor meets the presentation first and follows the link from there.
       const items = await Promise.all(raw.map(async ({ page, ...i }) => { const qrUrl = qrTarget(page, site); return { ...i, qrUrl, qrSvg: qrUrl ? await ctx.api.qr(qrUrl) : null }; }));
-      return Response.json({ items }, { headers: { "cache-control": "no-store" } });
+      return Response.json({ items, serverTime: Date.now() }, { headers: { "cache-control": "no-store" } });
+    },
+  },
+
+  // The topic `home.info` (optional, read by the Home Assistant connector): the sponsor the server schedules on the OBS overlay now (see rotation.mjs: the page computes the same answer from the same clock).
+  // `value` is the sponsor name during its display time, null between two displays or when there is no sponsor.
+  exports: {
+    "home.info": async (ctx) => {
+      let name = null;
+      try {
+        const items = await currentItems(ctx);
+        const id = scheduledId(items.map((i) => i.id), Date.now(), ...schedule(ctx));
+        name = items.find((i) => i.id === id)?.name ?? null;
+      } catch (e) { name = null; }
+      return [{ key: `sponsor-ticker.${ctx.instance.key}`, label: ctx.t("homeInfoLabel"), value: name }];
     },
   },
 
@@ -153,6 +196,8 @@ export default {
       ...(element ? { tv: true } : {}),
       badge: ctx.t("badge"),
       isNew: ctx.t("new"),
+      // Test page (demo), fast developer mode and seeded developer mode choose at random in the browser, as before; otherwise the server clock decides (rotation.mjs).
+      ...(element?.demo || dev?.fast || dev?.seed != null ? { free: true } : {}),
     };
     const custom = color(ctx.setting("accentColor"), null);
     const accent = custom ?? ctx.theme.accent;
@@ -178,6 +223,7 @@ export default {
         .ticker-domain{font-size:var(--ov-text-xs,24px);max-width:calc(150px*var(--ov-tv,1))}
         .tv-a .ticker-blurb,.tv-c .ticker-eyebrow{display:none}
         .tv-b .ticker-name{-webkit-line-clamp:1}
+        .ticker-card--cine,.ticker-card--neon{backdrop-filter:blur(10px)}
         [data-ov-part="logo"],[data-ov-part="qr"]{border-radius:min(var(--ov-radius,8px),8px)}
         [data-ov-part="panel"]{border:1px solid var(--ov-border,transparent)}
         [data-ov-part="title"],[data-ov-part="text"],[data-ov-part="code"],[data-ov-part="label"]{text-shadow:0 1px 3px rgba(0,0,0,.35)}` : "";
@@ -191,6 +237,8 @@ export default {
         .ticker-card--qr .ticker-qr{position:relative;z-index:1;align-self:stretch;flex:none;width:auto;height:auto;padding:0;border-radius:0;overflow:hidden;margin-left:calc(16px*var(--ov-tv,1))}
         .ticker-card--qr .ticker-qr svg{position:absolute;display:block;shape-rendering:crispEdges}
         .ticker-card--qr .ticker-text-col{min-width:0}
+        .ticker-glow{--tk-sk:calc(22px*var(--ov-tv,1));clip-path:${glowOutside(GLOW_QR)}}
+        .ticker-glow::before{clip-path:polygon(${GLOW_QR})}
         .tv-d .ticker-logo{display:none}` : "";
     const qrBuild = showQr
       ? `if(c.showQr&&s.qrUrl&&s.qrSvg){card.classList.add("ticker-card--qr");var q=el("div","ticker-qr"),mm=/viewBox="0 0 (\\d+) \\d+"/.exec(s.qrSvg),dm=shortDomain(s.qrUrl);q.innerHTML=s.qrSvg;if(mm)q.setAttribute("data-n",mm[1]);q.setAttribute("role","img");if(dm)q.setAttribute("aria-label",dm);card.append(q);col.querySelectorAll(".ticker-name,.ticker-blurb,.ticker-code").forEach(function(n){n.title=n.textContent})}`
@@ -218,11 +266,14 @@ export default {
       css: `
         html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
         #tk-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2vh 2vw;box-sizing:border-box}
-        .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform var(--tr-ms,.58s) cubic-bezier(.2,.9,.32,1.15),opacity var(--tr-fade,.45s) ease;will-change:transform}
-        .ticker-slider.on{transform:translateX(0) scale(var(--tk-s,1));opacity:1}
-        .ticker-card{position:relative;display:flex;align-items:center;overflow:hidden;min-height:96px;padding-right:26px;clip-path:polygon(3.5% 0,100% 0,96.5% 100%,0 100%);box-shadow:0 14px 34px rgba(0,0,0,.55)}
-        .ticker-card--cine{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));backdrop-filter:blur(10px);animation:tickerFloat 4.6s ease-in-out infinite}
-        .ticker-card--neon{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));backdrop-filter:blur(10px);box-shadow:0 14px 34px rgba(0,0,0,.55),0 0 24px color-mix(in srgb,var(--ticker-accent) 35%,transparent);animation:tickerFloat 4.6s ease-in-out infinite}
+        .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform var(--tr-ms,.58s) ${EXIT_CURVE},opacity calc(var(--tr-ms,.58s)*.7) cubic-bezier(.4,0,1,1) calc(var(--tr-ms,.58s)*.3);will-change:transform}
+        .ticker-slider.on{transform:translateX(0) scale(var(--tk-s,1));opacity:1;transition:transform var(--tr-ms,.58s) ${ENTER_CURVE},opacity var(--tr-fade,.45s) ease}
+        .ticker-glow{position:absolute;inset:0;z-index:-1;pointer-events:none;filter:blur(${GLOW_BLUR}px);clip-path:${glowOutside(GLOW_BASE)}}
+        .ticker-glow::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--ticker-accent) 55%,transparent);clip-path:polygon(${GLOW_BASE})}
+        .ticker-slider.tk-idle .ticker-card,.ticker-slider.tk-idle .ticker-shine{animation-play-state:paused}
+        .ticker-card{position:relative;display:flex;align-items:center;overflow:hidden;min-height:96px;padding-right:26px;clip-path:polygon(3.5% 0,100% 0,96.5% 100%,0 100%)}
+        .ticker-card--cine{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));animation:${FLOAT}}
+        .ticker-card--neon{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));animation:${FLOAT}}
         .ticker-card--broadcast{background:var(--ticker-accent)}
         .ticker-card--broadcast .ticker-badge,.ticker-card--broadcast .ticker-name,.ticker-card--broadcast .ticker-blurb{color:var(--tk-on-accent)}
         .ticker-card--broadcast .ticker-blurb{opacity:.75}
@@ -245,11 +296,11 @@ export default {
         .ticker-qr{width:62px;height:62px;background:#fff;border-radius:8px;padding:5px;box-sizing:border-box}
         .ticker-qr svg{width:100%;height:100%;display:block}
         .ticker-domain{font-size:9.5px;letter-spacing:.04em;color:var(--tk-muted);max-width:150px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .ticker-shine{position:absolute;top:0;left:0;width:26%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);animation:tickerShine 5.5s ease-in-out infinite;pointer-events:none}
+        .ticker-shine{position:absolute;top:0;left:0;width:26%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);animation:${SHINE};pointer-events:none}
         .ticker-card--broadcast .ticker-shine{display:none}
         @keyframes tickerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-        @keyframes tickerShine{0%{transform:translateX(-160%)}55%,100%{transform:translateX(430%)}}
-        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}}${elementCss}${qrCss}`,
+        @keyframes tickerShine{0%{transform:translateX(-160%)}27.3%,100%{transform:translateX(430%)}}
+        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}.ticker-slider,.ticker-slider.on{transform:scale(var(--tk-s,1))}.ticker-slider{transition:opacity calc(var(--tr-ms,.58s)*.7) cubic-bezier(.4,0,1,1)}.ticker-slider.on{transition:opacity var(--tr-fade,.45s) ease}}${elementCss}${qrCss}`,
       script: `(function(){var c=${json},slider=document.getElementById("tk-slider"),items=[],last=null,hold;
         // Hasard : Math.random, ou un petit générateur à graine en mode développeur (?seed=N).
         var rnd=Math.random;if(c.seed!==null){var a=c.seed>>>0;rnd=function(){a=(a+0x6d2b79f5)>>>0;var t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
@@ -257,10 +308,25 @@ export default {
         ${fitTitle.toString()}
         ${fitScale.toString()}
         ${shortDomain.toString()}
+        ${rotationPick.toString()}
+        ${slotMs.toString()}
         ${showQr ? qrPlan.toString() + "\n        " : ""}${ovTransition.toString()}
         if(c.tr.ms!==600){slider.style.setProperty("--tr-ms",c.tr.ms+"ms");slider.style.setProperty("--tr-fade",Math.round(c.tr.ms*.78)+"ms")}
-        function go(phase){return ovTransition(slider,phase,phase==="in"?c.tr.in:c.tr.out,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"})}
-        function load(){return fetch(c.itemsUrl,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(Array.isArray(d.items))items=d.items}).catch(function(){})}
+        var calm=typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches,idle=0,EN=${JSON.stringify(ENTER_CURVE)},ST=${JSON.stringify(STAGGER)};
+        // Entrance / exit curves of the explicit modes (the shared ovTransition keeps its own, used by the other overlays): an entrance ends with velocity 0, a fade uses its whole length, a wobble turns smoothly (ease-in-out on every key) and its last step of an exit is an ease-in.
+        function tune(phase,mode){var a=slider._ovTr;if(calm||!a||!a.effect||!a.effect.updateTiming)return;try{var inn=phase==="in";
+          if(mode==="fade")a.effect.updateTiming({easing:inn?"cubic-bezier(.2,0,0,1)":"cubic-bezier(.4,0,1,1)"});
+          else if(mode==="jiggle"){var kf=a.effect.getKeyframes();kf.forEach(function(k,i){k.easing=inn&&i===0?"cubic-bezier(.25,.8,.35,1)":!inn&&i===kf.length-2?"cubic-bezier(.4,0,1,1)":"ease-in-out"});a.effect.setKeyframes(kf);a.effect.updateTiming({easing:"linear"})}
+          else if(inn)a.effect.updateTiming({easing:EN})}catch(e){}}
+        // Follow-through: the content of the card comes in about 2 frames after the plate, one piece at a time, trailing on the side the card comes from. With reduced motion: opacity only.
+        function follow(card){var m=c.tr.in;if(m==="none"||!card||typeof card.querySelector!=="function")return;var d=m==="slideLeft"?[-1,0]:m==="slideTop"?[0,-1]:m==="slideBottom"?[0,1]:m==="auto"||m==="slide"||m==="slideRight"?[1,0]:[0,0];
+          ST.forEach(function(r){var n=card.querySelector(r[0]);if(!n||!n.animate)return;var k=calm||!r[2]?0:14;n.animate([{opacity:0,transform:"translate("+d[0]*k+"px,"+d[1]*k+"px)"},{opacity:1,transform:"none"}],{duration:calm?160:260,delay:calm?0:r[1],easing:"cubic-bezier(.2,0,0,1)",fill:"backwards"})})}
+        function go(phase){var m=phase==="in"?c.tr.in:c.tr.out;clearTimeout(idle);
+          if(phase==="in"){slider.classList.remove("tk-idle");follow(cur)}
+          else idle=setTimeout(function(){if(!slider.classList.contains("on"))slider.classList.add("tk-idle")},c.tr.ms*1.3+80);
+          var p=ovTransition(slider,phase,m,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"});tune(phase,m);return p}
+        var off=0;
+        function load(){var t0=Date.now();return fetch(c.itemsUrl,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(Array.isArray(d.items))items=d.items;if(typeof d.serverTime==="number")off=d.serverTime-(t0+Date.now())/2}).catch(function(){})}
         function pick(){if(!items.length)return null;if(items.length===1)return items[0];var s=items[Math.floor(rnd()*items.length)],g=0;while(s.id===last&&g++<8)s=items[Math.floor(rnd()*items.length)];return s}
         function build(s){
           var card=el("div","ticker-card ticker-card--"+c.visual);card.append(el("div","ticker-bar"));
@@ -274,7 +340,7 @@ export default {
           ${qrBuild}
           card.append(el("div","ticker-shine"));return card}
         // La carte doit toujours tenir dans la source navigateur : on essaie 3 largeurs de texte et on garde celle qui laisse le titre le plus lisible une fois mise à l'échelle.
-        var cur=null;
+        var cur=null;function put(card){if(c.visual==="neon")slider.replaceChildren(card,el("div","ticker-glow"));else slider.replaceChildren(card)}
         ${qrSize}${element ? (showQr ? `function fitTv(card){var lim=window.innerHeight*.96,tvf=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ov-tv"))||1,col=card.querySelector(".ticker-text-col"),i=0,st=["tv-a","tv-b","tv-c","tv-d"];card.classList.remove.apply(card.classList,st);function chk(){return !sizeQr(card)||card.offsetHeight>lim||col.clientWidth<150*tvf}while(i<st.length&&chk())card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1");sizeQr(card)}
         ` : `function fitTv(card){var lim=window.innerHeight*.96,i=0,st=["tv-a","tv-b","tv-c"];card.classList.remove.apply(card.classList,st);while(i<st.length&&card.offsetHeight>lim)card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1")}
         `) : ""}function fit(card){${element ? "if(c.tv)return fitTv(card);" : ""}var col=card.querySelector(".ticker-text-col"),nm=card.querySelector(".ticker-name"),best=null,vw=window.innerWidth,vh=window.innerHeight;
@@ -282,9 +348,13 @@ export default {
           [430,330,250].forEach(function(w){if(best&&best.s>=1)return;var r=apply(w);r.score=r.t.size*r.s;if(!best||r.score>best.score*1.03)best=r});
           apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")${showQr ? ";sizeQr(card)" : ""}}
         window.addEventListener("resize",function(){if(cur)fit(cur)});
-        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
+        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);put(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}
-        load().then(function(){setTimeout(cycle,c.startDelay*1000)})})();${elementScript}`,
+        // The server clock decides (rotation.mjs): slot = floor(server time / slot length), the sponsor of a slot is on screen during its first c.hold seconds. Nothing is sent to the server.
+        function at(k){var id=rotationPick(items.map(function(i){return i.id}),k);for(var i=0;i<items.length;i++)if(items[i].id===id)return items[i];return null}
+        function plan(t,P){var k=Math.floor(t/P),rem=c.hold*1000-(t-k*P);if(rem>=2000)return{k:k,at:t,rem:rem};k++;return{k:k,at:k*P,rem:c.hold*1000}}
+        function sync(t){var P=slotMs(c.period,c.hold),p=plan(t,P),w=p.at-(Date.now()+off);setTimeout(function(){load().then(function(){setTimeout(function(){var s=at(p.k);if(s){cur=build(s);put(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},p.rem)}sync(p.k*P+P)},Math.max(0,p.at-(Date.now()+off)))})},Math.max(0,w-3000))}
+        if(c.free)load().then(function(){setTimeout(cycle,c.startDelay*1000)});else load().then(function(){sync(Date.now()+off+c.startDelay*1000)})})();${elementScript}`,
     };
   },
 };

@@ -27,6 +27,7 @@ const EXPECTED = {
   "alerts-overlay": ["Réseaux.Twitch", 50],
   "twitch-bot": ["Réseaux.Twitch", 60],
   "twitch-raid": ["Réseaux.Twitch", 70],
+  "discord-connector": ["Réseaux.Discord", 5],
   "discord": ["Réseaux.Discord", 10],
   "discord-announcer": ["Réseaux.Discord", undefined],
   "youtube-connector": ["Réseaux.YouTube", 10],
@@ -116,7 +117,7 @@ test("with the core's tree builder, the entries land once, in the expected group
     const ofGroup = (t) => nets.children.find((c) => c.title === t).entries.map((e) => e.id);
     assert.deepEqual(ofGroup("Twitch"), ["twitch-connector", "twitch-channel", "twitch-events", "alerts-overlay", "twitch-bot", "twitch-raid"]);
     assert.deepEqual(nets.entries.map((e) => e.id), ["live-status"], "Live status (Twitch and YouTube) sits in Networks itself, before the network groups");
-    assert.deepEqual(ofGroup("Discord"), ["discord", "discord-announcer"]);
+    assert.deepEqual(ofGroup("Discord"), ["discord-connector", "discord", "discord-announcer"]);
     assert.deepEqual(ofGroup("YouTube"), ["youtube-connector", "youtube-channel", "youtube-live-actions"]);
     assert.equal(nets.count, items.length, "each entry appears once");
   }

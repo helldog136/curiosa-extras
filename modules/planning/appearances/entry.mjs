@@ -19,6 +19,9 @@ export function chosenAppearance(ctx, override) {
 /** Faut-il garder les créneaux annulés à la lecture du calendrier ? Seulement avec une apparence qui sait les montrer. */
 export const wantsCancelled = (ctx) => chosenAppearance(ctx) !== DEFAULT_APPEARANCE && normalizeOptions(settingReader(ctx)).cancelled;
 
+/** The first day of the week the page uses (1 Monday, 0 Sunday, 6 Saturday). */
+export const weekStartOf = (ctx) => normalizeOptions(settingReader(ctx)).weekStart;
+
 const hrefOf = (ctx) => { const b = ctx.instance?.basePath; return b === null || b === undefined ? null : b ? `/${b}` : "/"; };
 
 /**

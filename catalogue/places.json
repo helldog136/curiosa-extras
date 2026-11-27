@@ -571,7 +571,7 @@
     {
       "id": "obs.overlays",
       "en": "Ready-made overlays",
-      "fr": "Overlays tout prêts",
+      "fr": "Overlays prédéfinis",
       "intro": {
         "en": "The overlays that work on their own in OBS.",
         "fr": "Les overlays qui fonctionnent seuls dans OBS."

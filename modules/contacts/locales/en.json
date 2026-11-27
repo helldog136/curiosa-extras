@@ -414,5 +414,22 @@
   "slotNeedNetwork": "Choose the platform of this account or paste a profile link.",
   "freshBanner": "The card is created.",
   "helpEmail": "Optional. Stays private: only authorized team members can see it.",
-  "helpCategories": "A category groups people (for example \"Raid target\": the people you can raid). Tick the ones that fit."
+  "helpCategories": "A category groups people (for example \"Raid target\": the people you can raid). Tick the ones that fit.",
+  "accBadge": "Account · {role}",
+  "accTip": "Name and e-mail follow the account.",
+  "accTeamLink": "Access and role in Team →",
+  "colLogin": "Login account",
+  "filterAccounts": "Login accounts ({count})",
+  "accGone": "The login account of this person was deleted on {date}. The card stays and is no longer linked.",
+  "accSharedBanner": "This account's e-mail is already on another card. Merge the two cards.",
+  "accSharedOpen": "See duplicates",
+  "accLinked": "This card follows a login account, so it cannot be deleted. Remove the person from Team first: the card then stays, unlinked.",
+  "accSharedNote": "This account's e-mail was already on another card. Check the two cards and merge them.",
+  "accGoneNote": "Login account deleted: this card is no longer linked.",
+  "accLevel_owner": "Owner",
+  "accLevel_coordinator": "Technical coordination",
+  "accLevel_admin": "Administration",
+  "accLevel_editor": "Editorial",
+  "accLevel_none": "No role",
+  "source_account": "login account"
 }

@@ -6,6 +6,7 @@ const { liveNow, isOpen, shouldNoteLive } = await import(`./live.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { moderate, clean } = await import(`./moderation.mjs${v}`);
 const { catalogNow, catalogLabel, resetCatalog } = await import(`./catalog.mjs${v}`);
+const { infoNow, resetInfo } = await import(`./info.mjs${v}`);
 
 export const KEY_RE = /^[a-z0-9][a-z0-9:_-]{0,39}$/;
 export const REF_RE = /^[A-Za-z0-9._:-]{1,80}$/;
@@ -30,7 +31,7 @@ const mem = (ctx) => {
   if (!mems.has(k)) mems.set(k, { seen: 0, pull: 0, ttsGlobal: 0, ttsViewer: new Map(), pairFp: new Map(), pairAll: [], fails: new Map(), acks: [], tests: [] });
   return mems.get(k);
 };
-export const resetMemory = () => { mems.clear(); resetCatalog(); };
+export const resetMemory = () => { mems.clear(); resetCatalog(); resetInfo(); };
 
 /** Fenêtre glissante : rend 0 si l'appel passe (et le compte), sinon les secondes à attendre. */
 function slide(list, now, windowMs, max) {
@@ -330,6 +331,7 @@ export async function pull(ctx, { cursor, limit }, now = Date.now()) {
   const live = await liveNow(ctx, now, { passive: idle });
   const s = settingsOf(ctx);
   const catalog = await catalogNow(ctx, now);
+  const info = await infoNow(ctx, now);   // display data from other modules (topic `home.info`): never filtered by `enabled` or `live`
   noteSeen(ctx, now);
   return S.transact(ctx, async (db) => {
     const core = await db.core();
@@ -351,7 +353,7 @@ export async function pull(ctx, { cursor, limit }, now = Date.now()) {
       }
     }
     const delivered = actions.length ? maxSeq : Math.min(cursor, core.seq);
-    return { enabled: core.enabled !== false, live: open, serverTime: iso(now), cursor: delivered, pollSeconds: s.pollSeconds, actions, catalog };
+    return { enabled: core.enabled !== false, live: open, serverTime: iso(now), cursor: delivered, pollSeconds: s.pollSeconds, actions, catalog, info };
   }, { now });
 }
 

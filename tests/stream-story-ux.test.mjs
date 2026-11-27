@@ -224,7 +224,7 @@ test("the page: three steps, the preview before the settings in the code, steps 
   assert.ok(html.indexOf('id="step-3"') < html.indexOf('id="generate"'), "the main button comes after the style step");
   // the information step: one item and one switch per thing the video can show, the switch being the tick of the element
   for (const e of P.ELEMENTS) {
-    assert.match(html, new RegExp(`<div class="item" id="item-${e}">`), e);
+    assert.match(html, new RegExp(`<div class="item" id="item-${e}"( data-only="event")?>`), e);
     assert.match(html, new RegExp(`<input type="checkbox" role="switch" id="el-${e}" aria-labelledby="lbl-${e} sw-${e}">`), `a switch with a name for ${e}`);
   }
   const groups = [...html.matchAll(/<fieldset class="group">([\s\S]*?)<\/fieldset>/g)].map((m) => (m[1].match(/class="item"/g) ?? []).length);

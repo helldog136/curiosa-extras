@@ -4,6 +4,103 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.114.0 — 2026-11-27
+
+*In short: the Commissions state is one control, Twitch activity gets a tab on the Twitch page, the Blog and Pages shortcuts say their right, and every text says "module". Legal pages, Twitch bot and Thanks wall get plainer wording. Your settings are kept and there is nothing to set up.*
+
+### Improvements
+
+- **Commissions: the state is one control.** "Open", "Full" and "Closed" are three buttons side by side with the current one selected, in the same form as the places, the reopening date and the message. One "Save" saves it all. The explanation sits in the "?" bubble. Commissions now needs Curiosa 0.6.0.
+- **Twitch activity: a tab on the Twitch page.** On Curiosa 0.31.0 and later, the journal and the event types also show on "Twitch > Activity". The module keeps its own entry in the menu, and an older Curiosa shows it where it was.
+- **Blog and Pages: the dashboard shortcut says its right.** "Write an article" and "Add a page" now declare the module right "write". Administration only, so who sees them does not change.
+- **One word for what you install: "module".** Messages, help and tool descriptions of 18 modules no longer say "extension" or "feature" for something installed from the catalogue.
+- **Legal pages 1.1.4, Twitch bot 1.24.5, Thanks wall 1.5.1: plainer texts.** Long sentences are split, exclamation marks and trailing colons are gone. Legal facts in the Legal pages templates are unchanged.
+
+### For developers
+
+- Commissions: field `kind: "segmented"` in the `saveQueue` form, `minCore` 0.2.5 to 0.6.0. Twitch activity: `places` on `networks.twitch.events`, and `catalogue/places.json` gives `networks.twitch` the tabs `main` and `events`. Blog and Pages: `rights[write]` and `dashboard.quickActions[].right: "write"`.
+- `docs/ERGONOMIE-ADMIN.md` is again a copy of the core's (R34 to R37). New tests `tests/r34-retired-terms.test.mjs`, `tests/twitch-events-place.test.mjs`, `tests/dashboard-core-link-right.test.mjs`. The known gaps of `tests/ergonomics-baseline.json` go from 478 to 335.
+- Versions: legal-pages 1.1.4, twitch-bot 1.24.5, thanks-wall 1.5.1; the other changes ship with the next release of each module. Details in `docs/changelog-parts/admin-redesign-modules.md`, `docs/changelog-parts/vocab-module.md` and `docs/changelog-parts/plain-wording-pass.md`. Every catalogue entry is pinned on the new tag `v1.114.0`.
+
+## 1.113.0 — 2026-11-26
+
+*In short: the sponsor banner animation is calmer and cleaner. It lands without snapping, leaves softly, and its content follows the card. Your settings are kept and there is nothing to set up.*
+
+### Improvements
+
+- **Sponsor ticker 1.7.0: the banner lands cleanly and leaves softly.** It still slides in fast with a very slight bounce, but stops dead instead of snapping into place. On the way out it starts slowly, speeds up and fades.
+- **Sponsor ticker 1.7.0: the logo, the text and the QR code follow the card.** They appear one after the other, a split second after the plate. The shine and the floating wait for the card to land, and the shine is rarer.
+- **Sponsor ticker 1.7.0: with reduced motion on the device, the banner fades in and out without sliding or looping.** Before, the default entrance still slid.
+- **Sponsor ticker 1.7.0: the neon look now shows its glow around the card.** It was hidden by the diagonal cut of the card. The "jiggle" wobble turns smoothly and "fade" uses its whole length. The other looks are unchanged.
+
+### For developers
+
+- `sponsor-ticker` 1.7.0: new exports `ENTER_CURVE`, `EXIT_CURVE`, `FLOAT`, `SHINE`, `STAGGER` in `modules/sponsor-ticker/index.mjs`; the page script gets `tune(phase, mode)`, `follow(card)` and the `tk-idle` class; the card `box-shadow` is replaced for the neon look by a static `div.ticker-glow` sibling. `scripts/overlay-transition.mjs` and the other overlays are untouched. No change in the core, no new permission, no new setting, `minCore` unchanged. Details in `docs/changelog-parts/sponsor-animations-polish.md` and `docs/SPONSOR-MOTION-AUDIT.md`; test: `tests/sponsor-ticker-motion.test.mjs`. Every catalogue entry is pinned on the new tag `v1.113.0`.
+
+## 1.112.1 — 2026-11-26
+
+*In short: on a video alert, the text now follows the video instead of the moment the card appears, and the video is no longer cut before its end. If you tuned the times of a text on a video, add about 0.5 s to each. Nothing else changes.*
+
+### Fixed
+
+- **Alerts overlay 1.22.3: on a video, the times of a placed text are seconds of the video.** "Enters at 1 s" now means one second after the video really starts, on every machine and in OBS. Before, the text started when the card appeared, 0.6 to 0.8 s before the picture could be seen, so it came and left too early.
+- **Alerts overlay 1.22.3: the end of the video is no longer cut.** The length of the alert counts from the start of the video, and a video played once always goes to its end, plus a short margin.
+- **Alerts overlay 1.22.3: a text is never lost.** If a video has not started after about a second (refused, stuck, broken), the text starts anyway. Pictures and GIFs do not change.
+- **If you adjusted the times of a text on a video, add about 0.5 s to each time.** The old values included about 0.5 s of compensation for the loading time. Your saved texts are not modified.
+
+### For developers
+
+- `alerts-overlay` 1.22.3: `VIDEO_CLOCK` (`cmpClock(card, secs, rearm)`) and `composeMount(fx)` replace the former `COMPOSE_MOUNT` in `modules/alerts-overlay/index.mjs`. After `CuriosaCompose.mount` the animations of the boxes are paused; on the video's `playing` event they are set to `video.currentTime` and resumed, `waiting` pauses and the next `playing` resynchronises. The length of the alert is re-armed from that moment (at least `duration + 0.3 s` for `play: "once"`, capped at 120 s). Fallback: 1.2 s (3 s while the video is loading), and `error` starts the text at once. No video: no code path changes. No change in the core, no new permission, `minCore` unchanged. Details in `docs/changelog-parts/alerts-overlay-video-clock.md`; test: `tests/alerts-overlay-video-clock.test.mjs`. Every catalogue entry is pinned on the new tag `v1.112.1`.
+
+## 1.112.0 — 2026-11-25
+
+*In short: the French title of the ready-made overlays page is now "Overlays prédéfinis". Nothing else changes and there is nothing to set up.*
+
+### Improvements
+
+- **The ready-made overlays page is titled "Overlays prédéfinis" in French.** The English title stays "Ready-made overlays". No module changes and no new permission.
+
+### For developers
+
+- `catalogue/places.json`: only the `fr` title of `obs.overlays` changed; the fixture `tests/fixtures/places-menus.json` follows. Every catalogue entry is pinned on the new tag `v1.112.0`; no module version changes.
+
+## 1.111.0 — 2026-11-24
+
+*In short: a new Discord connector lets one bot serve your site, and the stream schedule can now be posted to your Discord server. Contacts gets cards for your login accounts, the content notebook keeps video scripts, and Announcement story makes a video of the whole week.*
+
+### New
+
+- **Discord connector 1.1.0 (new): one Discord bot for your site.** Register your bot once and every module that talks to Discord can use it. The card says Configured, Degraded or Not configured, "Test the connection" says what works, and the secret code is never shown again. Messages are silent by default and nobody is ever pinged.
+- **Discord connector: choose where the bot may write.** Pick the channels with a live search; until you choose, the bot may write in every text channel, as before. Other modules that let you pick a channel only offer the ones you chose.
+- **Stream schedule 2.10.0: the week's planning on your Discord server.** Turn on the option and choose a channel: the whole week appears as one message that the site edits as your schedule changes. It is silent unless you choose "Notify members". It needs the Discord connector; without it the schedule works as before.
+- **Discord 1.5.0: your member count from your own bot.** When the connector is set up and the account is your own server, the count comes from your bot instead of the public invitation. Without a connector nothing changes, and visitors never see a difference.
+- **Contacts 2.8.0: your login accounts are in your address book.** You and your team each get a card with name, e-mail and an "Account · role" badge, kept up to date. A card with the same e-mail is linked, never duplicated, and a linked card cannot be deleted while its account exists. Needs Curiosa 0.47.0 or later; older versions keep working and the feature stays idle.
+- **Content notebook 1.2.0: documents in every idea.** Keep the script of a video, in versions ("v1", "v2", "final"), inside the idea. Documents stay private, with no page or link on your site. Your AI assistant can read, add and change them, never delete them.
+- **Announcement story 2.16.0: "The week".** A second kind of story lists the events of 7 days in one video, in the 14 styles. Choose the days: next 7 days, this week, next week or the week of a date. A busy week is split or says "and N more"; an empty week offers no video.
+
+### For developers
+
+- New service `discord.api` version 1 (`discord-connector` 1.0.0, then 1.1.0): REST only, answers `{ ok: true, … }` or `{ ok: false, reason }` with a closed `reason` list, no secret in any answer. The core does not tell a service who calls it: `upsertManagedMessage` takes the module id as `owner` (advisory). The bot code is stored as text in the database; the README says so. Details in `docs/changelog-parts/discord-connector.md`.
+- `discord-connector` 1.1.0: when the owner chose channels, every write answers `{ ok: false, reason: "forbidden", scope: "channel" }` unless the channel (or the parent of a thread) is chosen; nothing chosen keeps the 1.0.0 behaviour. New collection `discordAllow`, actions with the right `bot.manage`, `status` adds `channelLimit`.
+- `planning` 2.10.0 and `discord` 1.5.0 consume `discord.api` as an optional need (`minCore` unchanged, 0.11.0 and 0.6.0). `planning` calls `upsertManagedMessage` only when the digest of the week changed; `discord` calls only `status` and `guildStats`, with a short delay and a closed fallback.
+- `contacts` 2.8.0: optional `consumes` of the core topic `core.user` and the `topics` permission, new file `accounts.mjs`, task `accounts` (every 5 minutes), `minCore` unchanged (0.38.0). On older cores the topic is empty and the feature stays idle.
+- `content-planner` 1.2.0: new collection `ideaDocs` (no migration, `dataVersion` stays 1), `minCore` 0.2.5 to 0.6.0, new files `documents.mjs` and `docsAdmin.mjs`, MCP tools `idea_doc_list`, `idea_doc_get`, `idea_doc_add`, `idea_doc_update` and `documentCount` in `idea_get`.
+- `stream-story` 2.16.0: new read-only tool `story_week`; `story_prepare` accepts `kind: "week"`, `range`, `date`, `weekPart` and `weekTitle`. No new permission, `minCore` unchanged (0.6.7), no migration.
+
+## 1.110.0 — 2026-11-23
+
+*In short: Home Assistant can now show small pieces of information from your other modules, starting with the sponsor currently on screen.*
+
+### New
+
+- **Home Assistant connector 1.5.0: information from your other modules.** The connector now hands Home Assistant small pieces of display information provided by your other modules (a name, a number, a yes or no). Nothing changes if no module provides any, and nothing from your home is ever sent to Curiosa.
+- **Sponsor ticker 1.6.0: "Sponsor on screen" in Home Assistant.** The site now decides which sponsor is on screen, from its own clock, and gives it to Home Assistant. Every sponsor comes once per round, in a shuffled order, never twice in a row. The overlay page computes the same answer and sends nothing back; the page you add in OBS stays the same, and a page that is closed or loaded late still shows the planned sponsor.
+
+### For developers
+
+- New optional topic `home.info` (`docs/TOPICS.md`, since 1.110.0): items `{ key, label, value, unit? }`, 20 at most. `home-assistant` consumes it in the new `info.mjs` (5 s cache, 15 s retry after a failure, 1.5 s at most, texts cleaned with `clean`, `cleanInfo`) and `pull` adds the additive field `info` (always present, not filtered by `enabled` or `live`); see `docs/ideas/home-assistant-contract.md` (section 1.2, section 3, section 5 item 11).
+- `sponsor-ticker` provides `home.info` (`key` `sponsor-ticker.<instance>`, `value` the name of the sponsor scheduled now during its display time, else `null`). The schedule is pure and deterministic (`rotation.mjs`: `rotationPick(ids, slot)`, `slotMs(period, hold)`, `scheduledId`): slot = floor(server time / slot length), slots grouped in rounds of n sponsors, each round a shuffle of the sorted ids seeded by the round number, the first of a round never the last of the previous one. The `items` route adds `serverTime` (ms); the overlay page injects the same functions and offsets its clock by `serverTime`. Nothing is sent by the page and there is no route to report. The test page, `?dev=1` and `?seed=N` keep their random choice (config flag `free`).
+
 ## 1.109.2 — 2026-11-20
 
 *In short: a few buttons of Twitch bot and Game suggestions did nothing on the admin pages they share with other modules. They work again. Nothing else changes.*

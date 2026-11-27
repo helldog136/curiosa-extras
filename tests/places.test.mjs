@@ -27,9 +27,9 @@ const vocab = P ? P.mergeVocabulary(P.BUILTIN_VOCABULARY, P.sanitizeVocabulary(v
 
 /** The Twitch cluster (1.96.0): version after migration, and the sections each one declares (id → place). */
 const TWITCH = {
-  "alerts-overlay": ["1.22.2", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
+  "alerts-overlay": ["1.22.3", { events: "live.alerts.events", rules: "live.alerts.rules", voice: "live.alerts.voice", media: "live.chat.media", rewards: "live.rewards" }],
   "twitch-bot": ["1.24.5", { commands: "live.chat.commands", timers: "live.chat.timers", rewards: "live.rewards" }],
-  "home-assistant": ["1.4.2", { main: "live.rewards.home" }],
+  "home-assistant": ["1.5.0", { main: "live.rewards.home" }],
   "twitch-connector": ["1.8.1", { main: "networks.twitch" }],
   "twitch-channel": ["2.6.3", { main: "networks.twitch", stats: "networks.stats" }],
   "twitch-raid": ["2.6.4", { list: "live.raid.list", featured: "live.raid.featured" }],
@@ -44,13 +44,14 @@ const ROLLOUT = {
   "commissions": ["1.1.2", { main: "community.commissions", packages: "community.commissions.packages" }],
   "community-stats": ["1.4.2", { main: "networks.stats" }],
   "contact-form": ["1.1.1", { form: "community.contacts.form" }],
-  "contacts": ["2.7.1", { main: "community.contacts" }],
-  "content-planner": ["1.1.3", { main: "calendar.notebook" }],
+  "contacts": ["2.8.0", { main: "community.contacts" }],
+  "content-planner": ["1.2.0", { main: "calendar.notebook" }],
   "countdown": ["1.4.3", { main: "calendar.countdowns" }],
   "daily-game": ["1.2.3", { daily: "community.games.daily", packs: "community.games.daily" }],
   "directory": ["1.3.0", { main: "content.directory" }],
+  "discord-connector": ["1.1.0", { main: "networks.discord" }],
   "discord-announcer": ["1.5.0", { main: "networks.discord", golive: "live.golive" }],
-  "discord": ["1.4.1", { main: "networks.discord", stats: "networks.stats" }],
+  "discord": ["1.5.0", { main: "networks.discord", stats: "networks.stats" }],
   "events": ["1.5.3", { main: "calendar.events", types: "calendar.events.types" }],
   "facebook": ["1.2.1", { main: "networks.accounts" }],
   "faq": ["1.2.0", { main: "content.faq", inbox: "content.faq.inbox" }],
@@ -71,18 +72,18 @@ const ROLLOUT = {
   "partnerships": ["2.5.1", { main: "community.partners" }],
   "patreon": ["1.2.1", { main: "networks.accounts" }],
   "pinterest": ["1.2.1", { main: "networks.accounts" }],
-  "planning": ["2.9.2", { main: "calendar.schedule", look: "calendar.schedule.look" }],
+  "planning": ["2.10.0", { main: "calendar.schedule", look: "calendar.schedule.look" }],
   "platform-links": ["1.2.2", { main: "networks.accounts.other" }],
   "polls": ["1.9.3", { polls: "live.participation.polls", screen: "live.participation.polls" }],
   "press-kit": ["1.2.0", { main: "content.press-kit" }],
   "reddit": ["1.3.1", { main: "networks.accounts", stats: "networks.stats" }],
   "snapchat": ["1.2.1", { main: "networks.accounts" }],
   "soundcloud": ["1.2.1", { main: "networks.accounts" }],
-  "sponsor-ticker": ["1.5.0", { main: "obs.overlays.sponsors" }],
+  "sponsor-ticker": ["1.7.0", { main: "obs.overlays.sponsors" }],
   "sponsors": ["1.2.0", { sponsors: "community.partners.sponsors" }],
   "spotify": ["1.2.0", { main: "networks.accounts" }],
   "steam": ["1.2.1", { main: "networks.accounts" }],
-  "stream-story": ["2.15.3", { main: "calendar.story", styles: "calendar.story.styles" }],
+  "stream-story": ["2.16.0", { main: "calendar.story", styles: "calendar.story.styles" }],
   "supporters": ["1.4.0", { main: "community.supporters" }],
   "telegram": ["1.2.1", { main: "networks.accounts" }],
   "testimonials": ["1.6.0", { main: "community.reviews", share: "community.reviews.share" }],
@@ -100,8 +101,10 @@ const MIGRATED = { ...TWITCH, ...ROLLOUT };
 /** The last release before each migration: what the sites run (or update from). */
 // R33 (connection block, core 0.36.0): these four moved their codes out of the settings (legacySettings, dataVersion 2) and raised minCore: their structure is checked in their own tests.
 /** Modules whose minimum core moved for the live search of their lists (R15, `searchable` 0.6.0, `searchable: "server"` 0.38.0), the one other reason besides the connection block. */
-const LIVE_SEARCH_CORE = { faq: "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0", commissions: "0.6.0" /* not a search: its state is a `segmented` field (F-SET-001) */ };
+const LIVE_SEARCH_CORE = { faq: "0.6.0", "content-planner": "0.6.0", videos: "0.38.0", directory: "0.38.0", supporters: "0.38.0", "thanks-wall": "0.38.0", testimonials: "0.38.0", map: "0.38.0", commissions: "0.6.0" /* not a search: its state is a `segmented` field (F-SET-001) */ };
 const RESTRUCTURED = new Set(["twitch-connector", "twitch-channel", "youtube-connector", "youtube-live-actions", "discord-announcer", "game-covers", "supporters", "thanks-wall"]);
+/** Modules created after the migration: nothing to compare with in the older releases. */
+const NEW_MODULES = new Set(["discord-connector"]);
 const BEFORE = (id) => (id in TWITCH ? "v1.95.1" : id === "planning" ? "v1.99.1" : "v1.99.0"); // Planning 2.8.1 came with 1.99.1
 /** Modules with sections on a page of the core (Home, General): the core shows module sections on its own pages in a later release, until then they also keep their own sidebar entry. */
 const ON_CORE_PAGE = ["hero", "legal-pages"];
@@ -253,18 +256,28 @@ const needHistory = missingTag && process.env.HOT_UPDATE_REQUIRE_HISTORY !== "1"
 test(`upgrade from the real ${tagsUsed.join(" / ")} manifests: an older core sees the same module (only « places » and the version change; adminMenu, settings, tabs, tools, elements, data kept)`, { skip: needHistory }, () => {
   const beforeBy = Object.fromEntries(tagsUsed.map((tag) => [tag, manifestsAt(root, tag)]));
   for (const id of Object.keys(MIGRATED)) {
+    if (NEW_MODULES.has(id)) continue; // no earlier release to upgrade from
     const before = beforeBy[BEFORE(id)];
     const old = before[id], now = manifests[id];
     assert.ok(old, `${id} exists at ${BEFORE(id)}`);
     const { places, version, minCore: nowCore, ...rest } = now;
+    if (id === "planning") { rest.requires = rest.requires.filter((r) => r.service !== "discord.api"); rest.settings = rest.settings.filter((s) => !s.key.startsWith("discord")); }   // 2.10.0: the optional Discord connector
     const { version: oldVersion, minCore: oldCore, ...oldRest } = old;
     assert.ok(nowCore === oldCore || nowCore === "0.36.0" || (id === "contacts" && nowCore === "0.38.0") || LIVE_SEARCH_CORE[id] === nowCore, `${id}: minCore only moves for the connection block (0.36.0) or the live search (0.6.0)`);
     // (1.20.0) alerts-overlay adds two animated elements AFTER the ones it had: those are compared, the new ones are checked in tests/alerts-gauges.test.mjs
     if (id === "alerts-overlay" && rest.overlayElements.length > oldRest.overlayElements.length) rest.overlayElements = rest.overlayElements.slice(0, oldRest.overlayElements.length);
     if (RESTRUCTURED.has(id)) { assert.equal(now.adminMenu, old.adminMenu, id); continue; }
+    if (id === "home-assistant") rest.consumes = rest.consumes.filter((c) => c.topic !== "home.info"); // 1.5.0: the optional topic of the information provided by other modules
+    if (id === "sponsor-ticker") delete rest.provides; // 1.6.0: it tells the sponsor on screen to Home Assistant (topic home.info)
+    if (id === "content-planner") rest.mcp = rest.mcp.filter((t) => !t.name.startsWith("idea_doc_")).map((t) => (t.name === "idea_get" ? { ...t, description: oldRest.mcp.find((o) => o.name === "idea_get").description } : t)); // 1.2.0: the documents of an idea (four tools; idea_get says how many an idea holds)
+    if (id === "content-planner") delete rest.i18n; // 1.2.0: the French texts of the four new tool descriptions
+    if (id === "stream-story") rest.mcp = rest.mcp.filter((t) => t.name !== "story_week").map((t) => (t.name === "story_prepare" ? oldRest.mcp.find((o) => o.name === "story_prepare") : t)); // 2.16.0: the week's schedule (a new read tool; story_prepare gains kind, weekStart, weekPart, weekTitle)
+    if (id === "stream-story") rest.i18n = { fr: Object.fromEntries(Object.entries(rest.i18n.fr).filter(([k]) => k !== "mcp.story_week")) }; // 2.16.0: the French text of the new tool description
+    if (id === "contacts") { delete rest.consumes; rest.permissions = rest.permissions.filter((x) => x !== "topics"); } // 2.8.0: the optional topic core.user (linked cards for the login accounts) and the permission to read it
+    if (id === "discord") delete rest.requires; // 1.5.0: the optional service of the Discord bot (member count); a core that does not know the connector ignores it
     if (id === "contacts") delete rest.imageHosts; // 2.7.0: the list shows the photos of the people (avatar hosts of Twitch, YouTube, Bluesky)
     assert.deepEqual(noTexts(rest), noTexts(oldRest), `${id}: nothing else changed (an older core drops « places », the top-level object is not strict)`);
-    assert.ok(version > oldVersion || version.split(".")[0] > oldVersion.split(".")[0], `${id}: ${oldVersion} → ${version}`);
+    assert.ok(version.localeCompare(oldVersion, "en", { numeric: true }) > 0, `${id}: ${oldVersion} → ${version}`);
     // What an older core needs to keep showing the module in the same place.
     assert.equal(now.adminMenu, old.adminMenu, `${id}: adminMenu kept for cores older than 0.31.0`);
     assert.equal(now.adminMenuOrder, old.adminMenuOrder, id);

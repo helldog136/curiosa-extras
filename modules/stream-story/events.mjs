@@ -191,3 +191,6 @@ export const publicEvent = (e) => ({
   id: e.id, title: e.title, start: e.start, startMs: e.startMs, allDay: e.allDay, day: e.day, timezone: e.timezone, type: e.type, source: e.source, sourceLabel: e.sourceLabel,
   alsoIn: e.alsoIn, url: e.url, games: e.games, partners: e.partners ?? [], legacyKey: e.legacyKey,
 });
+
+/** What the week's page receives of an event (a little more than `publicEvent`: the end and the picture, to draw the rows). */
+export const weekEvent = (e) => ({ id: e.id, title: e.title, startMs: e.startMs, endMs: e.endMs, allDay: e.allDay, day: e.day, timezone: e.timezone, type: e.type, source: e.source, games: e.games, image: e.image });

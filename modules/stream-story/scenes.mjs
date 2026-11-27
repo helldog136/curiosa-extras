@@ -4,7 +4,8 @@
 // The module version spreads to the neighbouring files (otherwise the old code would stay in cache after a hot update); in the browser the address has no version and this is a plain import.
 const v = new URL(import.meta.url).search;
 const { colorsOf, mergeColors, formatOf, safeArea, STYLES, LIMITS, WATERMARK_TEXT, WATERMARK_LEAD, WATERMARK_NAME, WORDMARK, wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, clamp01, easeOutCubic, easeInOutCubic, easeOutBack, progress, seeded } = await import(`./pure.mjs${v}`);
-const { EXTRA_STYLES, extraPalette, createExtraScene } = await import(`./scenes-extra.mjs${v}`);
+const { EXTRA_STYLES, extraPalette, createExtraScene, createExtraBackdrop } = await import(`./scenes-extra.mjs${v}`);
+const { createWeekScene } = await import(`./week.mjs${v}`);
 
 const FAMILY = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const cleanFamily = (f) => (typeof f === "string" && /^[A-Za-z0-9 ,'"\-_.]{1,200}$/.test(f) ? f : FAMILY);
@@ -156,6 +157,15 @@ export function createScene(opts = {}) {
   const members = (content.costreamers ?? []).slice(0, LIMITS.costreamers);
   const digitsOn = style === "countdown" && !!content.parts && !!content.countdown;
   const pack = (draw, boxes, u, blocks) => ({ width: W, height: H, duration, fps: LIMITS.fps, style, format: fmt.id, draw, boxes, scale: u, palette: pal, blocks: blocks.map((b) => ({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h })), restTime: duration * 0.78, watermark: watermark ? { text: watermark.text, x: watermark.x, y: watermark.y, w: watermark.w, h: watermark.h, color: watermark.color, parts: watermark.parts.map((q) => ({ ...q })), background: watermark.pill, contrast: watermark.ratio } : null });
+  if (opts.week) {
+    // The week's schedule (2.16.0): the list layout of week.mjs on the background of the style; the mention is drawn here, on top, whatever the style (like the six styles below).
+    const backdrop = EXTRA_STYLES.includes(style)
+      ? createExtraBackdrop({ style, W, H, A, duration, content: {}, assets, lang, words, family, pal, mctx, tools: { usable } })
+      : { reserve: { top: 0, bottom: 0 }, inset: 0, shrink: 1, bg: (ctx, t) => background(ctx, t), begin() {}, fg() {} };
+    const wk = createWeekScene({ style, W, H, A, duration, content: opts.week, assets, lang, family, pal, mctx, hasLogo, backdrop, tools: { usable } });
+    const drawWeek = (ctx, rawT) => { const t = Math.min(duration, Math.max(0, Number(rawT) || 0)); ctx.save(); wk.draw(ctx, t); if (watermark) drawWatermark(ctx); ctx.restore(); };
+    return pack(drawWeek, wk.boxes, wk.scale, wk.blocks);
+  }
   if (EXTRA_STYLES.includes(style)) {
     // the six styles of scenes-extra.mjs: same contract, the mention is drawn here, on top, whatever the style
     const ex = createExtraScene({ style, W, H, A, duration, content, assets, lang, words, family, pal, members, hasLogo, mctx, tools: { usable } });

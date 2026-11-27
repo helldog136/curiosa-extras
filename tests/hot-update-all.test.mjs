@@ -171,7 +171,7 @@ for (const id of multi) {
     // Fichiers dont un import statique est admis par la liste blanche : le rejeu ne les reproche pas non plus.
     const tolerated = new Set(info[id].graph.statics.filter((s) => ALLOWED_STATIC[`${id}/${s.file}`]).map((s) => path.normalize(path.join(path.dirname(s.file), s.spec))));
     const r = await withSafeBodyCancel(() => replayUpdate({ core, probes, oldDir, newDir: current, tmp: work, tolerated }));
-    if (r.oldBroken) { t.diagnostic(`ancienne version ignorée : ${r.oldBroken}`); return; }
+    if (r.oldBroken) { t.skip(`ancienne version inutilisable, rejeu ignoré : ${r.oldBroken}`); return; }
     assert.deepEqual(r.problems, [], `${id} ${label}`);
     t.diagnostic(`${r.stats.files} fichiers rechargés, ${r.stats.oldCalls} appels avant (${r.stats.rows} enregistrements créés), ${r.stats.calls} appels après`);
   });

@@ -171,3 +171,18 @@ export async function coverOf(ctx, game) {
   if (src) return { cover: src, coverState: "", title: name, ambiguous: r.ambiguous === true, found: typeof r.name === "string" ? P.oneLine(r.name, 120) : "" };
   return { cover: "", coverState: r?.status === "unreachable" || r?.status === "refused" || r?.status === "found" || r === null ? "down" : "", title: name, ambiguous: false, found: "" };
 }
+
+/** The covers of the games of a week (service of the core), bounded: { covers: { [game]: url }, coverState: "" | "no_key" | "down" }. At most 16 distinct games, one shared delay. */
+export async function coversOf(ctx, games) {
+  const names = [...new Set((Array.isArray(games) ? games : []).map((g) => P.oneLine(g, 80)).filter(Boolean))].slice(0, 16);
+  if (!names.length) return { covers: {}, coverState: "" };
+  if (!(await within(hasKey(ctx), timing.coverMs, false))) return { covers: {}, coverState: "no_key" };
+  const covers = {};
+  let coverState = "";
+  await within(Promise.all(names.map(async (n) => {
+    const r = await coverRaw(ctx, n);
+    const src = r?.status === "found" ? images.drawable(r.url, siteOf(ctx)) : "";
+    if (src) covers[n] = src; else if (r?.status === "unreachable" || r?.status === "refused" || r?.status === "found") coverState = "down";
+  })), timing.coverMs, null);
+  return { covers, coverState };
+}

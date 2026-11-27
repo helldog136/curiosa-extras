@@ -33,7 +33,7 @@ test("manifeste : valide, une seule instance, aucune page", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifest.id, "content-planner");
-  assert.equal(manifest.minCore, "0.2.5");
+  assert.equal(manifest.minCore, "0.6.0"); // 1.2.0: the documents table (live search, badge, row menu) and the folded field are core 0.6.0 blocks
   assert.equal(manifest.instances, "single");
   assert.equal(manifest.page, false);
   assert.equal(manifest.name.fr, "Cahier de contenu");
@@ -55,14 +55,14 @@ test("manifeste : actions MCP déclarées = implémentées ; lectures par défau
     assert.ok(!a.destructive, `${a.name} : aucune action destructrice (rien n'est supprimé par l'assistant)`);
   }
   const reads = manifest.mcp.filter((a) => a.readOnly).map((a) => a.name).sort();
-  assert.deepEqual(reads, ["idea_get", "ideas_list"]);
+  assert.deepEqual(reads, ["idea_doc_get", "idea_doc_list", "idea_get", "ideas_list"]);
   for (const a of manifest.mcp.filter((x) => !x.readOnly)) assert.ok(a.default !== true, `${a.name} : une écriture n'est jamais accordée d'office`);
-  assert.deepEqual(manifest.mcp.map((a) => a.name).sort(), ["idea_add", "idea_get", "idea_move", "idea_step", "idea_update", "ideas_list"]);
+  assert.deepEqual(manifest.mcp.map((a) => a.name).sort(), ["idea_add", "idea_doc_add", "idea_doc_get", "idea_doc_list", "idea_doc_update", "idea_get", "idea_move", "idea_step", "idea_update", "ideas_list"]);
 });
 
 test("manifeste : les actions d'administration utilisées par les boutons existent ; onglet renommé ; réglages sains", () => {
-  for (const m of fs.readFileSync(`${DIR}/admin.mjs`, "utf8").matchAll(/action: "([A-Za-z]+)"/g)) assert.ok(m[1] in def.adminActions, `adminAction ${m[1]} manquante`);
-  assert.deepEqual(Object.keys(def.adminActions).sort(), ["deleteIdea", "moveIdea", "quickAdd", "saveSteps", "saveText", "saveWhen", "search"]);
+  for (const m of (fs.readFileSync(`${DIR}/admin.mjs`, "utf8") + fs.readFileSync(`${DIR}/docsAdmin.mjs`, "utf8")).matchAll(/action: "([A-Za-z]+)"/g)) assert.ok(m[1] in def.adminActions, `adminAction ${m[1]} manquante`);
+  assert.deepEqual(Object.keys(def.adminActions).sort(), ["deleteDoc", "deleteIdea", "moveIdea", "newVersion", "quickAdd", "saveDoc", "saveSteps", "saveText", "saveWhen", "search"]);
   assert.equal(manifest.tabs.length, 1);
   assert.equal(manifest.tabs[0].id, "use");
   const keys = manifest.settings.map((s) => s.key);

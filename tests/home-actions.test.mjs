@@ -345,7 +345,7 @@ test("sujet `home.actions` : { key, label }, les actions de base seulement si un
 test("manifestes : le Bot Twitch publie `home.actions`, le Connecteur le consomme en option (aucun nouveau besoin dur)", () => {
   assert.ok(parseManifest(botManifest).ok && parseManifest(haManifest).ok);
   assert.deepEqual(botManifest.provides.map((p) => p.topic), ["home.actions"]);
-  assert.deepEqual(haManifest.consumes.map((c) => c.topic), ["home.actions"]);
+  assert.deepEqual(haManifest.consumes.map((c) => c.topic), ["home.actions", "home.info"]);
   assert.deepEqual(haManifest.consumes[0].schema.map((x) => x.key), ["key", "label"]);
   assert.deepEqual(haManifest.requires.map((r) => r.optional), [true, true], "le connecteur ne dépend de personne en dur");
   assert.deepEqual(Object.keys(haDef.exports).sort(), ["ha.result", "ha.state"], "le connecteur n'invente aucun sujet de plus : un propriétaire par donnée");
@@ -360,7 +360,7 @@ test("champ additif `catalog` de pull : les noms donnés par le Bot Twitch, nett
   await create(w, { title: "Rouge", what: "lights", color: "rouge" });
   w.tick(31_000);
   r = await client.pull();
-  assert.deepEqual(Object.keys(r.body).sort(), ["actions", "catalog", "cursor", "enabled", "live", "pollSeconds", "serverTime"]);
+  assert.deepEqual(Object.keys(r.body).sort(), ["actions", "catalog", "cursor", "enabled", "info", "live", "pollSeconds", "serverTime"]);
   assert.deepEqual(r.body.catalog, [{ key: "lumieres:rouge", label: "Lumières : rouge" }, { key: "perso:lancer-l-aspirateur", label: "Lancer l'aspirateur" }]);
   assert.ok(r.body.catalog.length <= 50 && r.body.catalog.every((c) => [...c.label].length <= 60 && KEY_RE.test(c.key)));
   // un ancien client ne lit que les champs qu'il connaît : ceux d'avant n'ont pas bougé
