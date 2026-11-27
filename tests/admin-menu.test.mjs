@@ -27,6 +27,7 @@ const EXPECTED = {
   "alerts-overlay": ["Réseaux.Twitch", 50],
   "twitch-bot": ["Réseaux.Twitch", 60],
   "twitch-raid": ["Réseaux.Twitch", 70],
+  "discord-connector": ["Réseaux.Discord", 5],
   "discord": ["Réseaux.Discord", 10],
   "discord-announcer": ["Réseaux.Discord", undefined],
   "youtube-connector": ["Réseaux.YouTube", 10],
@@ -84,7 +85,7 @@ test("a module under a network group is about that network only (a module for se
     if (!m.adminMenu) continue;
     const parts = m.adminMenu.split(".").map((p) => p.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase());
     const reads = Object.entries(NETWORK_SERVICES).filter(([, re]) => (m.requires ?? []).some((r) => re.test(r.service))).map(([n]) => n);
-    if (reads.length > 1) assert.equal(parts.length, 1, `${id} reads ${reads.join(" and ")}: it belongs in Networks, not in one network group`);
+    if (reads.length > 1) assert.equal(parts.length, 1, `${id} reads ${reads.join(" and ")}: it belongs in Accounts and connections, not in one network group`);
   }
 });
 
@@ -109,14 +110,14 @@ test("with the core's tree builder, the entries land once, in the expected group
   }));
   for (const locale of ["en", "fr"]) {
     const tree = core.buildMenuTree(items, locale);
-    assert.equal(tree.groups.length, 1, "one Networks group");
+    assert.equal(tree.groups.length, 1, "one Accounts and connections group");
     const nets = tree.groups[0];
-    assert.equal(nets.title, locale === "fr" ? "Réseaux" : "Networks");
+    assert.equal(nets.title, locale === "fr" ? "Comptes et connexions" : "Accounts and connections");
     assert.deepEqual(nets.children.map((c) => c.title), ["Twitch", "YouTube", "Discord"].sort((a, b) => core.KNOWN_GROUPS.findIndex((g) => g.en === a) - core.KNOWN_GROUPS.findIndex((g) => g.en === b)));
     const ofGroup = (t) => nets.children.find((c) => c.title === t).entries.map((e) => e.id);
     assert.deepEqual(ofGroup("Twitch"), ["twitch-connector", "twitch-channel", "twitch-events", "alerts-overlay", "twitch-bot", "twitch-raid"]);
     assert.deepEqual(nets.entries.map((e) => e.id), ["live-status"], "Live status (Twitch and YouTube) sits in Networks itself, before the network groups");
-    assert.deepEqual(ofGroup("Discord"), ["discord", "discord-announcer"]);
+    assert.deepEqual(ofGroup("Discord"), ["discord-connector", "discord", "discord-announcer"]);
     assert.deepEqual(ofGroup("YouTube"), ["youtube-connector", "youtube-channel", "youtube-live-actions"]);
     assert.equal(nets.count, items.length, "each entry appears once");
   }

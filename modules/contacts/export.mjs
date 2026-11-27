@@ -7,12 +7,13 @@ const v = new URL(import.meta.url).search;
 const B = await import(`./book.mjs${v}`);
 const D = await import(`./data.mjs${v}`);
 const C = await import(`./csv.mjs${v}`);
+const A = await import(`./accounts.mjs${v}`);
 
 export const PAGE = 500;
 const pageMs = (ctx) => { const n = ctx?.__contactsTest?.exportPageMs; return Number.isInteger(n) && n > 0 ? n : 50_000; };
 const BOM = "﻿";
 const lang = (ctx) => (String(ctx.locale ?? "").startsWith("fr") ? "fr" : "en");
-export const exportLabels = (ctx) => ({ kind: { person: ctx.t("exportKindPerson"), org: ctx.t("exportKindOrg") }, status: { active: ctx.t("exportStatusActive"), to_review: ctx.t("exportStatusReview") } });
+export const exportLabels = (ctx) => ({ kind: { person: ctx.t("exportKindPerson"), org: ctx.t("exportKindOrg") }, status: { active: ctx.t("exportStatusActive"), to_review: ctx.t("exportStatusReview") }, level: (link) => A.levelLabel(ctx, link) });
 export const today = () => new Date().toISOString().slice(0, 10);
 
 /** Les notes d'une page de fiches : les 50 dernières de chacune (la sauvegarde `notes.csv` les garde toutes), de la plus ancienne à la plus récente. */

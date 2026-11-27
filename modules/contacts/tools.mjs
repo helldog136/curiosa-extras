@@ -18,7 +18,10 @@ async function getOrFail(ctx, id) {
   if (!r.ok) throw fail(r.movedTo ? `contact merged into ${r.movedTo}` : "contact not found");
   return r;
 }
-const explain = (r) => { if (!r.ok) throw fail(r.error === "taken" ? `account already on contact ${r.id}` : r.error); return r; };
+const explain = (r) => {
+  if (!r.ok) throw fail(r.error === "taken" ? `account already on contact ${r.id}` : r.error === "account_linked" ? "this card follows a login account of the site and cannot be deleted (the person has to be removed from the Team page first)" : r.error);
+  return r;
+};
 
 export default {
   mcp: {

@@ -1,12 +1,12 @@
-// Cahier de contenu — module communautaire de Curiosa : votre cahier PRIVÉ d'idées de vidéos, d'articles et de posts.
+// Content notebook: a community module of Curiosa: your PRIVATE notebook of ideas for videos, articles and posts, with long documents (a script, in versions).
 //
-// Aucune page publique, aucune route publique, aucune section d'accueil : rien de ce module n'est jamais montré aux visiteurs.
-// Les idées vivent dans le stockage privé de l'instance (collection « ideas », un document par idée). Le module ne lit les données d'aucun autre module
-// et ne dépend d'aucun autre : les réseaux sont de simples mots que la personne choisit, pas des liens vers les modules de réseaux.
+// No public page, no public route, no home section: nothing of this module is ever shown to visitors.
+// The ideas live in the private storage of the instance (collection "ideas", one row per idea), their documents in the collection "ideaDocs". The module reads the data of no other module
+// and depends on no other: networks are plain words that the person chooses, not links to the network modules.
 //
-// Fichiers : data.mjs (données et règles, rythme compris), view.mjs (morceaux d'écran), admin.mjs (liste, page d'une idée, actions),
-// tools.mjs (outils pour l'assistant IA), export.mjs (fichier CSV et sauvegarde lisible).
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+// Files: data.mjs (data and rules, rhythm included), documents.mjs (documents: storage, limits, versions), view.mjs (screen pieces), admin.mjs (list, idea page, actions),
+// docsAdmin.mjs (documents area, reading screen, windows), tools.mjs (AI assistant tools), export.mjs (CSV files and readable backup).
+const v = new URL(import.meta.url).search; // the module version travels to the sibling files (otherwise the old code would stay in cache after an update)
 const { default: admin } = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
 const { downloads, backup } = await import(`./export.mjs${v}`);
@@ -19,5 +19,5 @@ export default {
   ...tools, // mcp
   adminDownloads: downloads,
   backup,
-  // Pas de `tasks`, pas de `routes`, pas de `page` : tout est calculé quand on ouvre le cahier.
+  // No `tasks`, no `routes`, no `page`: everything is computed when the notebook is opened.
 };

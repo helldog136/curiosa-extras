@@ -1,22 +1,24 @@
-// Cahier de contenu — l'administration : la liste (un gros bouton « J'ai une idée ! », les endroits, la recherche) et la page d'une idée.
-// Pensé pour le téléphone d'abord : des cartes entières cliquables, des cibles de 44 px, jamais de glisser-déposer.
-// Le glisser-déposer, lui, n'existe pas ici : le panneau d'un module est fait de blocs du cœur, qui n'en offrent pas. On range une idée avec un menu de boutons.
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
+// Content notebook: the administration: the list (a big "I have an idea!" button, the places, the search) and the page of an idea.
+// Made for the phone first: whole cards that can be touched, 44 px targets, never a drag and drop.
+// There is no drag and drop here: a module panel is made of core blocks, which offer none. An idea is put in place with a menu of buttons.
+const v = new URL(import.meta.url).search; // the module version travels to the sibling files
 const D = await import(`./data.mjs${v}`);
 const V = await import(`./view.mjs${v}`);
+const X = await import(`./documents.mjs${v}`);
+const DA = await import(`./docsAdmin.mjs${v}`);
 const { PLACES, LIMITS, MAX_IDEAS, MAX_STEPS, MAX_NETWORKS } = D;
 
 const canDo = (ctx, right) => (typeof ctx.can === "function" ? ctx.can(right) : true);
 const title0 = (ctx, idea) => idea.title || ctx.t("untitled");
 
-// ── Les phrases douces du haut de la page ─────────────────────────────────────────────────────────────────
+// ── The gentle sentences at the top of the page ─────────────────────────────────────────────────────────────────
 function nextHint(ctx, ideas) {
   const doing = D.inPlace(ideas, "doing").sort(D.compare)[0];
   if (doing) return ctx.t("hintDoing", { title: title0(ctx, doing) });
   return ideas.some((i) => i.column === "idea" && !i.archived) ? ctx.t("hintPick") : ctx.t("hintAdd");
 }
 
-/** Le rythme (facultatif) et les dates visées passées, en phrases qui encouragent et ne reprochent jamais. Calculé à la lecture. */
+/** The rhythm (optional) and the passed target dates, in sentences that encourage and never blame. Computed when read. */
 export function gentleLines(ctx, ideas, today) {
   const lines = [];
   const rhythm = D.rhythmOf(ctx);
@@ -34,8 +36,8 @@ export function gentleLines(ctx, ideas, today) {
   return lines;
 }
 
-// ── La liste ──────────────────────────────────────────────────────────────────────────────────────────────
-function listPage(ctx, ideas, query, today, gone) {
+// ── The list ──────────────────────────────────────────────────────────────────────────────────────────────
+function listPage(ctx, ideas, query, today, gone, docTotal = 0) {
   const t = ctx.t;
   const q = D.line(query.q, LIMITS.query);
   const words = D.searchWords(q);
@@ -75,13 +77,15 @@ function listPage(ctx, ideas, query, today, gone) {
 
   if (ideas.length && canDo(ctx, "ideas.export")) {
     blocks.push({ type: "heading", text: t("copyTitle") }, { type: "markdown", text: t("copyText", { max: MAX_IDEAS }) }, { type: "download", name: "ideas", label: t("download") });
+    // The documents have their own file (long texts, cut in parts for a spreadsheet): offered only once there is one.
+    if (docTotal > 0) blocks.push({ type: "download", name: "documents", label: t("docsDownload") });
   }
   return blocks;
 }
 const placeOfCol = (i) => D.placeOf(i);
 
-// ── La page d'une idée ────────────────────────────────────────────────────────────────────────────────────
-function ideaPage(ctx, idea, query, today) {
+// ── The page of an idea ────────────────────────────────────────────────────────────────────────────────────
+function ideaPage(ctx, idea, query, today, docs = []) {
   const t = ctx.t;
   const place = D.placeOf(idea);
   const backCol = PLACES.includes(query.col) ? query.col : place;
@@ -92,7 +96,7 @@ function ideaPage(ctx, idea, query, today) {
   if (D.isLate(idea, today)) blocks.push(V.note([t("lateIdea")]));
   if (idea.archived) blocks.push(V.note([t("archivedNote")]));
 
-  // Où ranger l'idée : un menu de boutons (une ligne par endroit).
+  // Where to put the idea: a menu of buttons (one line per place).
   blocks.push({ type: "heading", text: t("moveTitle") });
   blocks.push({ type: "table", columns: [t("moveColumn")], rows: PLACES.map((p) => [`${p === place ? "✔ " : ""}${t(`place_${p}`)}`]), rowIds: PLACES.map((p) => `${idea.id}~${p}`), rowActions: [{ label: t("moveHere"), action: "moveIdea" }] });
 
@@ -103,6 +107,11 @@ function ideaPage(ctx, idea, query, today) {
       ...idea.steps.map((s, i) => ({ name: `step_${i}`, kind: "checkbox", label: s.label, value: s.done ? "on" : "" })),
     ] });
   } else blocks.push({ type: "markdown", text: t("noSteps") });
+
+  // The documents (script, outline…) of the idea, each with its version; a window opens when the address asks for one.
+  blocks.push(...DA.docsSection(ctx, idea, docs, query));
+  const docDialog = DA.docDialog(ctx, idea, docs, query, V.href({ idea: idea.id, col: query.col, q: query.q, page: query.page }));
+  if (docDialog) blocks.push(docDialog);
 
   const offered = D.suggestions(ctx);
   const mine = new Set(idea.networks.map(D.fold));
@@ -126,13 +135,13 @@ function ideaPage(ctx, idea, query, today) {
 
   if (idea.archived) {
     blocks.push({ type: "heading", text: t("deleteTitle") }, { type: "markdown", text: t("deleteText") });
-    blocks.push({ type: "table", columns: [t("deleteColumn")], rows: [[title0(ctx, idea)]], rowIds: [idea.id], rowActions: [{ label: t("deleteButton"), action: "deleteIdea", danger: true, confirm: t("deleteConfirm", { title: title0(ctx, idea) }) }] });
+    blocks.push({ type: "table", columns: [t("deleteColumn")], rows: [[title0(ctx, idea)]], rowIds: [idea.id], rowActions: [{ label: t("deleteButton"), action: "deleteIdea", danger: true, confirm: docs.length ? t("deleteConfirmDocs", { title: title0(ctx, idea), n: docs.length }) : t("deleteConfirm", { title: title0(ctx, idea) }) }] });
   }
   return blocks;
 }
 
-// ── Les actions ───────────────────────────────────────────────────────────────────────────────────────────
-/** Vérifie un titre : `{ title }` ou `{ error }` (phrase avec un exemple). */
+// ── The actions ───────────────────────────────────────────────────────────────────────────────────────────
+/** Checks a title: `{ title }` or `{ error }` (a sentence with an example). */
 export function checkTitle(ctx, raw) {
   const s = String(raw ?? "").replace(/\s+/g, " ").trim();
   if (!s) return { error: ctx.t("errTitleEmpty") };
@@ -147,7 +156,7 @@ async function load(ctx, id) {
 }
 
 const actions = {
-  // Un titre, et c'est noté. Le reste vient après.
+  // One title, and it is noted. The rest comes later.
   quickAdd: async (ctx, v0) => {
     const r = checkTitle(ctx, v0.quickTitle);
     if (r.error) return { errors: { quickTitle: r.error } };
@@ -155,7 +164,7 @@ const actions = {
     if (made.full) return { errors: { quickTitle: ctx.t("errFull", { max: MAX_IDEAS }) } };
     return { ok: ctx.t("added", { title: r.title }) };
   },
-  // La recherche ne change rien : elle renvoie simplement vers la liste filtrée.
+  // The search changes nothing: it only redirects to the filtered list.
   search: async (ctx, v0) => {
     const q = D.line(v0.q, LIMITS.query);
     return { redirect: V.href({ q }) };
@@ -221,11 +230,12 @@ const actions = {
     await D.saveIdea(ctx, { ...idea, title: tt.title, summary: D.line(summaryRaw, LIMITS.summary), notes: D.para(notesRaw, LIMITS.notes), steps: D.mergeSteps(idea.steps, labels) });
     return { ok: ctx.t("saved") };
   },
-  // Suppression définitive : seulement une idée déjà archivée (l'écran la propose avec une confirmation en clair).
+  // Final deletion: only an idea that is already archived (the screen offers it with a confirmation in plain words). Its documents go with it.
   deleteIdea: async (ctx, v0) => {
     const idea = await load(ctx, v0.id);
     if (!idea) return { error: ctx.t("errGone") };
     if (!idea.archived) return { error: ctx.t("errDeleteFirst") };
+    await X.removeDocsOf(ctx, idea.id);
     await ctx.api.store.remove(idea.id);
     return { ok: ctx.t("deleted"), redirect: V.href({ col: "archived" }) };
   },
@@ -237,8 +247,12 @@ export default {
     const ideas = await D.loadAll(ctx);
     const today = D.todayOf(ctx);
     const idea = typeof q.idea === "string" ? ideas.find((i) => i.id === q.idea) : null;
-    if (idea) return ideaPage(ctx, idea, q, today);
-    return listPage(ctx, ideas, q, today, typeof q.idea === "string" && q.idea !== "");
+    if (idea) {
+      const docs = await X.docsOf(ctx, idea.id);
+      const doc = typeof q.doc === "string" && q.doc ? docs.find((d) => d.id === q.doc) : null;
+      return doc ? DA.readPage(ctx, idea, doc, docs, q) : ideaPage(ctx, idea, q, today, docs);
+    }
+    return listPage(ctx, ideas, q, today, typeof q.idea === "string" && q.idea !== "", ideas.length && canDo(ctx, "ideas.export") ? await ctx.api.store.count(X.COLLECTION) : 0);
   },
-  adminActions: actions,
+  adminActions: { ...actions, ...DA.docActions(load) },
 };

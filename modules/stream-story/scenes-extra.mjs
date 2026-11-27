@@ -237,6 +237,20 @@ export function createExtraScene(K) {
   return { blocks, boxes, scale: u, draw };
 }
 
+/**
+ * The setting of a style with nothing on it, for the week's schedule (week.mjs): its background, the move it puts on the whole picture (the slow push-in of the cinema) and what it draws on top
+ * (frames, vignettes). `reserve` is the room the style keeps for its own bars and frames, `inset` the width of its side frame: the list of rows is laid out inside what is left.
+ * Same kit `K` as `createExtraScene`, with an empty content.
+ */
+export function createExtraBackdrop(K) {
+  K.D = K.duration; K.has = { brand: false, title: false, when: false, countdown: false, game: false, text: false, costreamers: false }; K.xw = EXTRA_WORDS[K.lang] ?? EXTRA_WORDS.en; K.members = []; K.hasLogo = false;
+  const spec = STYLE_IMPL[K.style](K);
+  K.u = 1;
+  return {
+    reserve: { top: spec.reserveTop || 0, bottom: spec.reserveBottom || 0 }, inset: spec.inset || 0, shrink: spec.shrink || 1,
+    bg: (ctx, t) => spec.bg?.(ctx, t, 1), begin: (ctx, t) => spec.begin?.(ctx, t, 1), fg: (ctx, t) => spec.fg?.(ctx, t, 1),
+  };
+}
 /* ═════════════════════════ 1. BROADCAST ═════════════════════════
  * A TV channel graphic: a strip of flat colour bars wipes in, lower-thirds follow with crisp masks, and a thin ticker at the bottom carries the day and the countdown.
  * Flat colour only, one grotesque sans, everything on a left edge. Calm and authoritative: nothing bounces. */
@@ -1054,7 +1068,7 @@ function styleEpic(K) {
   const order = ["brand", "title", "when", "countdown", "game", "text", "costreamers"].filter((id) => has[id]);
   const starts = xStarts(D, order.length, L * 1.25, 0.1, 0.66), at = (id) => starts[order.indexOf(id)];
   const PADX = 70, PADT = 96, PADB = 84, IW = A0.w - PADX * 2;
-  const spec = { gap: 30, maxScale: 1.4, stretch: 1.25, reserveTop: PADT, reserveBottom: PADB };
+  const spec = { gap: 30, maxScale: 1.4, stretch: 1.25, reserveTop: PADT, reserveBottom: PADB, inset: PADX };
   const gold = (ctx, y0, y1) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, pal.goldHi); g.addColorStop(0.5, pal.gold); g.addColorStop(1, pal.goldLo); return g; };
 
   spec.build = (u) => order.map((id) => {
@@ -1685,3 +1699,5 @@ function styleHaunt(K) {
 
 /* ───────────── The styles, by id (declared last: the functions above are hoisted) ───────────── */
 const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric, epic: styleEpic, arena: styleArena, abyss: styleAbyss, haunt: styleHaunt };
+/** The families of letters some styles keep for themselves, so that the week's schedule is written with the same letters. */
+export const EXTRA_FONTS = { serif: XSERIF, mono: XMONO, type: XTYPE, head: XHEAD, hand: XHAND };

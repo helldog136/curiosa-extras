@@ -6,7 +6,7 @@
     "fr": "Connecteur Home Assistant",
     "en": "Home Assistant connector"
   },
-  "version": "1.4.2",
+  "version": "1.5.1",
   "description": {
     "fr": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Avec un gros bouton « Tout couper ».",
     "en": "Links your channel points to your home: lights, a message read aloud, actions you name. With a big “Cut everything” button."
@@ -70,6 +70,32 @@
         },
         {
           "key": "label",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "topic": "home.info",
+      "label": {
+        "fr": "Informations des autres modules",
+        "en": "Information from other modules"
+      },
+      "schema": [
+        {
+          "key": "key",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "label",
+          "type": "string"
+        },
+        {
+          "key": "value",
+          "type": "string"
+        },
+        {
+          "key": "unit",
           "type": "string"
         }
       ]

@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { readAtBase, settle } from "./helpers/baseRef.mjs";
 import { makeTempDir } from "./helpers/tmp.mjs";
 import {
   analyzeModule, assertAdminPageErgonomics, adminPageErgonomicsProblems, baselineGrowth, compareToBaseline, ratchetMessages, countByRule, forbiddenWords, toneProblems, labelProblems, hasExample,
@@ -49,20 +50,22 @@ test("chaque écart R33 qui reste dans la base est justifié par écrit, et chaq
   assert.deepEqual(orphans, [], "justification sans écart : retirez-la de baseline.justified");
 });
 
-test("la base ne s'allonge pas : comparée à la branche de base du dépôt (quand elle est disponible)", () => {
+test("la base ne s'allonge pas : comparée à la branche de base du dépôt", (t) => {
   const ref = process.env.ERGONOMICS_BASE_REF ?? "origin/master";
-  const shown = spawnSync("git", ["show", `${ref}:tests/ergonomics-baseline.json`], { cwd: root, encoding: "utf8" });
-  if (shown.status !== 0) return; // pas de git, pas de branche de base, ou base pas encore publiée : rien à comparer
-  const previous = JSON.parse(shown.stdout);
+  // Branche de base introuvable (clone superficiel, HEAD détaché) : échec en CI (le workflow récupère tout l'historique), « ignoré » visible ailleurs, jamais un succès muet.
+  const base = readAtBase(root, "tests/ergonomics-baseline.json", [ref]);
+  if (!settle(t, base, assert.fail, "ergonomics baseline")) return;
+  const ref_ = base.ref;
+  const previous = JSON.parse(base.text);
   // Version 2 introduced the R33a-g checks: the one reviewed growth (their known gaps) happens when the version goes up, never otherwise.
-  if ((previous.version ?? 1) < (baseline.version ?? 1)) return;
+  if ((previous.version ?? 1) < (baseline.version ?? 1)) { t.skip(`la base de ${ref_} est en version ${previous.version ?? 1}, celle-ci en version ${baseline.version} : la croissance de cette montée de version est relue à la main`); return; }
   const growth = baselineGrowth(previous, baseline);
-  assert.deepEqual(growth, [], `la base d'ergonomie ne peut que rétrécir (par rapport à ${ref}) :\n${growth.slice(0, 20).join("\n")}`);
+  assert.deepEqual(growth, [], `la base d'ergonomie ne peut que rétrécir (par rapport à ${ref_}) :\n${growth.slice(0, 20).join("\n")}`);
 });
 
-test("la copie de l'aide est identique à celle du cœur quand le cœur l'a (testsupport/ergonomics.mjs)", () => {
+test("la copie de l'aide est identique à celle du cœur quand le cœur l'a (testsupport/ergonomics.mjs)", (t) => {
   const core = path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport", "ergonomics.mjs");
-  if (!fs.existsSync(core)) return; // cœur plus ancien que le kit d'ergonomie : la copie de ce dépôt fait foi
+  if (!fs.existsSync(core)) { t.skip("le cœur testé est plus ancien que le kit d'ergonomie : la copie de ce dépôt fait foi"); return; }
   assert.equal(fs.readFileSync(path.join(root, "tests/helpers/ergonomics.mjs"), "utf8"), fs.readFileSync(core, "utf8"), "recopiez testsupport/ergonomics.mjs du cœur dans tests/helpers/ergonomics.mjs");
 });
 

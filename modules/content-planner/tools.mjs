@@ -1,15 +1,16 @@
-// Cahier de contenu — les outils pour l'assistant IA (MCP). Six outils : lister, lire, ajouter, modifier, déplacer, cocher une étape.
-// Les écritures sont explicites (aucune n'est accordée d'office) et ne touchent QUE les idées de ce cahier : l'assistant ne lit jamais les données d'un autre module.
-// Rien n'est supprimé par ces outils : « archivée » est un endroit comme un autre, et on en ressort. Les messages d'erreur sont en anglais simple, pour l'assistant.
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
+// Content notebook: the tools for the AI assistant (MCP). Ten tools: list, read, add, change, move, tick a step, and four for the documents of an idea (list, read, add, change).
+// Writes are explicit (none is granted by default) and touch ONLY the ideas and documents of this notebook: the assistant never reads the data of another module.
+// These tools delete nothing: "archived" is a place like any other, and an idea comes back from it. Error messages are in plain English, for the assistant.
+const v = new URL(import.meta.url).search; // the module version travels to the sibling files
 const D = await import(`./data.mjs${v}`);
+const X = await import(`./documents.mjs${v}`);
 const { PLACES, LIMITS, MAX_IDEAS, MAX_STEPS, MAX_NETWORKS } = D;
 
 const fail = (message) => Object.assign(new Error(message), { expose: true });
 const LIST_DEFAULT = 20, LIST_MAX = 50;
 
-/** Une idée pour l'assistant (les notes seulement quand `full`). */
-export function present(idea, today, full = false) {
+/** An idea for the assistant (the notes only when `full`). */
+export function present(idea, today, full = false, docCount = undefined) {
   return {
     id: idea.id,
     title: idea.title,
@@ -22,8 +23,34 @@ export function present(idea, today, full = false) {
     publishedAt: idea.publishedAt || null,
     networks: idea.networks,
     ...(full ? { notes: idea.notes, createdAt: idea.createdAt, updatedAt: idea.updatedAt, addedBy: idea.by } : {}),
+    ...(full && docCount !== undefined ? { documentCount: docCount } : {}),
   };
 }
+
+/** A document for the assistant: the text only when `full`. */
+export function presentDoc(doc, full = false) {
+  return {
+    id: doc.id,
+    title: doc.title,
+    version: doc.version,
+    characters: doc.text.length,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    addedBy: doc.by,
+    ...(full ? { text: doc.text } : {}),
+  };
+}
+const DOC_PROBLEMS = {
+  titleEmpty: () => "title is required: write a few words, for example \"Video script\".",
+  titleLong: (p) => `title is too long (${p.max} characters at most).`,
+  versionLong: (p) => `version is too long (${p.max} characters at most): something short like "v2" or "final".`,
+  textLong: (p) => `text is too long (${p.max} characters at most). Split it into two documents.`,
+};
+const CAP_PROBLEMS = {
+  tooMany: () => `An idea holds ${X.MAX_DOCS_PER_IDEA} documents at most. Ask the owner to delete one in the notebook.`,
+  tooBig: () => `The documents of an idea hold ${X.MAX_CHARS_PER_IDEA} characters in all, at most. Shorten a text or ask the owner to delete a draft that is no longer needed.`,
+  full: () => `The notebook holds ${X.MAX_DOCS_TOTAL} documents at most. Ask the owner to delete some.`,
+};
 
 const encodeCursor = (n) => Buffer.from(`o${n}`).toString("base64url");
 const decodeCursor = (c) => { try { const m = /^o(\d{1,6})$/.exec(Buffer.from(String(c), "base64url").toString()); return m ? Number(m[1]) : 0; } catch { return 0; } };
@@ -53,6 +80,17 @@ function cleanNetworks(list) {
   return out;
 }
 
+async function needDoc(ctx, ideaId, docId) {
+  const doc = await X.getDoc(ctx, ideaId, String(docId ?? ""));
+  if (!doc) throw fail("No document with this id in this idea. Use idea_doc_list to find the id.");
+  return doc;
+}
+function checkedDoc(fields, opts) {
+  const { values, problems } = X.check(fields, opts);
+  if (problems.length) throw fail(problems.map((p) => DOC_PROBLEMS[p.code](p)).join(" "));
+  return values;
+}
+
 export default {
   mcp: {
     async ideas_list(ctx, args) {
@@ -67,12 +105,13 @@ export default {
       const from = args.cursor ? decodeCursor(args.cursor) : 0;
       const items = list.slice(from, from + limit).map((i) => present(i, today));
       const next = from + limit < list.length ? encodeCursor(from + limit) : null;
-      // Tant qu'il n'y a ni curseur ni suite, un simple tableau (comme les listes du cœur) ; sinon { items, next }.
+      // With no cursor and no next page, a plain array (like the core lists); otherwise { items, next }.
       return !args.cursor && next === null ? items : { items, next };
     },
 
     async idea_get(ctx, args) {
-      return present(await need(ctx, args.id), D.todayOf(ctx), true);
+      const idea = await need(ctx, args.id);
+      return present(idea, D.todayOf(ctx), true, (await X.docsOf(ctx, idea.id)).length);
     },
 
     async idea_add(ctx, args) {
@@ -92,7 +131,7 @@ export default {
       }
       const made = await D.addIdea(ctx, { title, summary: D.line(summary, LIMITS.summary), column: args.place === "doing" ? "doing" : "idea", targetDate, networks, notes: D.para(notes, LIMITS.notes), steps }, { by: "assistant" });
       if (made.full) throw fail(`The notebook is full (${MAX_IDEAS} ideas). Ask the owner to delete old archived ideas.`);
-      return present(made.idea, D.todayOf(ctx), true);
+      return present(made.idea, D.todayOf(ctx), true, 0);
     },
 
     async idea_update(ctx, args) {
@@ -112,7 +151,7 @@ export default {
       }
       const saved = await D.saveIdea(ctx, next);
       if (!saved) throw fail("The idea disappeared while it was being changed.");
-      return present(saved, D.todayOf(ctx), true);
+      return present(saved, D.todayOf(ctx), true, (await X.docsOf(ctx, idea.id)).length);
     },
 
     async idea_move(ctx, args) {
@@ -134,6 +173,42 @@ export default {
       const saved = await D.saveIdea(ctx, { ...idea, steps });
       if (!saved) throw fail("The idea disappeared while it was being changed.");
       return present(saved, D.todayOf(ctx));
+    },
+
+    // ── Documents of an idea (a script, an outline…): list, read, add, change. There is no tool to delete one: only the owner deletes, in the notebook.
+    async idea_doc_list(ctx, args) {
+      const idea = await need(ctx, args.id);
+      const docs = await X.docsOf(ctx, idea.id);
+      return { idea: idea.title, documents: docs.map((d) => presentDoc(d)) };
+    },
+
+    async idea_doc_get(ctx, args) {
+      const idea = await need(ctx, args.id);
+      return presentDoc(await needDoc(ctx, idea.id, args.doc), true);
+    },
+
+    async idea_doc_add(ctx, args) {
+      const idea = await need(ctx, args.id);
+      const values = checkedDoc({ title: args.title, version: args.version ?? X.DEFAULT_VERSION, text: args.text ?? "" });
+      const docs = await X.docsOf(ctx, idea.id);
+      const cap = await X.capProblem(ctx, docs, { adding: true, textLength: values.text.length });
+      if (cap) throw fail(CAP_PROBLEMS[cap]());
+      return presentDoc(await X.addDoc(ctx, idea.id, values, { by: "assistant" }), true);
+    },
+
+    async idea_doc_update(ctx, args) {
+      const idea = await need(ctx, args.id);
+      const doc = await needDoc(ctx, idea.id, args.doc);
+      if (args.title === undefined && args.version === undefined && args.text === undefined) throw fail("Nothing to change: give a title, a version or a text.");
+      const values = checkedDoc({ title: args.title, version: args.version, text: args.text }, { requireTitle: false });
+      const next = { ...doc, ...values };
+      if (values.text !== undefined) {
+        const cap = await X.capProblem(ctx, await X.docsOf(ctx, idea.id), { adding: false, replacing: doc.id, textLength: next.text.length });
+        if (cap) throw fail(CAP_PROBLEMS[cap]());
+      }
+      const saved = await X.saveDoc(ctx, next, { by: "assistant" });
+      if (!saved) throw fail("The document disappeared while it was being changed.");
+      return presentDoc(saved, true);
     },
   },
 };
