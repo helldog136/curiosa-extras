@@ -230,7 +230,7 @@ test("adminPanel : tri par urgence, compteur des fiches ouvertes, relance due si
   assert.match(table.rows[2][4], /⏰/);
   assert.equal(table.rows[0][4], "");
   assert.equal(table.rowIds.length, 5);
-  assert.ok(blocks.some((b) => b.type === "heading" && b.text === "Overview (4)"), "4 fiches non closes");
+  assert.ok(blocks.some((b) => b.type === "heading" && b.text === "Overview (5)"), "the number is the number of rows of the table, closed files included (the search counts the same rows)");
   assert.equal(table.rows[2][3], isoDaysAgo(30));
   assert.equal(table.searchable, true, "live search from the start (R15)");
 });

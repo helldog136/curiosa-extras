@@ -120,5 +120,15 @@
   "deleteKeepN": "Les {n} contacts liés restent dans votre carnet d'adresses.",
   "deleteTick": "Cochez la case pour confirmer la suppression.",
   "deletedPartner": "{brand} a été supprimé. Ses contacts restent dans votre carnet d'adresses.",
-  "exSearch": "etoile_nord, etoile@example.org"
+  "exSearch": "etoile_nord, etoile@example.org",
+  "articleHead": "Article",
+  "articlePublished": "Publié",
+  "articleMissing": "Aucun article publié",
+  "articleOnly": "Article sans fiche",
+  "articleNone": "Aucun",
+  "articleField": "Article publié",
+  "articleAuto": "Trouvé par le nom",
+  "articleGone": "Cet article n'est plus publié. Choisissez-en un autre ou laissez vide.",
+  "addFromArticle": "Ajouter la fiche",
+  "addFromArticleTitle": "Ajouter la fiche — {brand}"
 }
