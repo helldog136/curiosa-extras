@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.115.0 — 2026-11-28
+
+*In short: Partnerships shows, for each partner file, whether its article is published, lists published articles that have no file, and its two counters now agree. Your settings are kept and there is nothing to set up.*
+
+### Improvements
+
+- **Partnerships 2.6.0: each file says whether its article is published.** The overview gets an "Article" column: "Published" with a link, or "No published article" for a file marked Published. It works with the articles module named "sponsoring".
+- **Partnerships 2.6.0: a published article without a file appears in the list.** It counts as Published and "Add the file" creates the file from it in one click. An "Article" choice in the edit window links a file by hand.
+- **Partnerships 2.6.0: the two numbers of the overview agree.** The number in the title and the "n of N" of the search both count the rows of the table.
+
+### For developers
+
+- `partnerships` 2.5.1 to 2.6.0: `articleId` and `fromArticle` on a file, `loadArticles` and `pairArticles` in `data.mjs` (read only, `ctx.api.entries.list`, 200 articles at most), advanced setting `articlesKey` (default `sponsoring`). `minCore` unchanged: an older core keeps the old table. Details in `docs/changelog-parts/partnerships-articles.md`; test `tests/partnerships-articles.test.mjs`. Every catalogue entry is pinned on the new tag `v1.115.0`.
+
 ## 1.114.0 — 2026-11-27
 
 *In short: the Commissions state is one control, Twitch activity gets a tab on the Twitch page, the Blog and Pages shortcuts say their right, and every text says "module". Legal pages, Twitch bot and Thanks wall get plainer wording. Your settings are kept and there is nothing to set up.*
